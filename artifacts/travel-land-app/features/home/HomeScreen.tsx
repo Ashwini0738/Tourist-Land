@@ -22,6 +22,23 @@ import {
   getListHomePropertiesQueryKey,
 } from '@workspace/api-client-react';
 
+export const HOME_QUERY_KEYS = [
+  getListHomeBannersQueryKey(),
+  getListHomeDestinationsQueryKey(),
+  getListHomeNearbyQueryKey(),
+  getListHomeEventsQueryKey(),
+  getListHomeHotelsQueryKey(),
+  getListHomePropertiesQueryKey(),
+] as const;
+
+export async function refetchHomeQueries(
+  queryClient: Pick<ReturnType<typeof useQueryClient>, 'refetchQueries'>,
+) {
+  await Promise.allSettled(
+    HOME_QUERY_KEYS.map((queryKey) => queryClient.refetchQueries({ queryKey })),
+  );
+}
+
 export function HomeScreen() {
   const colors = useColors();
   const queryClient = useQueryClient();
@@ -29,19 +46,16 @@ export function HomeScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: getListHomeBannersQueryKey() }),
-      queryClient.invalidateQueries({ queryKey: getListHomeDestinationsQueryKey() }),
-      queryClient.invalidateQueries({ queryKey: getListHomeNearbyQueryKey() }),
-      queryClient.invalidateQueries({ queryKey: getListHomeEventsQueryKey() }),
-      queryClient.invalidateQueries({ queryKey: getListHomeHotelsQueryKey() }),
-      queryClient.invalidateQueries({ queryKey: getListHomePropertiesQueryKey() }),
-    ]);
-    setRefreshing(false);
+    try {
+      await refetchHomeQueries(queryClient);
+    } finally {
+      setRefreshing(false);
+    }
   }, [queryClient]);
 
   return (
     <ScrollView
+      testID="home-scroll-view"
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 102 : 118 }}
       showsVerticalScrollIndicator={false}
