@@ -1,28 +1,74 @@
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 
 export default function WalletScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}><Pressable onPress={() => router.back()}><Feather name="arrow-left" size={21} color={colors.foreground} /></Pressable><Text style={[styles.kicker, { color: colors.primary }]}>WALLET</Text><Text style={[styles.title, { color: colors.foreground }]}>A softer way{'\n'}to keep track.</Text><View style={[styles.balance, { backgroundColor: colors.primary }]}><Text style={styles.balanceLabel}>AVAILABLE BALANCE</Text><Text style={styles.amount}>₹0.00</Text><Text style={styles.balanceNote}>Add money or earn credits from future stays.</Text></View><View style={styles.sectionHead}><Text style={[styles.sectionTitle, { color: colors.foreground }]}>Recent activity</Text><Pressable><Text style={[styles.link, { color: colors.primary }]}>See all</Text></Pressable></View><View style={[styles.empty, { borderColor: colors.border, backgroundColor: colors.card }]}><Feather name="credit-card" size={23} color={colors.primary} /><Text style={[styles.emptyTitle, { color: colors.foreground }]}>No wallet activity yet</Text><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Your booking credits and refunds will show here.</Text></View></ScrollView>;
-}
 
-const styles = StyleSheet.create({
-  content: { padding: 20, paddingBottom: 40 },
-  kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginTop: 33, marginBottom: 8 },
-  title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
-  balance: { borderRadius: 22, padding: 20, marginTop: 25 },
-  balanceLabel: { color: 'rgba(255,255,255,0.65)', fontSize: 10, fontWeight: '700', letterSpacing: 1.3 },
-  amount: { color: '#fff', fontSize: 34, fontWeight: '700', marginTop: 17 },
-  balanceNote: { color: 'rgba(255,255,255,0.73)', fontSize: 12, marginTop: 8 },
-  sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 29, marginBottom: 13 },
-  sectionTitle: { fontSize: 18, fontWeight: '700' },
-  link: { fontSize: 13, fontWeight: '700' },
-  empty: { borderWidth: 1, borderRadius: 19, alignItems: 'center', padding: 26 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', marginTop: 12 },
-  emptyText: { textAlign: 'center', fontSize: 13, lineHeight: 19, marginTop: 6 },
-});
+  return (
+    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+      <View style={{ paddingTop: insets.top + 16, paddingHorizontal: 24 }}>
+        <Pressable onPress={() => router.back()} style={{ padding: 8, marginLeft: -8, alignSelf: 'flex-start' }}>
+          <Feather name="arrow-left" size={24} color={colors.foreground} />
+        </Pressable>
+
+        <Text style={{ fontSize: 28, fontWeight: '700', color: colors.foreground, marginTop: 24 }}>Travel Pass</Text>
+        <Text style={{ fontSize: 15, color: colors.mutedForeground, marginTop: 6 }}>Access your bookings and credits</Text>
+      </View>
+
+      <View style={{ marginTop: 32, paddingHorizontal: 20 }}>
+        {/* Dark Card */}
+        <View style={{ backgroundColor: '#0F172A', borderRadius: 24, padding: 24, height: 230, position: 'relative', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 10, zIndex: 2 }}>
+          {/* Abstract decoration */}
+          <View style={{ position: 'absolute', right: -30, top: -20, opacity: 0.6 }}>
+             <MaterialCommunityIcons name="gift-outline" size={160} color="#334155" />
+          </View>
+          <View style={{ position: 'absolute', right: 40, bottom: -10, opacity: 0.4 }}>
+             <MaterialCommunityIcons name="ticket-percent-outline" size={100} color="#475569" />
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <MaterialCommunityIcons name="compass-outline" size={32} color="#FACC15" />
+            <Text style={{ color: '#FACC15', fontSize: 18, fontWeight: '700', letterSpacing: 2 }}>TRAVEL & LAND</Text>
+          </View>
+
+          <View style={{ marginTop: 'auto' }}>
+             <Text style={{ color: '#fff', fontSize: 19, fontWeight: '600', letterSpacing: 3, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>PASS •••• ••••</Text>
+            <Text style={{ color: '#F8FAFC', fontSize: 18, fontWeight: '600', marginTop: 12, letterSpacing: 1 }}>Explorer</Text>
+          </View>
+        </View>
+
+        {/* Inactive travel pass preview */}
+        <View style={{ backgroundColor: colors.card, marginHorizontal: 16, marginTop: -20, borderRadius: 20, padding: 24, paddingTop: 48, borderWidth: 1, borderColor: colors.border, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4, zIndex: 1 }}>
+           <MaterialCommunityIcons name="ticket-confirmation-outline" size={64} color={colors.foreground} />
+           <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: '700', marginTop: 16 }}>Travel pass preview</Text>
+           <Text style={{ color: colors.mutedForeground, fontSize: 13, lineHeight: 19, marginTop: 6, textAlign: 'center' }}>Your secure check-in pass will activate after your first confirmed booking.</Text>
+        </View>
+      </View>
+
+      <View style={{ marginTop: 40, paddingHorizontal: 24 }}>
+         <Text style={{ color: colors.foreground, fontSize: 20, fontWeight: '700' }}>Available Balance</Text>
+         <View style={{ marginTop: 16, padding: 24, backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ color: colors.mutedForeground, fontSize: 13, fontWeight: '700', letterSpacing: 1 }}>BOOKING CREDITS</Text>
+            <Text style={{ color: colors.foreground, fontSize: 36, fontWeight: '700', marginTop: 8 }}>₹0.00</Text>
+         </View>
+      </View>
+
+      <View style={{ marginTop: 32, paddingHorizontal: 24 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground }}>Recent activity</Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.mutedForeground }}>No transactions</Text>
+        </View>
+        <View style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, borderRadius: 20, alignItems: 'center', padding: 32, marginTop: 16 }}>
+          <Feather name="clock" size={28} color={colors.primary} />
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.foreground, marginTop: 16 }}>No wallet activity yet</Text>
+          <Text style={{ textAlign: 'center', fontSize: 14, color: colors.mutedForeground, marginTop: 8 }}>Your booking credits and refunds will show here.</Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+}

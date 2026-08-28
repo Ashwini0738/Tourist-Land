@@ -103,7 +103,19 @@ function ClassicTabLayout() {
         name="bookings"
         options={{
           title: 'Bookings',
-          tabBarIcon: ({ color }) => <Feather name="calendar" size={22} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+               width: 48, height: 48, borderRadius: 24,
+               backgroundColor: focused ? '#BE123C' : colors.card,
+               borderWidth: focused ? 0 : 1, borderColor: colors.border,
+               alignItems: 'center', justifyContent: 'center',
+               marginBottom: 4,
+               shadowColor: focused ? '#BE123C' : '#000', shadowOpacity: focused ? 0.3 : 0.05, shadowRadius: 8, elevation: focused ? 6 : 0
+            }}>
+              <Feather name="calendar" size={20} color={focused ? '#fff' : color} />
+            </View>
+          ),
+          tabBarLabel: () => null,
         }}
       />
       <Tabs.Screen
