@@ -49,6 +49,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [mode, setMode] = useState<'biometric' | 'email'>('biometric');
+  const [signInNeedsCode, setSignInNeedsCode] = useState(false);
+  const [signInCode, setSignInCode] = useState('');
 
   const loading = !isLoaded || signInStatus === 'fetching' || signUpStatus === 'fetching';
 
@@ -64,7 +66,20 @@ export default function LoginScreen() {
     }
     const { error } = await signIn.password({ emailAddress: email.trim(), password });
     if (error) return setMessage(authErrorMessage(error, 'We could not sign you in. Please check your details and try again.'));
-    if (signIn.status !== 'complete') return setMessage('This sign-in needs another verification step. Please use a different sign-in method or try again.');
+    if (signIn.status === 'needs_second_factor' || signIn.status === 'needs_client_trust') {
+      const emailFactor = signIn.supportedSecondFactors?.find((factor) => factor.strategy === 'email_code');
+      if (!emailFactor) {
+        return setMessage('This account requires an additional sign-in method that is not available in this app.');
+      }
+      const verification = await signIn.mfa.sendEmailCode();
+      if (verification.error) {
+        return setMessage(authErrorMessage(verification.error, 'We could not send the sign-in verification code. Please try again.'));
+      }
+      setSignInCode('');
+      setSignInNeedsCode(true);
+      return;
+    }
+    if (signIn.status !== 'complete') return setMessage('This sign-in needs another verification step. Please restart sign in and try again.');
     await signIn.finalize({});
     router.replace('/(tabs)');
   };
@@ -84,6 +99,46 @@ export default function LoginScreen() {
     if (!r.success) return;
     setMode('email');
   };
+
+  const verifySignInCode = async () => {
+    setMessage('');
+    const { error } = await signIn.mfa.verifyEmailCode({ code: signInCode });
+    if (error) return setMessage(authErrorMessage(error, 'That verification code did not work. Please try again.'));
+    if (signIn.status !== 'complete') return setMessage('The code was accepted, but sign in is not complete yet. Please try again.');
+    await signIn.finalize({ navigate: () => router.replace('/(tabs)') });
+  };
+
+  if (signInNeedsCode) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 16 }]}>
+        <Pressable testID="login-code-back" onPress={() => { signIn.reset(); setSignInNeedsCode(false); setSignInCode(''); setMessage(''); }} style={{ padding: 8, marginLeft: -8, alignSelf: 'flex-start' }}>
+          <Feather name="arrow-left" size={24} color={colors.foreground} />
+        </Pressable>
+        <View style={styles.copy}>
+          <Text style={[styles.kicker, { color: colors.primary }]}>VERIFY YOUR SIGN IN</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>Check your email.</Text>
+          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>We sent a verification code to finish signing you in securely.</Text>
+          <TextInput
+            testID="sign-in-verification-code"
+            value={signInCode}
+            onChangeText={setSignInCode}
+            keyboardType="number-pad"
+            maxLength={6}
+            placeholder="000000"
+            placeholderTextColor={colors.mutedForeground}
+            style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card, textAlign: 'center', letterSpacing: 8, fontWeight: '700', fontSize: 20 }]}
+          />
+          {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
+          <Pressable testID="verify-sign-in-code" disabled={signInCode.length !== 6 || loading} onPress={verifySignInCode} style={[styles.button, { backgroundColor: signInCode.length === 6 && !loading ? '#064E3B' : colors.muted, marginTop: 24 }]}>
+            {loading ? <ActivityIndicator color="#fff" /> : <><Text style={[styles.buttonText, { color: '#fff' }]}>Verify and continue</Text><Feather name="arrow-right" size={17} color="#fff" /></>}
+          </Pressable>
+          <Pressable onPress={async () => { const { error } = await signIn.mfa.sendEmailCode(); if (error) setMessage(authErrorMessage(error, 'We could not send a new code. Please try again.')); else setMessage('A new verification code was sent.'); }} style={styles.secondary}>
+            <Text style={[styles.secondaryText, { color: colors.primary }]}>Send a new code</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   if (mode === 'email') {
     return (

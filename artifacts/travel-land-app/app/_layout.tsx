@@ -54,25 +54,23 @@ function RootLayoutNav() {
       setUnauthorizedHandler(null);
     };
   }, [getToken, router, signOut]);
-  if (!isLoaded && !publicRoutes.includes(route ?? '')) {
-    return <View style={[styles.authLoading, { backgroundColor: colors.background }]}>
-      <ActivityIndicator color={colors.primary} />
-      <Text style={[styles.authLoadingText, { color: colors.mutedForeground }]}>Securing your journey…</Text>
-    </View>;
-  }
+  if (!isLoaded && !publicRoutes.includes(route ?? '')) return <AuthLoadingScreen label="Securing your journey…" />;
   if (!isLoaded) return renderRoutes();
   if (!isSignedIn && route && !publicRoutes.includes(route)) return <Redirect href="/login" />;
-  if (isSignedIn && !isReady) {
-    return <View style={[styles.authLoading, { backgroundColor: colors.background }]}>
-      <ActivityIndicator color={colors.primary} />
-      <Text style={[styles.authLoadingText, { color: colors.mutedForeground }]}>Preparing your secure account…</Text>
-    </View>;
-  }
+  if (isSignedIn && !isReady) return <AuthLoadingScreen label="Preparing your secure account…" />;
   if (isSignedIn && isReady && !isUnlocked && route && !lockedSessionRoutes.includes(route)) {
     if (!hasPin) return <Redirect href="/create-pin" />;
     return <Redirect href={biometricsEnabled ? '/biometric-login' : '/pin-login'} />;
   }
   return renderRoutes();
+}
+
+function AuthLoadingScreen({ label }: { label: string }) {
+  const colors = useColors();
+  return <View style={[styles.authLoading, { backgroundColor: colors.background }]}>
+    <ActivityIndicator color={colors.primary} />
+    <Text style={[styles.authLoadingText, { color: colors.mutedForeground }]}>{label}</Text>
+  </View>;
 }
 
 function renderRoutes() {
