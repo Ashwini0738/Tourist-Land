@@ -7,6 +7,36 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useColors } from '@/hooks/useColors';
 
+type ClerkErrorLike = {
+  code?: string;
+  message?: string;
+  longMessage?: string;
+};
+
+function authErrorMessage(error: unknown, fallback: string) {
+  const clerkError = error as ClerkErrorLike | null;
+  const code = clerkError?.code?.toLowerCase() ?? '';
+  if (code.includes('identifier_exists')) {
+    return 'An account with this email already exists. Switch to sign in instead.';
+  }
+  if (code.includes('password_pwned') || code.includes('password_compromised')) {
+    return 'Choose a different password. This one has appeared in a known security breach.';
+  }
+  if (code.includes('password_length') || code.includes('password') && code.includes('length')) {
+    return 'Choose a longer password that meets the account security requirements.';
+  }
+  if (code.includes('captcha') || code.includes('bot')) {
+    return 'The security check could not be completed. Refresh the page and try again.';
+  }
+  if (code.includes('too_many') || code.includes('rate_limit')) {
+    return 'Too many attempts. Please wait a few minutes and try again.';
+  }
+  if (code.includes('email_address_invalid') || code.includes('invalid_email')) {
+    return 'Enter a valid email address and try again.';
+  }
+  return clerkError?.longMessage || clerkError?.message || fallback;
+}
+
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -26,13 +56,14 @@ export default function LoginScreen() {
     setMessage('');
     if (isNew) {
       const { error } = await signUp.password({ emailAddress: email.trim(), password });
-      if (error) return setMessage('We could not create that account. Please review your email and password and try again.');
-      await signUp.verifications.sendEmailCode();
+      if (error) return setMessage(authErrorMessage(error, 'We could not create that account. Please review your email and password and try again.'));
+      const verification = await signUp.verifications.sendEmailCode();
+      if (verification.error) return setMessage(authErrorMessage(verification.error, 'We could not send the verification email. Please check the address and try again.'));
       router.push('/verify');
       return;
     }
     const { error } = await signIn.password({ emailAddress: email.trim(), password });
-    if (error) return setMessage('We could not sign you in. Please check your details and try again.');
+    if (error) return setMessage(authErrorMessage(error, 'We could not sign you in. Please check your details and try again.'));
     if (signIn.status !== 'complete') return setMessage('This sign-in needs another verification step. Please use a different sign-in method or try again.');
     await signIn.finalize({});
     router.replace('/(tabs)');
