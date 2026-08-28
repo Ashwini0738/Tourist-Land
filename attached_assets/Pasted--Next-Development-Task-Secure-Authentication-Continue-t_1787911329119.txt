@@ -1,0 +1,207 @@
+# Next Development Task — Secure Authentication
+
+Continue the existing Tourism + Land Sourcing mobile application.
+
+Do NOT start payment integration, real hotel booking integration, or live map integrations yet.
+
+Focus only on converting the existing sign-in wireframe into a secure authentication system.
+
+## Goal
+
+Implement the complete authentication flow for the mobile application while keeping the architecture ready for future biometric authentication.
+
+The application must support Android and iOS.
+
+## Authentication Flow
+
+Create this flow:
+
+Splash Screen
+→ Login
+→ Mobile Number / Email
+→ Verification
+→ Create PIN
+→ Confirm PIN
+→ Enable Fingerprint / Face ID
+→ Home
+
+For returning users:
+
+Splash
+→ PIN Login
+→ Biometric Login option
+→ Home
+
+## Login Screen
+
+Create a polished mobile UI containing:
+
+* App logo/name
+* Welcome message
+* Mobile/email input
+* Continue button
+* Validation messages
+* Loading state
+* Error state
+
+## PIN Setup
+
+Create:
+
+* Enter PIN
+* Confirm PIN
+* PIN mismatch validation
+* Secure PIN handling
+* Change PIN flow
+
+Do not store the PIN in plaintext.
+
+## Biometric Authentication
+
+Prepare the app for:
+
+* Fingerprint on Android
+* Face unlock/Face ID where supported on iOS
+* Device biometric availability detection
+* User permission/consent
+* Biometric success
+* Biometric failure
+* Fallback to PIN
+
+Never store biometric information.
+
+The app should use the device biometric system to unlock a securely stored authentication credential/token.
+
+## Session Management
+
+Implement:
+
+* Login session
+* Secure token storage
+* Session restoration
+* Logout
+* Session expiry
+* Refresh token/session handling
+* Unauthorized API response handling
+
+Use secure device storage for sensitive authentication credentials.
+
+Do NOT use AsyncStorage for tokens, PINs, passwords, or other sensitive credentials.
+
+## Backend
+
+Create authentication APIs:
+
+POST /api/v1/auth/login
+POST /api/v1/auth/verify
+POST /api/v1/auth/setup-pin
+POST /api/v1/auth/login-pin
+POST /api/v1/auth/refresh
+POST /api/v1/auth/logout
+POST /api/v1/auth/change-pin
+
+Protect authenticated APIs using authentication middleware.
+
+## User Database
+
+Make sure the users table supports:
+
+* id
+* name
+* email
+* mobile
+* role
+* status
+* created_at
+* updated_at
+
+Do not store plaintext passwords or PINs.
+
+## Navigation Protection
+
+Unauthenticated users must not be able to directly access protected screens.
+
+Authenticated users should automatically enter the main application.
+
+If the session expires, redirect the user to authentication.
+
+## Error Handling
+
+Handle:
+
+* Invalid mobile/email
+* Invalid verification
+* Incorrect PIN
+* PIN mismatch
+* Too many failed attempts
+* Expired session
+* Network error
+* Server error
+* Biometric unavailable
+* Biometric authentication failure
+
+Provide clear user-friendly messages.
+
+Do not expose technical errors or stack traces to the user.
+
+## Security Requirements
+
+Review the implementation for:
+
+* Secure token storage
+* Input validation
+* Authentication middleware
+* Authorization
+* Rate limiting where appropriate
+* No secrets in source code
+* No sensitive information in logs
+* No plaintext PIN/password storage
+
+## Testing
+
+Test these scenarios:
+
+1. New user login
+2. Verification
+3. PIN creation
+4. PIN confirmation
+5. Successful PIN login
+6. Incorrect PIN
+7. Biometric login
+8. Biometric failure → PIN fallback
+9. Logout
+10. Session restoration
+11. Expired session
+12. Unauthorized API request
+13. Network failure
+14. Device without biometric support
+
+## Important
+
+Do not implement real payment gateway integration yet.
+
+Do not implement real hotel booking integration yet.
+
+Do not implement live map services yet.
+
+Create clean service interfaces so those integrations can be added later.
+
+After implementation:
+
+1. Run the application.
+2. Test the complete authentication flow.
+3. Fix TypeScript errors.
+4. Fix navigation errors.
+5. Fix runtime errors.
+6. Confirm Android compatibility.
+7. Confirm iOS-compatible architecture.
+
+Finally provide:
+
+* Files created/modified
+* Authentication flow implemented
+* APIs created
+* Database changes
+* Security measures
+* Tests completed
+* Any remaining configuration required
