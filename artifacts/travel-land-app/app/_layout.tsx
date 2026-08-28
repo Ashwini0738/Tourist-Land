@@ -28,7 +28,10 @@ function RootLayoutNav() {
       <Stack.Screen name="property/[id]" />
       <Stack.Screen name="booking" />
       <Stack.Screen name="notifications" />
-      <Stack.Screen name="profile" />
+      <Stack.Screen name="maps" />
+      <Stack.Screen name="hotels" />
+      <Stack.Screen name="hotel/[id]" />
+      <Stack.Screen name="wallet" />
     </Stack>
   );
 }

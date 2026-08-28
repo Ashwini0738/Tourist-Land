@@ -23,6 +23,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: 'safari', selected: 'safari.fill' }} />
         <Label>Explore</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="bookings">
+        <Icon sf={{ default: 'calendar', selected: 'calendar' }} />
+        <Label>Bookings</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="land">
         <Icon sf={{ default: 'map', selected: 'map.fill' }} />
         <Label>Land</Label>
@@ -30,6 +34,10 @@ function NativeTabLayout() {
       <NativeTabs.Trigger name="saved">
         <Icon sf={{ default: 'heart', selected: 'heart.fill' }} />
         <Label>Saved</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <Icon sf={{ default: 'person', selected: 'person.fill' }} />
+        <Label>Profile</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -93,6 +101,13 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
+        name="bookings"
+        options={{
+          title: 'Bookings',
+          tabBarIcon: ({ color }) => <Feather name="calendar" size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="land"
         options={{
           title: 'Land',
@@ -102,8 +117,14 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="saved"
         options={{
-          title: 'Saved',
-          tabBarIcon: ({ color }) => <Feather name="heart" size={22} color={color} />,
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <Feather name="user" size={22} color={color} />,
         }}
       />
     </Tabs>

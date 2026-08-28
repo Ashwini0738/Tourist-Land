@@ -1,0 +1,212 @@
+# Tourism + Land Sourcing App — UX Flow & Wireframe Implementation
+
+Continue development of the existing project.
+
+Do not recreate the project from scratch.
+
+Create the complete mobile UX structure and low-fidelity wireframe implementation for the MVP.
+
+The application must feel like a modern tourism/travel application while also providing a clearly separated Land Sourcing experience.
+
+## Primary Navigation
+
+Use a mobile bottom navigation structure:
+
+* Home
+* Explore
+* Bookings
+* Land
+* Profile
+
+Add access to:
+
+* Notifications
+* Favorites
+* Wallet
+
+## Authentication Flow
+
+Create:
+
+Splash
+→ Login
+→ PIN Login
+→ Biometric Login
+→ Home
+
+First-time user:
+
+Splash
+→ Login
+→ Mobile/Email verification
+→ Create PIN
+→ Enable Fingerprint/Face ID
+→ Home
+
+Provide fallback PIN authentication when biometrics are unavailable.
+
+## Home Flow
+
+Home should contain:
+
+* Current location
+* Search
+* Promotional banner
+* Popular destinations
+* Featured destinations
+* Events
+* Offers
+* Nearby attractions
+* Hotels
+* Quick actions
+
+Quick actions:
+
+* Explore
+* Hotels
+* Bookings
+* Maps
+* Land Sourcing
+
+## Explore Flow
+
+Explore:
+
+Search
+→ Search results
+→ Categories
+→ Filters
+→ Sorting
+→ Result details
+
+Categories:
+
+* Destinations
+* Temples
+* Attractions
+* Events
+* Food
+* Hotels
+* Properties
+
+## Destination Flow
+
+Explore
+→ Destination
+→ Destination Details
+
+Destination details:
+
+* Cover image
+* Description
+* Gallery
+* Places
+* Temples
+* Events
+* Food
+* Nearby attractions
+* Map
+* Hotels nearby
+* Favorite
+* Reviews
+
+## Hotel Flow
+
+Hotels
+→ Hotel Listing
+→ Hotel Details
+→ Room Selection
+→ Date Selection
+→ Availability
+→ Guest Details
+→ Booking Summary
+→ Payment
+→ Confirmation
+
+## Booking Flow
+
+Booking:
+
+Select item
+→ Guest information
+→ Date/time
+→ Price breakdown
+→ Apply offer
+→ Payment
+→ Confirmation
+
+My Bookings:
+
+Upcoming
+Past
+Cancelled
+
+## Land Sourcing Flow
+
+Land
+→ Property Search
+→ Filters
+→ Property Listing
+→ Property Details
+→ Map
+→ Enquiry
+→ Owner/Agent Contact
+
+Property filters:
+
+* Location
+* Property type
+* Price range
+* Area
+* Purpose
+* Availability
+
+## Maps Flow
+
+Maps should support:
+
+* Current location
+* Destination markers
+* Hotels
+* Attractions
+* Events
+* Properties
+* Nearby places
+
+## Profile Flow
+
+Profile:
+
+* Personal information
+* Security
+* PIN
+* Biometrics
+* Bookings
+* Favorites
+* Wallet
+* Reviews
+* Notifications
+* Help
+* Logout
+
+## UI Requirements
+
+Create mobile-first wireframes with:
+
+* Clear hierarchy
+* Large touch targets
+* Consistent spacing
+* Accessible typography
+* Loading states
+* Empty states
+* Error states
+* Skeleton states
+* Confirmation states
+
+Do not focus on visual polish yet.
+
+Focus on correct navigation and user journeys.
+
+Make sure every major screen can be reached without dead-end navigation.
+
+At the end, test every navigation path and fix broken routes.
