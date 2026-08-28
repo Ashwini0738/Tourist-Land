@@ -1,1 +1,1 @@
-- [Authentication authority](authentication-authority.md) — Clerk owns sessions; PIN and biometrics only unlock an existing managed session and must never become a second auth system.
+- [Authentication authority](authentication-authority.md) — Clerk owns sessions; local unlock is secondary, and security initialization must key off user identity rather than hook function identity.
