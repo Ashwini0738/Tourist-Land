@@ -1,22 +1,20 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Travel and land sourcing REST API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: discovery
+  - name: properties
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
-      summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +22,179 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /v1/home:
+    get:
+      operationId: getHome
+      tags: [discovery]
+      responses:
+        "200":
+          description: Home discovery feed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  featuredDestinations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Destination"
+                  featuredProperties:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Property"
+                required: [featuredDestinations, featuredProperties]
+  /v1/destinations:
+    get:
+      operationId: listDestinations
+      tags: [discovery]
+      responses:
+        "200":
+          description: Destination list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Destination"
+                required: [items]
+  /v1/destinations/{id}:
+    get:
+      operationId: getDestination
+      tags: [discovery]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Destination detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Destination"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/properties:
+    get:
+      operationId: listProperties
+      tags: [properties]
+      responses:
+        "200":
+          description: Property list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Property"
+                required: [items]
+  /v1/properties/{id}:
+    get:
+      operationId: getProperty
+      tags: [properties]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Property detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/properties/{id}/enquiries:
+    post:
+      operationId: createPropertyEnquiry
+      tags: [properties]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PropertyEnquiryInput"
+      responses:
+        "202":
+          description: Enquiry accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PropertyEnquiryReceipt"
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
   schemas:
     HealthStatus:
       type: object
       properties:
         status:
           type: string
-      required:
-        - status
-
+      required: [status]
+    Destination:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        name: { type: string }
+        region: { type: string }
+        country: { type: string }
+        summary: { type: string }
+        imageKey: { type: string }
+      required: [id, slug, name, region, country, summary, imageKey]
+    Property:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        location: { type: string }
+        area: { type: string }
+        askingPrice: { type: string }
+        propertyType: { type: string }
+        verified: { type: boolean }
+      required: [id, slug, title, location, area, askingPrice, propertyType, verified]
+    PropertyEnquiryInput:
+      type: object
+      properties:
+        message: { type: string, maxLength: 2000 }
+        preferredContactMethod:
+          type: string
+          enum: [email, phone]
+      required: [message, preferredContactMethod]
+    PropertyEnquiryReceipt:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string }
+        message: { type: string }
+      required: [id, status, message]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+          required: [code, message]
+      required: [error]

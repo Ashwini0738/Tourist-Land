@@ -5,7 +5,9 @@
  * Travel and land sourcing REST API
  * OpenAPI spec version: 0.1.0
  */
+import type { ErrorResponse } from './errorResponse';
 
-export interface HealthStatus {
-  status: string;
-}
+/**
+ * Resource not found
+ */
+export type NotFoundResponse = ErrorResponse;

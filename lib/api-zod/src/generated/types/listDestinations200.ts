@@ -5,7 +5,8 @@
  * Travel and land sourcing REST API
  * OpenAPI spec version: 0.1.0
  */
+import type { Destination } from './destination';
 
-export interface HealthStatus {
-  status: string;
-}
+export type ListDestinations200 = {
+  items: Destination[];
+};

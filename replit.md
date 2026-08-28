@@ -1,6 +1,6 @@
-# [Project name]
+# Travel & Land
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A cross-platform travel discovery, booking, and verified land-sourcing application.
 
 ## Run & Operate
 
@@ -22,15 +22,24 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- Mobile app: `artifacts/travel-land-app`
+- API server: `artifacts/api-server`
+- API source of truth: `lib/api-spec/openapi.yaml`
+- Database schema: `lib/db/src/schema/platform.ts`
+- Mobile theme: `artifacts/travel-land-app/constants/colors.ts`
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The mobile app keeps development favorites in AsyncStorage while server-backed account persistence is not yet configured.
+- External payment, maps, notification, and identity providers stay behind explicit service boundaries; no fake production integration is presented as live.
+- OpenAPI remains the source of truth for every REST endpoint before client/server implementation.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Discover destinations and stays
+- Search and save places locally
+- Browse verified land opportunities
+- Enter booking and property-enquiry flows
 
 ## User preferences
 

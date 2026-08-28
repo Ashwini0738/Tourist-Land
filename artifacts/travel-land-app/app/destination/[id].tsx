@@ -22,7 +22,6 @@ const styles = StyleSheet.create({
   heroImage: { ...StyleSheet.absoluteFillObject, width: undefined, height: undefined },
   heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(17, 35, 27, 0.32)' },
   back: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  back: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   heroCopy: { position: 'absolute', bottom: 30, left: 20, right: 20 },
   country: { color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '700', letterSpacing: 1.5 },
   heroTitle: { color: '#fff', fontSize: 37, lineHeight: 42, fontWeight: '700', letterSpacing: -1 },
