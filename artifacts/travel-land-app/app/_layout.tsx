@@ -11,16 +11,16 @@ import {
   Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
-import { Redirect, Stack, useSegments } from 'expo-router';
-import { useAuth } from '@clerk/expo';
+import { Redirect, Stack, useRouter, useSegments } from 'expo-router';
+import { useAuth, useClerk } from '@clerk/expo';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
 import * as SplashScreen from 'expo-splash-screen';
 import { AppStateProvider } from '@/context/AppStateContext';
 import { AuthSecurityProvider } from '@/context/AuthSecurityContext';
 import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
-import { setBaseUrl } from '@workspace/api-client-react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { setAuthTokenGetter, setBaseUrl, setUnauthorizedHandler } from '@workspace/api-client-react';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -33,24 +33,42 @@ const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 function RootLayoutNav() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { signOut } = useClerk();
+  const router = useRouter();
   const { isReady, isUnlocked, hasPin, biometricsEnabled } = useAuthSecurity();
   const colors = useColors();
   const segments = useSegments();
   const route = segments[0];
-  if (!isLoaded) {
+  const publicRoutes = ['splash', 'login', 'verify'];
+  useEffect(() => {
+    setAuthTokenGetter(Platform.OS === 'web' ? null : () => getToken());
+    setUnauthorizedHandler(async () => {
+      await signOut();
+      router.replace('/login');
+    });
+    return () => {
+      setAuthTokenGetter(null);
+      setUnauthorizedHandler(null);
+    };
+  }, [getToken, router, signOut]);
+  if (!isLoaded && !publicRoutes.includes(route ?? '')) {
     return <View style={[styles.authLoading, { backgroundColor: colors.background }]}>
       <ActivityIndicator color={colors.primary} />
       <Text style={[styles.authLoadingText, { color: colors.mutedForeground }]}>Securing your journey…</Text>
     </View>;
   }
-  const publicRoutes = ['splash', 'login', 'verify'];
+  if (!isLoaded) return renderRoutes();
   if (!isSignedIn && route && !publicRoutes.includes(route)) return <Redirect href="/login" />;
   if (isSignedIn && !isReady) return null;
   if (isSignedIn && isReady && !isUnlocked && route && !['create-pin', 'pin-login', 'biometric', 'biometric-login'].includes(route)) {
     if (!hasPin) return <Redirect href="/create-pin" />;
     return <Redirect href={biometricsEnabled ? '/biometric-login' : '/pin-login'} />;
   }
+  return renderRoutes();
+}
+
+function renderRoutes() {
   return (
     <Stack screenOptions={{ headerBackTitle: 'Back', headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

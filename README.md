@@ -37,11 +37,13 @@ pnpm --filter @workspace/db run push
 
 The first build provides a working discovery UI, search, destination and property detail routes, notifications, profile/navigation shells, and locally persisted favorites. The API currently exposes development catalog adapters for home, destinations, properties, and property enquiries.
 
-Payments, live room inventory, maps, notification delivery, and production authentication are intentionally represented by service boundaries rather than fake integrations. Add those providers only after their accounts and secrets are configured.
+Payments, live room inventory, maps, and notification delivery are intentionally represented by service boundaries rather than fake integrations. Add those providers only after their accounts and secrets are configured.
 
 ## Security and authentication
 
-No secrets are committed. Use Replit Secrets for `SESSION_SECRET`, `DATABASE_URL`, and future provider credentials. The `authentication_sessions` table is provider-neutral so a managed identity provider can be connected without implementing password storage locally.
+No secrets are committed. Authentication uses Replit-managed Clerk for account verification and session lifecycle. Mobile session material is stored through Clerk's SecureStore-backed token cache; app PINs are salted and hashed server-side with scrypt, throttled after repeated failures, and never stored on-device. Fingerprint and Face ID use the operating system's biometric prompt only—no biometric information is stored by the app.
+
+Protected mobile routes require both a valid Clerk session and successful local PIN or biometric unlock. Protected API routes validate Clerk authentication and return a clean `401` response when a session is missing or expired.
 
 ## Database domains
 

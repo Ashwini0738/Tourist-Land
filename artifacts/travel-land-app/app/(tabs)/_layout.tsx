@@ -7,8 +7,6 @@ import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs } from 'expo-router';
 import { Redirect } from 'expo-router';
 import { useAuth } from '@clerk/expo';
-import { setAuthTokenGetter } from '@workspace/api-client-react';
-import { useEffect } from 'react';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import { SymbolView } from 'expo-symbols';
@@ -133,9 +131,8 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  const { isSignedIn, getToken } = useAuth();
+  const { isSignedIn } = useAuth();
   const { isReady, isUnlocked } = useAuthSecurity();
-  useEffect(() => { setAuthTokenGetter(() => getToken()); }, [getToken]);
   if (!isSignedIn) return <Redirect href="/login" />;
   if (!isReady) return null;
   if (!isUnlocked) return <Redirect href="/pin-login" />;

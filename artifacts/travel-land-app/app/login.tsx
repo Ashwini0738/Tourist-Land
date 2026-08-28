@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { useSignIn, useSignUp } from '@clerk/expo';
+import { useAuth, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -11,8 +11,9 @@ export default function LoginScreen() {
   const colors = useColors(); const insets = useSafeAreaInsets();
   const { signIn, fetchStatus: signInStatus } = useSignIn();
   const { signUp, fetchStatus: signUpStatus } = useSignUp();
+  const { isLoaded } = useAuth();
   const [isNew, setNew] = useState(false); const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [message, setMessage] = useState('');
-  const loading = signInStatus === 'fetching' || signUpStatus === 'fetching';
+  const loading = !isLoaded || signInStatus === 'fetching' || signUpStatus === 'fetching';
   const submit = async () => {
     setMessage('');
     if (isNew) {
