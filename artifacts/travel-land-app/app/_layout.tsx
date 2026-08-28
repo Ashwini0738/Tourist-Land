@@ -21,6 +21,7 @@ import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl, setUnauthorizedHandler } from '@workspace/api-client-react';
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -41,6 +42,7 @@ function RootLayoutNav() {
   const segments = useSegments();
   const route = segments[0];
   const publicRoutes = ['splash', 'login', 'verify'];
+  const lockedSessionRoutes = ['verify', 'create-pin', 'pin-login', 'biometric', 'biometric-login'];
   useEffect(() => {
     setAuthTokenGetter(Platform.OS === 'web' ? null : () => getToken());
     setUnauthorizedHandler(async () => {
@@ -60,8 +62,13 @@ function RootLayoutNav() {
   }
   if (!isLoaded) return renderRoutes();
   if (!isSignedIn && route && !publicRoutes.includes(route)) return <Redirect href="/login" />;
-  if (isSignedIn && !isReady) return null;
-  if (isSignedIn && isReady && !isUnlocked && route && !['create-pin', 'pin-login', 'biometric', 'biometric-login'].includes(route)) {
+  if (isSignedIn && !isReady) {
+    return <View style={[styles.authLoading, { backgroundColor: colors.background }]}>
+      <ActivityIndicator color={colors.primary} />
+      <Text style={[styles.authLoadingText, { color: colors.mutedForeground }]}>Preparing your secure account…</Text>
+    </View>;
+  }
+  if (isSignedIn && isReady && !isUnlocked && route && !lockedSessionRoutes.includes(route)) {
     if (!hasPin) return <Redirect href="/create-pin" />;
     return <Redirect href={biometricsEnabled ? '/biometric-login' : '/pin-login'} />;
   }
@@ -71,6 +78,13 @@ function RootLayoutNav() {
 function renderRoutes() {
   return (
     <Stack screenOptions={{ headerBackTitle: 'Back', headerShown: false }}>
+      <Stack.Screen name="splash" />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="verify" />
+      <Stack.Screen name="create-pin" />
+      <Stack.Screen name="pin-login" />
+      <Stack.Screen name="biometric" />
+      <Stack.Screen name="biometric-login" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="destination/[id]" />
       <Stack.Screen name="property/[id]" />
@@ -87,6 +101,8 @@ function renderRoutes() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
+    ...Feather.font,
+    ...MaterialCommunityIcons.font,
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
