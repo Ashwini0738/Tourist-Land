@@ -1,26 +1,13 @@
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuthSecurity } from '@/context/AuthSecurityContext';
 import { useColors } from '@/hooks/useColors';
-
 export default function CreatePinScreen() {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
-  const [pin, setPin] = React.useState('');
-  const [confirm, setConfirm] = React.useState('');
-  const ready = pin.length === 4 && confirm.length === 4 && pin === confirm;
-  return <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 16, paddingBottom: insets.bottom }]}><Pressable onPress={() => router.back()}><Feather name="arrow-left" size={21} color={colors.foreground} /></Pressable><View style={styles.body}><Text style={[styles.kicker, { color: colors.primary }]}>KEEP IT PERSONAL</Text><Text style={[styles.title, { color: colors.foreground }]}>Create a 4-digit PIN.</Text><Text style={[styles.subtitle, { color: colors.mutedForeground }]}>You’ll use this as a quick fallback when Face ID or fingerprint isn’t available.</Text><TextInput testID="pin-input" value={pin} onChangeText={setPin} keyboardType="number-pad" maxLength={4} secureTextEntry placeholder="PIN" placeholderTextColor={colors.mutedForeground} style={[styles.pin, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} /><TextInput testID="pin-confirm-input" value={confirm} onChangeText={setConfirm} keyboardType="number-pad" maxLength={4} secureTextEntry placeholder="Confirm PIN" placeholderTextColor={colors.mutedForeground} style={[styles.pin, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} /><Pressable disabled={!ready} onPress={() => router.push('/biometric')} style={[styles.button, { backgroundColor: ready ? colors.primary : colors.muted }]}><Text style={[styles.buttonText, { color: ready ? colors.primaryForeground : colors.mutedForeground }]}>Create PIN</Text><Feather name="arrow-right" size={17} color={ready ? colors.primaryForeground : colors.mutedForeground} /></Pressable></View></View>;
+ const colors=useColors(),insets=useSafeAreaInsets();const {callPinEndpoint,setPinConfigured,unlock}=useAuthSecurity();const[pin,setPin]=useState('');const[confirm,setConfirm]=useState('');const[message,setMessage]=useState('');const[loading,setLoading]=useState(false);const ready=pin.length===4&&confirm.length===4&&pin===confirm;
+ const save=async()=>{setLoading(true);setMessage('');if(pin!==confirm){setLoading(false);return setMessage('Those PINs do not match. Please try again.');}const result=await callPinEndpoint('/api/v1/auth/setup-pin',{pin});setLoading(false);if(!result.ok)return setMessage(result.message||'We could not create your PIN.');await setPinConfigured(true);await unlock();router.replace('/biometric');};
+ return <View style={[s.container,{backgroundColor:colors.background,paddingTop:insets.top+16}]}><Pressable onPress={()=>router.back()}><Feather name="arrow-left" size={21} color={colors.foreground}/></Pressable><View style={s.body}><Text style={[s.kicker,{color:colors.primary}]}>KEEP IT PERSONAL</Text><Text style={[s.title,{color:colors.foreground}]}>Create a 4-digit PIN.</Text><Text style={[s.subtitle,{color:colors.mutedForeground}]}>Your PIN is verified by your account service and is never stored on this device.</Text><TextInput testID="pin-input" value={pin} onChangeText={setPin} keyboardType="number-pad" maxLength={4} secureTextEntry placeholder="PIN" placeholderTextColor={colors.mutedForeground} style={[s.pin,{color:colors.foreground,borderColor:colors.input,backgroundColor:colors.card}]}/><TextInput testID="pin-confirm-input" value={confirm} onChangeText={setConfirm} keyboardType="number-pad" maxLength={4} secureTextEntry placeholder="Confirm PIN" placeholderTextColor={colors.mutedForeground} style={[s.pin,{color:colors.foreground,borderColor:colors.input,backgroundColor:colors.card}]}/>{!!message&&<Text style={[s.error,{color:colors.destructive}]}>{message}</Text>}<Pressable disabled={!ready||loading} onPress={save} style={[s.button,{backgroundColor:ready?colors.primary:colors.muted}]}>{loading?<ActivityIndicator color={colors.primaryForeground}/>:<Text style={[s.buttonText,{color:colors.primaryForeground}]}>Create PIN</Text>}</Pressable></View></View>;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 22 },
-  body: { marginTop: 104 },
-  kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 9 },
-  title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
-  subtitle: { fontSize: 14, lineHeight: 21, marginTop: 11 },
-  pin: { height: 54, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, fontSize: 16, marginTop: 20 },
-  button: { height: 54, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 13 },
-  buttonText: { fontSize: 14, fontWeight: '700' },
-});
+const s=StyleSheet.create({container:{flex:1,paddingHorizontal:22},body:{marginTop:104},kicker:{fontSize:11,fontWeight:'700',letterSpacing:1.5,marginBottom:9},title:{fontSize:30,fontWeight:'700'},subtitle:{fontSize:14,lineHeight:21,marginTop:11},pin:{height:54,borderWidth:1,borderRadius:16,paddingHorizontal:16,fontSize:16,marginTop:20},error:{fontSize:13,marginTop:10},button:{height:54,borderRadius:16,alignItems:'center',justifyContent:'center',marginTop:13},buttonText:{fontSize:14,fontWeight:'700'}});

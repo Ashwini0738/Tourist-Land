@@ -11,16 +11,46 @@ import {
   Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
-import { Stack } from 'expo-router';
+import { Redirect, Stack, useSegments } from 'expo-router';
+import { useAuth } from '@clerk/expo';
+import { useAuthSecurity } from '@/context/AuthSecurityContext';
 import * as SplashScreen from 'expo-splash-screen';
 import { AppStateProvider } from '@/context/AppStateContext';
+import { AuthSecurityProvider } from '@/context/AuthSecurityContext';
+import { ClerkProvider } from '@clerk/expo';
+import { tokenCache } from '@clerk/expo/token-cache';
+import { setBaseUrl } from '@workspace/api-client-react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useColors } from '@/hooks/useColors';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+const domain = process.env.EXPO_PUBLIC_DOMAIN;
+if (domain) setBaseUrl(`https://${domain}`);
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 function RootLayoutNav() {
+  const { isLoaded, isSignedIn } = useAuth();
+  const { isReady, isUnlocked, hasPin, biometricsEnabled } = useAuthSecurity();
+  const colors = useColors();
+  const segments = useSegments();
+  const route = segments[0];
+  if (!isLoaded) {
+    return <View style={[styles.authLoading, { backgroundColor: colors.background }]}>
+      <ActivityIndicator color={colors.primary} />
+      <Text style={[styles.authLoadingText, { color: colors.mutedForeground }]}>Securing your journey…</Text>
+    </View>;
+  }
+  const publicRoutes = ['splash', 'login', 'verify'];
+  if (!isSignedIn && route && !publicRoutes.includes(route)) return <Redirect href="/login" />;
+  if (isSignedIn && !isReady) return null;
+  if (isSignedIn && isReady && !isUnlocked && route && !['create-pin', 'pin-login', 'biometric', 'biometric-login'].includes(route)) {
+    if (!hasPin) return <Redirect href="/create-pin" />;
+    return <Redirect href={biometricsEnabled ? '/biometric-login' : '/pin-login'} />;
+  }
   return (
     <Stack screenOptions={{ headerBackTitle: 'Back', headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -32,6 +62,7 @@ function RootLayoutNav() {
       <Stack.Screen name="hotels" />
       <Stack.Screen name="hotel/[id]" />
       <Stack.Screen name="wallet" />
+      <Stack.Screen name="change-pin" />
     </Stack>
   );
 }
@@ -53,9 +84,10 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
+    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
     <SafeAreaProvider>
       <ErrorBoundary>
-        <AppStateProvider>
+        <AuthSecurityProvider><AppStateProvider>
           <QueryClientProvider client={queryClient}>
             <GestureHandlerRootView>
               <KeyboardProvider>
@@ -63,8 +95,14 @@ export default function RootLayout() {
               </KeyboardProvider>
             </GestureHandlerRootView>
           </QueryClientProvider>
-        </AppStateProvider>
+        </AppStateProvider></AuthSecurityProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
+    </ClerkProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  authLoading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  authLoadingText: { fontSize: 13, fontWeight: '600' },
+});

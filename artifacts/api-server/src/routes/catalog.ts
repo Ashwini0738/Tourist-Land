@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const catalogRouter: IRouter = Router();
 
@@ -69,7 +70,7 @@ catalogRouter.get("/v1/properties/:id", (req, res) => {
   res.json(property);
 });
 
-catalogRouter.post("/v1/properties/:id/enquiries", (req, res) => {
+catalogRouter.post("/v1/properties/:id/enquiries", requireAuth, (req, res) => {
   const property = properties.find((item) => item.id === req.params.id);
   if (!property) {
     res.status(404).json({ error: { code: "NOT_FOUND", message: "Property not found" } });

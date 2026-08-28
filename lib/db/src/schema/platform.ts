@@ -18,11 +18,21 @@ const timestamps = {
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
+  clerkUserId: text("clerk_user_id").notNull().unique(),
   email: text("email").notNull().unique(),
   displayName: text("display_name"),
   phone: text("phone"),
   avatarUrl: text("avatar_url"),
   status: text("status").default("active").notNull(),
+  ...timestamps,
+});
+
+/** Local PIN verifier only; Clerk remains the sole session authority. */
+export const userPinCredentials = pgTable("user_pin_credentials", {
+  userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  pinHash: text("pin_hash").notNull(),
+  failedAttempts: integer("failed_attempts").default(0).notNull(),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
   ...timestamps,
 });
 

@@ -59,10 +59,104 @@ export interface ErrorResponse {
   error: ErrorResponseError;
 }
 
+export interface PinInput {
+  /** @pattern ^[0-9]{4,6}$ */
+  pin: string;
+}
+
+export interface ChangePinInput {
+  /** @pattern ^[0-9]{4,6}$ */
+  currentPin: string;
+  /** @pattern ^[0-9]{4,6}$ */
+  newPin: string;
+}
+
+export type AuthSessionStatusSessionAuthority = typeof AuthSessionStatusSessionAuthority[keyof typeof AuthSessionStatusSessionAuthority];
+
+
+export const AuthSessionStatusSessionAuthority = {
+  clerk: 'clerk',
+} as const;
+
+export interface AuthSessionStatus {
+  authenticated: boolean;
+  clerkUserId: string;
+  /** @nullable */
+  sessionId: string | null;
+  pinConfigured: boolean;
+  sessionAuthority: AuthSessionStatusSessionAuthority;
+}
+
+export interface PinConfigured {
+  pinConfigured: boolean;
+  message: string;
+}
+
+export type PinVerificationSessionAuthority = typeof PinVerificationSessionAuthority[keyof typeof PinVerificationSessionAuthority];
+
+
+export const PinVerificationSessionAuthority = {
+  clerk: 'clerk',
+} as const;
+
+export interface PinVerification {
+  verified: boolean;
+  sessionAuthority: PinVerificationSessionAuthority;
+  message: string;
+}
+
+export type RefreshStatusSessionAuthority = typeof RefreshStatusSessionAuthority[keyof typeof RefreshStatusSessionAuthority];
+
+
+export const RefreshStatusSessionAuthority = {
+  clerk: 'clerk',
+} as const;
+
+export interface RefreshStatus {
+  authenticated: boolean;
+  /** @nullable */
+  sessionId: string | null;
+  sessionAuthority: RefreshStatusSessionAuthority;
+  message: string;
+}
+
+export type LogoutStatusSessionAuthority = typeof LogoutStatusSessionAuthority[keyof typeof LogoutStatusSessionAuthority];
+
+
+export const LogoutStatusSessionAuthority = {
+  clerk: 'clerk',
+} as const;
+
+export interface LogoutStatus {
+  authenticated: boolean;
+  sessionAuthority: LogoutStatusSessionAuthority;
+  message: string;
+}
+
 /**
  * Resource not found
  */
 export type NotFoundResponse = ErrorResponse;
+
+/**
+ * Clerk session is missing or invalid
+ */
+export type UnauthenticatedResponse = ErrorResponse;
+
+/**
+ * Request body is invalid
+ */
+export type InvalidInputResponse = ErrorResponse;
+
+/**
+ * Request conflicts with current PIN state
+ */
+export type ConflictResponse = ErrorResponse;
+
+/**
+ * PIN verification temporarily locked
+ */
+export type RateLimitedResponse = ErrorResponse;
 
 export type GetHome200 = {
   featuredDestinations: Destination[];

@@ -1,24 +1,4 @@
-import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useColors } from '@/hooks/useColors';
-
-export default function BiometricLoginScreen() {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
-  return <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 16, paddingBottom: insets.bottom }]}><Pressable onPress={() => router.back()}><Feather name="arrow-left" size={21} color={colors.foreground} /></Pressable><View style={styles.body}><View style={[styles.icon, { backgroundColor: colors.secondary }]}><Feather name="eye" size={31} color={colors.primary} /></View><Text style={[styles.title, { color: colors.foreground }]}>Look familiar?</Text><Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Biometric sign-in will connect here when device authentication is enabled.</Text><Pressable onPress={() => router.replace('/(tabs)')} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Continue with biometrics</Text></Pressable><Pressable onPress={() => router.replace('/pin-login')} style={styles.secondary}><Text style={[styles.secondaryText, { color: colors.primary }]}>Use PIN instead</Text></Pressable></View></View>;
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 22 },
-  body: { marginTop: 105 },
-  icon: { width: 70, height: 70, borderRadius: 35, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
-  title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
-  subtitle: { fontSize: 14, lineHeight: 21, marginTop: 11 },
-  button: { height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 28 },
-  buttonText: { fontSize: 14, fontWeight: '700' },
-  secondary: { alignItems: 'center', marginTop: 19 },
-  secondaryText: { fontSize: 13, fontWeight: '700' },
-});
+import * as LocalAuthentication from 'expo-local-authentication';
+import {router} from 'expo-router';import React,{useEffect,useState}from 'react';import {ActivityIndicator,Platform,Pressable,StyleSheet,Text,View}from 'react-native';import {useSafeAreaInsets}from 'react-native-safe-area-context';import {useAuthSecurity}from '@/context/AuthSecurityContext';import {useColors}from '@/hooks/useColors';
+export default function BiometricLoginScreen(){const colors=useColors(),insets=useSafeAreaInsets();const{unlock}=useAuthSecurity();const[loading,setLoading]=useState(false);const[message,setMessage]=useState('');const authenticate=async()=>{if(Platform.OS==='web')return setMessage('Use your PIN to unlock on the web.');setLoading(true);const r=await LocalAuthentication.authenticateAsync({promptMessage:'Unlock Travel & Land',fallbackLabel:'Use PIN'});setLoading(false);if(!r.success)return setMessage('We could not confirm your identity. Please use your PIN.');await unlock();router.replace('/(tabs)');};useEffect(()=>{authenticate();},[]);return <View style={[s.container,{backgroundColor:colors.background,paddingTop:insets.top+16}]}><View style={s.body}><Text style={[s.title,{color:colors.foreground}]}>Confirm it’s you.</Text><Text style={[s.subtitle,{color:colors.mutedForeground}]}>Use your device’s enrolled biometric to unlock Travel & Land.</Text>{loading&&<ActivityIndicator style={s.loader} color={colors.primary}/>} {!!message&&<Text style={[s.message,{color:colors.destructive}]}>{message}</Text>}<Pressable onPress={authenticate} style={[s.button,{backgroundColor:colors.primary}]}><Text style={[s.buttonText,{color:colors.primaryForeground}]}>Try biometrics again</Text></Pressable><Pressable onPress={()=>router.replace('/pin-login')}><Text style={[s.alt,{color:colors.primary}]}>Use PIN instead</Text></Pressable></View></View>;}
+const s=StyleSheet.create({container:{flex:1,paddingHorizontal:22},body:{marginTop:105},title:{fontSize:30,fontWeight:'700'},subtitle:{fontSize:14,lineHeight:21,marginTop:11},loader:{marginTop:28},message:{fontSize:13,marginTop:18},button:{height:54,borderRadius:16,alignItems:'center',justifyContent:'center',marginTop:28},buttonText:{fontSize:14,fontWeight:'700'},alt:{textAlign:'center',fontSize:13,fontWeight:'700',marginTop:19}});

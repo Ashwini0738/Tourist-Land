@@ -1,24 +1,9 @@
 import { Feather } from '@expo/vector-icons';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { router } from 'expo-router';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useColors } from '@/hooks/useColors';
-
-export default function BiometricScreen() {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
-  return <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 16, paddingBottom: insets.bottom }]}><Pressable onPress={() => router.back()}><Feather name="arrow-left" size={21} color={colors.foreground} /></Pressable><View style={styles.body}><View style={[styles.bioIcon, { backgroundColor: colors.secondary }]}><Feather name="eye" size={28} color={colors.primary} /></View><Text style={[styles.title, { color: colors.foreground }]}>Make coming back easy.</Text><Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Use Face ID or fingerprint to sign in securely. You can always use your PIN instead.</Text><Pressable onPress={() => router.replace('/(tabs)')} style={[styles.button, { backgroundColor: colors.primary }]}><Feather name="shield" size={17} color={colors.primaryForeground} /><Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Enable biometrics</Text></Pressable><Pressable onPress={() => router.replace('/(tabs)')} style={styles.secondary}><Text style={[styles.secondaryText, { color: colors.primary }]}>Use PIN instead</Text></Pressable></View></View>;
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 22 },
-  body: { marginTop: 105 },
-  bioIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
-  title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
-  subtitle: { fontSize: 14, lineHeight: 21, marginTop: 11 },
-  button: { height: 54, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 28 },
-  buttonText: { fontSize: 14, fontWeight: '700' },
-  secondary: { alignItems: 'center', marginTop: 19 },
-  secondaryText: { fontSize: 13, fontWeight: '700' },
-});
+import React,{useEffect,useState}from 'react';
+import {ActivityIndicator,Platform,Pressable,StyleSheet,Text,View}from 'react-native';
+import {useSafeAreaInsets}from 'react-native-safe-area-context';
+import {useAuthSecurity}from '@/context/AuthSecurityContext';import {useColors}from '@/hooks/useColors';
+export default function BiometricScreen(){const colors=useColors(),insets=useSafeAreaInsets();const{setBiometricsEnabled}=useAuthSecurity();const[available,setAvailable]=useState(false);const[loading,setLoading]=useState(false);const[message,setMessage]=useState('');useEffect(()=>{if(Platform.OS==='web'){setMessage('Biometrics are available in the Travel & Land mobile app.');return;}Promise.all([LocalAuthentication.hasHardwareAsync(),LocalAuthentication.isEnrolledAsync()]).then(([hardware,enrolled])=>{setAvailable(hardware&&enrolled);if(!hardware||!enrolled)setMessage('No enrolled Face ID or fingerprint is available. You can use your PIN instead.');}).catch(()=>setMessage('Biometric availability could not be checked. You can use your PIN instead.'));},[]);const enable=async()=>{setLoading(true);const result=await LocalAuthentication.authenticateAsync({promptMessage:'Enable Travel & Land quick unlock',fallbackLabel:'Use PIN'});setLoading(false);if(!result.success)return setMessage('Biometric confirmation was not completed. Your PIN is still available.');await setBiometricsEnabled(true);router.replace('/(tabs)');};return <View style={[s.container,{backgroundColor:colors.background,paddingTop:insets.top+16}]}><Pressable onPress={()=>router.back()}><Feather name="arrow-left" size={21} color={colors.foreground}/></Pressable><View style={s.body}><Text style={[s.title,{color:colors.foreground}]}>Make coming back easy.</Text><Text style={[s.subtitle,{color:colors.mutedForeground}]}>Use Face ID or fingerprint to unlock securely. You can always use your PIN instead.</Text>{!!message&&<Text style={[s.message,{color:colors.mutedForeground}]}>{message}</Text>}{available&&<Pressable disabled={loading} onPress={enable} style={[s.button,{backgroundColor:colors.primary}]}>{loading?<ActivityIndicator color={colors.primaryForeground}/>:<Text style={[s.buttonText,{color:colors.primaryForeground}]}>Enable biometrics</Text>}</Pressable>}<Pressable onPress={()=>router.replace('/(tabs)')}><Text style={[s.alt,{color:colors.primary}]}>Use PIN instead</Text></Pressable></View></View>;}
+const s=StyleSheet.create({container:{flex:1,paddingHorizontal:22},body:{marginTop:105},title:{fontSize:30,fontWeight:'700'},subtitle:{fontSize:14,lineHeight:21,marginTop:11},message:{fontSize:13,lineHeight:19,marginTop:16},button:{height:54,borderRadius:16,alignItems:'center',justifyContent:'center',marginTop:28},buttonText:{fontSize:14,fontWeight:'700'},alt:{textAlign:'center',fontSize:13,fontWeight:'700',marginTop:19}});

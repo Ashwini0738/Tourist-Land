@@ -20,15 +20,26 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AuthSessionStatus,
+  ChangePinInput,
+  ConflictResponse,
   Destination,
   GetHome200,
   HealthStatus,
+  InvalidInputResponse,
   ListDestinations200,
   ListProperties200,
+  LogoutStatus,
   NotFoundResponse,
+  PinConfigured,
+  PinInput,
+  PinVerification,
   Property,
   PropertyEnquiryInput,
-  PropertyEnquiryReceipt
+  PropertyEnquiryReceipt,
+  RateLimitedResponse,
+  RefreshStatus,
+  UnauthenticatedResponse
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -508,7 +519,7 @@ export const createPropertyEnquiry = async (id: string,
 
 
 
-export const getCreatePropertyEnquiryMutationOptions = <TError = ErrorType<NotFoundResponse>,
+export const getCreatePropertyEnquiryMutationOptions = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPropertyEnquiry>>, TError,{id: string;data: BodyType<PropertyEnquiryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createPropertyEnquiry>>, TError,{id: string;data: BodyType<PropertyEnquiryInput>}, TContext> => {
 
@@ -537,9 +548,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreatePropertyEnquiryMutationResult = NonNullable<Awaited<ReturnType<typeof createPropertyEnquiry>>>
     export type CreatePropertyEnquiryMutationBody = BodyType<PropertyEnquiryInput>
-    export type CreatePropertyEnquiryMutationError = ErrorType<NotFoundResponse>
+    export type CreatePropertyEnquiryMutationError = ErrorType<UnauthenticatedResponse | NotFoundResponse>
 
-    export const useCreatePropertyEnquiry = <TError = ErrorType<NotFoundResponse>,
+    export const useCreatePropertyEnquiry = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPropertyEnquiry>>, TError,{id: string;data: BodyType<PropertyEnquiryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createPropertyEnquiry>>,
@@ -548,5 +559,425 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreatePropertyEnquiryMutationOptions(options));
+    }
+
+export const getGetAuthSessionUrl = () => {
+
+
+
+
+  return `/api/v1/auth/session`
+}
+
+/**
+ * @summary Get Clerk-backed session and local PIN configuration status
+ */
+export const getAuthSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<AuthSessionStatus> => {
+
+  return customFetch<AuthSessionStatus>(getGetAuthSessionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAuthSessionQueryKey = () => {
+    return [
+    `/api/v1/auth/session`
+    ] as const;
+    }
+
+
+export const getGetAuthSessionQueryOptions = <TData = Awaited<ReturnType<typeof getAuthSession>>, TError = ErrorType<UnauthenticatedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAuthSessionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAuthSession>>> = ({ signal }) => getAuthSession({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAuthSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthSession>>>
+export type GetAuthSessionQueryError = ErrorType<UnauthenticatedResponse>
+
+
+/**
+ * @summary Get Clerk-backed session and local PIN configuration status
+ */
+
+export function useGetAuthSession<TData = Awaited<ReturnType<typeof getAuthSession>>, TError = ErrorType<UnauthenticatedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAuthSessionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetupPinUrl = () => {
+
+
+
+
+  return `/api/v1/auth/setup-pin`
+}
+
+export const setupPin = async (pinInput: PinInput, options?: Parameters<typeof customFetch>[1]): Promise<PinConfigured> => {
+
+  return customFetch<PinConfigured>(getSetupPinUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pinInput)
+  }
+);}
+
+
+
+
+
+export const getSetupPinMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setupPin>>, TError,{data: BodyType<PinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setupPin>>, TError,{data: BodyType<PinInput>}, TContext> => {
+
+const mutationKey = ['setupPin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setupPin>>, {data: BodyType<PinInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setupPin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetupPinMutationResult = NonNullable<Awaited<ReturnType<typeof setupPin>>>
+    export type SetupPinMutationBody = BodyType<PinInput>
+    export type SetupPinMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ConflictResponse>
+
+    export const useSetupPin = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setupPin>>, TError,{data: BodyType<PinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setupPin>>,
+        TError,
+        {data: BodyType<PinInput>},
+        TContext
+      > => {
+      return useMutation(getSetupPinMutationOptions(options));
+    }
+
+export const getVerifyLoginPinUrl = () => {
+
+
+
+
+  return `/api/v1/auth/login-pin`
+}
+
+/**
+ * @summary Verify local PIN only; does not create a session
+ */
+export const verifyLoginPin = async (pinInput: PinInput, options?: Parameters<typeof customFetch>[1]): Promise<PinVerification> => {
+
+  return customFetch<PinVerification>(getVerifyLoginPinUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pinInput)
+  }
+);}
+
+
+
+
+
+export const getVerifyLoginPinMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ConflictResponse | RateLimitedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyLoginPin>>, TError,{data: BodyType<PinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyLoginPin>>, TError,{data: BodyType<PinInput>}, TContext> => {
+
+const mutationKey = ['verifyLoginPin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyLoginPin>>, {data: BodyType<PinInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyLoginPin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyLoginPinMutationResult = NonNullable<Awaited<ReturnType<typeof verifyLoginPin>>>
+    export type VerifyLoginPinMutationBody = BodyType<PinInput>
+    export type VerifyLoginPinMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ConflictResponse | RateLimitedResponse>
+
+    /**
+ * @summary Verify local PIN only; does not create a session
+ */
+export const useVerifyLoginPin = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ConflictResponse | RateLimitedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyLoginPin>>, TError,{data: BodyType<PinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyLoginPin>>,
+        TError,
+        {data: BodyType<PinInput>},
+        TContext
+      > => {
+      return useMutation(getVerifyLoginPinMutationOptions(options));
+    }
+
+export const getRefreshAuthSessionUrl = () => {
+
+
+
+
+  return `/api/v1/auth/refresh`
+}
+
+/**
+ * @summary Report Clerk session status; Clerk client performs refresh
+ */
+export const refreshAuthSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<RefreshStatus> => {
+
+  return customFetch<RefreshStatus>(getRefreshAuthSessionUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRefreshAuthSessionMutationOptions = <TError = ErrorType<UnauthenticatedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshAuthSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refreshAuthSession>>, TError,void, TContext> => {
+
+const mutationKey = ['refreshAuthSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refreshAuthSession>>, void> = () => {
+
+
+          return  refreshAuthSession(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefreshAuthSessionMutationResult = NonNullable<Awaited<ReturnType<typeof refreshAuthSession>>>
+
+    export type RefreshAuthSessionMutationError = ErrorType<UnauthenticatedResponse>
+
+    /**
+ * @summary Report Clerk session status; Clerk client performs refresh
+ */
+export const useRefreshAuthSession = <TError = ErrorType<UnauthenticatedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshAuthSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refreshAuthSession>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRefreshAuthSessionMutationOptions(options));
+    }
+
+export const getLogoutAuthSessionUrl = () => {
+
+
+
+
+  return `/api/v1/auth/logout`
+}
+
+/**
+ * @summary Return Clerk logout guidance; does not revoke a local session
+ */
+export const logoutAuthSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<LogoutStatus> => {
+
+  return customFetch<LogoutStatus>(getLogoutAuthSessionUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getLogoutAuthSessionMutationOptions = <TError = ErrorType<UnauthenticatedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutAuthSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof logoutAuthSession>>, TError,void, TContext> => {
+
+const mutationKey = ['logoutAuthSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logoutAuthSession>>, void> = () => {
+
+
+          return  logoutAuthSession(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogoutAuthSessionMutationResult = NonNullable<Awaited<ReturnType<typeof logoutAuthSession>>>
+
+    export type LogoutAuthSessionMutationError = ErrorType<UnauthenticatedResponse>
+
+    /**
+ * @summary Return Clerk logout guidance; does not revoke a local session
+ */
+export const useLogoutAuthSession = <TError = ErrorType<UnauthenticatedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutAuthSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof logoutAuthSession>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getLogoutAuthSessionMutationOptions(options));
+    }
+
+export const getChangePinUrl = () => {
+
+
+
+
+  return `/api/v1/auth/change-pin`
+}
+
+export const changePin = async (changePinInput: ChangePinInput, options?: Parameters<typeof customFetch>[1]): Promise<PinConfigured> => {
+
+  return customFetch<PinConfigured>(getChangePinUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(changePinInput)
+  }
+);}
+
+
+
+
+
+export const getChangePinMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | RateLimitedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePin>>, TError,{data: BodyType<ChangePinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changePin>>, TError,{data: BodyType<ChangePinInput>}, TContext> => {
+
+const mutationKey = ['changePin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changePin>>, {data: BodyType<ChangePinInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  changePin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangePinMutationResult = NonNullable<Awaited<ReturnType<typeof changePin>>>
+    export type ChangePinMutationBody = BodyType<ChangePinInput>
+    export type ChangePinMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | RateLimitedResponse>
+
+    export const useChangePin = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | RateLimitedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePin>>, TError,{data: BodyType<ChangePinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof changePin>>,
+        TError,
+        {data: BodyType<ChangePinInput>},
+        TContext
+      > => {
+      return useMutation(getChangePinMutationOptions(options));
     }
 
