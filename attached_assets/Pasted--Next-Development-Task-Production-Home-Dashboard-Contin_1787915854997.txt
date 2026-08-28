@@ -1,0 +1,352 @@
+# Next Development Task — Production Home Dashboard
+
+Continue the existing **Travel & Land** application.
+
+The authentication, PIN, biometric login, Clerk integration, navigation, and current Home visual design are already implemented.
+
+**Do not rebuild or replace the authentication system.**
+
+**Do not redesign the existing navigation unless required for this task.**
+
+Focus only on converting the current Home screen into a properly structured, data-driven MVP dashboard.
+
+## Goal
+
+Build the Home dashboard for the Tourism + Land Sourcing application.
+
+The Home screen should provide users with quick access to tourism discovery, accommodation, maps, bookings, wallet/travel pass, and land sourcing.
+
+## Home Layout
+
+Keep the existing dark navy visual direction and current branding.
+
+Structure the screen as:
+
+### 1. Header
+
+Display:
+
+* User greeting using the authenticated Clerk user
+* Current location
+* Notification icon
+* Profile/access button
+
+Example:
+
+"Good morning, Ashwini"
+
+Do not hardcode the user's name.
+
+## 2. Search
+
+Create a prominent search component.
+
+Placeholder:
+
+"Where do you want to go?"
+
+The search should eventually support:
+
+* Destinations
+* Temples
+* Attractions
+* Events
+* Food
+* Hotels
+* Properties
+
+For now, create the reusable search component and connect it to the existing Explore route.
+
+## 3. Quick Actions
+
+Keep the circular shortcut style already implemented.
+
+Include:
+
+* Explore
+* Destinations
+* Hotels
+* Maps
+* Bookings
+* Land
+
+Each shortcut must navigate to the appropriate existing route.
+
+Do not create dead-end buttons.
+
+## 4. Promotional Banner
+
+Create a reusable promotional/inspiration banner component.
+
+Support:
+
+* Image
+* Title
+* Subtitle
+* CTA
+* Optional destination/offer ID
+
+Do not hardcode fake booking offers that imply real availability.
+
+Use development seed/mock content where the backend is not yet ready.
+
+Clearly structure the code so real API data can replace the mock data later.
+
+## 5. Featured Destinations
+
+Create a horizontal scrolling destination section.
+
+Each card should display:
+
+* Image
+* Destination name
+* Location
+* Short description
+* Favorite button
+
+Clicking a destination should open:
+
+Destination Details
+
+Use reusable DestinationCard components.
+
+## 6. Nearby Places
+
+Create a section for nearby attractions.
+
+Display:
+
+* Place image
+* Name
+* Category
+* Distance
+* Rating where available
+
+Use the user's location only when location permission has been granted.
+
+If permission is unavailable, gracefully show general/popular places instead.
+
+Do not continuously track the user.
+
+## 7. Events
+
+Create an Events section.
+
+Display:
+
+* Event image
+* Event name
+* Date
+* Location
+* Short description
+
+Clicking an event should navigate to its details.
+
+## 8. Hotels
+
+Create a Featured Accommodation section.
+
+Display:
+
+* Hotel image
+* Hotel name
+* Location
+* Rating
+* Starting price
+* Favorite
+
+Do not claim that rooms are actually available yet unless the availability API confirms it.
+
+Clicking should navigate to Hotel Details.
+
+## 9. Land Sourcing
+
+Add a clearly identifiable:
+
+"Land Opportunities"
+
+section.
+
+Display property cards with:
+
+* Property image
+* Location
+* Property type
+* Area
+* Price
+* Favorite
+
+Clicking should navigate to Property Details.
+
+Use development seed data until the property API is implemented.
+
+## 10. Wallet / Travel Pass
+
+Keep the existing Travel Pass / Wallet design.
+
+Do not create fake:
+
+* wallet balances
+* pass IDs
+* barcodes
+* transaction records
+* booking credits
+
+Use empty states when real data does not exist.
+
+The pass should continue to indicate that activation depends on a confirmed booking.
+
+## Backend/API
+
+Create or prepare:
+
+GET /api/v1/home
+GET /api/v1/home/banners
+GET /api/v1/home/destinations
+GET /api/v1/home/nearby
+GET /api/v1/home/events
+GET /api/v1/home/hotels
+GET /api/v1/home/properties
+
+Use the project's existing API architecture.
+
+Do not create duplicate API patterns.
+
+If these endpoints already exist, reuse them.
+
+## Data Architecture
+
+Create typed models for:
+
+* HomeData
+* Banner
+* Destination
+* Place
+* Event
+* Hotel
+* Property
+
+Separate:
+
+UI components
+→ hooks/services
+→ API
+→ database
+
+Do not put database calls directly inside UI components.
+
+## Loading States
+
+Implement skeleton/loading states for:
+
+* Home
+* Destinations
+* Hotels
+* Properties
+* Events
+
+## Empty States
+
+Handle:
+
+* No destinations
+* No hotels
+* No events
+* No properties
+* No nearby places
+
+Do not display fake data as if it were real production data.
+
+## Error Handling
+
+If an API fails:
+
+* Keep the rest of the Home screen usable
+* Show a small user-friendly error state
+* Provide retry
+* Do not show stack traces
+* Do not crash the application
+
+## Performance
+
+Use:
+
+* Horizontal lists for horizontal sections
+* FlatList/FlashList where appropriate
+* Image optimization
+* Pagination where needed
+* Avoid unnecessary API calls
+
+Do not load the entire database into the Home screen.
+
+## Navigation Verification
+
+Verify these routes:
+
+Home
+→ Explore
+
+Home
+→ Destination Details
+
+Home
+→ Hotels
+
+Home
+→ Maps
+
+Home
+→ Bookings
+
+Home
+→ Land
+
+Home
+→ Wallet
+
+Home
+→ Notifications
+
+Home
+→ Profile
+
+Make sure all routes work on mobile.
+
+## Important
+
+Do NOT:
+
+* rebuild authentication
+* replace Clerk
+* change PIN security
+* replace biometric implementation
+* implement real payment gateway
+* implement real hotel booking
+* implement live land sourcing
+* introduce fake financial data
+
+Those will be implemented in later workstreams.
+
+## Final Verification
+
+After implementation:
+
+1. Run TypeScript checks.
+2. Run the Expo application.
+3. Test Home on mobile dimensions.
+4. Test all Home navigation.
+5. Test loading states.
+6. Test API failure states.
+7. Test empty states.
+8. Verify no authentication behavior was changed.
+9. Verify no fake financial/booking information is presented as real.
+
+Finally report:
+
+* Files created/modified
+* Home features completed
+* APIs created/reused
+* Database changes
+* Routes tested
+* TypeScript/build status
+* Remaining dependencies
