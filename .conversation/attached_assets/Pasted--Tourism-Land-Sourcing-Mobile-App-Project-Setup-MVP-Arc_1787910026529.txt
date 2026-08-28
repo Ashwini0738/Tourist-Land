@@ -1,0 +1,236 @@
+# Tourism + Land Sourcing Mobile App — Project Setup & MVP Architecture
+
+Build the foundation of a production-ready cross-platform mobile application for **iOS and Android**, with a mobile-responsive web version.
+
+The application is a combined:
+
+1. Tourism discovery and booking platform
+2. Land/property sourcing platform
+
+The application must be designed for future deployment to:
+
+* Google Play Store
+* Apple App Store
+* Mobile web/PWA
+
+## Technology Requirements
+
+Use:
+
+* React Native
+* Expo
+* TypeScript
+* Expo Router
+* Node.js + TypeScript backend
+* REST API architecture
+* PostgreSQL database
+* Drizzle ORM
+* Secure authentication/session architecture
+* Environment variables for secrets
+* Responsive mobile-first UI
+
+Do not hardcode secrets, API keys, database credentials, payment keys, or authentication secrets.
+
+## MVP Roles
+
+Create support for these roles:
+
+### Tourist/User
+
+* Browse destinations
+* Search places and hotels
+* View destination details
+* View hotel/room availability
+* Create bookings
+* Make payments
+* Manage wallet
+* Save favorites
+* Submit reviews
+* Receive notifications
+* Browse properties
+* Submit property enquiries
+
+### Property Owner/Agent
+
+* Manage property listings
+* View enquiries
+* Update property information
+
+### Admin
+
+* Manage users
+* Manage destinations
+* Manage hotels
+* Manage rooms
+* Manage bookings
+* Manage properties
+* Manage reviews
+* Manage approvals
+* Manage offers/events
+* View basic platform activity
+
+## MVP Acceptance Criteria
+
+Create a clear MVP architecture where the following modules can be developed independently:
+
+1. Authentication
+2. Home
+3. Explore
+4. Destination
+5. Maps
+6. Hotels
+7. Availability
+8. Booking
+9. Payment
+10. Wallet
+11. My Bookings
+12. Favorites
+13. Reviews
+14. Notifications
+15. Land Sourcing
+16. Admin
+
+## Initial Database Design
+
+Create a database schema baseline for:
+
+* users
+* user_roles
+* authentication_sessions
+* destinations
+* destination_images
+* attractions
+* events
+* food_places
+* hotels
+* hotel_rooms
+* room_availability
+* bookings
+* booking_items
+* payments
+* wallets
+* wallet_transactions
+* properties
+* property_images
+* property_enquiries
+* favorites
+* reviews
+* notifications
+* offers
+
+Use UUID primary keys where appropriate.
+
+Add:
+
+* created_at
+* updated_at
+* status
+  where appropriate.
+
+Design relationships correctly and avoid duplicated data.
+
+## Project Structure
+
+Create a clean structure similar to:
+
+/app
+/components
+/features
+/services
+/hooks
+/types
+/constants
+/utils
+/assets
+
+/server
+/routes
+/controllers
+/services
+/middleware
+/db
+
+/shared
+
+## API Architecture
+
+Create a versioned REST API structure:
+
+/api/v1/auth
+/api/v1/users
+/api/v1/home
+/api/v1/explore
+/api/v1/destinations
+/api/v1/maps
+/api/v1/hotels
+/api/v1/availability
+/api/v1/bookings
+/api/v1/payments
+/api/v1/wallet
+/api/v1/properties
+/api/v1/favorites
+/api/v1/reviews
+/api/v1/notifications
+
+Do not implement every business feature yet.
+
+Create the architecture and placeholders required for future development.
+
+## Navigation
+
+Prepare Expo Router navigation for:
+
+* Login
+* Home
+* Explore
+* Destination
+* Maps
+* Hotels
+* Booking
+* Payment
+* My Bookings
+* Favorites
+* Wallet
+* Land Sourcing
+* Profile
+* Notifications
+
+Use a scalable navigation structure.
+
+## Development Requirements
+
+The application must run successfully in Replit.
+
+Create:
+
+* README.md
+* environment variable example
+* database configuration
+* migration setup
+* seed data structure
+* development scripts
+
+Add basic error handling and logging.
+
+Do not build fake production functionality.
+
+Where external services are not configured yet, create clean service interfaces and mock development adapters.
+
+## Important
+
+Before writing large amounts of code:
+
+1. Inspect the existing Replit project.
+2. Preserve useful existing files.
+3. Do not unnecessarily rewrite the project.
+4. Create the architecture incrementally.
+5. Make sure the application starts successfully.
+6. Fix all TypeScript/build errors before finishing.
+
+At the end, provide:
+
+* architecture summary
+* files created/modified
+* database schema summary
+* commands to run the project
+* remaining setup requirements

@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/"
+title = "Travel & Land"
+description = "A mobile-first discovery app for exploring destinations, finding stays, and sourcing land opportunities in one trusted place."
+version = "1.0.0"
+id = "artifacts/travel-land-app"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/" ]
+localPort = 23794
+
+[services.development]
+run = "pnpm --filter @workspace/travel-land-app run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/travel-land-app", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/travel-land-app", "run", "serve" ]
+
+[services.env]
+PORT = "23794"
+BASE_PATH = "/"
