@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '@clerk/expo';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 type SecurityContextValue = {
   isReady: boolean;
@@ -24,6 +24,8 @@ export function AuthSecurityProvider({ children }: { children: React.ReactNode }
   const [hasPin, setHasPin] = useState(false);
   const [biometricsEnabled, setBiometrics] = useState(false);
   const [isUnlocked, setUnlocked] = useState(false);
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
 
   const storageKey = useCallback((key: string) => `${key}.${userId ?? 'signed-out'}`, [userId]);
 
@@ -40,7 +42,7 @@ export function AuthSecurityProvider({ children }: { children: React.ReactNode }
     Promise.all([
       SecureStore.getItemAsync(storageKey(HAS_PIN)),
       SecureStore.getItemAsync(storageKey(BIOMETRICS)),
-      getToken(),
+      getTokenRef.current(),
     ])
       .then(async ([localPin, biometrics, token]) => {
         if (!active) return;
@@ -64,7 +66,7 @@ export function AuthSecurityProvider({ children }: { children: React.ReactNode }
       })
       .catch(() => active && setReady(true));
     return () => { active = false; };
-  }, [getToken, isSignedIn, storageKey, userId]);
+  }, [isSignedIn, storageKey, userId]);
 
   const setPinConfigured = useCallback(async (configured: boolean) => {
     setHasPin(configured);
@@ -78,7 +80,7 @@ export function AuthSecurityProvider({ children }: { children: React.ReactNode }
   const lock = useCallback(async () => setUnlocked(false), []);
   const callPinEndpoint = useCallback(async (path: string, body: Record<string, string>) => {
     try {
-      const token = await getToken();
+      const token = await getTokenRef.current();
       const response = await fetch(`https://${process.env.EXPO_PUBLIC_DOMAIN}${path}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -99,7 +101,7 @@ export function AuthSecurityProvider({ children }: { children: React.ReactNode }
     } catch {
       return { ok: false, message: 'We could not reach your account. Please try again.' };
     }
-  }, [getToken]);
+  }, []);
 
   return <SecurityContext.Provider value={{ isReady, isUnlocked, hasPin, biometricsEnabled, unlock, lock, setPinConfigured, setBiometricsEnabled, callPinEndpoint }}>{children}</SecurityContext.Provider>;
 }
