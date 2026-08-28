@@ -31,10 +31,6 @@ function NativeTabLayout() {
         <Icon sf={{ default: 'map', selected: 'map.fill' }} />
         <Label>Land</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="saved">
-        <Icon sf={{ default: 'heart', selected: 'heart.fill' }} />
-        <Label>Saved</Label>
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: 'person', selected: 'person.fill' }} />
         <Label>Profile</Label>

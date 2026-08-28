@@ -13,6 +13,13 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { toggleFavorite, isFavorite } = useAppState();
   const [query, setQuery] = React.useState('');
+  const quickActions = [
+    { label: 'Explore', icon: 'compass', route: '/explore' },
+    { label: 'Hotels', icon: 'home', route: '/hotels' },
+    { label: 'Bookings', icon: 'calendar', route: '/bookings' },
+    { label: 'Maps', icon: 'map', route: '/maps' },
+    { label: 'Land', icon: 'map-pin', route: '/land' },
+  ] as const;
 
   return (
     <ScrollView
@@ -27,6 +34,17 @@ export default function HomeScreen() {
         </View>
         <AppIcon name="bell" onPress={() => router.push('/notifications')} />
       </View>
+
+      <Pressable style={styles.locationRow} onPress={() => router.push('/maps')}>
+        <View style={[styles.locationIcon, { backgroundColor: colors.secondary }]}>
+          <Feather name="navigation" size={14} color={colors.primary} />
+        </View>
+        <View>
+          <Text style={[styles.locationLabel, { color: colors.mutedForeground }]}>YOUR CURRENT AREA</Text>
+          <Text style={[styles.locationName, { color: colors.foreground }]}>Pune, Maharashtra</Text>
+        </View>
+        <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+      </Pressable>
 
       <Pressable
         style={[styles.search, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -44,6 +62,29 @@ export default function HomeScreen() {
         />
         <View style={[styles.filterDot, { backgroundColor: colors.accent }]} />
       </Pressable>
+
+      <View style={[styles.promo, { backgroundColor: colors.primary }]}>
+        <View style={styles.promoCopy}>
+          <Text style={styles.promoKicker}>SEASONAL ESCAPE</Text>
+          <Text style={styles.promoTitle}>Take the scenic route.</Text>
+          <Text style={styles.promoText}>Save 12% on select coastal stays this month.</Text>
+        </View>
+        <Pressable onPress={() => router.push('/hotels')} style={[styles.promoButton, { backgroundColor: colors.accent }]}>
+          <Feather name="arrow-up-right" size={17} color={colors.accentForeground} />
+        </Pressable>
+      </View>
+
+      <Text style={[styles.quickTitle, { color: colors.foreground }]}>What would you like to do?</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRail}>
+        {quickActions.map((action) => (
+          <Pressable key={action.label} onPress={() => router.push(action.route)} style={styles.quickAction}>
+            <View style={[styles.quickIcon, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Feather name={action.icon} size={19} color={colors.primary} />
+            </View>
+            <Text style={[styles.quickLabel, { color: colors.mutedForeground }]}>{action.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
 
       <View style={styles.sectionHeader}>
         <View>
@@ -85,7 +126,7 @@ export default function HomeScreen() {
       </View>
 
       {stays.map((stay) => (
-        <Pressable key={stay.id} style={[styles.stayRow, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push(`/destination/${stay.id}`)}>
+        <Pressable key={stay.id} style={[styles.stayRow, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push(`/hotel/${stay.id}`)}>
           <Image source={stay.image} style={styles.stayImage} />
           <View style={styles.stayInfo}>
             <View style={styles.stayTitleRow}>
@@ -99,6 +140,28 @@ export default function HomeScreen() {
           </View>
         </Pressable>
       ))}
+
+      <View style={styles.sectionHeader}>
+        <View>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Happening nearby</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.mutedForeground }]}>Events, food, and small discoveries</Text>
+        </View>
+        <Pressable onPress={() => router.push('/maps')}><Text style={[styles.link, { color: colors.primary }]}>Map</Text></Pressable>
+      </View>
+      <View style={styles.miniGrid}>
+        {[
+          ['calendar', 'Coastal food walk', 'Event · Saturday'],
+          ['coffee', 'Old Mill Café', 'Food · 1.2 km'],
+          ['sunrise', 'Fort sunrise trail', 'Attraction · 3 km'],
+          ['tag', 'Midweek stay credit', 'Offer · Ends soon'],
+        ].map(([icon, title, meta]) => (
+          <Pressable key={title} onPress={() => router.push('/maps')} style={[styles.miniCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.miniIcon, { backgroundColor: colors.secondary }]}><Feather name={icon as React.ComponentProps<typeof Feather>['name']} size={17} color={colors.primary} /></View>
+            <Text style={[styles.miniTitle, { color: colors.foreground }]}>{title}</Text>
+            <Text style={[styles.miniMeta, { color: colors.mutedForeground }]}>{meta}</Text>
+          </Pressable>
+        ))}
+      </View>
     </ScrollView>
   );
 }
@@ -108,9 +171,24 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 },
   eyebrow: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 8 },
   greeting: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
-  search: { height: 56, borderRadius: 17, borderWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginBottom: 32 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  locationIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  locationLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 1.1 },
+  locationName: { fontSize: 13, fontWeight: '700', marginTop: 3 },
+  search: { height: 56, borderRadius: 17, borderWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginBottom: 16 },
   searchInput: { flex: 1, marginLeft: 11, fontSize: 14 },
   filterDot: { width: 10, height: 10, borderRadius: 5 },
+  promo: { borderRadius: 21, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
+  promoCopy: { flex: 1 },
+  promoKicker: { color: 'rgba(255,255,255,0.68)', fontSize: 9, fontWeight: '700', letterSpacing: 1.2 },
+  promoTitle: { color: '#fff', fontSize: 19, fontWeight: '700', marginTop: 6 },
+  promoText: { color: 'rgba(255,255,255,0.72)', fontSize: 11, marginTop: 5 },
+  promoButton: { width: 39, height: 39, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  quickTitle: { fontSize: 15, fontWeight: '700', marginBottom: 12 },
+  quickRail: { gap: 14, paddingBottom: 29 },
+  quickAction: { alignItems: 'center', width: 59 },
+  quickIcon: { width: 50, height: 50, borderRadius: 17, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  quickLabel: { fontSize: 10, fontWeight: '600', marginTop: 7 },
   sectionHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 },
   sectionTitle: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3 },
   sectionSubtitle: { fontSize: 13, marginTop: 5 },
@@ -134,4 +212,9 @@ const styles = StyleSheet.create({
   stayMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' },
   stayPrice: { fontSize: 14, fontWeight: '700' },
   rating: { fontSize: 12, fontWeight: '600' },
+  miniGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  miniCard: { width: '48%', borderWidth: 1, borderRadius: 17, padding: 13 },
+  miniIcon: { width: 31, height: 31, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 15 },
+  miniTitle: { fontSize: 13, fontWeight: '700' },
+  miniMeta: { fontSize: 10, marginTop: 5 },
 });

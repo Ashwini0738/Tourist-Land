@@ -6,14 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { destinations, stays } from '@/lib/content';
 import { useColors } from '@/hooks/useColors';
 
-const filters = ['All places', 'Destinations', 'Stays', 'Food & drink'];
+const filters = ['All', 'Destinations', 'Temples', 'Attractions', 'Events', 'Food', 'Hotels', 'Properties'];
 
 export default function ExploreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ query?: string }>();
   const [query, setQuery] = React.useState(params.query ?? '');
-  const [activeFilter, setActiveFilter] = React.useState('All places');
+  const [activeFilter, setActiveFilter] = React.useState('All');
+  const [sortMode, setSortMode] = React.useState<'Recommended' | 'Nearby'>('Recommended');
   const normalized = query.trim().toLowerCase();
   const matches = [...destinations, ...stays].filter((item) => {
     if (!normalized) return true;
@@ -34,11 +35,12 @@ export default function ExploreScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
         {filters.map((filter) => <Pressable key={filter} onPress={() => setActiveFilter(filter)} style={[styles.filter, { backgroundColor: activeFilter === filter ? colors.primary : colors.card, borderColor: activeFilter === filter ? colors.primary : colors.border }]}><Text style={[styles.filterText, { color: activeFilter === filter ? colors.primaryForeground : colors.mutedForeground }]}>{filter}</Text></Pressable>)}
       </ScrollView>
-      <Text style={[styles.resultLabel, { color: colors.mutedForeground }]}>{normalized ? `${matches.length} results for “${query}”` : 'CURATED FOR THIS SEASON'}</Text>
+      <View style={styles.resultHead}><Text style={[styles.resultLabel, { color: colors.mutedForeground }]}>{normalized ? `${matches.length} results for “${query}”` : `${activeFilter.toUpperCase()} · CURATED`}</Text><Pressable onPress={() => setSortMode((current) => current === 'Recommended' ? 'Nearby' : 'Recommended')} style={styles.sort}><Feather name="sliders" size={13} color={colors.primary} /><Text style={[styles.sortText, { color: colors.primary }]}>{sortMode}</Text></Pressable></View>
       {matches.map((item) => {
         const region = 'region' in item ? item.region : item.location;
         const image = item.image;
-        return <Pressable key={item.id} onPress={() => router.push(`/destination/${item.id}`)} style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        const route = 'tagline' in item ? `/destination/${item.id}` as const : `/hotel/${item.id}` as const;
+        return <Pressable key={item.id} onPress={() => router.push(route)} style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Image source={image} style={styles.resultImage} />
           <View style={styles.resultCopy}><Text style={[styles.resultName, { color: colors.foreground }]}>{item.name}</Text><Text style={[styles.resultLocation, { color: colors.mutedForeground }]}>{region}</Text><View style={styles.resultBottom}><Text style={[styles.resultType, { color: colors.primary }]}>{'tagline' in item ? 'DESTINATION' : 'STAY'}</Text><Feather name="arrow-up-right" size={17} color={colors.foreground} /></View></View>
         </Pressable>;
@@ -59,6 +61,9 @@ const styles = StyleSheet.create({
   filter: { borderWidth: 1, borderRadius: 100, paddingHorizontal: 15, paddingVertical: 9 },
   filterText: { fontSize: 12, fontWeight: '600' },
   resultLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 1.2, marginBottom: 13 },
+  resultHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sort: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 13 },
+  sortText: { fontSize: 10, fontWeight: '700' },
   resultCard: { borderWidth: 1, borderRadius: 20, padding: 10, flexDirection: 'row', marginBottom: 12 },
   resultImage: { width: 112, height: 124, borderRadius: 14 },
   resultCopy: { flex: 1, paddingHorizontal: 13, paddingVertical: 4 },

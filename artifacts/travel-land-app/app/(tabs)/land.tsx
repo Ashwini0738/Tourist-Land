@@ -9,11 +9,14 @@ import { useColors } from '@/hooks/useColors';
 export default function LandScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const [activeFilter, setActiveFilter] = React.useState('Location');
+  const filters = ['Location', 'Type', 'Price', 'Area', 'Purpose', 'Available'];
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 14, paddingBottom: Platform.OS === 'web' ? 102 : 118 }]} showsVerticalScrollIndicator={false}>
       <View style={styles.header}><View><Text style={[styles.kicker, { color: colors.primary }]}>LAND SOURCING</Text><Text style={[styles.title, { color: colors.foreground }]}>Find your{'\n'}next beginning.</Text></View><Pressable onPress={() => router.push('/profile')}><Feather name="user" size={21} color={colors.foreground} /></Pressable></View>
       <View style={[styles.intro, { backgroundColor: colors.primary }]}><View style={styles.introIcon}><Feather name="map-pin" size={20} color={colors.primary} /></View><Text style={styles.introTitle}>Land with a little more meaning.</Text><Text style={styles.introText}>Verified opportunities for stays, farms, and the places you’ve been imagining.</Text><Pressable style={[styles.introButton, { backgroundColor: colors.accent }]} onPress={() => router.push('/property/riverstone-estate')}><Text style={[styles.introButtonText, { color: colors.accentForeground }]}>How it works</Text><Feather name="arrow-up-right" size={15} color={colors.accentForeground} /></Pressable></View>
-      <View style={styles.sectionHead}><Text style={[styles.sectionTitle, { color: colors.foreground }]}>Opportunities near you</Text><Pressable><Text style={[styles.link, { color: colors.primary }]}>Filter</Text></Pressable></View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>{filters.map((filter) => <Pressable key={filter} onPress={() => setActiveFilter(filter)} style={[styles.filter, { backgroundColor: activeFilter === filter ? colors.primary : colors.card, borderColor: activeFilter === filter ? colors.primary : colors.border }]}><Text style={[styles.filterText, { color: activeFilter === filter ? colors.primaryForeground : colors.mutedForeground }]}>{filter}</Text></Pressable>)}</ScrollView>
+      <View style={styles.sectionHead}><Text style={[styles.sectionTitle, { color: colors.foreground }]}>Opportunities near you</Text><Pressable onPress={() => router.push('/maps')}><Text style={[styles.link, { color: colors.primary }]}>Map</Text></Pressable></View>
       {properties.map((property) => <Pressable key={property.id} onPress={() => router.push(`/property/${property.id}`)} style={[styles.property, { backgroundColor: colors.card, borderColor: colors.border }]}><Image source={property.image} style={styles.propertyImage} /><View style={styles.propertyCopy}><View style={styles.propertyTitleRow}><Text style={[styles.propertyTitle, { color: colors.foreground }]}>{property.title}</Text>{property.verified ? <View style={[styles.verified, { backgroundColor: colors.secondary }]}><Feather name="check" size={12} color={colors.primary} /></View> : null}</View><Text style={[styles.location, { color: colors.mutedForeground }]}>{property.location}</Text><View style={styles.propertyMeta}><Text style={[styles.size, { color: colors.foreground }]}>{property.size}</Text><Text style={[styles.price, { color: colors.primary }]}>{property.price}</Text></View><Text style={[styles.propertyType, { color: colors.mutedForeground }]}>{property.type}</Text></View></Pressable>)}
       <View style={[styles.note, { borderColor: colors.border }]}><Feather name="shield" size={18} color={colors.primary} /><View style={{ flex: 1, marginLeft: 12 }}><Text style={[styles.noteTitle, { color: colors.foreground }]}>A considered way to buy land</Text><Text style={[styles.noteText, { color: colors.mutedForeground }]}>Every listing is reviewed before it reaches the app.</Text></View></View>
     </ScrollView>
@@ -31,6 +34,9 @@ const styles = StyleSheet.create({
   introText: { color: 'rgba(255,255,255,0.76)', fontSize: 13, lineHeight: 19, marginTop: 9, maxWidth: 280 },
   introButton: { alignSelf: 'flex-start', borderRadius: 100, paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 19 },
   introButtonText: { fontSize: 12, fontWeight: '700' },
+  filters: { gap: 8, paddingBottom: 22 },
+  filter: { borderWidth: 1, borderRadius: 100, paddingHorizontal: 14, paddingVertical: 9 },
+  filterText: { fontSize: 11, fontWeight: '700' },
   sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   sectionTitle: { fontSize: 19, fontWeight: '700' },
   link: { fontSize: 13, fontWeight: '700' },
