@@ -6,16 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Property {
+export interface Place {
   id: string;
-  slug: string;
-  title: string;
+  name: string;
+  category: string;
   location: string;
-  area: string;
-  propertyType: string;
-  verified: boolean;
-  description: string;
-  discoveryLabel: string;
-  priceLabel: string;
+  summary: string;
+  distanceLabel?: string;
+  ratingLabel?: string;
+  destinationId: string;
   imageKey: string;
 }

@@ -6,16 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Property {
+export interface Hotel {
   id: string;
-  slug: string;
-  title: string;
+  name: string;
   location: string;
-  area: string;
-  propertyType: string;
-  verified: boolean;
-  description: string;
-  discoveryLabel: string;
+  summary: string;
+  destinationId: string;
+  ratingLabel: string;
   priceLabel: string;
   imageKey: string;
 }

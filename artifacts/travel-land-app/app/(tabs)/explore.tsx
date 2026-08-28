@@ -11,9 +11,9 @@ const filters = ['All', 'Destinations', 'Temples', 'Attractions', 'Events', 'Foo
 export default function ExploreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ query?: string }>();
+  const params = useLocalSearchParams<{ query?: string; filter?: string }>();
   const [query, setQuery] = React.useState(params.query ?? '');
-  const [activeFilter, setActiveFilter] = React.useState('All');
+  const [activeFilter, setActiveFilter] = React.useState(filters.includes(params.filter ?? '') ? params.filter! : 'All');
   const [sortMode, setSortMode] = React.useState<'Recommended' | 'Nearby'>('Recommended');
   const normalized = query.trim().toLowerCase();
   const matches = [...destinations, ...stays].filter((item) => {

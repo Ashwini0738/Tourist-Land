@@ -6,16 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Property {
+export interface Banner {
   id: string;
-  slug: string;
   title: string;
-  location: string;
-  area: string;
-  propertyType: string;
-  verified: boolean;
-  description: string;
-  discoveryLabel: string;
-  priceLabel: string;
+  subtitle: string;
+  ctaLabel: string;
+  destinationId: string;
   imageKey: string;
 }

@@ -19,15 +19,96 @@ export interface Destination {
   imageKey: string;
 }
 
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+  destinationId: string;
+  imageKey: string;
+}
+
+export interface Place {
+  id: string;
+  name: string;
+  category: string;
+  location: string;
+  summary: string;
+  distanceLabel?: string;
+  ratingLabel?: string;
+  destinationId: string;
+  imageKey: string;
+}
+
+export interface Event {
+  id: string;
+  title: string;
+  dateLabel: string;
+  location: string;
+  summary: string;
+  destinationId: string;
+  imageKey: string;
+}
+
+export interface Hotel {
+  id: string;
+  name: string;
+  location: string;
+  summary: string;
+  destinationId: string;
+  ratingLabel: string;
+  priceLabel: string;
+  imageKey: string;
+}
+
 export interface Property {
   id: string;
   slug: string;
   title: string;
   location: string;
   area: string;
-  askingPrice: string;
   propertyType: string;
   verified: boolean;
+  description: string;
+  discoveryLabel: string;
+  priceLabel: string;
+  imageKey: string;
+}
+
+export interface HomeData {
+  notice: string;
+  banners: Banner[];
+  destinations: Destination[];
+  nearby: Place[];
+  events: Event[];
+  hotels: Hotel[];
+  properties: Property[];
+  featuredDestinations: Destination[];
+  featuredProperties: Property[];
+}
+
+export interface BannerList {
+  items: Banner[];
+}
+
+export interface DestinationList {
+  items: Destination[];
+}
+
+export interface PlaceList {
+  items: Place[];
+}
+
+export interface EventList {
+  items: Event[];
+}
+
+export interface HotelList {
+  items: Hotel[];
+}
+
+export interface PropertyList {
+  items: Property[];
 }
 
 export type PropertyEnquiryInputPreferredContactMethod = typeof PropertyEnquiryInputPreferredContactMethod[keyof typeof PropertyEnquiryInputPreferredContactMethod];
@@ -157,11 +238,6 @@ export type ConflictResponse = ErrorResponse;
  * PIN verification temporarily locked
  */
 export type RateLimitedResponse = ErrorResponse;
-
-export type GetHome200 = {
-  featuredDestinations: Destination[];
-  featuredProperties: Property[];
-};
 
 export type ListDestinations200 = {
   items: Destination[];

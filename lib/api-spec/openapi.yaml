@@ -33,17 +33,74 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  featuredDestinations:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Destination"
-                  featuredProperties:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Property"
-                required: [featuredDestinations, featuredProperties]
+                $ref: "#/components/schemas/HomeData"
+  /v1/home/banners:
+    get:
+      operationId: listHomeBanners
+      tags: [discovery]
+      responses:
+        "200":
+          description: Bounded development banner feed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BannerList"
+  /v1/home/destinations:
+    get:
+      operationId: listHomeDestinations
+      tags: [discovery]
+      responses:
+        "200":
+          description: Bounded development destination feed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DestinationList"
+  /v1/home/nearby:
+    get:
+      operationId: listHomeNearby
+      tags: [discovery]
+      summary: List general popular seed places, not device-location results
+      responses:
+        "200":
+          description: Bounded general popular places feed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlaceList"
+  /v1/home/events:
+    get:
+      operationId: listHomeEvents
+      tags: [discovery]
+      responses:
+        "200":
+          description: Bounded development event feed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventList"
+  /v1/home/hotels:
+    get:
+      operationId: listHomeHotels
+      tags: [discovery]
+      responses:
+        "200":
+          description: Bounded development stay discovery feed, not availability
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelList"
+  /v1/home/properties:
+    get:
+      operationId: listHomeProperties
+      tags: [properties]
+      responses:
+        "200":
+          description: Bounded development property discovery feed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PropertyList"
   /v1/destinations:
     get:
       operationId: listDestinations
@@ -254,6 +311,52 @@ components:
         summary: { type: string }
         imageKey: { type: string }
       required: [id, slug, name, region, country, summary, imageKey]
+    Banner:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        subtitle: { type: string }
+        ctaLabel: { type: string }
+        destinationId: { type: string }
+        imageKey: { type: string }
+      required: [id, title, subtitle, ctaLabel, destinationId, imageKey]
+    Place:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        category: { type: string }
+        location: { type: string }
+        summary: { type: string }
+        distanceLabel: { type: string }
+        ratingLabel: { type: string }
+        destinationId: { type: string }
+        imageKey: { type: string }
+      required: [id, name, category, location, summary, destinationId, imageKey]
+    Event:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        dateLabel: { type: string }
+        location: { type: string }
+        summary: { type: string }
+        destinationId: { type: string }
+        imageKey: { type: string }
+      required: [id, title, dateLabel, location, summary, destinationId, imageKey]
+    Hotel:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        location: { type: string }
+        summary: { type: string }
+        destinationId: { type: string }
+        ratingLabel: { type: string }
+        priceLabel: { type: string }
+        imageKey: { type: string }
+      required: [id, name, location, summary, destinationId, ratingLabel, priceLabel, imageKey]
     Property:
       type: object
       properties:
@@ -262,10 +365,84 @@ components:
         title: { type: string }
         location: { type: string }
         area: { type: string }
-        askingPrice: { type: string }
         propertyType: { type: string }
         verified: { type: boolean }
-      required: [id, slug, title, location, area, askingPrice, propertyType, verified]
+        description: { type: string }
+        discoveryLabel: { type: string }
+        priceLabel: { type: string }
+        imageKey: { type: string }
+      required: [id, slug, title, location, area, propertyType, verified, description, discoveryLabel, priceLabel, imageKey]
+    HomeData:
+      type: object
+      properties:
+        notice: { type: string }
+        banners:
+          type: array
+          items: { $ref: "#/components/schemas/Banner" }
+        destinations:
+          type: array
+          items: { $ref: "#/components/schemas/Destination" }
+        nearby:
+          type: array
+          items: { $ref: "#/components/schemas/Place" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/Event" }
+        hotels:
+          type: array
+          items: { $ref: "#/components/schemas/Hotel" }
+        properties:
+          type: array
+          items: { $ref: "#/components/schemas/Property" }
+        featuredDestinations:
+          type: array
+          items: { $ref: "#/components/schemas/Destination" }
+        featuredProperties:
+          type: array
+          items: { $ref: "#/components/schemas/Property" }
+      required: [notice, banners, destinations, nearby, events, hotels, properties, featuredDestinations, featuredProperties]
+    BannerList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Banner" }
+      required: [items]
+    DestinationList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Destination" }
+      required: [items]
+    PlaceList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Place" }
+      required: [items]
+    EventList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Event" }
+      required: [items]
+    HotelList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Hotel" }
+      required: [items]
+    PropertyList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Property" }
+      required: [items]
     PropertyEnquiryInput:
       type: object
       properties:

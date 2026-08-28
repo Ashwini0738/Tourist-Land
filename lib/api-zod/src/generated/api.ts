@@ -14,6 +14,67 @@ export const HealthCheckResponse = zod.object({
 
 
 export const GetHomeResponse = zod.object({
+  "notice": zod.string(),
+  "banners": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "subtitle": zod.string(),
+  "ctaLabel": zod.string(),
+  "destinationId": zod.string(),
+  "imageKey": zod.string()
+})),
+  "destinations": zod.array(zod.object({
+  "id": zod.string(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "region": zod.string(),
+  "country": zod.string(),
+  "summary": zod.string(),
+  "imageKey": zod.string()
+})),
+  "nearby": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "distanceLabel": zod.string().optional(),
+  "ratingLabel": zod.string().optional(),
+  "destinationId": zod.string(),
+  "imageKey": zod.string()
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "dateLabel": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "destinationId": zod.string(),
+  "imageKey": zod.string()
+})),
+  "hotels": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "destinationId": zod.string(),
+  "ratingLabel": zod.string(),
+  "priceLabel": zod.string(),
+  "imageKey": zod.string()
+})),
+  "properties": zod.array(zod.object({
+  "id": zod.string(),
+  "slug": zod.string(),
+  "title": zod.string(),
+  "location": zod.string(),
+  "area": zod.string(),
+  "propertyType": zod.string(),
+  "verified": zod.boolean(),
+  "description": zod.string(),
+  "discoveryLabel": zod.string(),
+  "priceLabel": zod.string(),
+  "imageKey": zod.string()
+})),
   "featuredDestinations": zod.array(zod.object({
   "id": zod.string(),
   "slug": zod.string(),
@@ -29,9 +90,99 @@ export const GetHomeResponse = zod.object({
   "title": zod.string(),
   "location": zod.string(),
   "area": zod.string(),
-  "askingPrice": zod.string(),
   "propertyType": zod.string(),
-  "verified": zod.boolean()
+  "verified": zod.boolean(),
+  "description": zod.string(),
+  "discoveryLabel": zod.string(),
+  "priceLabel": zod.string(),
+  "imageKey": zod.string()
+}))
+})
+
+
+export const ListHomeBannersResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "subtitle": zod.string(),
+  "ctaLabel": zod.string(),
+  "destinationId": zod.string(),
+  "imageKey": zod.string()
+}))
+})
+
+
+export const ListHomeDestinationsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "region": zod.string(),
+  "country": zod.string(),
+  "summary": zod.string(),
+  "imageKey": zod.string()
+}))
+})
+
+
+/**
+ * @summary List general popular seed places, not device-location results
+ */
+export const ListHomeNearbyResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "distanceLabel": zod.string().optional(),
+  "ratingLabel": zod.string().optional(),
+  "destinationId": zod.string(),
+  "imageKey": zod.string()
+}))
+})
+
+
+export const ListHomeEventsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "dateLabel": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "destinationId": zod.string(),
+  "imageKey": zod.string()
+}))
+})
+
+
+export const ListHomeHotelsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "destinationId": zod.string(),
+  "ratingLabel": zod.string(),
+  "priceLabel": zod.string(),
+  "imageKey": zod.string()
+}))
+})
+
+
+export const ListHomePropertiesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "slug": zod.string(),
+  "title": zod.string(),
+  "location": zod.string(),
+  "area": zod.string(),
+  "propertyType": zod.string(),
+  "verified": zod.boolean(),
+  "description": zod.string(),
+  "discoveryLabel": zod.string(),
+  "priceLabel": zod.string(),
+  "imageKey": zod.string()
 }))
 })
 
@@ -71,9 +222,12 @@ export const ListPropertiesResponse = zod.object({
   "title": zod.string(),
   "location": zod.string(),
   "area": zod.string(),
-  "askingPrice": zod.string(),
   "propertyType": zod.string(),
-  "verified": zod.boolean()
+  "verified": zod.boolean(),
+  "description": zod.string(),
+  "discoveryLabel": zod.string(),
+  "priceLabel": zod.string(),
+  "imageKey": zod.string()
 }))
 })
 
@@ -88,9 +242,12 @@ export const GetPropertyResponse = zod.object({
   "title": zod.string(),
   "location": zod.string(),
   "area": zod.string(),
-  "askingPrice": zod.string(),
   "propertyType": zod.string(),
-  "verified": zod.boolean()
+  "verified": zod.boolean(),
+  "description": zod.string(),
+  "discoveryLabel": zod.string(),
+  "priceLabel": zod.string(),
+  "imageKey": zod.string()
 })
 
 

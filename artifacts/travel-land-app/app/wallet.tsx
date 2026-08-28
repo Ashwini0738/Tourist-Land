@@ -54,7 +54,8 @@ export default function WalletScreen() {
          <Text style={{ color: colors.foreground, fontSize: 20, fontWeight: '700' }}>Available Balance</Text>
          <View style={{ marginTop: 16, padding: 24, backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}>
             <Text style={{ color: colors.mutedForeground, fontSize: 13, fontWeight: '700', letterSpacing: 1 }}>BOOKING CREDITS</Text>
-            <Text style={{ color: colors.foreground, fontSize: 36, fontWeight: '700', marginTop: 8 }}>₹0.00</Text>
+            <Text style={{ color: colors.mutedForeground, fontSize: 17, fontWeight: '600', marginTop: 12 }}>Balance unavailable</Text>
+            <Text style={{ color: colors.mutedForeground, fontSize: 13, marginTop: 6 }}>Pending real data connection.</Text>
          </View>
       </View>
 

@@ -6,9 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Destination } from './destination';
-import type { Property } from './property';
 
-export type GetHome200 = {
-  featuredDestinations: Destination[];
-  featuredProperties: Property[];
-};
+export interface DestinationList {
+  items: Destination[];
+}

@@ -21,11 +21,15 @@ import type {
 
 import type {
   AuthSessionStatus,
+  BannerList,
   ChangePinInput,
   ConflictResponse,
   Destination,
-  GetHome200,
+  DestinationList,
+  EventList,
   HealthStatus,
+  HomeData,
+  HotelList,
   InvalidInputResponse,
   ListDestinations200,
   ListProperties200,
@@ -34,9 +38,11 @@ import type {
   PinConfigured,
   PinInput,
   PinVerification,
+  PlaceList,
   Property,
   PropertyEnquiryInput,
   PropertyEnquiryReceipt,
+  PropertyList,
   RateLimitedResponse,
   RefreshStatus,
   UnauthenticatedResponse
@@ -148,9 +154,9 @@ export const getGetHomeUrl = () => {
   return `/api/v1/home`
 }
 
-export const getHome = async ( options?: Parameters<typeof customFetch>[1]): Promise<GetHome200> => {
+export const getHome = async ( options?: Parameters<typeof customFetch>[1]): Promise<HomeData> => {
 
-  return customFetch<GetHome200>(getGetHomeUrl(),
+  return customFetch<HomeData>(getGetHomeUrl(),
   {
     ...options,
     method: 'GET'
@@ -199,6 +205,438 @@ export function useGetHome<TData = Awaited<ReturnType<typeof getHome>>, TError =
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetHomeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListHomeBannersUrl = () => {
+
+
+
+
+  return `/api/v1/home/banners`
+}
+
+export const listHomeBanners = async ( options?: Parameters<typeof customFetch>[1]): Promise<BannerList> => {
+
+  return customFetch<BannerList>(getListHomeBannersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHomeBannersQueryKey = () => {
+    return [
+    `/api/v1/home/banners`
+    ] as const;
+    }
+
+
+export const getListHomeBannersQueryOptions = <TData = Awaited<ReturnType<typeof listHomeBanners>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeBanners>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHomeBannersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHomeBanners>>> = ({ signal }) => listHomeBanners({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHomeBanners>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHomeBannersQueryResult = NonNullable<Awaited<ReturnType<typeof listHomeBanners>>>
+export type ListHomeBannersQueryError = ErrorType<unknown>
+
+
+
+export function useListHomeBanners<TData = Awaited<ReturnType<typeof listHomeBanners>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeBanners>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHomeBannersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListHomeDestinationsUrl = () => {
+
+
+
+
+  return `/api/v1/home/destinations`
+}
+
+export const listHomeDestinations = async ( options?: Parameters<typeof customFetch>[1]): Promise<DestinationList> => {
+
+  return customFetch<DestinationList>(getListHomeDestinationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHomeDestinationsQueryKey = () => {
+    return [
+    `/api/v1/home/destinations`
+    ] as const;
+    }
+
+
+export const getListHomeDestinationsQueryOptions = <TData = Awaited<ReturnType<typeof listHomeDestinations>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeDestinations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHomeDestinationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHomeDestinations>>> = ({ signal }) => listHomeDestinations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHomeDestinations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHomeDestinationsQueryResult = NonNullable<Awaited<ReturnType<typeof listHomeDestinations>>>
+export type ListHomeDestinationsQueryError = ErrorType<unknown>
+
+
+
+export function useListHomeDestinations<TData = Awaited<ReturnType<typeof listHomeDestinations>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeDestinations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHomeDestinationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListHomeNearbyUrl = () => {
+
+
+
+
+  return `/api/v1/home/nearby`
+}
+
+/**
+ * @summary List general popular seed places, not device-location results
+ */
+export const listHomeNearby = async ( options?: Parameters<typeof customFetch>[1]): Promise<PlaceList> => {
+
+  return customFetch<PlaceList>(getListHomeNearbyUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHomeNearbyQueryKey = () => {
+    return [
+    `/api/v1/home/nearby`
+    ] as const;
+    }
+
+
+export const getListHomeNearbyQueryOptions = <TData = Awaited<ReturnType<typeof listHomeNearby>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeNearby>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHomeNearbyQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHomeNearby>>> = ({ signal }) => listHomeNearby({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHomeNearby>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHomeNearbyQueryResult = NonNullable<Awaited<ReturnType<typeof listHomeNearby>>>
+export type ListHomeNearbyQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List general popular seed places, not device-location results
+ */
+
+export function useListHomeNearby<TData = Awaited<ReturnType<typeof listHomeNearby>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeNearby>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHomeNearbyQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListHomeEventsUrl = () => {
+
+
+
+
+  return `/api/v1/home/events`
+}
+
+export const listHomeEvents = async ( options?: Parameters<typeof customFetch>[1]): Promise<EventList> => {
+
+  return customFetch<EventList>(getListHomeEventsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHomeEventsQueryKey = () => {
+    return [
+    `/api/v1/home/events`
+    ] as const;
+    }
+
+
+export const getListHomeEventsQueryOptions = <TData = Awaited<ReturnType<typeof listHomeEvents>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHomeEventsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHomeEvents>>> = ({ signal }) => listHomeEvents({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHomeEvents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHomeEventsQueryResult = NonNullable<Awaited<ReturnType<typeof listHomeEvents>>>
+export type ListHomeEventsQueryError = ErrorType<unknown>
+
+
+
+export function useListHomeEvents<TData = Awaited<ReturnType<typeof listHomeEvents>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHomeEventsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListHomeHotelsUrl = () => {
+
+
+
+
+  return `/api/v1/home/hotels`
+}
+
+export const listHomeHotels = async ( options?: Parameters<typeof customFetch>[1]): Promise<HotelList> => {
+
+  return customFetch<HotelList>(getListHomeHotelsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHomeHotelsQueryKey = () => {
+    return [
+    `/api/v1/home/hotels`
+    ] as const;
+    }
+
+
+export const getListHomeHotelsQueryOptions = <TData = Awaited<ReturnType<typeof listHomeHotels>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeHotels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHomeHotelsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHomeHotels>>> = ({ signal }) => listHomeHotels({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHomeHotels>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHomeHotelsQueryResult = NonNullable<Awaited<ReturnType<typeof listHomeHotels>>>
+export type ListHomeHotelsQueryError = ErrorType<unknown>
+
+
+
+export function useListHomeHotels<TData = Awaited<ReturnType<typeof listHomeHotels>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeHotels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHomeHotelsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListHomePropertiesUrl = () => {
+
+
+
+
+  return `/api/v1/home/properties`
+}
+
+export const listHomeProperties = async ( options?: Parameters<typeof customFetch>[1]): Promise<PropertyList> => {
+
+  return customFetch<PropertyList>(getListHomePropertiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHomePropertiesQueryKey = () => {
+    return [
+    `/api/v1/home/properties`
+    ] as const;
+    }
+
+
+export const getListHomePropertiesQueryOptions = <TData = Awaited<ReturnType<typeof listHomeProperties>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeProperties>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHomePropertiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHomeProperties>>> = ({ signal }) => listHomeProperties({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHomeProperties>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHomePropertiesQueryResult = NonNullable<Awaited<ReturnType<typeof listHomeProperties>>>
+export type ListHomePropertiesQueryError = ErrorType<unknown>
+
+
+
+export function useListHomeProperties<TData = Awaited<ReturnType<typeof listHomeProperties>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeProperties>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHomePropertiesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
