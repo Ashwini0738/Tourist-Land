@@ -11,7 +11,7 @@ import {
   Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
-import { Redirect, Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
 import * as SplashScreen from 'expo-splash-screen';
@@ -45,6 +45,7 @@ function RootLayoutNav() {
   const route = segments[0];
   const publicRoutes = ['splash', 'login', 'verify', 'vendor-application'];
   const lockedSessionRoutes = ['verify', 'biometric', 'biometric-login'];
+
   useEffect(() => {
     setAuthTokenGetter(Platform.OS === 'web' ? null : () => getToken());
     setUnauthorizedHandler(async () => {
@@ -56,44 +57,56 @@ function RootLayoutNav() {
       setUnauthorizedHandler(null);
     };
   }, [getToken, router, signOut]);
-  if (!isLoaded && !publicRoutes.includes(route ?? '')) return <AuthLoadingScreen label="Securing your journey…" />;
-  if (!isLoaded) return renderRoutes();
-  if (!isSignedIn && route && !publicRoutes.includes(route)) return <Redirect href="/login" />;
-  if (isSignedIn && !isReady) return <AuthLoadingScreen label="Preparing your secure account…" />;
-  if (isSignedIn && isReady && publicRoutes.includes(route ?? '')) {
-    if (!deviceAuthSetupComplete) return <Redirect href="/biometric" />;
-    if (biometricsEnabled && !isUnlocked) return <Redirect href="/biometric-login" />;
-    if (roleLoading || (!roleReady && !roleError)) return <AuthLoadingScreen label="Loading your account access…" />;
-    if (roleError || !role) return <AuthLoadingScreen label="We could not load your account access. Please try again." />;
-    return <Redirect href={roleHome(role)} />;
-  }
-  if (isSignedIn && isReady && !isUnlocked && route && !lockedSessionRoutes.includes(route)) {
-    if (!deviceAuthSetupComplete) return <Redirect href="/biometric" />;
-    if (biometricsEnabled) return <Redirect href="/biometric-login" />;
-  }
-  if (isSignedIn && isReady && isUnlocked && (roleLoading || (!roleReady && !roleError))) {
-    return <AuthLoadingScreen label="Loading your account access…" />;
-  }
-  if (isSignedIn && isReady && isUnlocked && (roleError || !role)) {
-    return <AuthLoadingScreen label="We could not load your account access. Please try again." />;
-  }
-  if (isSignedIn && isReady && isUnlocked && role) {
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
+      if (route && !publicRoutes.includes(route)) router.replace('/login');
+      return;
+    }
+
+    if (!isReady) return;
+
+    if (!deviceAuthSetupComplete) {
+      if (route !== 'biometric') router.replace('/biometric');
+      return;
+    }
+
+    if (biometricsEnabled && !isUnlocked) {
+      if (route !== 'biometric-login') router.replace('/biometric-login');
+      return;
+    }
+
+    if (!isUnlocked || roleLoading || (!roleReady && !roleError) || roleError || !role) return;
+
+    if (publicRoutes.includes(route ?? '') || lockedSessionRoutes.includes(route ?? '')) {
+      router.replace(roleHome(role));
+      return;
+    }
+
     const redirectedHome = role !== 'user' || route === 'vendor' || route === 'admin'
       ? unauthorizedHome(role, route)
       : null;
     if (redirectedHome && redirectedHome !== `/${route}`) {
-      return <Redirect href={redirectedHome} />;
+      router.replace(redirectedHome);
     }
-  }
-  return renderRoutes();
-}
+  }, [
+    biometricsEnabled,
+    deviceAuthSetupComplete,
+    isLoaded,
+    isReady,
+    isSignedIn,
+    isUnlocked,
+    role,
+    roleError,
+    roleLoading,
+    roleReady,
+    route,
+    router,
+  ]);
 
-function AuthLoadingScreen({ label }: { label: string }) {
-  const colors = useColors();
-  return <View style={[styles.authLoading, { backgroundColor: colors.background }]}>
-    <ActivityIndicator color={colors.primary} />
-    <Text style={[styles.authLoadingText, { color: colors.mutedForeground }]}>{label}</Text>
-  </View>;
+  return renderRoutes();
 }
 
 function renderRoutes() {
@@ -157,7 +170,3 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  authLoading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  authLoadingText: { fontSize: 13, fontWeight: '600' },
-});

@@ -30,6 +30,8 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       enabled,
       retry: false,
       queryKey: [...getGetCurrentUserQueryKey(), userId ?? 'signed-out'],
+      staleTime: 0,
+      refetchOnMount: 'always',
     },
   });
 

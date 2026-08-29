@@ -5,6 +5,10 @@ import { findVendorProfile, serializeCurrentUser } from "../lib/role-data";
 
 const authRouter: IRouter = Router();
 
+authRouter.use((_req, res, next) => {
+  res.set("Cache-Control", "private, no-store");
+  next();
+});
 authRouter.use(requireAuth);
 
 authRouter.get("/v1/auth/session", async (req, res) => {
