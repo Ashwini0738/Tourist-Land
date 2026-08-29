@@ -5,7 +5,7 @@ import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
 import { useColors } from '@/hooks/useColors';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SecurityIcon } from '@/components/SecurityIcon';
 
 export default function BiometricLoginScreen() {
   const colors = useColors();
@@ -40,7 +40,7 @@ export default function BiometricLoginScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 24, justifyContent: 'space-between', paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }}>
       <View style={{alignItems: 'center'}}>
         <View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}>
-          <MaterialCommunityIcons name="compass-outline" size={36} color="#064E3B" />
+          <SecurityIcon name="compass" size={36} color="#064E3B" />
           <Text style={{fontSize: 20, fontWeight: 'bold', color: colors.foreground, letterSpacing: 1}}>TRAVEL & LAND</Text>
         </View>
       </View>
@@ -52,13 +52,13 @@ export default function BiometricLoginScreen() {
 
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <Pressable accessibilityRole="button" accessibilityLabel="Unlock with fingerprint or Face ID" onPress={authenticate} style={{flexDirection: 'row', alignItems: 'center', minHeight: 96}}>
-          <MaterialCommunityIcons name="fingerprint" size={80} color={colors.foreground} />
+          <SecurityIcon name="fingerprint" size={80} color={colors.foreground} />
           <View style={{paddingHorizontal: 24, alignItems: 'center'}}>
              <View style={{width: 1, height: 30, backgroundColor: colors.border}} />
              <Text style={{marginVertical: 12, color: colors.foreground, fontWeight: '700'}}>OR</Text>
              <View style={{width: 1, height: 30, backgroundColor: colors.border}} />
           </View>
-          <MaterialCommunityIcons name="face-recognition" size={80} color={colors.foreground} />
+          <SecurityIcon name="face" size={80} color={colors.foreground} />
         </Pressable>
         <Text style={{marginTop: 40, fontSize: 16, color: colors.foreground, fontWeight: '500'}}>Tap to Unlock With Biometrics</Text>
       </View>

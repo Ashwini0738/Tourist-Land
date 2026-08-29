@@ -1,9 +1,10 @@
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
+import { SecurityIcon } from '@/components/SecurityIcon';
 
 export default function WalletScreen() {
   const colors = useColors();
@@ -25,14 +26,14 @@ export default function WalletScreen() {
         <View style={{ backgroundColor: '#0F172A', borderRadius: 24, padding: 24, height: 230, position: 'relative', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 10, zIndex: 2 }}>
           {/* Abstract decoration */}
           <View style={{ position: 'absolute', right: -30, top: -20, opacity: 0.6 }}>
-             <MaterialCommunityIcons name="gift-outline" size={160} color="#334155" />
+             <SecurityIcon name="gift" size={160} color="#334155" />
           </View>
           <View style={{ position: 'absolute', right: 40, bottom: -10, opacity: 0.4 }}>
-             <MaterialCommunityIcons name="ticket-percent-outline" size={100} color="#475569" />
+             <SecurityIcon name="ticket" size={100} color="#475569" />
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <MaterialCommunityIcons name="compass-outline" size={32} color="#FACC15" />
+            <SecurityIcon name="compass" size={32} color="#FACC15" />
             <Text style={{ color: '#FACC15', fontSize: 18, fontWeight: '700', letterSpacing: 2 }}>TRAVEL & LAND</Text>
           </View>
 
@@ -44,7 +45,7 @@ export default function WalletScreen() {
 
         {/* Inactive travel pass preview */}
         <View style={{ backgroundColor: colors.card, marginHorizontal: 16, marginTop: -20, borderRadius: 20, padding: 24, paddingTop: 48, borderWidth: 1, borderColor: colors.border, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4, zIndex: 1 }}>
-           <MaterialCommunityIcons name="ticket-confirmation-outline" size={64} color={colors.foreground} />
+           <SecurityIcon name="pass" size={64} color={colors.foreground} />
            <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: '700', marginTop: 16 }}>Travel pass preview</Text>
            <Text style={{ color: colors.mutedForeground, fontSize: 13, lineHeight: 19, marginTop: 6, textAlign: 'center' }}>Your secure check-in pass will activate after your first confirmed booking.</Text>
         </View>
