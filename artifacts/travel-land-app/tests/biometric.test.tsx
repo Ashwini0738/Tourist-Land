@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
-import BiometricScreen from './biometric';
+import BiometricScreen from '../app/biometric';
 import { router } from 'expo-router';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
 
