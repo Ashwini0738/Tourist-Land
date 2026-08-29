@@ -11,6 +11,8 @@ tags:
   - name: discovery
   - name: properties
   - name: auth
+  - name: vendor
+  - name: admin
 paths:
   /healthz:
     get:
@@ -220,6 +222,165 @@ paths:
       responses:
         "200": { description: Clerk logout guidance, content: { application/json: { schema: { $ref: "#/components/schemas/LogoutStatus" } } } }
         "401": { $ref: "#/components/responses/Unauthenticated" }
+  /v1/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      summary: Get safe current-user profile and authoritative role
+      responses:
+        "200":
+          description: Authenticated local user profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentUser" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /v1/vendor/dashboard:
+    get:
+      operationId: getVendorDashboard
+      tags: [vendor]
+      security: [{ bearerAuth: [] }]
+      summary: Get the authenticated vendor dashboard status
+      responses:
+        "200":
+          description: Vendor dashboard status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoleDashboard" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/vendor/profile:
+    get:
+      operationId: getVendorProfile
+      tags: [vendor]
+      security: [{ bearerAuth: [] }]
+      summary: Get the authenticated vendor profile
+      responses:
+        "200":
+          description: Vendor profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorProfile" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: submitVendorProfile
+      tags: [vendor]
+      security: [{ bearerAuth: [] }]
+      summary: Submit or update a pending vendor profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VendorProfileInput" }
+      responses:
+        "200":
+          description: Pending vendor profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorProfile" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Get the authenticated admin dashboard status
+      responses:
+        "200":
+          description: Admin dashboard status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoleDashboard" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: List safe local user records for platform administration
+      responses:
+        "200":
+          description: Safe user records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/CurrentUser" }
+                required: [items]
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/users/{id}/role:
+    put:
+      operationId: setAdminUserRole
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Assign a primary role to a local user
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RoleAssignmentInput" }
+      responses:
+        "200":
+          description: Updated safe user record
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentUser" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/admin/vendors/{userId}/approve:
+    post:
+      operationId: approveVendor
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Approve a pending vendor profile and activate vendor access
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Approved vendor profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorProfile" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/admin/vendors/{userId}/suspend:
+    post:
+      operationId: suspendVendor
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Suspend a vendor profile and remove active vendor access
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Suspended vendor profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorProfile" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
 components:
   securitySchemes:
     bearerAuth:
@@ -242,6 +403,9 @@ components:
             $ref: "#/components/schemas/ErrorResponse"
     Unauthenticated:
       description: Clerk session is missing or invalid
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    Forbidden:
+      description: Authenticated identity is not authorized for this resource
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
     InvalidInput:
       description: Request body is invalid
@@ -435,6 +599,79 @@ components:
         sessionId: { type: [string, "null"] }
         sessionAuthority: { type: string, enum: [clerk] }
       required: [authenticated, clerkUserId, sessionId, sessionAuthority]
+    PrimaryRole:
+      type: string
+      enum: [user, vendor, admin]
+    AccountStatus:
+      type: string
+      enum: [active, inactive, suspended]
+    VendorStatus:
+      type: string
+      enum: [pending, approved, rejected, suspended]
+    CurrentUser:
+      type: object
+      properties:
+        id: { type: string }
+        clerkUserId: { type: string }
+        email: { type: string }
+        displayName: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+        avatarUrl: { type: [string, "null"] }
+        role: { $ref: "#/components/schemas/PrimaryRole" }
+        status: { $ref: "#/components/schemas/AccountStatus" }
+        vendorProfile:
+          anyOf:
+            - $ref: "#/components/schemas/VendorProfile"
+            - type: "null"
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, clerkUserId, email, displayName, phone, avatarUrl, role, status, vendorProfile, createdAt, updatedAt]
+    VendorProfileInput:
+      type: object
+      properties:
+        businessName: { type: string, minLength: 1, maxLength: 200 }
+        businessType: { type: string, minLength: 1, maxLength: 100 }
+        contactName: { type: string, minLength: 1, maxLength: 200 }
+        phone: { type: string, maxLength: 40 }
+        email: { type: string }
+        description: { type: string, maxLength: 4000 }
+        address: { type: string, maxLength: 500 }
+        city: { type: string, maxLength: 100 }
+        state: { type: string, maxLength: 100 }
+        country: { type: string, maxLength: 100 }
+      required: [businessName, businessType, contactName, phone, email, description, address, city, state, country]
+    VendorProfile:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        businessName: { type: string }
+        businessType: { type: string }
+        contactName: { type: string }
+        phone: { type: string }
+        email: { type: string }
+        description: { type: string }
+        address: { type: string }
+        city: { type: string }
+        state: { type: string }
+        country: { type: string }
+        status: { $ref: "#/components/schemas/VendorStatus" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, userId, businessName, businessType, contactName, phone, email, description, address, city, state, country, status, createdAt, updatedAt]
+    RoleDashboard:
+      type: object
+      properties:
+        role: { $ref: "#/components/schemas/PrimaryRole" }
+        status: { $ref: "#/components/schemas/AccountStatus" }
+        title: { type: string }
+        message: { type: string }
+      required: [role, status, title, message]
+    RoleAssignmentInput:
+      type: object
+      properties:
+        role: { $ref: "#/components/schemas/PrimaryRole" }
+      required: [role]
     RefreshStatus:
       type: object
       properties:

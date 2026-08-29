@@ -303,3 +303,266 @@ export const LogoutAuthSessionResponse = zod.object({
 })
 
 
+/**
+ * @summary Get safe current-user profile and authoritative role
+ */
+export const GetCurrentUserResponse = zod.object({
+  "id": zod.string(),
+  "clerkUserId": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable(),
+  "role": zod.enum(['user', 'vendor', 'admin']),
+  "status": zod.enum(['active', 'inactive', 'suspended']),
+  "vendorProfile": zod.union([zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),zod.null()]),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get the authenticated vendor dashboard status
+ */
+export const GetVendorDashboardResponse = zod.object({
+  "role": zod.enum(['user', 'vendor', 'admin']),
+  "status": zod.enum(['active', 'inactive', 'suspended']),
+  "title": zod.string(),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Get the authenticated vendor profile
+ */
+export const GetVendorProfileResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Submit or update a pending vendor profile
+ */
+export const submitVendorProfileBodyBusinessNameMax = 200;
+
+export const submitVendorProfileBodyBusinessTypeMax = 100;
+
+export const submitVendorProfileBodyContactNameMax = 200;
+
+export const submitVendorProfileBodyPhoneMax = 40;
+
+export const submitVendorProfileBodyDescriptionMax = 4000;
+
+export const submitVendorProfileBodyAddressMax = 500;
+
+export const submitVendorProfileBodyCityMax = 100;
+
+export const submitVendorProfileBodyStateMax = 100;
+
+export const submitVendorProfileBodyCountryMax = 100;
+
+
+
+export const SubmitVendorProfileBody = zod.object({
+  "businessName": zod.string().min(1).max(submitVendorProfileBodyBusinessNameMax),
+  "businessType": zod.string().min(1).max(submitVendorProfileBodyBusinessTypeMax),
+  "contactName": zod.string().min(1).max(submitVendorProfileBodyContactNameMax),
+  "phone": zod.string().max(submitVendorProfileBodyPhoneMax),
+  "email": zod.string(),
+  "description": zod.string().max(submitVendorProfileBodyDescriptionMax),
+  "address": zod.string().max(submitVendorProfileBodyAddressMax),
+  "city": zod.string().max(submitVendorProfileBodyCityMax),
+  "state": zod.string().max(submitVendorProfileBodyStateMax),
+  "country": zod.string().max(submitVendorProfileBodyCountryMax)
+})
+
+export const SubmitVendorProfileResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get the authenticated admin dashboard status
+ */
+export const GetAdminDashboardResponse = zod.object({
+  "role": zod.enum(['user', 'vendor', 'admin']),
+  "status": zod.enum(['active', 'inactive', 'suspended']),
+  "title": zod.string(),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary List safe local user records for platform administration
+ */
+export const ListAdminUsersResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "clerkUserId": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable(),
+  "role": zod.enum(['user', 'vendor', 'admin']),
+  "status": zod.enum(['active', 'inactive', 'suspended']),
+  "vendorProfile": zod.union([zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),zod.null()]),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Assign a primary role to a local user
+ */
+export const SetAdminUserRoleParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SetAdminUserRoleBody = zod.object({
+  "role": zod.enum(['user', 'vendor', 'admin'])
+})
+
+export const SetAdminUserRoleResponse = zod.object({
+  "id": zod.string(),
+  "clerkUserId": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable(),
+  "role": zod.enum(['user', 'vendor', 'admin']),
+  "status": zod.enum(['active', 'inactive', 'suspended']),
+  "vendorProfile": zod.union([zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),zod.null()]),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Approve a pending vendor profile and activate vendor access
+ */
+export const ApproveVendorParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const ApproveVendorResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Suspend a vendor profile and remove active vendor access
+ */
+export const SuspendVendorParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const SuspendVendorResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+

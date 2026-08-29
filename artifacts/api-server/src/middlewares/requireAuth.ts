@@ -1,15 +1,12 @@
 import type { NextFunction, Request, Response } from "express";
 import { clerkClient, getAuth } from "@clerk/express";
-import { db, users } from "@workspace/db";
+import { db, userRoles, users } from "@workspace/db";
 import { eq } from "drizzle-orm";
-
-declare global {
-  namespace Express {
-    interface Request {
-      localUser?: { id: string; clerkUserId: string };
-    }
-  }
-}
+import {
+  configuredAdminClerkUserIds,
+  normalizeAccountStatus,
+  resolvePrimaryRole,
+} from "../lib/roles";
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { userId } = getAuth(req);
@@ -32,7 +29,38 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       local = await db.query.users.findFirst({ where: eq(users.clerkUserId, userId) });
     }
     if (!local) throw new Error("Local user provisioning did not complete.");
-    req.localUser = { id: local.id, clerkUserId: userId };
+    let roleRows = await db
+      .select({ role: userRoles.role })
+      .from(userRoles)
+      .where(eq(userRoles.userId, local.id));
+    const configuredAdmins = configuredAdminClerkUserIds();
+    if (configuredAdmins.has(userId) && !roleRows.some((row) => row.role === "admin")) {
+      await db.transaction(async (tx) => {
+        await tx.delete(userRoles).where(eq(userRoles.userId, local!.id));
+        await tx.insert(userRoles).values({ userId: local!.id, role: "admin" });
+      });
+      roleRows = [{ role: "admin" }];
+    } else if (roleRows.length === 0) {
+      await db.insert(userRoles).values({ userId: local.id, role: "user" }).onConflictDoNothing();
+      roleRows = [{ role: "user" }];
+    }
+    const status = normalizeAccountStatus(local.status);
+    if (status !== "active") {
+      res.status(403).json({ error: { code: "ACCOUNT_INACTIVE", message: "This account is not active." } });
+      return;
+    }
+    req.localUser = {
+      id: local.id,
+      clerkUserId: userId,
+      email: local.email,
+      displayName: local.displayName,
+      phone: local.phone,
+      avatarUrl: local.avatarUrl,
+      status,
+      role: resolvePrimaryRole(roleRows.map((row) => row.role)),
+      createdAt: local.createdAt,
+      updatedAt: local.updatedAt,
+    };
     next();
   } catch {
     res.status(503).json({ error: { code: "AUTH_UNAVAILABLE", message: "Authentication is temporarily unavailable. Please try again." } });

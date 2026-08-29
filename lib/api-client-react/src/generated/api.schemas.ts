@@ -155,6 +155,111 @@ export interface AuthSessionStatus {
   sessionAuthority: AuthSessionStatusSessionAuthority;
 }
 
+export type PrimaryRole = typeof PrimaryRole[keyof typeof PrimaryRole];
+
+
+export const PrimaryRole = {
+  user: 'user',
+  vendor: 'vendor',
+  admin: 'admin',
+} as const;
+
+export type AccountStatus = typeof AccountStatus[keyof typeof AccountStatus];
+
+
+export const AccountStatus = {
+  active: 'active',
+  inactive: 'inactive',
+  suspended: 'suspended',
+} as const;
+
+export type VendorStatus = typeof VendorStatus[keyof typeof VendorStatus];
+
+
+export const VendorStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+  suspended: 'suspended',
+} as const;
+
+export interface VendorProfile {
+  id: string;
+  userId: string;
+  businessName: string;
+  businessType: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  description: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  status: VendorStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CurrentUser {
+  id: string;
+  clerkUserId: string;
+  email: string;
+  /** @nullable */
+  displayName: string | null;
+  /** @nullable */
+  phone: string | null;
+  /** @nullable */
+  avatarUrl: string | null;
+  role: PrimaryRole;
+  status: AccountStatus;
+  vendorProfile: VendorProfile | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VendorProfileInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  businessName: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  businessType: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  contactName: string;
+  /** @maxLength 40 */
+  phone: string;
+  email: string;
+  /** @maxLength 4000 */
+  description: string;
+  /** @maxLength 500 */
+  address: string;
+  /** @maxLength 100 */
+  city: string;
+  /** @maxLength 100 */
+  state: string;
+  /** @maxLength 100 */
+  country: string;
+}
+
+export interface RoleDashboard {
+  role: PrimaryRole;
+  status: AccountStatus;
+  title: string;
+  message: string;
+}
+
+export interface RoleAssignmentInput {
+  role: PrimaryRole;
+}
+
 export type RefreshStatusSessionAuthority = typeof RefreshStatusSessionAuthority[keyof typeof RefreshStatusSessionAuthority];
 
 
@@ -194,6 +299,11 @@ export type NotFoundResponse = ErrorResponse;
 export type UnauthenticatedResponse = ErrorResponse;
 
 /**
+ * Authenticated identity is not authorized for this resource
+ */
+export type ForbiddenResponse = ErrorResponse;
+
+/**
  * Request body is invalid
  */
 export type InvalidInputResponse = ErrorResponse;
@@ -214,5 +324,9 @@ export type ListDestinations200 = {
 
 export type ListProperties200 = {
   items: Property[];
+};
+
+export type ListAdminUsers200 = {
+  items: CurrentUser[];
 };
 

@@ -22,12 +22,17 @@ import type {
 import type {
   AuthSessionStatus,
   BannerList,
+  ConflictResponse,
+  CurrentUser,
   Destination,
   DestinationList,
   EventList,
+  ForbiddenResponse,
   HealthStatus,
   HomeData,
   HotelList,
+  InvalidInputResponse,
+  ListAdminUsers200,
   ListDestinations200,
   ListProperties200,
   LogoutStatus,
@@ -38,7 +43,11 @@ import type {
   PropertyEnquiryReceipt,
   PropertyList,
   RefreshStatus,
-  UnauthenticatedResponse
+  RoleAssignmentInput,
+  RoleDashboard,
+  UnauthenticatedResponse,
+  VendorProfile,
+  VendorProfileInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1209,5 +1218,675 @@ export const useLogoutAuthSession = <TError = ErrorType<UnauthenticatedResponse>
         TContext
       > => {
       return useMutation(getLogoutAuthSessionMutationOptions(options));
+    }
+
+export const getGetCurrentUserUrl = () => {
+
+
+
+
+  return `/api/v1/me`
+}
+
+/**
+ * @summary Get safe current-user profile and authoritative role
+ */
+export const getCurrentUser = async ( options?: Parameters<typeof customFetch>[1]): Promise<CurrentUser> => {
+
+  return customFetch<CurrentUser>(getGetCurrentUserUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCurrentUserQueryKey = () => {
+    return [
+    `/api/v1/me`
+    ] as const;
+    }
+
+
+export const getGetCurrentUserQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<UnauthenticatedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentUserQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentUser>>> = ({ signal }) => getCurrentUser({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCurrentUserQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>
+export type GetCurrentUserQueryError = ErrorType<UnauthenticatedResponse>
+
+
+/**
+ * @summary Get safe current-user profile and authoritative role
+ */
+
+export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<UnauthenticatedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCurrentUserQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetVendorDashboardUrl = () => {
+
+
+
+
+  return `/api/v1/vendor/dashboard`
+}
+
+/**
+ * @summary Get the authenticated vendor dashboard status
+ */
+export const getVendorDashboard = async ( options?: Parameters<typeof customFetch>[1]): Promise<RoleDashboard> => {
+
+  return customFetch<RoleDashboard>(getGetVendorDashboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVendorDashboardQueryKey = () => {
+    return [
+    `/api/v1/vendor/dashboard`
+    ] as const;
+    }
+
+
+export const getGetVendorDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getVendorDashboard>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVendorDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVendorDashboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVendorDashboard>>> = ({ signal }) => getVendorDashboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVendorDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetVendorDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getVendorDashboard>>>
+export type GetVendorDashboardQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+/**
+ * @summary Get the authenticated vendor dashboard status
+ */
+
+export function useGetVendorDashboard<TData = Awaited<ReturnType<typeof getVendorDashboard>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVendorDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetVendorDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetVendorProfileUrl = () => {
+
+
+
+
+  return `/api/v1/vendor/profile`
+}
+
+/**
+ * @summary Get the authenticated vendor profile
+ */
+export const getVendorProfile = async ( options?: Parameters<typeof customFetch>[1]): Promise<VendorProfile> => {
+
+  return customFetch<VendorProfile>(getGetVendorProfileUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVendorProfileQueryKey = () => {
+    return [
+    `/api/v1/vendor/profile`
+    ] as const;
+    }
+
+
+export const getGetVendorProfileQueryOptions = <TData = Awaited<ReturnType<typeof getVendorProfile>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVendorProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVendorProfileQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVendorProfile>>> = ({ signal }) => getVendorProfile({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVendorProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetVendorProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getVendorProfile>>>
+export type GetVendorProfileQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+
+/**
+ * @summary Get the authenticated vendor profile
+ */
+
+export function useGetVendorProfile<TData = Awaited<ReturnType<typeof getVendorProfile>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVendorProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetVendorProfileQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSubmitVendorProfileUrl = () => {
+
+
+
+
+  return `/api/v1/vendor/profile`
+}
+
+/**
+ * @summary Submit or update a pending vendor profile
+ */
+export const submitVendorProfile = async (vendorProfileInput: VendorProfileInput, options?: Parameters<typeof customFetch>[1]): Promise<VendorProfile> => {
+
+  return customFetch<VendorProfile>(getSubmitVendorProfileUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(vendorProfileInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitVendorProfileMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitVendorProfile>>, TError,{data: BodyType<VendorProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitVendorProfile>>, TError,{data: BodyType<VendorProfileInput>}, TContext> => {
+
+const mutationKey = ['submitVendorProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitVendorProfile>>, {data: BodyType<VendorProfileInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitVendorProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitVendorProfileMutationResult = NonNullable<Awaited<ReturnType<typeof submitVendorProfile>>>
+    export type SubmitVendorProfileMutationBody = BodyType<VendorProfileInput>
+    export type SubmitVendorProfileMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ConflictResponse>
+
+    /**
+ * @summary Submit or update a pending vendor profile
+ */
+export const useSubmitVendorProfile = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitVendorProfile>>, TError,{data: BodyType<VendorProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitVendorProfile>>,
+        TError,
+        {data: BodyType<VendorProfileInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitVendorProfileMutationOptions(options));
+    }
+
+export const getGetAdminDashboardUrl = () => {
+
+
+
+
+  return `/api/v1/admin/dashboard`
+}
+
+/**
+ * @summary Get the authenticated admin dashboard status
+ */
+export const getAdminDashboard = async ( options?: Parameters<typeof customFetch>[1]): Promise<RoleDashboard> => {
+
+  return customFetch<RoleDashboard>(getGetAdminDashboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminDashboardQueryKey = () => {
+    return [
+    `/api/v1/admin/dashboard`
+    ] as const;
+    }
+
+
+export const getGetAdminDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getAdminDashboard>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminDashboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminDashboard>>> = ({ signal }) => getAdminDashboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminDashboard>>>
+export type GetAdminDashboardQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+/**
+ * @summary Get the authenticated admin dashboard status
+ */
+
+export function useGetAdminDashboard<TData = Awaited<ReturnType<typeof getAdminDashboard>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAdminUsersUrl = () => {
+
+
+
+
+  return `/api/v1/admin/users`
+}
+
+/**
+ * @summary List safe local user records for platform administration
+ */
+export const listAdminUsers = async ( options?: Parameters<typeof customFetch>[1]): Promise<ListAdminUsers200> => {
+
+  return customFetch<ListAdminUsers200>(getListAdminUsersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminUsersQueryKey = () => {
+    return [
+    `/api/v1/admin/users`
+    ] as const;
+    }
+
+
+export const getListAdminUsersQueryOptions = <TData = Awaited<ReturnType<typeof listAdminUsers>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminUsersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminUsers>>> = ({ signal }) => listAdminUsers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminUsersQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminUsers>>>
+export type ListAdminUsersQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+/**
+ * @summary List safe local user records for platform administration
+ */
+
+export function useListAdminUsers<TData = Awaited<ReturnType<typeof listAdminUsers>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminUsersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetAdminUserRoleUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/users/${id}/role`
+}
+
+/**
+ * @summary Assign a primary role to a local user
+ */
+export const setAdminUserRole = async (id: string,
+    roleAssignmentInput: RoleAssignmentInput, options?: Parameters<typeof customFetch>[1]): Promise<CurrentUser> => {
+
+  return customFetch<CurrentUser>(getSetAdminUserRoleUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(roleAssignmentInput)
+  }
+);}
+
+
+
+
+
+export const getSetAdminUserRoleMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAdminUserRole>>, TError,{id: string;data: BodyType<RoleAssignmentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setAdminUserRole>>, TError,{id: string;data: BodyType<RoleAssignmentInput>}, TContext> => {
+
+const mutationKey = ['setAdminUserRole'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setAdminUserRole>>, {id: string;data: BodyType<RoleAssignmentInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setAdminUserRole(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetAdminUserRoleMutationResult = NonNullable<Awaited<ReturnType<typeof setAdminUserRole>>>
+    export type SetAdminUserRoleMutationBody = BodyType<RoleAssignmentInput>
+    export type SetAdminUserRoleMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+    /**
+ * @summary Assign a primary role to a local user
+ */
+export const useSetAdminUserRole = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAdminUserRole>>, TError,{id: string;data: BodyType<RoleAssignmentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setAdminUserRole>>,
+        TError,
+        {id: string;data: BodyType<RoleAssignmentInput>},
+        TContext
+      > => {
+      return useMutation(getSetAdminUserRoleMutationOptions(options));
+    }
+
+export const getApproveVendorUrl = (userId: string,) => {
+
+
+
+
+  return `/api/v1/admin/vendors/${userId}/approve`
+}
+
+/**
+ * @summary Approve a pending vendor profile and activate vendor access
+ */
+export const approveVendor = async (userId: string, options?: Parameters<typeof customFetch>[1]): Promise<VendorProfile> => {
+
+  return customFetch<VendorProfile>(getApproveVendorUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getApproveVendorMutationOptions = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveVendor>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveVendor>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['approveVendor'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveVendor>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  approveVendor(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveVendorMutationResult = NonNullable<Awaited<ReturnType<typeof approveVendor>>>
+
+    export type ApproveVendorMutationError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>
+
+    /**
+ * @summary Approve a pending vendor profile and activate vendor access
+ */
+export const useApproveVendor = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveVendor>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveVendor>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getApproveVendorMutationOptions(options));
+    }
+
+export const getSuspendVendorUrl = (userId: string,) => {
+
+
+
+
+  return `/api/v1/admin/vendors/${userId}/suspend`
+}
+
+/**
+ * @summary Suspend a vendor profile and remove active vendor access
+ */
+export const suspendVendor = async (userId: string, options?: Parameters<typeof customFetch>[1]): Promise<VendorProfile> => {
+
+  return customFetch<VendorProfile>(getSuspendVendorUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSuspendVendorMutationOptions = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof suspendVendor>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof suspendVendor>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['suspendVendor'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof suspendVendor>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  suspendVendor(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SuspendVendorMutationResult = NonNullable<Awaited<ReturnType<typeof suspendVendor>>>
+
+    export type SuspendVendorMutationError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+    /**
+ * @summary Suspend a vendor profile and remove active vendor access
+ */
+export const useSuspendVendor = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof suspendVendor>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof suspendVendor>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getSuspendVendorMutationOptions(options));
     }
 

@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { getAuth } from "@clerk/express";
 import { requireAuth } from "../middlewares/requireAuth";
+import { findVendorProfile, serializeCurrentUser } from "../lib/role-data";
 
 const authRouter: IRouter = Router();
 
@@ -14,6 +15,11 @@ authRouter.get("/v1/auth/session", async (req, res) => {
     sessionId: auth.sessionId ?? null,
     sessionAuthority: "clerk",
   });
+});
+
+authRouter.get("/v1/me", async (req, res) => {
+  const vendorProfile = await findVendorProfile(req.localUser!.id);
+  res.json(serializeCurrentUser(req.localUser!, vendorProfile));
 });
 
 authRouter.post("/v1/auth/refresh", (req, res) => {

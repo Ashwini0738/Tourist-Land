@@ -17,11 +17,13 @@ import { useAuthSecurity } from '@/context/AuthSecurityContext';
 import * as SplashScreen from 'expo-splash-screen';
 import { AppStateProvider } from '@/context/AppStateContext';
 import { AuthSecurityProvider } from '@/context/AuthSecurityContext';
+import { RoleProvider, useRole } from '@/context/RoleContext';
 import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl, setUnauthorizedHandler } from '@workspace/api-client-react';
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
+import { roleHome, unauthorizedHome } from '@/features/role/roleRouting';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -37,6 +39,7 @@ function RootLayoutNav() {
   const { signOut } = useClerk();
   const router = useRouter();
   const { isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete } = useAuthSecurity();
+  const { role, isReady: roleReady, isLoading: roleLoading, isError: roleError } = useRole();
   const colors = useColors();
   const segments = useSegments();
   const route = segments[0];
@@ -60,11 +63,27 @@ function RootLayoutNav() {
   if (isSignedIn && isReady && publicRoutes.includes(route ?? '')) {
     if (!deviceAuthSetupComplete) return <Redirect href="/biometric" />;
     if (biometricsEnabled && !isUnlocked) return <Redirect href="/biometric-login" />;
-    return <Redirect href="/(tabs)" />;
+    if (roleLoading || (!roleReady && !roleError)) return <AuthLoadingScreen label="Loading your account access…" />;
+    if (roleError || !role) return <AuthLoadingScreen label="We could not load your account access. Please try again." />;
+    return <Redirect href={roleHome(role)} />;
   }
   if (isSignedIn && isReady && !isUnlocked && route && !lockedSessionRoutes.includes(route)) {
     if (!deviceAuthSetupComplete) return <Redirect href="/biometric" />;
     if (biometricsEnabled) return <Redirect href="/biometric-login" />;
+  }
+  if (isSignedIn && isReady && isUnlocked && (roleLoading || (!roleReady && !roleError))) {
+    return <AuthLoadingScreen label="Loading your account access…" />;
+  }
+  if (isSignedIn && isReady && isUnlocked && (roleError || !role)) {
+    return <AuthLoadingScreen label="We could not load your account access. Please try again." />;
+  }
+  if (isSignedIn && isReady && isUnlocked && role) {
+    const redirectedHome = role !== 'user' || route === 'vendor' || route === 'admin'
+      ? unauthorizedHome(role, route)
+      : null;
+    if (redirectedHome && redirectedHome !== `/${route}`) {
+      return <Redirect href={redirectedHome} />;
+    }
   }
   return renderRoutes();
 }
@@ -86,6 +105,8 @@ function renderRoutes() {
       <Stack.Screen name="biometric" />
       <Stack.Screen name="biometric-login" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="vendor" options={{ headerShown: false }} />
+      <Stack.Screen name="admin" options={{ headerShown: false }} />
       <Stack.Screen name="destination/[id]" />
       <Stack.Screen name="property/[id]" />
       <Stack.Screen name="booking" />
@@ -120,11 +141,13 @@ export default function RootLayout() {
       <ErrorBoundary>
         <AuthSecurityProvider><AppStateProvider>
           <QueryClientProvider client={queryClient}>
-            <GestureHandlerRootView>
-              <KeyboardProvider>
-                <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
+            <RoleProvider>
+              <GestureHandlerRootView>
+                <KeyboardProvider>
+                  <RootLayoutNav />
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </RoleProvider>
           </QueryClientProvider>
         </AppStateProvider></AuthSecurityProvider>
       </ErrorBoundary>

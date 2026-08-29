@@ -1,5 +1,6 @@
 import {
   boolean,
+  check,
   date,
   integer,
   jsonb,
@@ -10,6 +11,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -35,7 +37,33 @@ export const userRoles = pgTable(
     role: text("role").notNull(),
     ...timestamps,
   },
-  (table) => [uniqueIndex("user_role_unique").on(table.userId, table.role)],
+  (table) => [
+    uniqueIndex("user_role_unique").on(table.userId, table.role),
+    check("user_role_valid", sql`${table.role} in ('user', 'vendor', 'admin')`),
+  ],
+);
+
+export const vendorProfiles = pgTable(
+  "vendor_profiles",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull().unique(),
+    businessName: text("business_name").notNull(),
+    businessType: text("business_type").notNull(),
+    contactName: text("contact_name").notNull(),
+    phone: text("phone").notNull(),
+    email: text("email").notNull(),
+    description: text("description").notNull(),
+    address: text("address").notNull(),
+    city: text("city").notNull(),
+    state: text("state").notNull(),
+    country: text("country").notNull(),
+    status: text("status").default("pending").notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    check("vendor_profile_status_valid", sql`${table.status} in ('pending', 'approved', 'rejected', 'suspended')`),
+  ],
 );
 
 export const authenticationSessions = pgTable("authentication_sessions", {
