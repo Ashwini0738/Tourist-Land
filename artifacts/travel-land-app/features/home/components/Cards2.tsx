@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, Image, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { useColors } from '@/hooks/useColors';
 import { getImageSource } from '../utils/images';
 import type { Event, Hotel, Property } from '@workspace/api-client-react';

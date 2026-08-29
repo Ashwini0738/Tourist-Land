@@ -1,4 +1,4 @@
-import { Feather } from '@expo/vector-icons';
+import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { router } from 'expo-router';
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text } from 'react-native';

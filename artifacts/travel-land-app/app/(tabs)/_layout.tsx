@@ -1,7 +1,7 @@
 import React from 'react';
 import { Platform, StyleSheet, useColorScheme, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
-import { Feather } from '@expo/vector-icons';
+import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
 import { Redirect } from 'expo-router';

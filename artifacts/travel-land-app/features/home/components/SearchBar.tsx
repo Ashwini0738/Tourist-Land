@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, Pressable } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { router } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
 

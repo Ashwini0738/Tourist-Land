@@ -1,4 +1,4 @@
-import { Feather } from '@expo/vector-icons';
+import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { router } from 'expo-router';
 import React,{useEffect,useRef,useState}from 'react';
