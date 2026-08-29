@@ -21,7 +21,6 @@ import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl, setUnauthorizedHandler } from '@workspace/api-client-react';
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -99,12 +98,6 @@ function renderRoutes() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    // Expo's Android renderer resolves vector icons by the bundled .ttf
-    // basename, while iOS uses the family aliases exposed by the icon set.
-    // Register both names so icon glyphs render consistently on both
-    // platforms.
-    ...Feather.font,
-    Feather: Feather.font.feather,
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,

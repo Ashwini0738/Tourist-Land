@@ -1,11 +1,12 @@
-import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { Platform } from 'react-native';
 import { Circle, Path, Svg } from 'react-native-svg';
 
-type PlatformIconProps = Omit<React.ComponentProps<typeof Feather>, 'name'> & {
+type PlatformIconProps = {
   name: string;
+  size?: number;
+  color?: string;
   fill?: string;
+  accessibilityLabel?: string;
 };
 
 const paths: Record<string, string> = {
@@ -45,10 +46,6 @@ const paths: Record<string, string> = {
 };
 
 export function PlatformIcon({ name, size = 24, color = '#000', fill = 'none', ...props }: PlatformIconProps) {
-  if (Platform.OS !== 'android') {
-    return <Feather name={name as React.ComponentProps<typeof Feather>['name']} size={size} color={color} fill={fill} {...props} />;
-  }
-
   const path = paths[name] ?? paths['alert-circle'];
   const iconFill = fill && fill !== 'transparent' ? fill : 'none';
   const strokeWidth = Math.max(1.4, size / 16);
