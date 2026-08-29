@@ -185,6 +185,52 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ExploreFiltersResponse" }
+  /v1/favorites:
+    get:
+      operationId: listFavorites
+      tags: [favorites]
+      security: [{ bearerAuth: [] }]
+      summary: List the authenticated traveller's saved discovery items
+      responses:
+        "200":
+          description: Saved discovery item references
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FavoriteList" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /v1/favorites/{entityType}/{entityId}:
+    put:
+      operationId: addFavorite
+      tags: [favorites]
+      security: [{ bearerAuth: [] }]
+      summary: Save a discovery item for the authenticated traveller
+      parameters:
+        - $ref: "#/components/parameters/FavoriteEntityType"
+        - $ref: "#/components/parameters/FavoriteEntityId"
+      responses:
+        "200":
+          description: Saved discovery item reference
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Favorite" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      operationId: removeFavorite
+      tags: [favorites]
+      security: [{ bearerAuth: [] }]
+      summary: Remove a saved discovery item for the authenticated traveller
+      parameters:
+        - $ref: "#/components/parameters/FavoriteEntityType"
+        - $ref: "#/components/parameters/FavoriteEntityId"
+      responses:
+        "204":
+          description: Favorite removed, or was already absent
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /v1/destinations:
     get:
       operationId: listDestinations
@@ -687,6 +733,20 @@ components:
       required: true
       schema:
         type: string
+    FavoriteEntityType:
+      name: entityType
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/FavoriteEntityType"
+    FavoriteEntityId:
+      name: entityId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 200
   responses:
     NotFound:
       description: Resource not found
@@ -719,6 +779,22 @@ components:
         status:
           type: string
       required: [status]
+    FavoriteEntityType:
+      type: string
+      enum: [destination, place, temple, attraction, event, food, hotel, property]
+    Favorite:
+      type: object
+      properties:
+        entityType: { $ref: "#/components/schemas/FavoriteEntityType" }
+        entityId: { type: string }
+      required: [entityType, entityId]
+    FavoriteList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Favorite" }
+      required: [items]
     Destination:
       type: object
       properties:

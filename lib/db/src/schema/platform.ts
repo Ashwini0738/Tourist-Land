@@ -311,7 +311,7 @@ export const favorites = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
     entityType: text("entity_type").notNull(),
-    entityId: uuid("entity_id").notNull(),
+    entityId: text("entity_id").notNull(),
     ...timestamps,
   },
   (table) => [uniqueIndex("favorite_unique").on(table.userId, table.entityType, table.entityId)],

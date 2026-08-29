@@ -33,6 +33,8 @@ import type {
   ExploreCategoriesResponse,
   ExploreFiltersResponse,
   ExploreSearchResponse,
+  Favorite,
+  FavoriteList,
   ForbiddenResponse,
   GetExploreFiltersParams,
   GetVendorApplicationStatusParams,
@@ -914,6 +916,229 @@ export function useGetExploreFilters<TData = Awaited<ReturnType<typeof getExplor
 
 
 
+
+export const getListFavoritesUrl = () => {
+
+
+
+
+  return `/api/v1/favorites`
+}
+
+/**
+ * @summary List the authenticated traveller's saved discovery items
+ */
+export const listFavorites = async ( options?: Parameters<typeof customFetch>[1]): Promise<FavoriteList> => {
+
+  return customFetch<FavoriteList>(getListFavoritesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFavoritesQueryKey = () => {
+    return [
+    `/api/v1/favorites`
+    ] as const;
+    }
+
+
+export const getListFavoritesQueryOptions = <TData = Awaited<ReturnType<typeof listFavorites>>, TError = ErrorType<UnauthenticatedResponse | ServiceUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFavorites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFavoritesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFavorites>>> = ({ signal }) => listFavorites({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFavorites>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFavoritesQueryResult = NonNullable<Awaited<ReturnType<typeof listFavorites>>>
+export type ListFavoritesQueryError = ErrorType<UnauthenticatedResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary List the authenticated traveller's saved discovery items
+ */
+
+export function useListFavorites<TData = Awaited<ReturnType<typeof listFavorites>>, TError = ErrorType<UnauthenticatedResponse | ServiceUnavailableResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFavorites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFavoritesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAddFavoriteUrl = (entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property',
+    entityId: string,) => {
+
+
+
+
+  return `/api/v1/favorites/${entityType}/${entityId}`
+}
+
+/**
+ * @summary Save a discovery item for the authenticated traveller
+ */
+export const addFavorite = async (entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property',
+    entityId: string, options?: Parameters<typeof customFetch>[1]): Promise<Favorite> => {
+
+  return customFetch<Favorite>(getAddFavoriteUrl(entityType,entityId),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+
+
+export const getAddFavoriteMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFavorite>>, TError,{entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property';entityId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addFavorite>>, TError,{entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property';entityId: string}, TContext> => {
+
+const mutationKey = ['addFavorite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addFavorite>>, {entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property';entityId: string}> = (props) => {
+          const {entityType,entityId} = props ?? {};
+
+          return  addFavorite(entityType,entityId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddFavoriteMutationResult = NonNullable<Awaited<ReturnType<typeof addFavorite>>>
+
+    export type AddFavoriteMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Save a discovery item for the authenticated traveller
+ */
+export const useAddFavorite = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFavorite>>, TError,{entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property';entityId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addFavorite>>,
+        TError,
+        {entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property';entityId: string},
+        TContext
+      > => {
+      return useMutation(getAddFavoriteMutationOptions(options));
+    }
+
+export const getRemoveFavoriteUrl = (entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property',
+    entityId: string,) => {
+
+
+
+
+  return `/api/v1/favorites/${entityType}/${entityId}`
+}
+
+/**
+ * @summary Remove a saved discovery item for the authenticated traveller
+ */
+export const removeFavorite = async (entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property',
+    entityId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getRemoveFavoriteUrl(entityType,entityId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveFavoriteMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFavorite>>, TError,{entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property';entityId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeFavorite>>, TError,{entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property';entityId: string}, TContext> => {
+
+const mutationKey = ['removeFavorite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeFavorite>>, {entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property';entityId: string}> = (props) => {
+          const {entityType,entityId} = props ?? {};
+
+          return  removeFavorite(entityType,entityId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveFavoriteMutationResult = NonNullable<Awaited<ReturnType<typeof removeFavorite>>>
+
+    export type RemoveFavoriteMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Remove a saved discovery item for the authenticated traveller
+ */
+export const useRemoveFavorite = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFavorite>>, TError,{entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property';entityId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeFavorite>>,
+        TError,
+        {entityType: 'destination' | 'place' | 'temple' | 'attraction' | 'event' | 'food' | 'hotel' | 'property';entityId: string},
+        TContext
+      > => {
+      return useMutation(getRemoveFavoriteMutationOptions(options));
+    }
 
 export const getListDestinationsUrl = () => {
 

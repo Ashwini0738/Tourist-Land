@@ -28,8 +28,8 @@ export function HotelSection() {
         renderItem={({ item }) => (
           <HotelCard 
             item={item} 
-            isFavorite={isFavorite(item.id)}
-            toggleFavorite={() => toggleFavorite(item.id)}
+            isFavorite={isFavorite(`hotel:${item.id}`)}
+            toggleFavorite={() => toggleFavorite(`hotel:${item.id}`)}
           />
         )}
       />

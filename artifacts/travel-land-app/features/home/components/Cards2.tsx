@@ -6,7 +6,7 @@ import { useColors } from '@/hooks/useColors';
 import { getImageSource } from '../utils/images';
 import type { Event, Hotel, Property } from '@workspace/api-client-react';
 
-export function EventCard({ item }: { item: Event }) {
+export function EventCard({ item, isFavorite, toggleFavorite }: { item: Event, isFavorite: boolean, toggleFavorite: () => void }) {
   const colors = useColors();
   return (
     <Pressable
@@ -14,6 +14,9 @@ export function EventCard({ item }: { item: Event }) {
       style={{ width: 260, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 12 }}
     >
       <Image source={getImageSource(item.imageKey)} style={{ width: '100%', height: 140, borderRadius: 12 }} />
+      <Pressable accessibilityRole="button" accessibilityLabel={`${isFavorite ? 'Remove' : 'Add'} ${item.title} ${isFavorite ? 'from' : 'to'} favorites`} onPress={(event) => { event.stopPropagation(); toggleFavorite(); }} style={{ position: 'absolute', top: 56, right: 20, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center' }}>
+        <Feather name="heart" size={16} color={isFavorite ? colors.destructive : '#fff'} fill={isFavorite ? colors.destructive : 'transparent'} />
+      </Pressable>
       <View style={{ position: 'absolute', top: 20, right: 20, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
         <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{item.dateLabel}</Text>
       </View>

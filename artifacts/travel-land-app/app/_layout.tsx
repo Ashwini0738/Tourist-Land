@@ -156,8 +156,9 @@ export default function RootLayout() {
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
     <SafeAreaProvider>
       <ErrorBoundary>
-        <AuthSecurityProvider><AppStateProvider>
+        <AuthSecurityProvider>
           <QueryClientProvider client={queryClient}>
+            <AppStateProvider>
             <RoleProvider>
               <GestureHandlerRootView>
                 <KeyboardProvider>
@@ -165,8 +166,9 @@ export default function RootLayout() {
                 </KeyboardProvider>
               </GestureHandlerRootView>
             </RoleProvider>
+            </AppStateProvider>
           </QueryClientProvider>
-        </AppStateProvider></AuthSecurityProvider>
+        </AuthSecurityProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
     </ClerkProvider>

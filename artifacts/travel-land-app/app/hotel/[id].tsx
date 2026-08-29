@@ -5,13 +5,16 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { stays } from '@/lib/content';
 import { useColors } from '@/hooks/useColors';
+import { getFavoriteKey, useAppState } from '@/context/AppStateContext';
 
 export default function HotelDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const stay = stays.find((item) => item.id === id) ?? stays[0];
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.container}><View style={styles.hero}><Image source={stay.image} style={styles.image} /><View style={styles.shade} /><Pressable style={[styles.back, { top: insets.top + 10 }]} onPress={() => router.back()}><Feather name="arrow-left" size={21} color={colors.foreground} /></Pressable><View style={styles.heroCopy}><Text style={styles.kicker}>STAY DETAILS</Text><Text style={styles.title}>{stay.name}</Text><Text style={styles.location}>{stay.location} · 4.9 rating</Text></View></View><View style={styles.body}><Text style={[styles.description, { color: colors.foreground }]}>A considered stay rooted in its surroundings, with quiet rooms, warm hosts, and mornings that don’t need an alarm.</Text><View style={[styles.info, { borderColor: colors.border }]}><View><Text style={[styles.label, { color: colors.mutedForeground }]}>FROM</Text><Text style={[styles.value, { color: colors.foreground }]}>{stay.price} / night</Text></View><View><Text style={[styles.label, { color: colors.mutedForeground }]}>GUESTS</Text><Text style={[styles.value, { color: colors.foreground }]}>2 guests</Text></View></View><Pressable onPress={() => router.push('/booking')} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Select dates</Text><Feather name="arrow-right" size={17} color={colors.primaryForeground} /></Pressable></View></ScrollView>;
+  const { isFavorite, toggleFavorite } = useAppState();
+  const favoriteId = getFavoriteKey('hotel', stay.id);
+  return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.container}><View style={styles.hero}><Image source={stay.image} style={styles.image} /><View style={styles.shade} /><View style={[styles.heroActions, { top: insets.top + 10 }]}><Pressable style={styles.action} onPress={() => router.back()}><Feather name="arrow-left" size={21} color={colors.foreground} /></Pressable><Pressable accessibilityRole="button" accessibilityLabel={`${isFavorite(favoriteId) ? 'Remove' : 'Add'} ${stay.name} ${isFavorite(favoriteId) ? 'from' : 'to'} favorites`} style={styles.action} onPress={() => toggleFavorite(favoriteId)}><Feather name="heart" size={20} color={isFavorite(favoriteId) ? colors.destructive : colors.foreground} fill={isFavorite(favoriteId) ? colors.destructive : 'transparent'} /></Pressable></View><View style={styles.heroCopy}><Text style={styles.kicker}>STAY DETAILS</Text><Text style={styles.title}>{stay.name}</Text><Text style={styles.location}>{stay.location} · 4.9 rating</Text></View></View><View style={styles.body}><Text style={[styles.description, { color: colors.foreground }]}>A considered stay rooted in its surroundings, with quiet rooms, warm hosts, and mornings that don’t need an alarm.</Text><View style={[styles.info, { borderColor: colors.border }]}><View><Text style={[styles.label, { color: colors.mutedForeground }]}>FROM</Text><Text style={[styles.value, { color: colors.foreground }]}>{stay.price} / night</Text></View><View><Text style={[styles.label, { color: colors.mutedForeground }]}>GUESTS</Text><Text style={[styles.value, { color: colors.foreground }]}>2 guests</Text></View></View><Pressable onPress={() => router.push('/booking')} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Select dates</Text><Feather name="arrow-right" size={17} color={colors.primaryForeground} /></Pressable></View></ScrollView>;
 }
 
 const styles = StyleSheet.create({
@@ -19,7 +22,8 @@ const styles = StyleSheet.create({
   hero: { height: 430, position: 'relative' },
   image: { ...StyleSheet.absoluteFillObject, width: undefined, height: undefined },
   shade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(17,35,27,0.34)' },
-  back: { position: 'absolute', left: 20 },
+  heroActions: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', justifyContent: 'space-between' },
+  action: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.72)' },
   heroCopy: { position: 'absolute', left: 20, right: 20, bottom: 28 },
   kicker: { color: '#f4c17f', fontSize: 10, fontWeight: '700', letterSpacing: 1.4 },
   title: { color: '#fff', fontSize: 33, fontWeight: '700', marginTop: 9 },

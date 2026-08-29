@@ -28,8 +28,8 @@ export function DestinationSection() {
         renderItem={({ item }) => (
           <DestinationCard 
             item={item} 
-            isFavorite={isFavorite(item.id)} 
-            toggleFavorite={() => toggleFavorite(item.id)} 
+            isFavorite={isFavorite(`destination:${item.id}`)}
+            toggleFavorite={() => toggleFavorite(`destination:${item.id}`)}
           />
         )}
       />

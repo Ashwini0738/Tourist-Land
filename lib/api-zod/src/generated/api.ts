@@ -296,6 +296,50 @@ export const GetExploreFiltersResponse = zod.object({
 })
 
 
+/**
+ * @summary List the authenticated traveller's saved discovery items
+ */
+export const ListFavoritesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "entityType": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
+  "entityId": zod.string()
+}))
+})
+
+
+/**
+ * @summary Save a discovery item for the authenticated traveller
+ */
+export const addFavoritePathEntityIdMax = 200;
+
+
+
+export const AddFavoriteParams = zod.object({
+  "entityType": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
+  "entityId": zod.coerce.string().min(1).max(addFavoritePathEntityIdMax)
+})
+
+export const AddFavoriteResponse = zod.object({
+  "entityType": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
+  "entityId": zod.string()
+})
+
+
+/**
+ * @summary Remove a saved discovery item for the authenticated traveller
+ */
+export const removeFavoritePathEntityIdMax = 200;
+
+
+
+export const RemoveFavoriteParams = zod.object({
+  "entityType": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
+  "entityId": zod.coerce.string().min(1).max(removeFavoritePathEntityIdMax)
+})
+
+export const RemoveFavoriteResponse = zod.void()
+
+
 export const ListDestinationsResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.string(),

@@ -28,8 +28,8 @@ export function PropertySection() {
         renderItem={({ item }) => (
           <PropertyCard 
             item={item} 
-            isFavorite={isFavorite(item.id)}
-            toggleFavorite={() => toggleFavorite(item.id)}
+            isFavorite={isFavorite(`property:${item.id}`)}
+            toggleFavorite={() => toggleFavorite(`property:${item.id}`)}
           />
         )}
       />

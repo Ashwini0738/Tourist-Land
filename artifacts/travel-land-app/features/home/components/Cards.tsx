@@ -50,7 +50,7 @@ export function DestinationCard({ item, isFavorite, toggleFavorite }: { item: De
   );
 }
 
-export function PlaceCard({ item }: { item: Place }) {
+export function PlaceCard({ item, isFavorite, toggleFavorite }: { item: Place, isFavorite: boolean, toggleFavorite: () => void }) {
   const colors = useColors();
   return (
     <Pressable
@@ -58,6 +58,9 @@ export function PlaceCard({ item }: { item: Place }) {
       style={{ width: 220, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 12 }}
     >
       <Image source={getImageSource(item.imageKey)} style={{ width: '100%', height: 120, borderRadius: 12 }} />
+      <Pressable accessibilityRole="button" accessibilityLabel={`${isFavorite ? 'Remove' : 'Add'} ${item.name} ${isFavorite ? 'from' : 'to'} favorites`} onPress={(event) => { event.stopPropagation(); toggleFavorite(); }} style={{ position: 'absolute', top: 24, right: 24, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center' }}>
+        <Feather name="heart" size={16} color={isFavorite ? colors.destructive : '#fff'} fill={isFavorite ? colors.destructive : 'transparent'} />
+      </Pressable>
       <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: '700', marginTop: 12 }} numberOfLines={1}>{item.name}</Text>
       <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600', marginTop: 2 }}>{item.category}</Text>
       <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 4 }} numberOfLines={1}>{item.location}</Text>

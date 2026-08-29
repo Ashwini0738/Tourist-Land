@@ -9,6 +9,29 @@ export interface HealthStatus {
   status: string;
 }
 
+export type FavoriteEntityType = typeof FavoriteEntityType[keyof typeof FavoriteEntityType];
+
+
+export const FavoriteEntityType = {
+  destination: 'destination',
+  place: 'place',
+  temple: 'temple',
+  attraction: 'attraction',
+  event: 'event',
+  food: 'food',
+  hotel: 'hotel',
+  property: 'property',
+} as const;
+
+export interface Favorite {
+  entityType: FavoriteEntityType;
+  entityId: string;
+}
+
+export interface FavoriteList {
+  items: Favorite[];
+}
+
 export interface Destination {
   id: string;
   slug: string;
