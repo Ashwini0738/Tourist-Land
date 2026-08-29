@@ -21,7 +21,7 @@ import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl, setUnauthorizedHandler } from '@workspace/api-client-react';
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -105,8 +105,6 @@ export default function RootLayout() {
     // platforms.
     ...Feather.font,
     Feather: Feather.font.feather,
-    ...MaterialCommunityIcons.font,
-    MaterialCommunityIcons: MaterialCommunityIcons.font['material-community'],
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,

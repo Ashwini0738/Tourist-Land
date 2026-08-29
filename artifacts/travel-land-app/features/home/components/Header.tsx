@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUser } from '@clerk/expo';
 import { useHomeLocation } from '../hooks/useHomeLocation';
+import { SecurityIcon } from '@/components/SecurityIcon';
 
 export function Header() {
   const insets = useSafeAreaInsets();
@@ -22,7 +23,7 @@ export function Header() {
     <View style={{ backgroundColor: '#111827', paddingTop: insets.top + 16, paddingBottom: 64, paddingHorizontal: 20 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Pressable onPress={!hasPermission ? requestPermission : undefined} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <MaterialCommunityIcons name="map-marker-radius" size={28} color="#EF4444" />
+          <SecurityIcon name="location" size={28} color="#EF4444" />
           <View>
             <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>
               {hasPermission ? (loading ? 'LOCATING...' : (locationName ? locationName.toUpperCase() : 'UNKNOWN')) : 'DISCOVER INDIA'}

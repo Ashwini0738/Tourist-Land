@@ -1,7 +1,17 @@
 import React from 'react';
 import { Circle, Path, Svg } from 'react-native-svg';
 
-type SecurityIconName = 'compass' | 'fingerprint' | 'face' | 'gift' | 'ticket' | 'pass';
+type SecurityIconName =
+  | 'compass'
+  | 'fingerprint'
+  | 'face'
+  | 'gift'
+  | 'ticket'
+  | 'pass'
+  | 'lock'
+  | 'wallet'
+  | 'map'
+  | 'location';
 
 export function SecurityIcon({
   name,
@@ -48,6 +58,43 @@ export function SecurityIcon({
       <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
         <Path d="M4 6.5A1.5 1.5 0 0 1 5.5 5h13A1.5 1.5 0 0 1 20 6.5V9a2 2 0 0 0 0 4v4.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5V13a2 2 0 0 0 0-4V6.5Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
         <Path d="M9 8.5v7M12 8.5v7M15 8.5v7" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeDasharray={name === 'pass' ? '0 0' : '1 2'} />
+      </Svg>
+    );
+  }
+
+  if (name === 'lock') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path d="M6.5 10.5h11a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19v-7a1.5 1.5 0 0 1 1.5-1.5Z" stroke={color} strokeWidth="1.7" strokeLinejoin="round" />
+        <Path d="M8 10.5V8a4 4 0 0 1 8 0v2.5M12 14v3" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+      </Svg>
+    );
+  }
+
+  if (name === 'wallet') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H18a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6.5A2.5 2.5 0 0 1 4 17.5v-11Z" stroke={color} strokeWidth="1.7" strokeLinejoin="round" />
+        <Path d="M4 7h14.5A1.5 1.5 0 0 1 20 8.5V15h-4.5a2.5 2.5 0 0 1 0-5H20M16 12.5h.01" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
+    );
+  }
+
+  if (name === 'map') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path d="m3.5 6 5-2 7 2 5-2v14l-5 2-7-2-5 2V6Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+        <Path d="M8.5 4v14M15.5 6v14" stroke={color} strokeWidth="1.6" />
+        <Circle cx="12" cy="11" r="1.6" fill={color} />
+      </Svg>
+    );
+  }
+
+  if (name === 'location') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path d="M12 20s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10Z" stroke={color} strokeWidth="1.7" strokeLinejoin="round" />
+        <Circle cx="12" cy="10" r="2" stroke={color} strokeWidth="1.5" />
       </Svg>
     );
   }

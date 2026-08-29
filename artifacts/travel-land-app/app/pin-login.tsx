@@ -1,10 +1,11 @@
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
 import { useColors } from '@/hooks/useColors';
+import { SecurityIcon } from '@/components/SecurityIcon';
 
 export default function PinLoginScreen() {
   const colors = useColors();
@@ -32,7 +33,7 @@ export default function PinLoginScreen() {
       </Pressable>
 
       <View style={{ alignItems: 'center', marginTop: 40 }}>
-        <MaterialCommunityIcons name="lock-outline" size={48} color="#064E3B" />
+        <SecurityIcon name="lock" size={48} color="#064E3B" />
         <Text style={{ fontSize: 28, fontWeight: '700', color: colors.foreground, marginTop: 16 }}>Enter PIN</Text>
         <Text style={{ fontSize: 16, color: colors.mutedForeground, marginTop: 8 }}>Unlock Travel & Land</Text>
       </View>
