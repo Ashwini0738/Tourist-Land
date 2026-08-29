@@ -1,0 +1,606 @@
+# DEVELOPMENT TASK — DESTINATION DETAILS MODULE
+
+Continue development of the existing **Travel & Land** application.
+
+## IMPORTANT — COMPLETED MODULES
+
+Treat these as stable:
+
+* User authentication
+* Vendor authentication
+* Admin authentication
+* Clerk authentication
+* Email verification / OTP / MFA
+* Native Fingerprint / Face ID / device authentication
+* Role-based authorization
+* User Home
+* Explore
+* Search
+* Explore categories
+* Explore filters
+* Explore sorting
+* Existing API architecture
+* OpenAPI specification
+* Generated TypeScript API client
+* Generated React Query hooks
+* Generated Zod schemas
+
+Do NOT rebuild authentication or Explore.
+
+Do NOT introduce a custom application PIN.
+
+Do NOT change the existing role system.
+
+---
+
+# OBJECTIVE
+
+Build the complete **Destination Details module**.
+
+A user should be able to:
+
+Explore
+→ Select Destination
+→ Destination Details
+→ Discover everything available at that destination
+
+The destination page should become the central tourism information page for a location.
+
+It must support:
+
+* Android
+* iOS
+* Expo Go
+* Mobile web
+
+---
+
+# 1. DESTINATION DETAILS SCREEN
+
+Create a premium, mobile-first destination details page.
+
+The page should include:
+
+### Hero section
+
+* Large destination image
+* Destination name
+* Location
+* Favorite button
+* Share button where supported
+* Back navigation
+
+Example:
+
+"Coorg"
+
+"Karnataka, India"
+
+---
+
+# 2. DESTINATION DESCRIPTION
+
+Show:
+
+* Short introduction
+* Full destination description
+* Best known for
+* Recommended duration where available
+
+Use expandable "Read more" behavior for long descriptions.
+
+Do not create fake factual information.
+
+Use available catalog data.
+
+---
+
+# 3. DESTINATION INFORMATION
+
+Include useful information where data exists:
+
+* Location
+* Region
+* Best time to visit
+* Popularity
+* Rating
+* Travel information
+
+Do not display fields with fake values.
+
+If data is unavailable, hide the field or show an appropriate unavailable state.
+
+---
+
+# 4. PLACES TO VISIT
+
+Display places associated with the destination.
+
+Examples:
+
+* Attractions
+* Temples
+* Beaches
+* Waterfalls
+* Historical places
+* Nature spots
+* Viewpoints
+
+Create reusable PlaceCard components.
+
+Each card should include:
+
+* Image
+* Name
+* Category
+* Location
+* Rating if available
+* Favorite
+
+Navigation:
+
+Destination
+→ Place Details
+
+---
+
+# 5. THINGS TO DO
+
+Create a "Things to do" section.
+
+Examples:
+
+* Sightseeing
+* Trekking
+* Nature activities
+* Cultural experiences
+* Local experiences
+
+Only show activities that exist in the catalog.
+
+Do not invent booking functionality.
+
+---
+
+# 6. EVENTS
+
+Show events associated with the destination.
+
+Each event should show:
+
+* Image
+* Event name
+* Date
+* Location
+* Short description
+
+Navigation:
+
+Destination
+→ Event Details
+
+Clearly distinguish development/sample events from live events.
+
+Do not claim that an event is bookable unless booking functionality actually exists.
+
+---
+
+# 7. FOOD & LOCAL EXPERIENCES
+
+Create a food/local experience section.
+
+Show:
+
+* Food place
+* Cuisine
+* Location
+* Rating
+* Image
+
+If the existing catalog contains local foods rather than restaurants, support both appropriately.
+
+Navigation should lead to the appropriate details screen.
+
+---
+
+# 8. HOTELS / STAYS
+
+Show accommodation options associated with the destination.
+
+Each card should contain:
+
+* Image
+* Hotel name
+* Location
+* Rating
+* Starting price if available
+
+IMPORTANT:
+
+Current hotel content is development/sample content.
+
+Do NOT claim:
+
+* Live availability
+* Confirmed room availability
+* Real-time pricing
+
+Navigation:
+
+Destination
+→ Hotel Details
+
+---
+
+# 9. NEARBY PLACES
+
+Show nearby attractions/places when geographic coordinates are available.
+
+Possible:
+
+* Nearby places
+* Nearby hotels
+* Nearby attractions
+
+If GPS/location services are not available, use destination coordinates/catalog relationships.
+
+Do NOT request device location automatically just for displaying this section.
+
+---
+
+# 10. MAP PREVIEW
+
+Add a map/location preview section.
+
+For now:
+
+* Show destination location/coordinates if available
+* Show a "View on Map" action
+* Navigate to the existing Maps route
+
+Do NOT implement the complete live Maps module yet.
+
+Maps will be developed as the next dedicated workstream.
+
+If a real map provider is not yet configured, use a clean placeholder rather than fake map tiles.
+
+---
+
+# 11. FAVORITES
+
+Allow the user to:
+
+* Add destination to favorites
+* Remove destination from favorites
+
+Reuse the existing Favorites implementation.
+
+Do NOT create a second favorites system.
+
+Keep current local favorite behavior if server synchronization is not yet implemented.
+
+---
+
+# 12. SHARE
+
+Add a Share action where supported.
+
+Share useful destination information such as:
+
+Destination name
+Location
+App/deep link where available
+
+Do not share private user information.
+
+If native sharing is not available in the current Expo/web environment, provide a graceful fallback.
+
+---
+
+# 13. MEDIA GALLERY
+
+If multiple destination images exist:
+
+Create a simple image gallery.
+
+Support:
+
+* Hero image
+* Additional images
+* Image viewer
+* Swipe navigation where appropriate
+
+Optimize image loading.
+
+Do not introduce unnecessary heavy media dependencies.
+
+---
+
+# 14. API
+
+Inspect existing catalog APIs before creating new endpoints.
+
+Create/reuse an endpoint such as:
+
+GET /api/v1/destinations/:id
+
+The response should provide destination details and related discovery information where appropriate.
+
+Possible related data:
+
+* Destination information
+* Images
+* Places
+* Events
+* Food
+* Hotels
+* Nearby places
+
+Avoid making excessive API requests.
+
+Use the existing React Query architecture.
+
+---
+
+# 15. API DATA MODEL
+
+Reuse the existing generated types and catalog models.
+
+Do not create duplicate destination models.
+
+If changes are required:
+
+1. Update the API schema
+2. Update OpenAPI
+3. Regenerate TypeScript client
+4. Regenerate React Query hooks
+5. Regenerate Zod schemas
+
+Do not manually maintain duplicate generated types.
+
+---
+
+# 16. DATABASE
+
+Inspect the existing destination schema.
+
+Ensure it can support, where applicable:
+
+* id
+* name
+* slug
+* description
+* location
+* city
+* state
+* country
+* latitude
+* longitude
+* images
+* category
+* rating
+* best time to visit
+* status
+* created_at
+* updated_at
+
+Only add fields that are actually required.
+
+Do not redesign the database unnecessarily.
+
+---
+
+# 17. LOADING STATE
+
+Implement:
+
+* Hero skeleton
+* Content skeletons
+* Places loading
+* Events loading
+* Hotels loading
+
+Do not allow the entire page to blink.
+
+---
+
+# 18. ERROR STATE
+
+If destination API fails:
+
+Show:
+
+"Unable to load destination"
+
+with:
+
+Retry
+
+Do not crash the application.
+
+If one related section fails, do not blank the entire destination page.
+
+For example:
+
+If Events fail:
+
+Destination details
+Places
+Hotels
+
+should still remain visible.
+
+---
+
+# 19. EMPTY STATES
+
+Handle:
+
+* No places
+* No events
+* No hotels
+* No food
+* No images
+
+Do not show fake placeholder data.
+
+Use:
+
+"No places available"
+
+or hide optional sections when appropriate.
+
+---
+
+# 20. PERFORMANCE
+
+Use:
+
+* React Query caching
+* Lazy loading where appropriate
+* Optimized images
+* Virtualized horizontal lists
+* Avoid unnecessary API calls
+* Avoid loading every related record at once
+
+The page must remain smooth on mobile devices.
+
+---
+
+# 21. NAVIGATION
+
+Verify all paths:
+
+Explore
+→ Destination
+→ Destination Details
+
+Destination Details
+→ Place Details
+
+Destination Details
+→ Event Details
+
+Destination Details
+→ Hotel Details
+
+Destination Details
+→ Maps
+
+Destination Details
+→ Favorites
+
+Do not create dead-end buttons.
+
+---
+
+# 22. DEVELOPMENT DATA
+
+The current destination catalog contains development/seeded content.
+
+Use the existing catalog.
+
+Do NOT represent seeded content as:
+
+* Live tourism inventory
+* Verified events
+* Live hotel availability
+* Real-time pricing
+* Confirmed bookings
+
+The UI should be ready for production data later.
+
+---
+
+# 23. USER ROLE
+
+This is a USER/TRAVELLER-facing feature.
+
+Do not expose:
+
+* Vendor management
+* Admin controls
+* Vendor inventory editing
+* Admin actions
+
+Vendors and admins can access the destination experience as appropriate, but content management belongs to future Admin functionality.
+
+---
+
+# 24. TESTING
+
+Add automated tests for:
+
+1. Destination screen loads
+2. Destination information displays
+3. Destination image loads
+4. Favorite works
+5. Places load
+6. Events load
+7. Hotels load
+8. Food/local experiences load
+9. Nearby places load
+10. Map navigation works
+11. Place navigation works
+12. Event navigation works
+13. Hotel navigation works
+14. Loading states
+15. Empty states
+16. API error
+17. Retry
+18. Share behavior
+
+Regression tests:
+
+19. User login
+20. Vendor login
+21. Admin login
+22. Home
+23. Explore
+24. Role authorization
+25. Biometric/device authentication
+
+Do not break the existing authentication or role system.
+
+---
+
+# 25. VALIDATION
+
+Run:
+
+* TypeScript check
+* Automated tests
+* Expo workflow
+* API workflow
+* Web export
+* Android export
+* iOS export
+
+Report the previous test count and the new total.
+
+---
+
+# 26. FINAL REPORT
+
+When complete, report:
+
+1. Destination Details features implemented
+2. Screens created/modified
+3. Components created/reused
+4. API changes
+5. Database changes
+6. OpenAPI changes
+7. Generated client/hooks changes
+8. Tests added
+9. Total tests passing
+10. Web validation
+11. Android validation
+12. iOS validation
+13. Known limitations
+14. Recommended next development task
+
+IMPORTANT:
+
+Do not start the full Maps, Hotels, Availability, Booking, Payment, Wallet, Land Sourcing, or Admin modules in this task.
+
+Complete and stabilize Destination Details first.
