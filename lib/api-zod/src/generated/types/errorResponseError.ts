@@ -5,8 +5,10 @@
  * Travel and land sourcing REST API
  * OpenAPI spec version: 0.1.0
  */
+import type { ErrorResponseErrorFieldErrors } from './errorResponseErrorFieldErrors';
 
 export type ErrorResponseError = {
   code: string;
   message: string;
+  fieldErrors?: ErrorResponseErrorFieldErrors;
 };

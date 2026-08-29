@@ -23,6 +23,7 @@ export * from './destinationList';
 export * from './emailInvitationInput';
 export * from './errorResponse';
 export * from './errorResponseError';
+export * from './errorResponseErrorFieldErrors';
 export * from './event';
 export * from './eventList';
 export * from './forbiddenResponse';

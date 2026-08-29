@@ -215,9 +215,12 @@ export interface PropertyEnquiryReceipt {
   message: string;
 }
 
+export type ErrorResponseErrorFieldErrors = {[key: string]: string};
+
 export type ErrorResponseError = {
   code: string;
   message: string;
+  fieldErrors?: ErrorResponseErrorFieldErrors;
 };
 
 export interface ErrorResponse {

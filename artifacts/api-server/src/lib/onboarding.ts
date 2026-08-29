@@ -1,6 +1,14 @@
 import { and, eq } from "drizzle-orm";
 import { db, adminInvitations, userRoles, vendorApplications, vendorProfiles } from "@workspace/db";
-import { isValidEmail, type PrimaryRole } from "./roles";
+import type { PrimaryRole } from "./roles";
+export {
+  normalizeEmail,
+  parseVendorApplicationInput,
+  validateVendorApplicationInput,
+  type VendorApplicationField,
+  type VendorApplicationFieldErrors,
+  type VendorApplicationInput,
+} from "./onboarding-validation";
 export {
   shouldClaimInvitedAccess,
   vendorApprovalAction,
@@ -11,49 +19,6 @@ type LocalUserForClaim = {
   id: string;
   email: string;
 };
-
-export type VendorApplicationInput = {
-  businessName: string;
-  businessType: string;
-  contactName: string;
-  phone: string;
-  email: string;
-  description: string;
-  address: string;
-  city: string;
-  state: string;
-  country: string;
-};
-
-export function normalizeEmail(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-function requiredString(body: Record<string, unknown>, key: keyof VendorApplicationInput, maxLength: number): string | null {
-  const value = body[key];
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 && trimmed.length <= maxLength ? trimmed : null;
-}
-
-export function parseVendorApplicationInput(value: unknown): VendorApplicationInput | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const body = value as Record<string, unknown>;
-  const input = {
-    businessName: requiredString(body, "businessName", 200),
-    businessType: requiredString(body, "businessType", 100),
-    contactName: requiredString(body, "contactName", 200),
-    phone: requiredString(body, "phone", 40),
-    email: requiredString(body, "email", 320),
-    description: requiredString(body, "description", 4000),
-    address: requiredString(body, "address", 500),
-    city: requiredString(body, "city", 100),
-    state: requiredString(body, "state", 100),
-    country: requiredString(body, "country", 100),
-  };
-  if (Object.values(input).some((item) => item === null) || !isValidEmail(input.email!)) return null;
-  return { ...input, email: normalizeEmail(input.email!) } as VendorApplicationInput;
-}
 
 export type VendorApplicationRecord = typeof vendorApplications.$inferSelect;
 

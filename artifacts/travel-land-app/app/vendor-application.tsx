@@ -24,9 +24,51 @@ const EMPTY_FORM: VendorApplicationInput = {
   country: '',
 };
 
-function getErrorMessage(error: unknown) {
-  const value = error as { message?: string; error?: { message?: string } } | null;
-  return value?.error?.message || value?.message || 'We could not submit your application. Please try again.';
+type FieldErrors = Partial<Record<keyof VendorApplicationInput, string>>;
+
+const FIELDS: Array<{ key: keyof VendorApplicationInput; label: string; placeholder: string; maxLength: number; multiline?: boolean }> = [
+  { key: 'businessName', label: 'Business name', placeholder: 'e.g. Northern Trails Tours', maxLength: 200 },
+  { key: 'businessType', label: 'Business type', placeholder: 'Hotel, tour operator, land agency…', maxLength: 100 },
+  { key: 'contactName', label: 'Contact person', placeholder: 'Your full name', maxLength: 200 },
+  { key: 'phone', label: 'Phone number', placeholder: '+91 …', maxLength: 40 },
+  { key: 'email', label: 'Email address', placeholder: 'you@business.com', maxLength: 320 },
+  { key: 'address', label: 'Business address', placeholder: 'Street and building', maxLength: 500 },
+  { key: 'city', label: 'City', placeholder: 'City', maxLength: 100 },
+  { key: 'state', label: 'State / region', placeholder: 'State or region', maxLength: 100 },
+  { key: 'country', label: 'Country', placeholder: 'Country', maxLength: 100 },
+  { key: 'description', label: 'Tell us about the business', placeholder: 'What do you offer travelers and land seekers?', maxLength: 4000, multiline: true },
+];
+
+function getErrorDetails(error: unknown): { message: string; fieldErrors: FieldErrors } {
+  const value = error as {
+    message?: string;
+    data?: { error?: { message?: string; fieldErrors?: Record<string, string> } };
+    error?: { message?: string; fieldErrors?: Record<string, string> };
+  } | null;
+  const apiError = value?.data?.error ?? value?.error;
+  const fieldErrors = Object.fromEntries(
+    Object.entries(apiError?.fieldErrors ?? {}).filter(([key, message]) => key in EMPTY_FORM && typeof message === 'string'),
+  ) as FieldErrors;
+  return {
+    message: apiError?.message || value?.message || 'We could not submit your application. Please try again.',
+    fieldErrors,
+  };
+}
+
+function getClientFieldErrors(form: VendorApplicationInput): FieldErrors {
+  const errors: FieldErrors = {};
+  for (const field of FIELDS) {
+    const value = form[field.key].trim();
+    if (!value) {
+      errors[field.key] = `${field.label} is required.`;
+    } else if (value.length > field.maxLength) {
+      errors[field.key] = `${field.label} must be ${field.maxLength} characters or fewer.`;
+    }
+  }
+  if (!errors.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+    errors.email = 'Enter a valid email address, such as you@business.com.';
+  }
+  return errors;
 }
 
 export default function VendorApplicationScreen() {
@@ -35,6 +77,7 @@ export default function VendorApplicationScreen() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitted, setSubmitted] = useState(false);
   const [message, setMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [receipt, setReceipt] = useState<VendorApplicationReceipt | null>(null);
   const mutation = useSubmitVendorApplication();
   const status = useGetVendorApplicationStatus(
@@ -45,16 +88,31 @@ export default function VendorApplicationScreen() {
   const update = (key: keyof VendorApplicationInput, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
     setMessage('');
+    setFieldErrors((current) => {
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
   };
 
   const submit = async () => {
     setMessage('');
+    const clientErrors = getClientFieldErrors(form);
+    if (Object.keys(clientErrors).length > 0) {
+      setFieldErrors(clientErrors);
+      setMessage('Please fix the highlighted fields before submitting.');
+      return;
+    }
+    setFieldErrors({});
     try {
       const result = await mutation.mutateAsync({ data: form });
       setReceipt(result);
       setSubmitted(true);
     } catch (error) {
-      setMessage(getErrorMessage(error));
+      const details = getErrorDetails(error);
+      setFieldErrors(details.fieldErrors);
+      setMessage(details.message);
     }
   };
 
@@ -81,19 +139,7 @@ export default function VendorApplicationScreen() {
     );
   }
 
-  const fields: Array<{ key: keyof VendorApplicationInput; label: string; placeholder: string; multiline?: boolean }> = [
-    { key: 'businessName', label: 'Business name', placeholder: 'e.g. Northern Trails Tours' },
-    { key: 'businessType', label: 'Business type', placeholder: 'Hotel, tour operator, land agency…' },
-    { key: 'contactName', label: 'Contact person', placeholder: 'Your full name' },
-    { key: 'phone', label: 'Phone number', placeholder: '+91 …', },
-    { key: 'email', label: 'Email address', placeholder: 'you@business.com' },
-    { key: 'address', label: 'Business address', placeholder: 'Street and building' },
-    { key: 'city', label: 'City', placeholder: 'City' },
-    { key: 'state', label: 'State / region', placeholder: 'State or region' },
-    { key: 'country', label: 'Country', placeholder: 'Country' },
-    { key: 'description', label: 'Tell us about the business', placeholder: 'What do you offer travelers and land seekers?', multiline: true },
-  ];
-  const canSubmit = fields.every(({ key }) => form[key].trim().length > 0) && !mutation.isPending;
+  const canSubmit = !mutation.isPending;
 
   return (
     <ScrollView
@@ -114,7 +160,7 @@ export default function VendorApplicationScreen() {
         <Feather name="shield" size={18} color={colors.primary} />
         <Text style={[styles.noticeText, { color: colors.secondaryForeground }]}>No password or credential is collected here.</Text>
       </View>
-      {fields.map(({ key, label, placeholder, multiline }) => (
+      {FIELDS.map(({ key, label, placeholder, multiline }) => (
         <View key={key} style={styles.field}>
           <Text style={[styles.label, { color: colors.foreground }]}>{label}</Text>
           <TextInput
@@ -126,8 +172,9 @@ export default function VendorApplicationScreen() {
             numberOfLines={multiline ? 5 : 1}
             placeholder={placeholder}
             placeholderTextColor={colors.mutedForeground}
-            style={[styles.input, multiline && styles.textarea, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]}
+            style={[styles.input, multiline && styles.textarea, { color: colors.foreground, borderColor: fieldErrors[key] ? colors.destructive : colors.input, backgroundColor: colors.card }]}
           />
+          {!!fieldErrors[key] && <Text style={[styles.fieldError, { color: colors.destructive }]}>{fieldErrors[key]}</Text>}
         </View>
       ))}
       {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
@@ -151,6 +198,7 @@ const styles = StyleSheet.create({
   field: { marginBottom: 15 },
   label: { fontSize: 12, fontWeight: '700', marginBottom: 7 },
   input: { minHeight: 52, borderWidth: 1, borderRadius: 14, paddingHorizontal: 15, fontSize: 15 },
+  fieldError: { fontSize: 12, lineHeight: 17, marginTop: 5 },
   textarea: { minHeight: 120, paddingTop: 14, textAlignVertical: 'top' },
   error: { fontSize: 13, lineHeight: 18, marginBottom: 12 },
   button: { minHeight: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 8 },

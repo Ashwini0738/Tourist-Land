@@ -1,30 +1,41 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
 import { db, users, vendorApplications } from "@workspace/db";
-import { parseVendorApplicationInput, normalizeEmail } from "../lib/onboarding";
+import { normalizeEmail, validateVendorApplicationInput } from "../lib/onboarding";
 
 const onboardingRouter: IRouter = Router();
 
-function error(res: Parameters<Parameters<IRouter["post"]>[1]>[1], status: number, code: string, message: string): void {
-  res.status(status).json({ error: { code, message } });
+function error(
+  res: Parameters<Parameters<IRouter["post"]>[1]>[1],
+  status: number,
+  code: string,
+  message: string,
+  fieldErrors?: Record<string, string>,
+): void {
+  res.status(status).json({ error: { code, message, ...(fieldErrors && { fieldErrors }) } });
 }
 
 onboardingRouter.post("/v1/vendor/applications", async (req, res) => {
-  const input = parseVendorApplicationInput(req.body);
-  if (!input) {
-    error(res, 400, "INVALID_VENDOR_APPLICATION", "Complete every application field with valid values.");
+  const validation = validateVendorApplicationInput(req.body);
+  if (!validation.input) {
+    error(res, 400, "INVALID_VENDOR_APPLICATION", "Please fix the highlighted fields before submitting.", validation.fieldErrors);
     return;
   }
+  const input = validation.input;
   const existingUser = await db.query.users.findFirst({ where: eq(users.email, input.email) });
   if (existingUser) {
-    error(res, 409, "ACCOUNT_ALREADY_EXISTS", "This email already has an account. Please sign in instead.");
+    error(res, 409, "ACCOUNT_ALREADY_EXISTS", "This email already has an account. Please sign in instead or use a different email.", {
+      email: "This email already has an account. Sign in instead or use a different email.",
+    });
     return;
   }
   const existing = await db.query.vendorApplications.findFirst({
     where: eq(vendorApplications.email, normalizeEmail(input.email)),
   });
   if (existing && ["pending", "approved", "invited", "accepted"].includes(existing.status)) {
-    error(res, 409, "APPLICATION_ALREADY_EXISTS", "An application for this email is already being processed.");
+    error(res, 409, "APPLICATION_ALREADY_EXISTS", "An application for this email is already being processed. Use your existing application reference to check its status.", {
+      email: "An application already exists for this email. Use your existing application reference to check its status.",
+    });
     return;
   }
   const application = existing
