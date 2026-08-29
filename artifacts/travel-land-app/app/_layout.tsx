@@ -99,8 +99,14 @@ function renderRoutes() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
+    // Expo's Android renderer resolves vector icons by the bundled .ttf
+    // basename, while iOS uses the family aliases exposed by the icon set.
+    // Register both names so icon glyphs render consistently on both
+    // platforms.
     ...Feather.font,
+    Feather: Feather.font.feather,
     ...MaterialCommunityIcons.font,
+    MaterialCommunityIcons: MaterialCommunityIcons.font['material-community'],
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
