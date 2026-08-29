@@ -27,7 +27,8 @@ Applicants can check a safe status message with the application reference and or
 ## Protected API boundaries
 
 - `GET /api/v1/me` returns safe local user, role, status, and vendor-profile data.
-- Vendor dashboard access requires the `vendor` role and an `approved` vendor profile.
+- Vendor dashboard and vendor-listing viewing are available to `vendor` accounts with an `approved` vendor profile and to `admin` accounts. Admins see all vendor listings in a read-only vendor workspace.
+- Vendor listing creation and ownership actions remain vendor-only; platform-wide listing review is available through the admin listings module.
 - Admin dashboard, user-role, vendor application review, admin invitation, and vendor suspension endpoints require `admin`.
 - Vendor-owned resource routes should use the shared owner-or-admin middleware when those modules are added.
 

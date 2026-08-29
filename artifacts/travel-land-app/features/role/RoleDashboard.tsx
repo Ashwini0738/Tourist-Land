@@ -22,6 +22,8 @@ const NAVIGATION: Record<DashboardRole, DashboardNavItem[]> = {
     { label: 'Profile', description: 'Business information and status', icon: 'user', route: '/vendor/profile' },
   ],
   admin: [
+    { label: 'Traveller app', description: 'Browse the guest-facing experience', icon: 'compass', route: '/' },
+    { label: 'Vendor workspace', description: 'View the vendor-facing experience', icon: 'briefcase', route: '/vendor' },
     { label: 'Users', description: 'Review accounts and roles', icon: 'users', route: '/admin/users' },
     { label: 'Vendors', description: 'Approve and supervise vendors', icon: 'briefcase', route: '/admin/vendors' },
     { label: 'Listings', description: 'Review vendor-owned places', icon: 'layers', route: '/admin/listings' },

@@ -410,7 +410,7 @@ export const GetCurrentUserResponse = zod.object({
 
 
 /**
- * @summary Get the authenticated vendor dashboard status
+ * @summary Get the authenticated vendor or admin vendor dashboard status
  */
 export const GetVendorDashboardResponse = zod.object({
   "role": zod.enum(['user', 'vendor', 'admin']),
@@ -443,7 +443,7 @@ export const GetVendorProfileResponse = zod.object({
 
 
 /**
- * @summary List listings owned by the authenticated approved vendor
+ * @summary List listings owned by the authenticated approved vendor, or all listings for an admin viewer
  */
 export const ListVendorListingsResponse = zod.object({
   "items": zod.array(zod.object({

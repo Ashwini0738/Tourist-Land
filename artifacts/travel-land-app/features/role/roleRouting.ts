@@ -9,8 +9,7 @@ export function roleHome(role: PrimaryRole): RoleHome {
 }
 
 export function unauthorizedHome(role: PrimaryRole, rootSegment: string | undefined): RoleHome | null {
-  if (rootSegment === 'vendor' || rootSegment === 'admin' || rootSegment === '(tabs)') {
-    return roleHome(role);
-  }
+  if (rootSegment === 'admin') return role === 'admin' ? null : roleHome(role);
+  if (rootSegment === 'vendor') return role === 'admin' || role === 'vendor' ? null : roleHome(role);
   return null;
 }

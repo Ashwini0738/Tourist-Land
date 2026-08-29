@@ -21,6 +21,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRole } from '@/context/RoleContext';
 
 type ListingForm = {
   name: string;
@@ -54,6 +55,8 @@ function statusLabel(status: Listing['status']) {
 export default function VendorListingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { role } = useRole();
+  const isAdminViewer = role === 'admin';
   const listings = useListVendorListings();
   const createListing = useCreateVendorListing();
   const updateListing = useUpdateVendorListing();
@@ -251,18 +254,20 @@ export default function VendorListingsScreen() {
           <PlatformIcon name="layers" size={21} color={colors.accentForeground} />
         </View>
         <View style={styles.summaryCopy}>
-          <Text style={styles.summaryLabel}>YOUR LISTINGS</Text>
+            <Text style={styles.summaryLabel}>{isAdminViewer ? 'ALL VENDOR LISTINGS' : 'YOUR LISTINGS'}</Text>
           <Text style={styles.summaryValue}>{items.length} {items.length === 1 ? 'place' : 'places'}</Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add a new listing"
-          onPress={openCreate}
-          style={[styles.addButton, { backgroundColor: colors.accent }]}
-        >
-          <PlatformIcon name="plus" size={17} color={colors.accentForeground} />
-          <Text style={[styles.addButtonText, { color: colors.accentForeground }]}>Add listing</Text>
-        </Pressable>
+          {!isAdminViewer && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add a new listing"
+              onPress={openCreate}
+              style={[styles.addButton, { backgroundColor: colors.accent }]}
+            >
+              <PlatformIcon name="plus" size={17} color={colors.accentForeground} />
+              <Text style={[styles.addButtonText, { color: colors.accentForeground }]}>Add listing</Text>
+            </Pressable>
+          )}
       </View>
 
       {!!actionMessage && (
@@ -278,7 +283,7 @@ export default function VendorListingsScreen() {
         </View>
       )}
 
-      {formOpen && (
+      {formOpen && !isAdminViewer && (
         <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.formHeading}>
             <View style={{ flex: 1 }}>
@@ -365,10 +370,10 @@ export default function VendorListingsScreen() {
       ) : items.length === 0 ? (
         <StateCard
           icon="box"
-          title="Your workspace is ready"
-          description="Add your first stay or property and keep the details in one protected place."
-          buttonLabel="Add your first listing"
-          onPress={openCreate}
+          title={isAdminViewer ? 'No vendor listings yet' : 'Your workspace is ready'}
+          description={isAdminViewer ? 'Approved vendor places will appear here for review.' : 'Add your first stay or property and keep the details in one protected place.'}
+          buttonLabel={isAdminViewer ? undefined : 'Add your first listing'}
+          onPress={isAdminViewer ? undefined : openCreate}
           colors={colors}
         />
       ) : (
@@ -390,7 +395,7 @@ export default function VendorListingsScreen() {
               </Text>
             )}
             <Text style={[styles.updated, { color: colors.mutedForeground }]}>{formatUpdatedAt(listing.updatedAt)}</Text>
-            <View style={[styles.cardActions, { borderTopColor: colors.border }]}>
+            {!isAdminViewer && <View style={[styles.cardActions, { borderTopColor: colors.border }]}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Edit ${listing.name}`}
@@ -439,7 +444,7 @@ export default function VendorListingsScreen() {
                   <Text style={[styles.reviewNoteText, { color: colors.mutedForeground }]}>Archived</Text>
                 </View>
               )}
-            </View>
+            </View>}
           </View>
         ))
       )}
@@ -500,8 +505,8 @@ function StateCard({
   icon: string;
   title: string;
   description: string;
-  buttonLabel: string;
-  onPress: () => void;
+  buttonLabel?: string;
+  onPress?: () => void;
   colors: ReturnType<typeof useColors>;
 }) {
   return (
@@ -511,9 +516,11 @@ function StateCard({
       </View>
       <Text style={[styles.stateTitle, { color: colors.foreground }]}>{title}</Text>
       <Text style={[styles.stateDescription, { color: colors.mutedForeground }]}>{description}</Text>
-      <Pressable onPress={onPress} accessibilityRole="button" style={[styles.stateButton, { backgroundColor: colors.primary }]}>
-        <Text style={styles.primaryButtonText}>{buttonLabel}</Text>
-      </Pressable>
+      {buttonLabel && onPress && (
+        <Pressable onPress={onPress} accessibilityRole="button" style={[styles.stateButton, { backgroundColor: colors.primary }]}>
+          <Text style={styles.primaryButtonText}>{buttonLabel}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }

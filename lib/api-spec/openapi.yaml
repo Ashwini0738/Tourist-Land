@@ -285,7 +285,7 @@ paths:
       operationId: getVendorDashboard
       tags: [vendor]
       security: [{ bearerAuth: [] }]
-      summary: Get the authenticated vendor dashboard status
+      summary: Get the authenticated vendor or admin vendor dashboard status
       responses:
         "200":
           description: Vendor dashboard status
@@ -314,7 +314,7 @@ paths:
       operationId: listVendorListings
       tags: [vendor]
       security: [{ bearerAuth: [] }]
-      summary: List listings owned by the authenticated approved vendor
+      summary: List listings owned by the authenticated approved vendor, or all listings for an admin viewer
       responses:
         "200":
           description: Vendor-owned listings

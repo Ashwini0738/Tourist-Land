@@ -1475,7 +1475,7 @@ export const getGetVendorDashboardUrl = () => {
 }
 
 /**
- * @summary Get the authenticated vendor dashboard status
+ * @summary Get the authenticated vendor or admin vendor dashboard status
  */
 export const getVendorDashboard = async ( options?: Parameters<typeof customFetch>[1]): Promise<RoleDashboard> => {
 
@@ -1522,7 +1522,7 @@ export type GetVendorDashboardQueryError = ErrorType<UnauthenticatedResponse | F
 
 
 /**
- * @summary Get the authenticated vendor dashboard status
+ * @summary Get the authenticated vendor or admin vendor dashboard status
  */
 
 export function useGetVendorDashboard<TData = Awaited<ReturnType<typeof getVendorDashboard>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
@@ -1629,7 +1629,7 @@ export const getListVendorListingsUrl = () => {
 }
 
 /**
- * @summary List listings owned by the authenticated approved vendor
+ * @summary List listings owned by the authenticated approved vendor, or all listings for an admin viewer
  */
 export const listVendorListings = async ( options?: Parameters<typeof customFetch>[1]): Promise<ListingList> => {
 
@@ -1676,7 +1676,7 @@ export type ListVendorListingsQueryError = ErrorType<UnauthenticatedResponse | F
 
 
 /**
- * @summary List listings owned by the authenticated approved vendor
+ * @summary List listings owned by the authenticated approved vendor, or all listings for an admin viewer
  */
 
 export function useListVendorListings<TData = Awaited<ReturnType<typeof listVendorListings>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(

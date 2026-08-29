@@ -89,6 +89,7 @@ export async function requireApprovedVendor(req: Request, res: Response): Promis
     unauthenticated(res);
     return false;
   }
+  if (req.localUser.role === "admin") return true;
   if (req.localUser.role !== "vendor") {
     forbidden(res);
     return false;
