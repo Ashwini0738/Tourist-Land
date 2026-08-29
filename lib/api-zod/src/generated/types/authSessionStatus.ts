@@ -12,6 +12,5 @@ export interface AuthSessionStatus {
   clerkUserId: string;
   /** @nullable */
   sessionId: string | null;
-  pinConfigured: boolean;
   sessionAuthority: AuthSessionStatusSessionAuthority;
 }

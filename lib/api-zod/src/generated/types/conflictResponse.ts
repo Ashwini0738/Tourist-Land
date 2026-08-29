@@ -8,6 +8,6 @@
 import type { ErrorResponse } from './errorResponse';
 
 /**
- * Request conflicts with current PIN state
+ * Request conflicts with the current resource state
  */
 export type ConflictResponse = ErrorResponse;

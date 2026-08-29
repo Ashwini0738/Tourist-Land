@@ -36,12 +36,12 @@ function RootLayoutNav() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { signOut } = useClerk();
   const router = useRouter();
-  const { isReady, isUnlocked, hasPin, biometricsEnabled } = useAuthSecurity();
+  const { isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete } = useAuthSecurity();
   const colors = useColors();
   const segments = useSegments();
   const route = segments[0];
   const publicRoutes = ['splash', 'login', 'verify'];
-  const lockedSessionRoutes = ['verify', 'create-pin', 'pin-login', 'biometric', 'biometric-login'];
+  const lockedSessionRoutes = ['verify', 'biometric', 'biometric-login'];
   useEffect(() => {
     setAuthTokenGetter(Platform.OS === 'web' ? null : () => getToken());
     setUnauthorizedHandler(async () => {
@@ -57,9 +57,14 @@ function RootLayoutNav() {
   if (!isLoaded) return renderRoutes();
   if (!isSignedIn && route && !publicRoutes.includes(route)) return <Redirect href="/login" />;
   if (isSignedIn && !isReady) return <AuthLoadingScreen label="Preparing your secure account…" />;
+  if (isSignedIn && isReady && publicRoutes.includes(route ?? '')) {
+    if (!deviceAuthSetupComplete) return <Redirect href="/biometric" />;
+    if (biometricsEnabled && !isUnlocked) return <Redirect href="/biometric-login" />;
+    return <Redirect href="/(tabs)" />;
+  }
   if (isSignedIn && isReady && !isUnlocked && route && !lockedSessionRoutes.includes(route)) {
-    if (!hasPin) return <Redirect href="/create-pin" />;
-    return <Redirect href={biometricsEnabled ? '/biometric-login' : '/pin-login'} />;
+    if (!deviceAuthSetupComplete) return <Redirect href="/biometric" />;
+    if (biometricsEnabled) return <Redirect href="/biometric-login" />;
   }
   return renderRoutes();
 }
@@ -78,8 +83,6 @@ function renderRoutes() {
       <Stack.Screen name="splash" />
       <Stack.Screen name="login" />
       <Stack.Screen name="verify" />
-      <Stack.Screen name="create-pin" />
-      <Stack.Screen name="pin-login" />
       <Stack.Screen name="biometric" />
       <Stack.Screen name="biometric-login" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -91,7 +94,6 @@ function renderRoutes() {
       <Stack.Screen name="hotels" />
       <Stack.Screen name="hotel/[id]" />
       <Stack.Screen name="wallet" />
-      <Stack.Screen name="change-pin" />
     </Stack>
   );
 }

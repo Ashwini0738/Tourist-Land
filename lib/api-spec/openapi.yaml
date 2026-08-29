@@ -194,7 +194,7 @@ paths:
       operationId: getAuthSession
       tags: [auth]
       security: [{ bearerAuth: [] }]
-      summary: Get Clerk-backed session and local PIN configuration status
+      summary: Get the authenticated Clerk session status
       responses:
         "200":
           description: Verified Clerk session status
@@ -202,34 +202,6 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AuthSessionStatus" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
-  /v1/auth/setup-pin:
-    post:
-      operationId: setupPin
-      tags: [auth]
-      security: [{ bearerAuth: [] }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: "#/components/schemas/PinInput" } } }
-      responses:
-        "201": { description: PIN configured, content: { application/json: { schema: { $ref: "#/components/schemas/PinConfigured" } } } }
-        "400": { $ref: "#/components/responses/InvalidInput" }
-        "401": { $ref: "#/components/responses/Unauthenticated" }
-        "409": { $ref: "#/components/responses/Conflict" }
-  /v1/auth/login-pin:
-    post:
-      operationId: verifyLoginPin
-      tags: [auth]
-      security: [{ bearerAuth: [] }]
-      summary: Verify local PIN only; does not create a session
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: "#/components/schemas/PinInput" } } }
-      responses:
-        "200": { description: PIN verified, content: { application/json: { schema: { $ref: "#/components/schemas/PinVerification" } } } }
-        "400": { $ref: "#/components/responses/InvalidInput" }
-        "401": { $ref: "#/components/responses/Unauthenticated" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "429": { $ref: "#/components/responses/RateLimited" }
   /v1/auth/refresh:
     post:
       operationId: refreshAuthSession
@@ -248,19 +220,6 @@ paths:
       responses:
         "200": { description: Clerk logout guidance, content: { application/json: { schema: { $ref: "#/components/schemas/LogoutStatus" } } } }
         "401": { $ref: "#/components/responses/Unauthenticated" }
-  /v1/auth/change-pin:
-    post:
-      operationId: changePin
-      tags: [auth]
-      security: [{ bearerAuth: [] }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: "#/components/schemas/ChangePinInput" } } }
-      responses:
-        "200": { description: PIN changed, content: { application/json: { schema: { $ref: "#/components/schemas/PinConfigured" } } } }
-        "400": { $ref: "#/components/responses/InvalidInput" }
-        "401": { $ref: "#/components/responses/Unauthenticated" }
-        "429": { $ref: "#/components/responses/RateLimited" }
 components:
   securitySchemes:
     bearerAuth:
@@ -288,10 +247,10 @@ components:
       description: Request body is invalid
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
     Conflict:
-      description: Request conflicts with current PIN state
+      description: Request conflicts with the current resource state
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
     RateLimited:
-      description: PIN verification temporarily locked
+      description: Too many requests
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
   schemas:
     HealthStatus:
@@ -468,41 +427,14 @@ components:
             message: { type: string }
           required: [code, message]
       required: [error]
-    PinInput:
-      type: object
-      additionalProperties: false
-      properties:
-        pin: { type: string, pattern: "^[0-9]{4,6}$" }
-      required: [pin]
-    ChangePinInput:
-      type: object
-      additionalProperties: false
-      properties:
-        currentPin: { type: string, pattern: "^[0-9]{4,6}$" }
-        newPin: { type: string, pattern: "^[0-9]{4,6}$" }
-      required: [currentPin, newPin]
     AuthSessionStatus:
       type: object
       properties:
         authenticated: { type: boolean }
         clerkUserId: { type: string }
         sessionId: { type: [string, "null"] }
-        pinConfigured: { type: boolean }
         sessionAuthority: { type: string, enum: [clerk] }
-      required: [authenticated, clerkUserId, sessionId, pinConfigured, sessionAuthority]
-    PinConfigured:
-      type: object
-      properties:
-        pinConfigured: { type: boolean }
-        message: { type: string }
-      required: [pinConfigured, message]
-    PinVerification:
-      type: object
-      properties:
-        verified: { type: boolean }
-        sessionAuthority: { type: string, enum: [clerk] }
-        message: { type: string }
-      required: [verified, sessionAuthority, message]
+      required: [authenticated, clerkUserId, sessionId, sessionAuthority]
     RefreshStatus:
       type: object
       properties:

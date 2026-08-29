@@ -27,15 +27,6 @@ export const users = pgTable("users", {
   ...timestamps,
 });
 
-/** Local PIN verifier only; Clerk remains the sole session authority. */
-export const userPinCredentials = pgTable("user_pin_credentials", {
-  userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
-  pinHash: text("pin_hash").notNull(),
-  failedAttempts: integer("failed_attempts").default(0).notNull(),
-  lockedUntil: timestamp("locked_until", { withTimezone: true }),
-  ...timestamps,
-});
-
 export const userRoles = pgTable(
   "user_roles",
   {

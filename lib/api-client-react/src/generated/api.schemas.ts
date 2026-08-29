@@ -140,18 +140,6 @@ export interface ErrorResponse {
   error: ErrorResponseError;
 }
 
-export interface PinInput {
-  /** @pattern ^[0-9]{4,6}$ */
-  pin: string;
-}
-
-export interface ChangePinInput {
-  /** @pattern ^[0-9]{4,6}$ */
-  currentPin: string;
-  /** @pattern ^[0-9]{4,6}$ */
-  newPin: string;
-}
-
 export type AuthSessionStatusSessionAuthority = typeof AuthSessionStatusSessionAuthority[keyof typeof AuthSessionStatusSessionAuthority];
 
 
@@ -164,26 +152,7 @@ export interface AuthSessionStatus {
   clerkUserId: string;
   /** @nullable */
   sessionId: string | null;
-  pinConfigured: boolean;
   sessionAuthority: AuthSessionStatusSessionAuthority;
-}
-
-export interface PinConfigured {
-  pinConfigured: boolean;
-  message: string;
-}
-
-export type PinVerificationSessionAuthority = typeof PinVerificationSessionAuthority[keyof typeof PinVerificationSessionAuthority];
-
-
-export const PinVerificationSessionAuthority = {
-  clerk: 'clerk',
-} as const;
-
-export interface PinVerification {
-  verified: boolean;
-  sessionAuthority: PinVerificationSessionAuthority;
-  message: string;
 }
 
 export type RefreshStatusSessionAuthority = typeof RefreshStatusSessionAuthority[keyof typeof RefreshStatusSessionAuthority];
@@ -230,12 +199,12 @@ export type UnauthenticatedResponse = ErrorResponse;
 export type InvalidInputResponse = ErrorResponse;
 
 /**
- * Request conflicts with current PIN state
+ * Request conflicts with the current resource state
  */
 export type ConflictResponse = ErrorResponse;
 
 /**
- * PIN verification temporarily locked
+ * Too many requests
  */
 export type RateLimitedResponse = ErrorResponse;
 

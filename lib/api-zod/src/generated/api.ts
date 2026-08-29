@@ -272,44 +272,13 @@ export const CreatePropertyEnquiryResponse = zod.object({
 
 
 /**
- * @summary Get Clerk-backed session and local PIN configuration status
+ * @summary Get the authenticated Clerk session status
  */
 export const GetAuthSessionResponse = zod.object({
   "authenticated": zod.boolean(),
   "clerkUserId": zod.string(),
   "sessionId": zod.string().nullable(),
-  "pinConfigured": zod.boolean(),
   "sessionAuthority": zod.enum(['clerk'])
-})
-
-
-export const setupPinBodyPinRegExp = new RegExp('^[0-9]{4,6}$');
-
-
-export const SetupPinBody = zod.object({
-  "pin": zod.string().regex(setupPinBodyPinRegExp)
-})
-
-export const SetupPinResponse = zod.object({
-  "pinConfigured": zod.boolean(),
-  "message": zod.string()
-})
-
-
-/**
- * @summary Verify local PIN only; does not create a session
- */
-export const verifyLoginPinBodyPinRegExp = new RegExp('^[0-9]{4,6}$');
-
-
-export const VerifyLoginPinBody = zod.object({
-  "pin": zod.string().regex(verifyLoginPinBodyPinRegExp)
-})
-
-export const VerifyLoginPinResponse = zod.object({
-  "verified": zod.boolean(),
-  "sessionAuthority": zod.enum(['clerk']),
-  "message": zod.string()
 })
 
 
@@ -330,21 +299,6 @@ export const RefreshAuthSessionResponse = zod.object({
 export const LogoutAuthSessionResponse = zod.object({
   "authenticated": zod.boolean(),
   "sessionAuthority": zod.enum(['clerk']),
-  "message": zod.string()
-})
-
-
-export const changePinBodyCurrentPinRegExp = new RegExp('^[0-9]{4,6}$');
-export const changePinBodyNewPinRegExp = new RegExp('^[0-9]{4,6}$');
-
-
-export const ChangePinBody = zod.object({
-  "currentPin": zod.string().regex(changePinBodyCurrentPinRegExp),
-  "newPin": zod.string().regex(changePinBodyNewPinRegExp)
-})
-
-export const ChangePinResponse = zod.object({
-  "pinConfigured": zod.boolean(),
   "message": zod.string()
 })
 

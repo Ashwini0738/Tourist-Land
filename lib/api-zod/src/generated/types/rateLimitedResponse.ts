@@ -8,6 +8,6 @@
 import type { ErrorResponse } from './errorResponse';
 
 /**
- * PIN verification temporarily locked
+ * Too many requests
  */
 export type RateLimitedResponse = ErrorResponse;

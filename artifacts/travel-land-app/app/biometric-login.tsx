@@ -16,15 +16,20 @@ export default function BiometricLoginScreen() {
   const attemptedRef = useRef(false);
 
   const authenticate = async () => {
-    if (Platform.OS === 'web') return setMessage('Use your PIN to unlock on the web.');
+    if (loading) return;
+    if (Platform.OS === 'web') return setMessage('Device authentication is available in the Travel & Land mobile app.');
     setLoading(true);
     try {
-      const r = await LocalAuthentication.authenticateAsync({ promptMessage: 'Unlock Travel & Land', fallbackLabel: 'Use PIN' });
-      if (!r.success) return setMessage('We could not confirm your identity. Please use your PIN.');
+      const r = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Unlock Travel & Land',
+        fallbackLabel: 'Use device passcode',
+        disableDeviceFallback: false,
+      });
+      if (!r.success) return setMessage('Device authentication was cancelled or unsuccessful. Try again to use your device security.');
       await unlock();
       router.replace('/(tabs)');
     } catch {
-      setMessage('Biometric unlock could not be completed. Please use your PIN.');
+      setMessage('Device authentication could not be completed. Try again.');
     } finally {
       setLoading(false);
     }
@@ -66,8 +71,8 @@ export default function BiometricLoginScreen() {
       <View>
         {loading && <ActivityIndicator style={{marginBottom: 16}} color="#064E3B" />}
         {!!message && <Text style={{color: colors.destructive, textAlign: 'center', marginBottom: 16}}>{message}</Text>}
-        <Pressable accessibilityRole="button" accessibilityLabel="Use mobile PIN instead" onPress={() => router.replace('/pin-login')} style={{backgroundColor: '#064E3B', height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center'}}>
-          <Text style={{color: '#fff', fontSize: 16, fontWeight: 'bold'}}>Use PIN instead</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Try device authentication again" onPress={authenticate} style={{backgroundColor: '#064E3B', height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center'}}>
+          <Text style={{color: '#fff', fontSize: 16, fontWeight: 'bold'}}>Try device authentication again</Text>
         </Pressable>
       </View>
     </View>

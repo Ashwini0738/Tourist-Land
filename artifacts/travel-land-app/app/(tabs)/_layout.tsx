@@ -104,9 +104,10 @@ function ClassicTabLayout() {
 
 export default function TabLayout() {
   const { isSignedIn } = useAuth();
-  const { isReady, isUnlocked } = useAuthSecurity();
+  const { isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete } = useAuthSecurity();
   if (!isSignedIn) return <Redirect href="/login" />;
   if (!isReady) return null;
-  if (!isUnlocked) return <Redirect href="/pin-login" />;
+  if (!isUnlocked && !deviceAuthSetupComplete) return <Redirect href="/biometric" />;
+  if (!isUnlocked && biometricsEnabled) return <Redirect href="/biometric-login" />;
   return <ClassicTabLayout />;
 }

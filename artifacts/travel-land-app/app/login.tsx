@@ -2,11 +2,9 @@ import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { useAuth, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { useColors } from '@/hooks/useColors';
-import { SecurityIcon } from '@/components/SecurityIcon';
 
 type ClerkErrorLike = {
   code?: string;
@@ -49,7 +47,6 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-  const [mode, setMode] = useState<'biometric' | 'email'>('biometric');
   const [signInNeedsCode, setSignInNeedsCode] = useState(false);
   const [signInCode, setSignInCode] = useState('');
 
@@ -83,22 +80,6 @@ export default function LoginScreen() {
     if (signIn.status !== 'complete') return setMessage('This sign-in needs another verification step. Please restart sign in and try again.');
     await signIn.finalize({});
     router.replace('/(tabs)');
-  };
-
-  const handleBiometricTap = async () => {
-    if (Platform.OS === 'web') {
-       setMessage('Biometrics not available on web. Please sign in with email.');
-       setMode('email');
-       return;
-    }
-    const r = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Confirm your device lock',
-      fallbackLabel: 'Use device passcode',
-      disableDeviceFallback: false,
-    });
-    setMessage(r.success ? 'Device verified. Link your Travel & Land account once to finish setup.' : 'We could not verify your device lock.');
-    if (!r.success) return;
-    setMode('email');
   };
 
   const verifySignInCode = async () => {
@@ -141,12 +122,8 @@ export default function LoginScreen() {
     );
   }
 
-  if (mode === 'email') {
-    return (
+  return (
       <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 16 }]}>
-        <Pressable testID="login-back" onPress={() => { setMode('biometric'); setMessage(''); }} style={{ padding: 8, marginLeft: -8, alignSelf: 'flex-start' }}>
-          <Feather name="arrow-left" size={24} color={colors.foreground} />
-        </Pressable>
         <View style={styles.copy}>
           <Text style={[styles.kicker, { color: colors.primary }]}>{isNew ? 'JOIN THE JOURNEY' : 'WELCOME BACK'}</Text>
           <Text style={[styles.title, { color: colors.foreground }]}>{isNew ? 'Start exploring.' : 'Your next chapter\nstarts here.'}</Text>
@@ -164,49 +141,6 @@ export default function LoginScreen() {
         </View>
       </View>
     );
-  }
-
-  return (
-    <View style={[{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 24, justifyContent: 'space-between', paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}>
-      <View style={{alignItems: 'center'}}>
-        <View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}>
-          <SecurityIcon name="compass" size={36} color="#064E3B" />
-          <Text style={{fontSize: 20, fontWeight: 'bold', color: colors.foreground, letterSpacing: 1}}>TRAVEL & LAND</Text>
-        </View>
-      </View>
-
-      <View style={{alignItems: 'flex-start', marginTop: 40}}>
-        <Text style={{fontSize: 26, fontWeight: '700', color: '#064E3B'}}>Welcome</Text>
-        <Text style={{fontSize: 18, color: colors.foreground, marginTop: 4}}>To your next chapter</Text>
-      </View>
-
-      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Continue with fingerprint, Face ID, or device lock"
-          onPress={handleBiometricTap}
-          style={{flexDirection: 'row', alignItems: 'center', minHeight: 96}}
-        >
-            <SecurityIcon name="fingerprint" size={80} color={colors.foreground} />
-          <View style={{paddingHorizontal: 24, alignItems: 'center'}}>
-             <View style={{width: 1, height: 30, backgroundColor: colors.border}} />
-             <Text style={{marginVertical: 12, color: colors.foreground, fontWeight: '700'}}>OR</Text>
-             <View style={{width: 1, height: 30, backgroundColor: colors.border}} />
-          </View>
-          <SecurityIcon name="face" size={80} color={colors.foreground} />
-        </Pressable>
-        <Text style={{marginTop: 40, fontSize: 16, color: colors.foreground, fontWeight: '600'}}>Tap to continue securely</Text>
-        <Text style={{marginTop: 8, fontSize: 13, color: colors.mutedForeground, textAlign: 'center'}}>Fingerprint, Face ID, or your device lock</Text>
-      </View>
-
-      <View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Set up this device" onPress={() => setMode('email')} style={{backgroundColor: '#064E3B', height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center'}}>
-          <Text style={{color: '#fff', fontSize: 16, fontWeight: 'bold'}}>Set up this device</Text>
-        </Pressable>
-        <Text style={{color: colors.mutedForeground, fontSize: 12, lineHeight: 17, textAlign: 'center', marginTop: 10}}>Account setup is required once before biometric unlock can restore your secure session.</Text>
-      </View>
-    </View>
-  );
 }
 
 const styles = StyleSheet.create({

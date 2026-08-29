@@ -36,11 +36,12 @@ jest.mock('react-native-safe-area-context', () => ({
 
 describe('biometric setup', () => {
   const setBiometricsEnabled = jest.fn().mockResolvedValue(undefined);
+  const setDeviceAuthSetupComplete = jest.fn().mockResolvedValue(undefined);
   const unlock = jest.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useAuthSecurity as jest.Mock).mockReturnValue({ setBiometricsEnabled, unlock });
+    (useAuthSecurity as jest.Mock).mockReturnValue({ setBiometricsEnabled, setDeviceAuthSetupComplete, unlock });
   });
 
   it('persists skip, unlocks the current Clerk session, and navigates once', async () => {
@@ -50,6 +51,7 @@ describe('biometric setup', () => {
 
     await waitFor(() => {
       expect(setBiometricsEnabled).toHaveBeenCalledWith(false);
+      expect(setDeviceAuthSetupComplete).toHaveBeenCalledWith(true);
       expect(unlock).toHaveBeenCalledTimes(1);
       expect(router.replace).toHaveBeenCalledWith('/(tabs)');
     });
