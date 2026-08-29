@@ -309,6 +309,99 @@ paths:
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /v1/vendor/listings:
+    get:
+      operationId: listVendorListings
+      tags: [vendor]
+      security: [{ bearerAuth: [] }]
+      summary: List listings owned by the authenticated approved vendor
+      responses:
+        "200":
+          description: Vendor-owned listings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListingList" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createVendorListing
+      tags: [vendor]
+      security: [{ bearerAuth: [] }]
+      summary: Create a draft listing owned by the authenticated approved vendor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ListingInput" }
+      responses:
+        "201":
+          description: Created draft listing
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Listing" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/vendor/listings/{id}:
+    patch:
+      operationId: updateVendorListing
+      tags: [vendor]
+      security: [{ bearerAuth: [] }]
+      summary: Edit a listing owned by the authenticated approved vendor
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ListingUpdate" }
+      responses:
+        "200":
+          description: Updated vendor listing
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Listing" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/vendor/listings/{id}/publish:
+    post:
+      operationId: publishVendorListing
+      tags: [vendor]
+      security: [{ bearerAuth: [] }]
+      summary: Publish a draft listing owned by the authenticated approved vendor
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Published vendor listing
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Listing" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/vendor/listings/{id}/archive:
+    post:
+      operationId: archiveVendorListing
+      tags: [vendor]
+      security: [{ bearerAuth: [] }]
+      summary: Archive a listing owned by the authenticated approved vendor
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Archived vendor listing
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Listing" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /v1/admin/dashboard:
     get:
       operationId: getAdminDashboard
@@ -361,6 +454,20 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/VendorApplication" }
                 required: [items]
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/vendor-listings:
+    get:
+      operationId: listAdminVendorListings
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Review listings created by vendors
+      responses:
+        "200":
+          description: Vendor-owned listings with owner details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminListingList" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
   /v1/admin/vendor-applications/{id}/approve:
@@ -672,6 +779,60 @@ components:
         items:
           type: array
           items: { $ref: "#/components/schemas/Property" }
+      required: [items]
+    ListingStatus:
+      type: string
+      enum: [draft, published, archived, pending]
+    ListingInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: [string, "null"], maxLength: 4000 }
+        address: { type: string, minLength: 1, maxLength: 500 }
+        destinationId: { type: [string, "null"], maxLength: 100 }
+      required: [name, description, address, destinationId]
+    ListingUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: [string, "null"], maxLength: 4000 }
+        address: { type: string, minLength: 1, maxLength: 500 }
+        destinationId: { type: [string, "null"], maxLength: 100 }
+      minProperties: 1
+    Listing:
+      type: object
+      properties:
+        id: { type: string }
+        ownerId: { type: string }
+        name: { type: string }
+        description: { type: [string, "null"] }
+        address: { type: string }
+        destinationId: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/ListingStatus" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, ownerId, name, description, address, destinationId, status, createdAt, updatedAt]
+    ListingList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Listing" }
+      required: [items]
+    AdminListing:
+      allOf:
+        - $ref: "#/components/schemas/Listing"
+        - type: object
+          properties:
+            ownerName: { type: [string, "null"] }
+            ownerEmail: { type: string }
+          required: [ownerName, ownerEmail]
+    AdminListingList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/AdminListing" }
       required: [items]
     PropertyEnquiryInput:
       type: object

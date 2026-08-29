@@ -24,6 +24,7 @@ const NAVIGATION: Record<DashboardRole, DashboardNavItem[]> = {
   admin: [
     { label: 'Users', description: 'Review accounts and roles', icon: 'users', route: '/admin/users' },
     { label: 'Vendors', description: 'Approve and supervise vendors', icon: 'briefcase', route: '/admin/vendors' },
+    { label: 'Listings', description: 'Review vendor-owned places', icon: 'layers', route: '/admin/listings' },
     { label: 'Content', description: 'Destinations, places, and events', icon: 'layers', route: '/admin/content' },
     { label: 'Settings', description: 'Platform controls', icon: 'settings', route: '/admin/settings' },
   ],

@@ -111,6 +111,90 @@ export interface PropertyList {
   items: Property[];
 }
 
+export type ListingStatus = typeof ListingStatus[keyof typeof ListingStatus];
+
+
+export const ListingStatus = {
+  draft: 'draft',
+  published: 'published',
+  archived: 'archived',
+  pending: 'pending',
+} as const;
+
+export interface ListingInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name: string;
+  /**
+     * @maxLength 4000
+     * @nullable
+     */
+  description: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  address: string;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  destinationId: string | null;
+}
+
+export interface ListingUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name?: string;
+  /**
+     * @maxLength 4000
+     * @nullable
+     */
+  description?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  address?: string;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  destinationId?: string | null;
+}
+
+export interface Listing {
+  id: string;
+  ownerId: string;
+  name: string;
+  /** @nullable */
+  description: string | null;
+  address: string;
+  /** @nullable */
+  destinationId: string | null;
+  status: ListingStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ListingList {
+  items: Listing[];
+}
+
+export type AdminListing = Listing & ({
+  /** @nullable */
+  ownerName: string | null;
+  ownerEmail: string;
+});
+
+export interface AdminListingList {
+  items: AdminListing[];
+}
+
 export type PropertyEnquiryInputPreferredContactMethod = typeof PropertyEnquiryInputPreferredContactMethod[keyof typeof PropertyEnquiryInputPreferredContactMethod];
 
 

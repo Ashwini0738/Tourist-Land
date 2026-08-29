@@ -1,10 +1,11 @@
-import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
-import { db, adminInvitations, userRoles, users, vendorApplications, vendorProfiles } from "@workspace/db";
+import { Router, type IRouter, type Request } from "express";
+import { and, desc, eq, inArray } from "drizzle-orm";
+import { db, adminInvitations, hotels, userRoles, users, vendorApplications, vendorProfiles } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   requireAnyRole,
   requireApprovedVendor,
+  requireOwnerOrAdmin,
   requireRole,
 } from "../middlewares/authorization";
 import {
@@ -41,6 +42,57 @@ function bodyRecord(value: unknown): Record<string, unknown> | null {
 
 function pathValue(value: string | string[]): string {
   return Array.isArray(value) ? value[0] ?? "" : value;
+}
+
+type ListingInput = {
+  name: string;
+  description: string | null;
+  address: string;
+  destinationId: string | null;
+};
+
+function parseListingInput(value: unknown, partial = false): ListingInput | Partial<ListingInput> | null {
+  const body = bodyRecord(value);
+  if (!body) return null;
+  const parsed: Partial<ListingInput> = {};
+  for (const field of ["name", "address"] as const) {
+    if (body[field] !== undefined) {
+      if (typeof body[field] !== "string" || body[field].trim().length === 0 || body[field].length > (field === "name" ? 200 : 500)) return null;
+      parsed[field] = body[field].trim();
+    }
+  }
+  if (body.description !== undefined) {
+    if (body.description !== null && (typeof body.description !== "string" || body.description.length > 4000)) return null;
+    parsed.description = body.description === null ? null : body.description.trim();
+  }
+  if (body.destinationId !== undefined) {
+    if (body.destinationId !== null && (typeof body.destinationId !== "string" || body.destinationId.length > 100)) return null;
+    parsed.destinationId = body.destinationId;
+  }
+  if (!partial && (!parsed.name || !parsed.address || !("description" in parsed) || !("destinationId" in parsed))) return null;
+  if (partial && Object.keys(parsed).length === 0) return null;
+  return partial ? parsed : parsed as ListingInput;
+}
+
+function serializeListing(listing: typeof hotels.$inferSelect) {
+  return {
+    id: listing.id,
+    ownerId: listing.ownerId,
+    name: listing.name,
+    description: listing.description,
+    address: listing.address,
+    destinationId: listing.destinationId,
+    status: listing.status as "draft" | "published" | "archived" | "pending",
+    createdAt: listing.createdAt.toISOString(),
+    updatedAt: listing.updatedAt.toISOString(),
+  };
+}
+
+async function resolveListingOwnerId(req: Request): Promise<string | null> {
+  const listing = await db.query.hotels.findFirst({
+    where: eq(hotels.id, pathValue(req.params.id)),
+  });
+  return listing?.ownerId ?? null;
 }
 
 async function serializeUserById(userId: string) {
@@ -86,6 +138,93 @@ roleAccessRouter.get("/v1/vendor/profile", requireAnyRole("vendor", "admin"), as
   res.json(serializeVendorProfile(profile));
 });
 
+roleAccessRouter.get("/v1/vendor/listings", requireRole("vendor"), async (req, res) => {
+  if (!(await requireApprovedVendor(req, res))) return;
+  const listings = await db
+    .select()
+    .from(hotels)
+    .where(eq(hotels.ownerId, req.localUser!.id))
+    .orderBy(desc(hotels.updatedAt));
+  res.json({ items: listings.map(serializeListing) });
+});
+
+roleAccessRouter.post("/v1/vendor/listings", requireRole("vendor"), async (req, res) => {
+  if (!(await requireApprovedVendor(req, res))) return;
+  const input = parseListingInput(req.body);
+  if (!input || !("name" in input) || !("address" in input) || !("description" in input) || !("destinationId" in input)) {
+    error(res, 400, "INVALID_LISTING", "Name, description, address, and destination are required.");
+    return;
+  }
+  const listingInput = input as ListingInput;
+  const listing = (await db.insert(hotels).values({
+    ownerId: req.localUser!.id,
+    name: listingInput.name,
+    description: listingInput.description,
+    address: listingInput.address,
+    destinationId: listingInput.destinationId,
+    status: "draft",
+  }).returning())[0];
+  res.status(201).json(serializeListing(listing));
+});
+
+async function updateListingStatus(
+  req: Parameters<Parameters<IRouter["post"]>[1]>[0],
+  res: Parameters<Parameters<IRouter["post"]>[1]>[1],
+  status: "published" | "archived",
+): Promise<void> {
+  if (!(await requireApprovedVendor(req, res))) return;
+  const listingId = pathValue(req.params.id);
+  const listing = await db.query.hotels.findFirst({
+    where: and(eq(hotels.id, listingId), eq(hotels.ownerId, req.localUser!.id)),
+  });
+  if (!listing) {
+    error(res, 404, "LISTING_NOT_FOUND", "Listing not found.");
+    return;
+  }
+  if (status === "published" && !["draft", "pending"].includes(listing.status)) {
+    error(res, 409, "LISTING_STATE_INVALID", "Only draft listings can be published.");
+    return;
+  }
+  if (status === "archived" && listing.status === "archived") {
+    error(res, 409, "LISTING_STATE_INVALID", "This listing is already archived.");
+    return;
+  }
+  const updated = (await db.update(hotels)
+    .set({ status, updatedAt: new Date() })
+    .where(and(eq(hotels.id, listing.id), eq(hotels.ownerId, req.localUser!.id)))
+    .returning())[0];
+  res.json(serializeListing(updated));
+}
+
+roleAccessRouter.patch("/v1/vendor/listings/:id", requireRole("vendor"), requireOwnerOrAdmin(resolveListingOwnerId), async (req, res) => {
+  if (!(await requireApprovedVendor(req, res))) return;
+  const listingId = pathValue(req.params.id);
+  const input = parseListingInput(req.body, true);
+  if (!input) {
+    error(res, 400, "INVALID_LISTING", "Provide at least one valid listing field.");
+    return;
+  }
+  const listing = await db.query.hotels.findFirst({
+    where: and(eq(hotels.id, listingId), eq(hotels.ownerId, req.localUser!.id)),
+  });
+  if (!listing) {
+    error(res, 404, "LISTING_NOT_FOUND", "Listing not found.");
+    return;
+  }
+  if (listing.status === "archived") {
+    error(res, 409, "LISTING_STATE_INVALID", "Archived listings cannot be edited.");
+    return;
+  }
+  const updated = (await db.update(hotels)
+    .set({ ...input, updatedAt: new Date() })
+    .where(and(eq(hotels.id, listing.id), eq(hotels.ownerId, req.localUser!.id)))
+    .returning())[0];
+  res.json(serializeListing(updated));
+});
+
+roleAccessRouter.post("/v1/vendor/listings/:id/publish", requireRole("vendor"), requireOwnerOrAdmin(resolveListingOwnerId), (req, res) => updateListingStatus(req, res, "published"));
+roleAccessRouter.post("/v1/vendor/listings/:id/archive", requireRole("vendor"), requireOwnerOrAdmin(resolveListingOwnerId), (req, res) => updateListingStatus(req, res, "archived"));
+
 roleAccessRouter.get("/v1/admin/dashboard", requireRole("admin"), (_req, res) => {
   res.json({
     role: "admin",
@@ -99,6 +238,26 @@ roleAccessRouter.get("/v1/admin/users", requireRole("admin"), async (_req, res) 
   const localUsers = await db.select().from(users);
   const items = await Promise.all(localUsers.map((user) => serializeUserById(user.id)));
   res.json({ items: items.filter((item): item is NonNullable<typeof item> => item !== null) });
+});
+
+roleAccessRouter.get("/v1/admin/vendor-listings", requireRole("admin"), async (_req, res) => {
+  const listings = await db
+    .select({
+      listing: hotels,
+      ownerName: users.displayName,
+      ownerEmail: users.email,
+    })
+    .from(hotels)
+    .leftJoin(users, eq(hotels.ownerId, users.id))
+    .where(inArray(hotels.ownerId, db.select({ id: vendorProfiles.userId }).from(vendorProfiles)))
+    .orderBy(desc(hotels.updatedAt));
+  res.json({
+    items: listings.map(({ listing, ownerName, ownerEmail }) => ({
+      ...serializeListing(listing),
+      ownerName,
+      ownerEmail: ownerEmail ?? "",
+    })),
+  });
 });
 
 roleAccessRouter.get("/v1/admin/vendor-applications", requireRole("admin"), async (_req, res) => {

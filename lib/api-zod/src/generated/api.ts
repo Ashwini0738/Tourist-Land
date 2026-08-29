@@ -443,6 +443,134 @@ export const GetVendorProfileResponse = zod.object({
 
 
 /**
+ * @summary List listings owned by the authenticated approved vendor
+ */
+export const ListVendorListingsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "ownerId": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "address": zod.string(),
+  "destinationId": zod.string().nullable(),
+  "status": zod.enum(['draft', 'published', 'archived', 'pending']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Create a draft listing owned by the authenticated approved vendor
+ */
+export const createVendorListingBodyNameMax = 200;
+
+export const createVendorListingBodyDescriptionMax = 4000;
+
+export const createVendorListingBodyAddressMax = 500;
+
+export const createVendorListingBodyDestinationIdMax = 100;
+
+
+
+export const CreateVendorListingBody = zod.object({
+  "name": zod.string().min(1).max(createVendorListingBodyNameMax),
+  "description": zod.string().max(createVendorListingBodyDescriptionMax).nullable(),
+  "address": zod.string().min(1).max(createVendorListingBodyAddressMax),
+  "destinationId": zod.string().max(createVendorListingBodyDestinationIdMax).nullable()
+})
+
+export const CreateVendorListingResponse = zod.object({
+  "id": zod.string(),
+  "ownerId": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "address": zod.string(),
+  "destinationId": zod.string().nullable(),
+  "status": zod.enum(['draft', 'published', 'archived', 'pending']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Edit a listing owned by the authenticated approved vendor
+ */
+export const UpdateVendorListingParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateVendorListingBodyNameMax = 200;
+
+export const updateVendorListingBodyDescriptionMax = 4000;
+
+export const updateVendorListingBodyAddressMax = 500;
+
+export const updateVendorListingBodyDestinationIdMax = 100;
+
+
+
+export const UpdateVendorListingBody = zod.object({
+  "name": zod.string().min(1).max(updateVendorListingBodyNameMax).optional(),
+  "description": zod.string().max(updateVendorListingBodyDescriptionMax).nullish(),
+  "address": zod.string().min(1).max(updateVendorListingBodyAddressMax).optional(),
+  "destinationId": zod.string().max(updateVendorListingBodyDestinationIdMax).nullish()
+})
+
+export const UpdateVendorListingResponse = zod.object({
+  "id": zod.string(),
+  "ownerId": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "address": zod.string(),
+  "destinationId": zod.string().nullable(),
+  "status": zod.enum(['draft', 'published', 'archived', 'pending']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Publish a draft listing owned by the authenticated approved vendor
+ */
+export const PublishVendorListingParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const PublishVendorListingResponse = zod.object({
+  "id": zod.string(),
+  "ownerId": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "address": zod.string(),
+  "destinationId": zod.string().nullable(),
+  "status": zod.enum(['draft', 'published', 'archived', 'pending']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Archive a listing owned by the authenticated approved vendor
+ */
+export const ArchiveVendorListingParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ArchiveVendorListingResponse = zod.object({
+  "id": zod.string(),
+  "ownerId": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "address": zod.string(),
+  "destinationId": zod.string().nullable(),
+  "status": zod.enum(['draft', 'published', 'archived', 'pending']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Get the authenticated admin dashboard status
  */
 export const GetAdminDashboardResponse = zod.object({
@@ -535,6 +663,27 @@ export const ListAdminVendorApplicationsResponse = zod.object({
   "updatedAt": zod.coerce.date(),
   "reviewedAt": zod.coerce.date().nullable(),
   "invitedAt": zod.coerce.date().nullable()
+})))
+})
+
+
+/**
+ * @summary Review listings created by vendors
+ */
+export const ListAdminVendorListingsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "ownerId": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "address": zod.string(),
+  "destinationId": zod.string().nullable(),
+  "status": zod.enum(['draft', 'published', 'archived', 'pending']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "ownerName": zod.string().nullable(),
+  "ownerEmail": zod.string()
 })))
 })
 
