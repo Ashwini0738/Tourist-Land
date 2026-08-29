@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
-import { db, userRoles, users, vendorProfiles } from "@workspace/db";
+import { db, adminInvitations, userRoles, users, vendorApplications, vendorProfiles } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   requireAnyRole,
@@ -14,13 +14,19 @@ import {
   serializeVendorProfile,
 } from "../lib/role-data";
 import {
-  isPrimaryRole,
   isValidEmail,
   normalizeAccountStatus,
   parsePrimaryRole,
   resolvePrimaryRole,
   type PrimaryRole,
 } from "../lib/roles";
+import {
+  normalizeEmail,
+  serializeVendorApplication,
+  vendorApprovalAction,
+  vendorRejectionStatus,
+} from "../lib/onboarding";
+import { revokeClerkInvitation, sendClerkInvitation } from "../lib/invitations";
 
 const roleAccessRouter: IRouter = Router();
 roleAccessRouter.use(requireAuth);
@@ -35,44 +41,6 @@ function bodyRecord(value: unknown): Record<string, unknown> | null {
 
 function pathValue(value: string | string[]): string {
   return Array.isArray(value) ? value[0] ?? "" : value;
-}
-
-function requiredBodyString(body: Record<string, unknown>, key: string, maxLength: number): string | null {
-  const value = body[key];
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 && trimmed.length <= maxLength ? trimmed : null;
-}
-
-function parseVendorProfileInput(value: unknown) {
-  const body = bodyRecord(value);
-  if (!body) return null;
-  const input = {
-    businessName: requiredBodyString(body, "businessName", 200),
-    businessType: requiredBodyString(body, "businessType", 100),
-    contactName: requiredBodyString(body, "contactName", 200),
-    phone: requiredBodyString(body, "phone", 40),
-    email: requiredBodyString(body, "email", 320),
-    description: requiredBodyString(body, "description", 4000),
-    address: requiredBodyString(body, "address", 500),
-    city: requiredBodyString(body, "city", 100),
-    state: requiredBodyString(body, "state", 100),
-    country: requiredBodyString(body, "country", 100),
-  };
-  return Object.values(input).some((item) => item === null) || !isValidEmail(input.email!)
-    ? null
-    : input as {
-        businessName: string;
-        businessType: string;
-        contactName: string;
-        phone: string;
-        email: string;
-        description: string;
-        address: string;
-        city: string;
-        state: string;
-        country: string;
-      };
 }
 
 async function serializeUserById(userId: string) {
@@ -118,28 +86,6 @@ roleAccessRouter.get("/v1/vendor/profile", requireAnyRole("vendor", "admin"), as
   res.json(serializeVendorProfile(profile));
 });
 
-roleAccessRouter.post("/v1/vendor/profile", requireAnyRole("user", "vendor"), async (req, res) => {
-  const input = parseVendorProfileInput(req.body);
-  if (!input) {
-    error(res, 400, "INVALID_VENDOR_PROFILE", "Complete every vendor profile field with valid values.");
-    return;
-  }
-  const existing = await findVendorProfile(req.localUser!.id);
-  if (existing?.status === "approved" || existing?.status === "suspended") {
-    error(res, 409, "VENDOR_PROFILE_LOCKED", "An approved or suspended vendor profile must be managed by an administrator.");
-    return;
-  }
-  const profile = existing
-    ? (await db.update(vendorProfiles)
-      .set({ ...input, updatedAt: new Date() })
-      .where(eq(vendorProfiles.id, existing.id))
-      .returning())[0]
-    : (await db.insert(vendorProfiles)
-      .values({ ...input, userId: req.localUser!.id, status: "pending" })
-      .returning())[0];
-  res.status(existing ? 200 : 201).json(serializeVendorProfile(profile));
-});
-
 roleAccessRouter.get("/v1/admin/dashboard", requireRole("admin"), (_req, res) => {
   res.json({
     role: "admin",
@@ -153,6 +99,149 @@ roleAccessRouter.get("/v1/admin/users", requireRole("admin"), async (_req, res) 
   const localUsers = await db.select().from(users);
   const items = await Promise.all(localUsers.map((user) => serializeUserById(user.id)));
   res.json({ items: items.filter((item): item is NonNullable<typeof item> => item !== null) });
+});
+
+roleAccessRouter.get("/v1/admin/vendor-applications", requireRole("admin"), async (_req, res) => {
+  const applications = await db
+    .select()
+    .from(vendorApplications)
+    .where(eq(vendorApplications.status, "pending"));
+  res.json({ items: applications.map(serializeVendorApplication) });
+});
+
+function parseEmailBody(value: unknown): string | null {
+  const body = bodyRecord(value);
+  const email = body?.email;
+  if (typeof email !== "string") return null;
+  const normalized = normalizeEmail(email);
+  return isValidEmail(normalized) ? normalized : null;
+}
+
+roleAccessRouter.post("/v1/admin/invitations/admin", requireRole("admin"), async (req, res) => {
+  const email = parseEmailBody(req.body);
+  if (!email) {
+    error(res, 400, "INVALID_EMAIL", "Enter a valid email address for the administrator invitation.");
+    return;
+  }
+  const existingUser = await db.query.users.findFirst({ where: eq(users.email, email) });
+  if (existingUser) {
+    error(res, 409, "ACCOUNT_ALREADY_EXISTS", "This email already has an account. Invite a new email address.");
+    return;
+  }
+  const existingInvite = (await db
+    .select()
+    .from(adminInvitations)
+    .where(eq(adminInvitations.email, email)))
+    .find((invite) => invite.status === "pending" || invite.status === "sent");
+  if (existingInvite) {
+    error(res, 409, "INVITATION_ALREADY_EXISTS", "An active administrator invitation already exists for this email.");
+    return;
+  }
+  const record = (await db.insert(adminInvitations).values({
+    email,
+    invitedBy: req.localUser!.id,
+    status: "pending",
+  }).returning())[0];
+  let clerkInvitationId: string;
+  try {
+    clerkInvitationId = await sendClerkInvitation(email, "admin");
+  } catch {
+    await db.update(adminInvitations).set({ status: "revoked", updatedAt: new Date() }).where(eq(adminInvitations.id, record.id));
+    error(res, 503, "INVITATION_UNAVAILABLE", "The invitation could not be sent. Please try again.");
+    return;
+  }
+  const sent = (await db.update(adminInvitations)
+    .set({ status: "sent", clerkInvitationId, invitedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(adminInvitations.id, record.id), eq(adminInvitations.status, "pending")))
+    .returning())[0];
+  res.status(201).json({
+    id: sent.id,
+    email: sent.email,
+    role: "admin",
+    status: sent.status,
+    message: "Invitation sent. The recipient must create their own Clerk credentials.",
+  });
+});
+
+roleAccessRouter.get("/v1/admin/invitations", requireRole("admin"), async (_req, res) => {
+  const invitations = await db.select().from(adminInvitations);
+  res.json({
+    items: invitations.map((invitation) => ({
+      id: invitation.id,
+      email: invitation.email,
+      role: "admin" as const,
+      status: invitation.status as "pending" | "sent" | "accepted" | "revoked",
+      invitedAt: invitation.invitedAt?.toISOString() ?? null,
+      acceptedAt: invitation.acceptedAt?.toISOString() ?? null,
+    })),
+  });
+});
+
+roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("admin"), async (req, res) => {
+  const applicationId = pathValue(req.params.id);
+  const application = await db.query.vendorApplications.findFirst({ where: eq(vendorApplications.id, applicationId) });
+  if (!application) {
+    error(res, 404, "APPLICATION_NOT_FOUND", "Vendor application not found.");
+    return;
+  }
+  const approvalAction = vendorApprovalAction(application.status, Boolean(application.clerkInvitationId));
+  if (approvalAction === "already-invited") {
+    res.json(serializeVendorApplication(application));
+    return;
+  }
+  if (approvalAction !== "send-invitation") {
+    error(res, 409, "APPLICATION_STATE_INVALID", "Only pending vendor applications can be approved.");
+    return;
+  }
+  const approved = (await db.update(vendorApplications)
+    .set({ status: "approved", reviewedBy: req.localUser!.id, reviewedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(vendorApplications.id, application.id), eq(vendorApplications.status, "pending")))
+    .returning())[0];
+  if (!approved) {
+    error(res, 409, "APPLICATION_STATE_INVALID", "This application was already reviewed.");
+    return;
+  }
+  let clerkInvitationId: string;
+  try {
+    clerkInvitationId = await sendClerkInvitation(approved.email, "vendor");
+  } catch {
+    await db.update(vendorApplications)
+      .set({ status: "pending", reviewedBy: null, reviewedAt: null, updatedAt: new Date() })
+      .where(eq(vendorApplications.id, approved.id));
+    error(res, 503, "INVITATION_UNAVAILABLE", "The application was approved, but its invitation could not be sent. Please try again.");
+    return;
+  }
+  const invited = (await db.update(vendorApplications)
+    .set({ status: "invited", clerkInvitationId, invitedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(vendorApplications.id, approved.id), eq(vendorApplications.status, "approved")))
+    .returning())[0];
+  res.json(serializeVendorApplication(invited));
+});
+
+roleAccessRouter.post("/v1/admin/vendor-applications/:id/reject", requireRole("admin"), async (req, res) => {
+  const applicationId = pathValue(req.params.id);
+  const application = await db.query.vendorApplications.findFirst({ where: eq(vendorApplications.id, applicationId) });
+  if (!application) {
+    error(res, 404, "APPLICATION_NOT_FOUND", "Vendor application not found.");
+    return;
+  }
+  const nextStatus = vendorRejectionStatus(application.status, Boolean(application.clerkInvitationId));
+  if (!nextStatus) {
+    error(res, 409, "APPLICATION_STATE_INVALID", "This application cannot be rejected in its current state.");
+    return;
+  }
+  const updated = (await db.update(vendorApplications)
+    .set({ status: nextStatus, reviewedBy: req.localUser!.id, reviewedAt: new Date(), updatedAt: new Date() })
+    .where(eq(vendorApplications.id, application.id))
+    .returning())[0];
+  if (application.clerkInvitationId) {
+    try {
+      await revokeClerkInvitation(application.clerkInvitationId);
+    } catch {
+      // The local revoked state remains authoritative, so the invitation cannot grant application access.
+    }
+  }
+  res.json(serializeVendorApplication(updated));
 });
 
 roleAccessRouter.put("/v1/admin/users/:id/role", requireRole("admin"), async (req, res) => {
@@ -210,7 +299,6 @@ async function updateVendorStatus(req: Parameters<Parameters<IRouter["post"]>[1]
   res.json(serializeVendorProfile(updated));
 }
 
-roleAccessRouter.post("/v1/admin/vendors/:userId/approve", requireRole("admin"), (req, res) => updateVendorStatus(req, res, "approved"));
 roleAccessRouter.post("/v1/admin/vendors/:userId/suspend", requireRole("admin"), (req, res) => updateVendorStatus(req, res, "suspended"));
 
 export default roleAccessRouter;

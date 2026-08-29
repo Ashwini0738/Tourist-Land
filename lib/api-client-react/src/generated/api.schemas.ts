@@ -249,6 +249,162 @@ export interface VendorProfileInput {
   country: string;
 }
 
+export interface VendorApplicationInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  businessName: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  businessType: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  contactName: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  phone: string;
+  /**
+     * @minLength 3
+     * @maxLength 320
+     */
+  email: string;
+  /**
+     * @minLength 1
+     * @maxLength 4000
+     */
+  description: string;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  address: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  city: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  state: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  country: string;
+}
+
+export type VendorApplicationStatus = typeof VendorApplicationStatus[keyof typeof VendorApplicationStatus];
+
+
+export const VendorApplicationStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  invited: 'invited',
+  accepted: 'accepted',
+  rejected: 'rejected',
+  revoked: 'revoked',
+} as const;
+
+export type VendorApplication = VendorApplicationInput & ({
+  id: string;
+  /** @nullable */
+  userId: string | null;
+  status: VendorApplicationStatus;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  reviewedAt: string | null;
+  /** @nullable */
+  invitedAt: string | null;
+});
+
+export type VendorApplicationReceiptStatus = typeof VendorApplicationReceiptStatus[keyof typeof VendorApplicationReceiptStatus];
+
+
+export const VendorApplicationReceiptStatus = {
+  pending: 'pending',
+} as const;
+
+export interface VendorApplicationReceipt {
+  id: string;
+  /**
+     * @minLength 3
+     * @maxLength 320
+     */
+  email: string;
+  status: VendorApplicationReceiptStatus;
+  message: string;
+}
+
+export type VendorApplicationStatusResponseStatus = typeof VendorApplicationStatusResponseStatus[keyof typeof VendorApplicationStatusResponseStatus];
+
+
+export const VendorApplicationStatusResponseStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  invited: 'invited',
+  accepted: 'accepted',
+  rejected: 'rejected',
+  revoked: 'revoked',
+} as const;
+
+export interface VendorApplicationStatusResponse {
+  id: string;
+  status: VendorApplicationStatusResponseStatus;
+  message: string;
+}
+
+export interface EmailInvitationInput {
+  /**
+     * @minLength 3
+     * @maxLength 320
+     */
+  email: string;
+}
+
+export type AdminInvitationRole = typeof AdminInvitationRole[keyof typeof AdminInvitationRole];
+
+
+export const AdminInvitationRole = {
+  admin: 'admin',
+} as const;
+
+export type AdminInvitationStatus = typeof AdminInvitationStatus[keyof typeof AdminInvitationStatus];
+
+
+export const AdminInvitationStatus = {
+  pending: 'pending',
+  sent: 'sent',
+  accepted: 'accepted',
+  revoked: 'revoked',
+} as const;
+
+export interface AdminInvitation {
+  id: string;
+  /**
+     * @minLength 3
+     * @maxLength 320
+     */
+  email: string;
+  role: AdminInvitationRole;
+  status: AdminInvitationStatus;
+  /** @nullable */
+  invitedAt: string | null;
+  /** @nullable */
+  acceptedAt: string | null;
+  /** @nullable */
+  message?: string | null;
+}
+
 export interface RoleDashboard {
   role: PrimaryRole;
   status: AccountStatus;
@@ -314,6 +470,11 @@ export type InvalidInputResponse = ErrorResponse;
 export type ConflictResponse = ErrorResponse;
 
 /**
+ * A required upstream service is temporarily unavailable
+ */
+export type ServiceUnavailableResponse = ErrorResponse;
+
+/**
  * Too many requests
  */
 export type RateLimitedResponse = ErrorResponse;
@@ -326,7 +487,24 @@ export type ListProperties200 = {
   items: Property[];
 };
 
+export type GetVendorApplicationStatusParams = {
+id: string;
+/**
+ * @minLength 3
+ * @maxLength 320
+ */
+email: string;
+};
+
 export type ListAdminUsers200 = {
   items: CurrentUser[];
+};
+
+export type ListAdminVendorApplications200 = {
+  items: VendorApplication[];
+};
+
+export type ListAdminInvitations200 = {
+  items: AdminInvitation[];
 };
 

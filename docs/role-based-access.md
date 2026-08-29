@@ -20,11 +20,17 @@ Do not put passwords, tokens, or public demo credentials in source control. Remo
 
 ## Vendor onboarding
 
-An authenticated user submits a vendor profile through `POST /api/v1/vendor/profile`. The profile starts as `pending` and does not grant vendor dashboard access. An administrator approves it through `POST /api/v1/admin/vendors/:userId/approve`, which assigns the `vendor` role. Suspension removes active vendor access and returns the local role to `user`.
+A visitor submits a pre-account application through `POST /api/v1/vendor/applications`. It remains `pending` until an administrator reviews it in the protected admin dashboard. Approval changes it to `invited` only after the server sends a Clerk invitation. The recipient creates their own Clerk account, completes email verification, and then the first authenticated API request claims the approved application into an approved local vendor profile. Rejected or revoked applications can never claim vendor access.
+
+Applicants can check a safe status message with the application reference and original email through `GET /api/v1/vendor/applications/status`. The status endpoint never returns business details or invitation secrets.
 
 ## Protected API boundaries
 
 - `GET /api/v1/me` returns safe local user, role, status, and vendor-profile data.
 - Vendor dashboard access requires the `vendor` role and an `approved` vendor profile.
-- Admin dashboard, user-role, vendor approval, and vendor suspension endpoints require `admin`.
+- Admin dashboard, user-role, vendor application review, admin invitation, and vendor suspension endpoints require `admin`.
 - Vendor-owned resource routes should use the shared owner-or-admin middleware when those modules are added.
+
+## Administrator onboarding
+
+The first administrator is assigned only from `TRAVEL_LAND_ADMIN_CLERK_USER_IDS`. An existing administrator can use `POST /api/v1/admin/invitations/admin` to send a Clerk invitation to another email address. The invited person creates and owns their credentials; no password is created, stored, or displayed by Travel & Land.

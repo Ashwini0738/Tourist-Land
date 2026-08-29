@@ -137,6 +137,9 @@ export default function LoginScreen() {
           <Pressable onPress={() => { setNew(!isNew); setMessage(''); }} style={styles.secondary}>
             <Text style={[styles.secondaryText, { color: colors.primary }]}>{isNew ? 'Already have an account? Sign in' : 'New here? Create an account'}</Text>
           </Pressable>
+          <Pressable onPress={() => router.push('/vendor-application')} style={styles.vendorLink}>
+            <Text style={[styles.vendorLinkText, { color: colors.foreground }]}>Are you a travel business? Apply as a vendor</Text>
+          </Pressable>
           {isNew && <View nativeID="clerk-captcha" />}
         </View>
       </View>
@@ -154,5 +157,7 @@ const styles = StyleSheet.create({
   button: { height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   buttonText: { fontSize: 16, fontWeight: '700' },
   secondary: { alignItems: 'center', marginTop: 24 },
-  secondaryText: { fontSize: 14, fontWeight: '600' }
+  secondaryText: { fontSize: 14, fontWeight: '600' },
+  vendorLink: { alignItems: 'center', marginTop: 28, paddingVertical: 8 },
+  vendorLinkText: { fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
 });

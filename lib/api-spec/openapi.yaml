@@ -204,6 +204,51 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AuthSessionStatus" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
+  /v1/vendor/applications:
+    post:
+      operationId: submitVendorApplication
+      tags: [vendor]
+      summary: Submit a vendor application before creating a Clerk account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VendorApplicationInput" }
+      responses:
+        "201":
+          description: Application received
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorApplicationReceipt" }
+        "200":
+          description: Re-submitted rejected application
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorApplicationReceipt" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/vendor/applications/status:
+    get:
+      operationId: getVendorApplicationStatus
+      tags: [vendor]
+      summary: Check a vendor application using its reference and email
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+        - name: email
+          in: query
+          required: true
+          schema: { type: string, minLength: 3, maxLength: 320 }
+      responses:
+        "200":
+          description: Safe application status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorApplicationStatusResponse" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /v1/auth/refresh:
     post:
       operationId: refreshAuthSession
@@ -264,25 +309,6 @@ paths:
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-    post:
-      operationId: submitVendorProfile
-      tags: [vendor]
-      security: [{ bearerAuth: [] }]
-      summary: Submit or update a pending vendor profile
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/VendorProfileInput" }
-      responses:
-        "200":
-          description: Pending vendor profile
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/VendorProfile" }
-        "400": { $ref: "#/components/responses/InvalidInput" }
-        "401": { $ref: "#/components/responses/Unauthenticated" }
-        "409": { $ref: "#/components/responses/Conflict" }
   /v1/admin/dashboard:
     get:
       operationId: getAdminDashboard
@@ -317,6 +343,105 @@ paths:
                 required: [items]
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/vendor-applications:
+    get:
+      operationId: listAdminVendorApplications
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: List pending vendor applications
+      responses:
+        "200":
+          description: Pending vendor applications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/VendorApplication" }
+                required: [items]
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/vendor-applications/{id}/approve:
+    post:
+      operationId: approveVendorApplication
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Approve an application and send the Clerk vendor invitation
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Approved and invited vendor application
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorApplication" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /v1/admin/vendor-applications/{id}/reject:
+    post:
+      operationId: rejectVendorApplication
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Reject an application or revoke its pending invitation
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Rejected vendor application
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorApplication" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/admin/invitations/admin:
+    post:
+      operationId: inviteAdmin
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Invite an additional administrator through Clerk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EmailInvitationInput" }
+      responses:
+        "201":
+          description: Administrator invitation sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminInvitation" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /v1/admin/invitations:
+    get:
+      operationId: listAdminInvitations
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: List administrator invitations
+      responses:
+        "200":
+          description: Administrator invitations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/AdminInvitation" }
+                required: [items]
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /v1/admin/users/{id}/role:
     put:
       operationId: setAdminUserRole
@@ -340,27 +465,6 @@ paths:
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-  /v1/admin/vendors/{userId}/approve:
-    post:
-      operationId: approveVendor
-      tags: [admin]
-      security: [{ bearerAuth: [] }]
-      summary: Approve a pending vendor profile and activate vendor access
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema: { type: string }
-      responses:
-        "200":
-          description: Approved vendor profile
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/VendorProfile" }
-        "401": { $ref: "#/components/responses/Unauthenticated" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "409": { $ref: "#/components/responses/Conflict" }
   /v1/admin/vendors/{userId}/suspend:
     post:
       operationId: suspendVendor
@@ -412,6 +516,9 @@ components:
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
     Conflict:
       description: Request conflicts with the current resource state
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    ServiceUnavailable:
+      description: A required upstream service is temporarily unavailable
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
     RateLimited:
       description: Too many requests
@@ -640,6 +747,68 @@ components:
         state: { type: string, maxLength: 100 }
         country: { type: string, maxLength: 100 }
       required: [businessName, businessType, contactName, phone, email, description, address, city, state, country]
+    VendorApplicationInput:
+      type: object
+      properties:
+        businessName: { type: string, minLength: 1, maxLength: 200 }
+        businessType: { type: string, minLength: 1, maxLength: 100 }
+        contactName: { type: string, minLength: 1, maxLength: 200 }
+        phone: { type: string, minLength: 1, maxLength: 40 }
+        email: { type: string, minLength: 3, maxLength: 320 }
+        description: { type: string, minLength: 1, maxLength: 4000 }
+        address: { type: string, minLength: 1, maxLength: 500 }
+        city: { type: string, minLength: 1, maxLength: 100 }
+        state: { type: string, minLength: 1, maxLength: 100 }
+        country: { type: string, minLength: 1, maxLength: 100 }
+      required: [businessName, businessType, contactName, phone, email, description, address, city, state, country]
+    VendorApplication:
+      allOf:
+        - $ref: "#/components/schemas/VendorApplicationInput"
+        - type: object
+          properties:
+            id: { type: string }
+            userId: { type: [string, "null"] }
+            status:
+              type: string
+              enum: [pending, approved, invited, accepted, rejected, revoked]
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+            reviewedAt: { type: [string, "null"], format: date-time }
+            invitedAt: { type: [string, "null"], format: date-time }
+          required: [id, userId, status, createdAt, updatedAt, reviewedAt, invitedAt]
+    VendorApplicationReceipt:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string, minLength: 3, maxLength: 320 }
+        status: { type: string, enum: [pending] }
+        message: { type: string }
+      required: [id, email, status, message]
+    VendorApplicationStatusResponse:
+      type: object
+      properties:
+        id: { type: string }
+        status:
+          type: string
+          enum: [pending, approved, invited, accepted, rejected, revoked]
+        message: { type: string }
+      required: [id, status, message]
+    EmailInvitationInput:
+      type: object
+      properties:
+        email: { type: string, minLength: 3, maxLength: 320 }
+      required: [email]
+    AdminInvitation:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string, minLength: 3, maxLength: 320 }
+        role: { type: string, enum: [admin] }
+        status: { type: string, enum: [pending, sent, accepted, revoked] }
+        invitedAt: { type: [string, "null"], format: date-time }
+        acceptedAt: { type: [string, "null"], format: date-time }
+        message: { type: [string, "null"] }
+      required: [id, email, role, status, invitedAt, acceptedAt]
     VendorProfile:
       type: object
       properties:

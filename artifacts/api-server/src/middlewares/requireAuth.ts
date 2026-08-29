@@ -7,6 +7,7 @@ import {
   normalizeAccountStatus,
   resolvePrimaryRole,
 } from "../lib/roles";
+import { claimInvitedAccess } from "../lib/onboarding";
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { userId } = getAuth(req);
@@ -29,6 +30,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       local = await db.query.users.findFirst({ where: eq(users.clerkUserId, userId) });
     }
     if (!local) throw new Error("Local user provisioning did not complete.");
+    await claimInvitedAccess({ id: local.id, email: local.email });
     let roleRows = await db
       .select({ role: userRoles.role })
       .from(userRoles)

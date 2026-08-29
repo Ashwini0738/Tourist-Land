@@ -66,6 +66,52 @@ export const vendorProfiles = pgTable(
   ],
 );
 
+export const vendorApplications = pgTable(
+  "vendor_applications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    businessName: text("business_name").notNull(),
+    businessType: text("business_type").notNull(),
+    contactName: text("contact_name").notNull(),
+    phone: text("phone").notNull(),
+    email: text("email").notNull(),
+    description: text("description").notNull(),
+    address: text("address").notNull(),
+    city: text("city").notNull(),
+    state: text("state").notNull(),
+    country: text("country").notNull(),
+    status: text("status").default("pending").notNull(),
+    clerkInvitationId: text("clerk_invitation_id"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    invitedAt: timestamp("invited_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("vendor_application_email_unique").on(table.email),
+    check("vendor_application_status_valid", sql`${table.status} in ('pending', 'approved', 'invited', 'accepted', 'rejected', 'revoked')`),
+  ],
+);
+
+export const adminInvitations = pgTable(
+  "admin_invitations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    email: text("email").notNull(),
+    clerkInvitationId: text("clerk_invitation_id"),
+    invitedBy: uuid("invited_by").references(() => users.id, { onDelete: "restrict" }).notNull(),
+    status: text("status").default("pending").notNull(),
+    acceptedUserId: uuid("accepted_user_id").references(() => users.id, { onDelete: "set null" }),
+    invitedAt: timestamp("invited_at", { withTimezone: true }),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    check("admin_invitation_status_valid", sql`${table.status} in ('pending', 'sent', 'accepted', 'revoked')`),
+  ],
+);
+
 export const authenticationSessions = pgTable("authentication_sessions", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),

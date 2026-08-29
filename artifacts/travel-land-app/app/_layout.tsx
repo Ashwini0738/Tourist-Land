@@ -43,7 +43,7 @@ function RootLayoutNav() {
   const colors = useColors();
   const segments = useSegments();
   const route = segments[0];
-  const publicRoutes = ['splash', 'login', 'verify'];
+  const publicRoutes = ['splash', 'login', 'verify', 'vendor-application'];
   const lockedSessionRoutes = ['verify', 'biometric', 'biometric-login'];
   useEffect(() => {
     setAuthTokenGetter(Platform.OS === 'web' ? null : () => getToken());
@@ -102,6 +102,7 @@ function renderRoutes() {
       <Stack.Screen name="splash" />
       <Stack.Screen name="login" />
       <Stack.Screen name="verify" />
+      <Stack.Screen name="vendor-application" />
       <Stack.Screen name="biometric" />
       <Stack.Screen name="biometric-login" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

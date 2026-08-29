@@ -283,6 +283,78 @@ export const GetAuthSessionResponse = zod.object({
 
 
 /**
+ * @summary Submit a vendor application before creating a Clerk account
+ */
+export const submitVendorApplicationBodyBusinessNameMax = 200;
+
+export const submitVendorApplicationBodyBusinessTypeMax = 100;
+
+export const submitVendorApplicationBodyContactNameMax = 200;
+
+export const submitVendorApplicationBodyPhoneMax = 40;
+
+export const submitVendorApplicationBodyEmailMin = 3;
+export const submitVendorApplicationBodyEmailMax = 320;
+
+export const submitVendorApplicationBodyDescriptionMax = 4000;
+
+export const submitVendorApplicationBodyAddressMax = 500;
+
+export const submitVendorApplicationBodyCityMax = 100;
+
+export const submitVendorApplicationBodyStateMax = 100;
+
+export const submitVendorApplicationBodyCountryMax = 100;
+
+
+
+export const SubmitVendorApplicationBody = zod.object({
+  "businessName": zod.string().min(1).max(submitVendorApplicationBodyBusinessNameMax),
+  "businessType": zod.string().min(1).max(submitVendorApplicationBodyBusinessTypeMax),
+  "contactName": zod.string().min(1).max(submitVendorApplicationBodyContactNameMax),
+  "phone": zod.string().min(1).max(submitVendorApplicationBodyPhoneMax),
+  "email": zod.string().min(submitVendorApplicationBodyEmailMin).max(submitVendorApplicationBodyEmailMax),
+  "description": zod.string().min(1).max(submitVendorApplicationBodyDescriptionMax),
+  "address": zod.string().min(1).max(submitVendorApplicationBodyAddressMax),
+  "city": zod.string().min(1).max(submitVendorApplicationBodyCityMax),
+  "state": zod.string().min(1).max(submitVendorApplicationBodyStateMax),
+  "country": zod.string().min(1).max(submitVendorApplicationBodyCountryMax)
+})
+
+export const submitVendorApplicationResponseEmailMin = 3;
+export const submitVendorApplicationResponseEmailMax = 320;
+
+
+
+export const SubmitVendorApplicationResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().min(submitVendorApplicationResponseEmailMin).max(submitVendorApplicationResponseEmailMax),
+  "status": zod.enum(['pending']),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Check a vendor application using its reference and email
+ */
+export const getVendorApplicationStatusQueryEmailMin = 3;
+export const getVendorApplicationStatusQueryEmailMax = 320;
+
+
+
+export const GetVendorApplicationStatusQueryParams = zod.object({
+  "id": zod.coerce.string(),
+  "email": zod.coerce.string().min(getVendorApplicationStatusQueryEmailMin).max(getVendorApplicationStatusQueryEmailMax)
+})
+
+export const GetVendorApplicationStatusResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'invited', 'accepted', 'rejected', 'revoked']),
+  "message": zod.string()
+})
+
+
+/**
  * @summary Report Clerk session status; Clerk client performs refresh
  */
 export const RefreshAuthSessionResponse = zod.object({
@@ -371,61 +443,6 @@ export const GetVendorProfileResponse = zod.object({
 
 
 /**
- * @summary Submit or update a pending vendor profile
- */
-export const submitVendorProfileBodyBusinessNameMax = 200;
-
-export const submitVendorProfileBodyBusinessTypeMax = 100;
-
-export const submitVendorProfileBodyContactNameMax = 200;
-
-export const submitVendorProfileBodyPhoneMax = 40;
-
-export const submitVendorProfileBodyDescriptionMax = 4000;
-
-export const submitVendorProfileBodyAddressMax = 500;
-
-export const submitVendorProfileBodyCityMax = 100;
-
-export const submitVendorProfileBodyStateMax = 100;
-
-export const submitVendorProfileBodyCountryMax = 100;
-
-
-
-export const SubmitVendorProfileBody = zod.object({
-  "businessName": zod.string().min(1).max(submitVendorProfileBodyBusinessNameMax),
-  "businessType": zod.string().min(1).max(submitVendorProfileBodyBusinessTypeMax),
-  "contactName": zod.string().min(1).max(submitVendorProfileBodyContactNameMax),
-  "phone": zod.string().max(submitVendorProfileBodyPhoneMax),
-  "email": zod.string(),
-  "description": zod.string().max(submitVendorProfileBodyDescriptionMax),
-  "address": zod.string().max(submitVendorProfileBodyAddressMax),
-  "city": zod.string().max(submitVendorProfileBodyCityMax),
-  "state": zod.string().max(submitVendorProfileBodyStateMax),
-  "country": zod.string().max(submitVendorProfileBodyCountryMax)
-})
-
-export const SubmitVendorProfileResponse = zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
-  "businessName": zod.string(),
-  "businessType": zod.string(),
-  "contactName": zod.string(),
-  "phone": zod.string(),
-  "email": zod.string(),
-  "description": zod.string(),
-  "address": zod.string(),
-  "city": zod.string(),
-  "state": zod.string(),
-  "country": zod.string(),
-  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-})
-
-
-/**
  * @summary Get the authenticated admin dashboard status
  */
 export const GetAdminDashboardResponse = zod.object({
@@ -473,6 +490,209 @@ export const ListAdminUsersResponse = zod.object({
 
 
 /**
+ * @summary List pending vendor applications
+ */
+export const listAdminVendorApplicationsResponseItemsItemOneBusinessNameMax = 200;
+
+export const listAdminVendorApplicationsResponseItemsItemOneBusinessTypeMax = 100;
+
+export const listAdminVendorApplicationsResponseItemsItemOneContactNameMax = 200;
+
+export const listAdminVendorApplicationsResponseItemsItemOnePhoneMax = 40;
+
+export const listAdminVendorApplicationsResponseItemsItemOneEmailMin = 3;
+export const listAdminVendorApplicationsResponseItemsItemOneEmailMax = 320;
+
+export const listAdminVendorApplicationsResponseItemsItemOneDescriptionMax = 4000;
+
+export const listAdminVendorApplicationsResponseItemsItemOneAddressMax = 500;
+
+export const listAdminVendorApplicationsResponseItemsItemOneCityMax = 100;
+
+export const listAdminVendorApplicationsResponseItemsItemOneStateMax = 100;
+
+export const listAdminVendorApplicationsResponseItemsItemOneCountryMax = 100;
+
+
+
+export const ListAdminVendorApplicationsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "businessName": zod.string().min(1).max(listAdminVendorApplicationsResponseItemsItemOneBusinessNameMax),
+  "businessType": zod.string().min(1).max(listAdminVendorApplicationsResponseItemsItemOneBusinessTypeMax),
+  "contactName": zod.string().min(1).max(listAdminVendorApplicationsResponseItemsItemOneContactNameMax),
+  "phone": zod.string().min(1).max(listAdminVendorApplicationsResponseItemsItemOnePhoneMax),
+  "email": zod.string().min(listAdminVendorApplicationsResponseItemsItemOneEmailMin).max(listAdminVendorApplicationsResponseItemsItemOneEmailMax),
+  "description": zod.string().min(1).max(listAdminVendorApplicationsResponseItemsItemOneDescriptionMax),
+  "address": zod.string().min(1).max(listAdminVendorApplicationsResponseItemsItemOneAddressMax),
+  "city": zod.string().min(1).max(listAdminVendorApplicationsResponseItemsItemOneCityMax),
+  "state": zod.string().min(1).max(listAdminVendorApplicationsResponseItemsItemOneStateMax),
+  "country": zod.string().min(1).max(listAdminVendorApplicationsResponseItemsItemOneCountryMax)
+}).and(zod.object({
+  "id": zod.string(),
+  "userId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'invited', 'accepted', 'rejected', 'revoked']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullable(),
+  "invitedAt": zod.coerce.date().nullable()
+})))
+})
+
+
+/**
+ * @summary Approve an application and send the Clerk vendor invitation
+ */
+export const ApproveVendorApplicationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const approveVendorApplicationResponseOneBusinessNameMax = 200;
+
+export const approveVendorApplicationResponseOneBusinessTypeMax = 100;
+
+export const approveVendorApplicationResponseOneContactNameMax = 200;
+
+export const approveVendorApplicationResponseOnePhoneMax = 40;
+
+export const approveVendorApplicationResponseOneEmailMin = 3;
+export const approveVendorApplicationResponseOneEmailMax = 320;
+
+export const approveVendorApplicationResponseOneDescriptionMax = 4000;
+
+export const approveVendorApplicationResponseOneAddressMax = 500;
+
+export const approveVendorApplicationResponseOneCityMax = 100;
+
+export const approveVendorApplicationResponseOneStateMax = 100;
+
+export const approveVendorApplicationResponseOneCountryMax = 100;
+
+
+
+export const ApproveVendorApplicationResponse = zod.object({
+  "businessName": zod.string().min(1).max(approveVendorApplicationResponseOneBusinessNameMax),
+  "businessType": zod.string().min(1).max(approveVendorApplicationResponseOneBusinessTypeMax),
+  "contactName": zod.string().min(1).max(approveVendorApplicationResponseOneContactNameMax),
+  "phone": zod.string().min(1).max(approveVendorApplicationResponseOnePhoneMax),
+  "email": zod.string().min(approveVendorApplicationResponseOneEmailMin).max(approveVendorApplicationResponseOneEmailMax),
+  "description": zod.string().min(1).max(approveVendorApplicationResponseOneDescriptionMax),
+  "address": zod.string().min(1).max(approveVendorApplicationResponseOneAddressMax),
+  "city": zod.string().min(1).max(approveVendorApplicationResponseOneCityMax),
+  "state": zod.string().min(1).max(approveVendorApplicationResponseOneStateMax),
+  "country": zod.string().min(1).max(approveVendorApplicationResponseOneCountryMax)
+}).and(zod.object({
+  "id": zod.string(),
+  "userId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'invited', 'accepted', 'rejected', 'revoked']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullable(),
+  "invitedAt": zod.coerce.date().nullable()
+}))
+
+
+/**
+ * @summary Reject an application or revoke its pending invitation
+ */
+export const RejectVendorApplicationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const rejectVendorApplicationResponseOneBusinessNameMax = 200;
+
+export const rejectVendorApplicationResponseOneBusinessTypeMax = 100;
+
+export const rejectVendorApplicationResponseOneContactNameMax = 200;
+
+export const rejectVendorApplicationResponseOnePhoneMax = 40;
+
+export const rejectVendorApplicationResponseOneEmailMin = 3;
+export const rejectVendorApplicationResponseOneEmailMax = 320;
+
+export const rejectVendorApplicationResponseOneDescriptionMax = 4000;
+
+export const rejectVendorApplicationResponseOneAddressMax = 500;
+
+export const rejectVendorApplicationResponseOneCityMax = 100;
+
+export const rejectVendorApplicationResponseOneStateMax = 100;
+
+export const rejectVendorApplicationResponseOneCountryMax = 100;
+
+
+
+export const RejectVendorApplicationResponse = zod.object({
+  "businessName": zod.string().min(1).max(rejectVendorApplicationResponseOneBusinessNameMax),
+  "businessType": zod.string().min(1).max(rejectVendorApplicationResponseOneBusinessTypeMax),
+  "contactName": zod.string().min(1).max(rejectVendorApplicationResponseOneContactNameMax),
+  "phone": zod.string().min(1).max(rejectVendorApplicationResponseOnePhoneMax),
+  "email": zod.string().min(rejectVendorApplicationResponseOneEmailMin).max(rejectVendorApplicationResponseOneEmailMax),
+  "description": zod.string().min(1).max(rejectVendorApplicationResponseOneDescriptionMax),
+  "address": zod.string().min(1).max(rejectVendorApplicationResponseOneAddressMax),
+  "city": zod.string().min(1).max(rejectVendorApplicationResponseOneCityMax),
+  "state": zod.string().min(1).max(rejectVendorApplicationResponseOneStateMax),
+  "country": zod.string().min(1).max(rejectVendorApplicationResponseOneCountryMax)
+}).and(zod.object({
+  "id": zod.string(),
+  "userId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'invited', 'accepted', 'rejected', 'revoked']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullable(),
+  "invitedAt": zod.coerce.date().nullable()
+}))
+
+
+/**
+ * @summary Invite an additional administrator through Clerk
+ */
+export const inviteAdminBodyEmailMin = 3;
+export const inviteAdminBodyEmailMax = 320;
+
+
+
+export const InviteAdminBody = zod.object({
+  "email": zod.string().min(inviteAdminBodyEmailMin).max(inviteAdminBodyEmailMax)
+})
+
+export const inviteAdminResponseEmailMin = 3;
+export const inviteAdminResponseEmailMax = 320;
+
+
+
+export const InviteAdminResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().min(inviteAdminResponseEmailMin).max(inviteAdminResponseEmailMax),
+  "role": zod.enum(['admin']),
+  "status": zod.enum(['pending', 'sent', 'accepted', 'revoked']),
+  "invitedAt": zod.coerce.date().nullable(),
+  "acceptedAt": zod.coerce.date().nullable(),
+  "message": zod.string().nullish()
+})
+
+
+/**
+ * @summary List administrator invitations
+ */
+export const listAdminInvitationsResponseItemsItemEmailMin = 3;
+export const listAdminInvitationsResponseItemsItemEmailMax = 320;
+
+
+
+export const ListAdminInvitationsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "email": zod.string().min(listAdminInvitationsResponseItemsItemEmailMin).max(listAdminInvitationsResponseItemsItemEmailMax),
+  "role": zod.enum(['admin']),
+  "status": zod.enum(['pending', 'sent', 'accepted', 'revoked']),
+  "invitedAt": zod.coerce.date().nullable(),
+  "acceptedAt": zod.coerce.date().nullable(),
+  "message": zod.string().nullish()
+}))
+})
+
+
+/**
  * @summary Assign a primary role to a local user
  */
 export const SetAdminUserRoleParams = zod.object({
@@ -509,32 +729,6 @@ export const SetAdminUserRoleResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }),zod.null()]),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-})
-
-
-/**
- * @summary Approve a pending vendor profile and activate vendor access
- */
-export const ApproveVendorParams = zod.object({
-  "userId": zod.coerce.string()
-})
-
-export const ApproveVendorResponse = zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
-  "businessName": zod.string(),
-  "businessType": zod.string(),
-  "contactName": zod.string(),
-  "phone": zod.string(),
-  "email": zod.string(),
-  "description": zod.string(),
-  "address": zod.string(),
-  "city": zod.string(),
-  "state": zod.string(),
-  "country": zod.string(),
-  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
