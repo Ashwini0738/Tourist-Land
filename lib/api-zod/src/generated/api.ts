@@ -69,6 +69,7 @@ export const GetHomeResponse = zod.object({
   "location": zod.string(),
   "area": zod.string(),
   "propertyType": zod.string(),
+  "amenities": zod.array(zod.string()).optional(),
   "verified": zod.boolean(),
   "description": zod.string(),
   "discoveryLabel": zod.string(),
@@ -91,6 +92,7 @@ export const GetHomeResponse = zod.object({
   "location": zod.string(),
   "area": zod.string(),
   "propertyType": zod.string(),
+  "amenities": zod.array(zod.string()).optional(),
   "verified": zod.boolean(),
   "description": zod.string(),
   "discoveryLabel": zod.string(),
@@ -178,11 +180,118 @@ export const ListHomePropertiesResponse = zod.object({
   "location": zod.string(),
   "area": zod.string(),
   "propertyType": zod.string(),
+  "amenities": zod.array(zod.string()).optional(),
   "verified": zod.boolean(),
   "description": zod.string(),
   "discoveryLabel": zod.string(),
   "priceLabel": zod.string(),
   "imageKey": zod.string()
+}))
+})
+
+
+/**
+ * @summary Search the seeded development discovery catalog
+ */
+export const searchExploreQueryPageDefault = 1;
+
+export const searchExploreQueryLimitDefault = 12;
+export const searchExploreQueryLimitMax = 50;
+
+export const searchExploreQueryMinRatingMin = 0;
+export const searchExploreQueryMinRatingMax = 5;
+
+export const searchExploreQueryMinPriceMin = 0;
+
+export const searchExploreQueryMaxPriceMin = 0;
+
+export const searchExploreQueryMinAreaMin = 0;
+
+export const searchExploreQueryMaxAreaMin = 0;
+
+
+
+export const SearchExploreQueryParams = zod.object({
+  "q": zod.coerce.string().optional(),
+  "category": zod.coerce.string().optional(),
+  "location": zod.coerce.string().optional(),
+  "page": zod.coerce.number().min(1).default(searchExploreQueryPageDefault),
+  "limit": zod.coerce.number().min(1).max(searchExploreQueryLimitMax).default(searchExploreQueryLimitDefault),
+  "sort": zod.enum(['relevance', 'popularity', 'distance', 'rating', 'price_asc', 'price_desc']).optional(),
+  "minRating": zod.coerce.number().min(searchExploreQueryMinRatingMin).max(searchExploreQueryMinRatingMax).optional(),
+  "minPrice": zod.coerce.number().min(searchExploreQueryMinPriceMin).optional(),
+  "maxPrice": zod.coerce.number().min(searchExploreQueryMaxPriceMin).optional(),
+  "propertyType": zod.coerce.string().optional(),
+  "eventType": zod.coerce.string().optional(),
+  "amenity": zod.coerce.string().optional(),
+  "minArea": zod.coerce.number().min(searchExploreQueryMinAreaMin).optional(),
+  "maxArea": zod.coerce.number().min(searchExploreQueryMaxAreaMin).optional()
+})
+
+export const SearchExploreResponse = zod.object({
+  "notice": zod.string(),
+  "page": zod.number(),
+  "limit": zod.number(),
+  "total": zod.number(),
+  "hasMore": zod.boolean(),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
+  "title": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "category": zod.string(),
+  "imageKey": zod.string(),
+  "destinationId": zod.string().optional(),
+  "dateLabel": zod.string().optional(),
+  "ratingLabel": zod.string().optional(),
+  "priceLabel": zod.string().optional(),
+  "area": zod.string().optional(),
+  "propertyType": zod.string().optional()
+})),
+  "suggestions": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
+  "title": zod.string(),
+  "subtitle": zod.string(),
+  "imageKey": zod.string()
+}))
+})
+
+
+/**
+ * @summary List Explore discovery categories
+ */
+export const ListExploreCategoriesResponse = zod.object({
+  "notice": zod.string(),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "icon": zod.string(),
+  "description": zod.string(),
+  "count": zod.number()
+}))
+})
+
+
+/**
+ * @summary Get valid Explore filters for a category
+ */
+export const GetExploreFiltersQueryParams = zod.object({
+  "category": zod.coerce.string().optional()
+})
+
+export const GetExploreFiltersResponse = zod.object({
+  "notice": zod.string(),
+  "category": zod.string(),
+  "locations": zod.array(zod.string()),
+  "ratings": zod.array(zod.string()),
+  "priceRanges": zod.array(zod.string()),
+  "amenities": zod.array(zod.string()),
+  "types": zod.array(zod.string()),
+  "sorts": zod.array(zod.object({
+  "value": zod.string(),
+  "label": zod.string()
 }))
 })
 
@@ -223,6 +332,7 @@ export const ListPropertiesResponse = zod.object({
   "location": zod.string(),
   "area": zod.string(),
   "propertyType": zod.string(),
+  "amenities": zod.array(zod.string()).optional(),
   "verified": zod.boolean(),
   "description": zod.string(),
   "discoveryLabel": zod.string(),
@@ -243,6 +353,7 @@ export const GetPropertyResponse = zod.object({
   "location": zod.string(),
   "area": zod.string(),
   "propertyType": zod.string(),
+  "amenities": zod.array(zod.string()).optional(),
   "verified": zod.boolean(),
   "description": zod.string(),
   "discoveryLabel": zod.string(),

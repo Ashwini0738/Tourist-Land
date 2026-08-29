@@ -6,8 +6,8 @@ import {
   configuredAdminClerkUserIds,
   normalizeAccountStatus,
   resolvePrimaryRole,
-} from "../lib/roles";
-import { claimInvitedAccess } from "../lib/onboarding";
+} from "../lib/roles.ts";
+import { claimInvitedAccess } from "../lib/onboarding.ts";
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { userId } = getAuth(req);

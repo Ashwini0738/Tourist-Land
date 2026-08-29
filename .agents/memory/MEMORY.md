@@ -1,2 +1,3 @@
 - [Authentication authority](authentication-authority.md) — Clerk owns sessions; local unlock is secondary, and security initialization must key off user identity rather than hook function identity.
 - [Native unlock verification](native-unlock-verification.md) — mocked Expo tests protect routing logic but do not confirm biometric or device-passcode behavior.
+- [API pure route tests](api-pure-route-tests.md) — keep search and catalog normalization tests independent from database and authentication startup.

@@ -1,0 +1,208 @@
+export const destinations = [
+  {
+    id: "konkan",
+    slug: "konkan-coast",
+    name: "Konkan Coast",
+    region: "Maharashtra, India",
+    country: "India",
+    summary: "Where the forest meets the sea.",
+    imageKey: "coastline",
+  },
+  {
+    id: "coorg",
+    slug: "coorg-highlands",
+    name: "Coorg Highlands",
+    region: "Karnataka, India",
+    country: "India",
+    summary: "Misty mornings and open roads.",
+    imageKey: "highlands",
+  },
+];
+
+export const properties = [
+  {
+    id: "riverstone-estate",
+    slug: "riverstone-estate",
+    title: "Riverstone Estate",
+    location: "Sakleshpur, Karnataka",
+    area: "2.4 acres",
+    propertyType: "Agri-tourism",
+    verified: true,
+    description: "A development preview of a gently sloping parcel with road access, mature trees, and a seasonal stream.",
+    discoveryLabel: "Development property preview",
+    priceLabel: "Sample asking price · ₹1.85 Cr",
+    imageKey: "highlands",
+  },
+  {
+    id: "sea-wind-grove",
+    slug: "sea-wind-grove",
+    title: "Sea Wind Grove",
+    location: "Guhagar, Maharashtra",
+    area: "1.1 acres",
+    propertyType: "Coastal retreat",
+    verified: true,
+    description: "A development preview of a private grove near the coast in a quiet village setting.",
+    discoveryLabel: "Development property preview",
+    priceLabel: "Sample asking price · ₹92 L",
+    imageKey: "coastline",
+  },
+];
+
+export const banners = [
+  {
+    id: "konkan-discovery",
+    title: "A slower coast, in view",
+    subtitle: "Explore the Konkan Coast development preview.",
+    ctaLabel: "Explore the coast",
+    destinationId: "konkan",
+    imageKey: "coastline",
+  },
+  {
+    id: "coorg-discovery",
+    title: "Misty roads ahead",
+    subtitle: "Explore the Coorg Highlands development preview.",
+    ctaLabel: "Explore the highlands",
+    destinationId: "coorg",
+    imageKey: "highlands",
+  },
+];
+
+export const nearby = [
+  {
+    id: "konkan-lighthouse-walk",
+    name: "Coastal Lighthouse Walk",
+    category: "Scenic walk",
+    location: "Konkan Coast, Maharashtra",
+    summary: "A popular seed suggestion for a relaxed shoreline walk.",
+    destinationId: "konkan",
+    imageKey: "coastline",
+  },
+  {
+    id: "coorg-coffee-trail",
+    name: "Coffee Estate Trail",
+    category: "Nature trail",
+    location: "Coorg Highlands, Karnataka",
+    summary: "A popular seed suggestion for an unhurried highland outing.",
+    destinationId: "coorg",
+    imageKey: "highlands",
+  },
+];
+
+export const events = [
+  {
+    id: "konkan-sunset-stories",
+    title: "Sunset Stories",
+    dateLabel: "Sample programme · Saturday evening",
+    location: "Konkan Coast, Maharashtra",
+    summary: "A development event preview celebrating coastal stories and local culture.",
+    destinationId: "konkan",
+    imageKey: "coastline",
+  },
+  {
+    id: "coorg-harvest-notes",
+    title: "Harvest Notes",
+    dateLabel: "Sample programme · Sunday morning",
+    location: "Coorg Highlands, Karnataka",
+    summary: "A development event preview inspired by coffee harvest traditions.",
+    destinationId: "coorg",
+    imageKey: "highlands",
+  },
+];
+
+export const hotels = [
+  {
+    id: "01",
+    name: "The Mango House",
+    location: "Alibaug, Maharashtra",
+    summary: "A seed stay listing for discovery and design testing; not a booking offer.",
+    destinationId: "konkan",
+    ratingLabel: "Sample guest note · 4.9",
+    priceLabel: "Sample nightly rate · ₹7,800",
+    imageKey: "coastline",
+  },
+  {
+    id: "02",
+    name: "Misty Fig Estate",
+    location: "Coorg, Karnataka",
+    summary: "A seed stay listing for discovery and design testing; not a booking offer.",
+    destinationId: "coorg",
+    ratingLabel: "Sample guest note · 4.8",
+    priceLabel: "Sample nightly rate · ₹6,400",
+    imageKey: "highlands",
+  },
+];
+
+export const homeNotice = "Development discovery content only. It is not live availability, booking, pricing, or location data.";
+
+export const temples = [
+  {
+    id: "coorg-omkareshwara-temple",
+    name: "Omkareshwara Temple",
+    category: "Temple",
+    location: "Madikeri, Karnataka",
+    summary: "A calm heritage stop in the heart of the highlands.",
+    destinationId: "coorg",
+    imageKey: "highlands",
+    ratingLabel: "Sample visitor note · 4.7",
+    distanceLabel: "Nearby · 3 km",
+  },
+  {
+    id: "konkan-ganpatipule-temple",
+    name: "Ganpatipule Temple",
+    category: "Temple",
+    location: "Ratnagiri, Maharashtra",
+    summary: "A coastal pilgrimage setting with a wide ocean horizon.",
+    destinationId: "konkan",
+    imageKey: "coastline",
+    ratingLabel: "Sample visitor note · 4.8",
+    distanceLabel: "Nearby · 8 km",
+  },
+];
+
+export const attractions = [
+  {
+    id: "konkan-lighthouse-walk",
+    name: "Coastal Lighthouse Walk",
+    category: "Attraction",
+    location: "Konkan Coast, Maharashtra",
+    summary: "A popular seed suggestion for a relaxed shoreline walk.",
+    destinationId: "konkan",
+    imageKey: "coastline",
+    ratingLabel: "Sample visitor note · 4.6",
+    distanceLabel: "Nearby · 2 km",
+  },
+  {
+    id: "coorg-coffee-trail",
+    name: "Coffee Estate Trail",
+    category: "Attraction",
+    location: "Coorg Highlands, Karnataka",
+    summary: "A popular seed suggestion for an unhurried highland outing.",
+    destinationId: "coorg",
+    imageKey: "highlands",
+    ratingLabel: "Sample visitor note · 4.8",
+    distanceLabel: "Nearby · 5 km",
+  },
+];
+
+export const foods = [
+  {
+    id: "konkan-sol-kadhi-table",
+    name: "Sol Kadhi Table",
+    category: "Coastal cuisine",
+    location: "Alibaug, Maharashtra",
+    summary: "A development food preview for local coastal flavours and seasonal plates.",
+    destinationId: "konkan",
+    imageKey: "coastline",
+    ratingLabel: "Sample guest note · 4.7",
+  },
+  {
+    id: "coorg-pepper-kitchen",
+    name: "Pepper Kitchen",
+    category: "Highland cuisine",
+    location: "Coorg, Karnataka",
+    summary: "A development food preview inspired by pepper, coffee, and slow lunches.",
+    destinationId: "coorg",
+    imageKey: "highlands",
+    ratingLabel: "Sample guest note · 4.8",
+  },
+];

@@ -4,11 +4,13 @@ import catalogRouter from "./catalog";
 import authRouter from "./auth";
 import roleAccessRouter from "./role-access";
 import onboardingRouter from "./onboarding";
+import exploreRouter from "./explore";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(catalogRouter);
+router.use(exploreRouter);
 router.use(onboardingRouter);
 router.use(authRouter);
 router.use(roleAccessRouter);

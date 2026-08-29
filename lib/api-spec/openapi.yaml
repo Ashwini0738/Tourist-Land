@@ -103,6 +103,88 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PropertyList"
+  /v1/explore/search:
+    get:
+      operationId: searchExplore
+      tags: [discovery]
+      summary: Search the seeded development discovery catalog
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: location
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: number, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: number, minimum: 1, maximum: 50, default: 12 }
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [relevance, popularity, distance, rating, price_asc, price_desc]
+        - name: minRating
+          in: query
+          schema: { type: number, minimum: 0, maximum: 5 }
+        - name: minPrice
+          in: query
+          schema: { type: number, minimum: 0 }
+        - name: maxPrice
+          in: query
+          schema: { type: number, minimum: 0 }
+        - name: propertyType
+          in: query
+          schema: { type: string }
+        - name: eventType
+          in: query
+          schema: { type: string }
+        - name: amenity
+          in: query
+          schema: { type: string }
+        - name: minArea
+          in: query
+          schema: { type: number, minimum: 0 }
+        - name: maxArea
+          in: query
+          schema: { type: number, minimum: 0 }
+      responses:
+        "200":
+          description: Paginated development discovery results and suggestions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExploreSearchResponse" }
+  /v1/explore/categories:
+    get:
+      operationId: listExploreCategories
+      tags: [discovery]
+      summary: List Explore discovery categories
+      responses:
+        "200":
+          description: Discovery categories
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExploreCategoriesResponse" }
+  /v1/explore/filters:
+    get:
+      operationId: getExploreFilters
+      tags: [discovery]
+      summary: Get valid Explore filters for a category
+      parameters:
+        - name: category
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Category-aware filter and sort options
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExploreFiltersResponse" }
   /v1/destinations:
     get:
       operationId: listDestinations
@@ -703,6 +785,9 @@ components:
         location: { type: string }
         area: { type: string }
         propertyType: { type: string }
+        amenities:
+          type: array
+          items: { type: string }
         verified: { type: boolean }
         description: { type: string }
         discoveryLabel: { type: string }
@@ -780,6 +865,97 @@ components:
           type: array
           items: { $ref: "#/components/schemas/Property" }
       required: [items]
+    ExploreItem:
+      type: object
+      properties:
+        id: { type: string }
+        type:
+          type: string
+          enum: [destination, place, temple, attraction, event, food, hotel, property]
+        title: { type: string }
+        location: { type: string }
+        summary: { type: string }
+        category: { type: string }
+        imageKey: { type: string }
+        destinationId: { type: string }
+        dateLabel: { type: string }
+        ratingLabel: { type: string }
+        priceLabel: { type: string }
+        area: { type: string }
+        propertyType: { type: string }
+      required: [id, type, title, location, summary, category, imageKey]
+    ExploreSuggestion:
+      type: object
+      properties:
+        id: { type: string }
+        type:
+          type: string
+          enum: [destination, place, temple, attraction, event, food, hotel, property]
+        title: { type: string }
+        subtitle: { type: string }
+        imageKey: { type: string }
+      required: [id, type, title, subtitle, imageKey]
+    ExploreSearchResponse:
+      type: object
+      properties:
+        notice: { type: string }
+        page: { type: number }
+        limit: { type: number }
+        total: { type: number }
+        hasMore: { type: boolean }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ExploreItem" }
+        suggestions:
+          type: array
+          items: { $ref: "#/components/schemas/ExploreSuggestion" }
+      required: [notice, page, limit, total, hasMore, items, suggestions]
+    ExploreCategory:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        icon: { type: string }
+        description: { type: string }
+        count: { type: number }
+      required: [id, label, icon, description, count]
+    ExploreCategoriesResponse:
+      type: object
+      properties:
+        notice: { type: string }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ExploreCategory" }
+      required: [notice, items]
+    ExploreFiltersResponse:
+      type: object
+      properties:
+        notice: { type: string }
+        category: { type: string }
+        locations:
+          type: array
+          items: { type: string }
+        ratings:
+          type: array
+          items: { type: string }
+        priceRanges:
+          type: array
+          items: { type: string }
+        amenities:
+          type: array
+          items: { type: string }
+        types:
+          type: array
+          items: { type: string }
+        sorts:
+          type: array
+          items:
+            type: object
+            properties:
+              value: { type: string }
+              label: { type: string }
+            required: [value, label]
+      required: [notice, category, locations, ratings, priceRanges, amenities, types, sorts]
     ListingStatus:
       type: string
       enum: [draft, published, archived, pending]

@@ -68,6 +68,7 @@ export interface Property {
   location: string;
   area: string;
   propertyType: string;
+  amenities?: string[];
   verified: boolean;
   description: string;
   discoveryLabel: string;
@@ -109,6 +110,97 @@ export interface HotelList {
 
 export interface PropertyList {
   items: Property[];
+}
+
+export type ExploreItemType = typeof ExploreItemType[keyof typeof ExploreItemType];
+
+
+export const ExploreItemType = {
+  destination: 'destination',
+  place: 'place',
+  temple: 'temple',
+  attraction: 'attraction',
+  event: 'event',
+  food: 'food',
+  hotel: 'hotel',
+  property: 'property',
+} as const;
+
+export interface ExploreItem {
+  id: string;
+  type: ExploreItemType;
+  title: string;
+  location: string;
+  summary: string;
+  category: string;
+  imageKey: string;
+  destinationId?: string;
+  dateLabel?: string;
+  ratingLabel?: string;
+  priceLabel?: string;
+  area?: string;
+  propertyType?: string;
+}
+
+export type ExploreSuggestionType = typeof ExploreSuggestionType[keyof typeof ExploreSuggestionType];
+
+
+export const ExploreSuggestionType = {
+  destination: 'destination',
+  place: 'place',
+  temple: 'temple',
+  attraction: 'attraction',
+  event: 'event',
+  food: 'food',
+  hotel: 'hotel',
+  property: 'property',
+} as const;
+
+export interface ExploreSuggestion {
+  id: string;
+  type: ExploreSuggestionType;
+  title: string;
+  subtitle: string;
+  imageKey: string;
+}
+
+export interface ExploreSearchResponse {
+  notice: string;
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  items: ExploreItem[];
+  suggestions: ExploreSuggestion[];
+}
+
+export interface ExploreCategory {
+  id: string;
+  label: string;
+  icon: string;
+  description: string;
+  count: number;
+}
+
+export interface ExploreCategoriesResponse {
+  notice: string;
+  items: ExploreCategory[];
+}
+
+export type ExploreFiltersResponseSortsItem = {
+  value: string;
+  label: string;
+};
+
+export interface ExploreFiltersResponse {
+  notice: string;
+  category: string;
+  locations: string[];
+  ratings: string[];
+  priceRanges: string[];
+  amenities: string[];
+  types: string[];
+  sorts: ExploreFiltersResponseSortsItem[];
 }
 
 export type ListingStatus = typeof ListingStatus[keyof typeof ListingStatus];
@@ -565,6 +657,62 @@ export type ServiceUnavailableResponse = ErrorResponse;
  * Too many requests
  */
 export type RateLimitedResponse = ErrorResponse;
+
+export type SearchExploreParams = {
+q?: string;
+category?: string;
+location?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+sort?: SearchExploreSort;
+/**
+ * @minimum 0
+ * @maximum 5
+ */
+minRating?: number;
+/**
+ * @minimum 0
+ */
+minPrice?: number;
+/**
+ * @minimum 0
+ */
+maxPrice?: number;
+propertyType?: string;
+eventType?: string;
+amenity?: string;
+/**
+ * @minimum 0
+ */
+minArea?: number;
+/**
+ * @minimum 0
+ */
+maxArea?: number;
+};
+
+export type SearchExploreSort = typeof SearchExploreSort[keyof typeof SearchExploreSort];
+
+
+export const SearchExploreSort = {
+  relevance: 'relevance',
+  popularity: 'popularity',
+  distance: 'distance',
+  rating: 'rating',
+  price_asc: 'price_asc',
+  price_desc: 'price_desc',
+} as const;
+
+export type GetExploreFiltersParams = {
+category?: string;
+};
 
 export type ListDestinations200 = {
   items: Destination[];

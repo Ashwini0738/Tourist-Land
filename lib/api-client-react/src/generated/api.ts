@@ -30,7 +30,11 @@ import type {
   DestinationList,
   EmailInvitationInput,
   EventList,
+  ExploreCategoriesResponse,
+  ExploreFiltersResponse,
+  ExploreSearchResponse,
   ForbiddenResponse,
+  GetExploreFiltersParams,
   GetVendorApplicationStatusParams,
   HealthStatus,
   HomeData,
@@ -55,6 +59,7 @@ import type {
   RefreshStatus,
   RoleAssignmentInput,
   RoleDashboard,
+  SearchExploreParams,
   ServiceUnavailableResponse,
   UnauthenticatedResponse,
   VendorApplication,
@@ -653,6 +658,251 @@ export function useListHomeProperties<TData = Awaited<ReturnType<typeof listHome
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListHomePropertiesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSearchExploreUrl = (params?: SearchExploreParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/explore/search?${stringifiedParams}` : `/api/v1/explore/search`
+}
+
+/**
+ * @summary Search the seeded development discovery catalog
+ */
+export const searchExplore = async (params?: SearchExploreParams, options?: Parameters<typeof customFetch>[1]): Promise<ExploreSearchResponse> => {
+
+  return customFetch<ExploreSearchResponse>(getSearchExploreUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchExploreQueryKey = (params?: SearchExploreParams,) => {
+    return [
+    `/api/v1/explore/search`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchExploreQueryOptions = <TData = Awaited<ReturnType<typeof searchExplore>>, TError = ErrorType<unknown>>(params?: SearchExploreParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchExplore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchExploreQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchExplore>>> = ({ signal }) => searchExplore(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchExplore>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchExploreQueryResult = NonNullable<Awaited<ReturnType<typeof searchExplore>>>
+export type SearchExploreQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Search the seeded development discovery catalog
+ */
+
+export function useSearchExplore<TData = Awaited<ReturnType<typeof searchExplore>>, TError = ErrorType<unknown>>(
+ params?: SearchExploreParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchExplore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchExploreQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListExploreCategoriesUrl = () => {
+
+
+
+
+  return `/api/v1/explore/categories`
+}
+
+/**
+ * @summary List Explore discovery categories
+ */
+export const listExploreCategories = async ( options?: Parameters<typeof customFetch>[1]): Promise<ExploreCategoriesResponse> => {
+
+  return customFetch<ExploreCategoriesResponse>(getListExploreCategoriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListExploreCategoriesQueryKey = () => {
+    return [
+    `/api/v1/explore/categories`
+    ] as const;
+    }
+
+
+export const getListExploreCategoriesQueryOptions = <TData = Awaited<ReturnType<typeof listExploreCategories>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listExploreCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListExploreCategoriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listExploreCategories>>> = ({ signal }) => listExploreCategories({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listExploreCategories>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListExploreCategoriesQueryResult = NonNullable<Awaited<ReturnType<typeof listExploreCategories>>>
+export type ListExploreCategoriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List Explore discovery categories
+ */
+
+export function useListExploreCategories<TData = Awaited<ReturnType<typeof listExploreCategories>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listExploreCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListExploreCategoriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetExploreFiltersUrl = (params?: GetExploreFiltersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/explore/filters?${stringifiedParams}` : `/api/v1/explore/filters`
+}
+
+/**
+ * @summary Get valid Explore filters for a category
+ */
+export const getExploreFilters = async (params?: GetExploreFiltersParams, options?: Parameters<typeof customFetch>[1]): Promise<ExploreFiltersResponse> => {
+
+  return customFetch<ExploreFiltersResponse>(getGetExploreFiltersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetExploreFiltersQueryKey = (params?: GetExploreFiltersParams,) => {
+    return [
+    `/api/v1/explore/filters`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetExploreFiltersQueryOptions = <TData = Awaited<ReturnType<typeof getExploreFilters>>, TError = ErrorType<unknown>>(params?: GetExploreFiltersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExploreFilters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExploreFiltersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExploreFilters>>> = ({ signal }) => getExploreFilters(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExploreFilters>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetExploreFiltersQueryResult = NonNullable<Awaited<ReturnType<typeof getExploreFilters>>>
+export type GetExploreFiltersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get valid Explore filters for a category
+ */
+
+export function useGetExploreFilters<TData = Awaited<ReturnType<typeof getExploreFilters>>, TError = ErrorType<unknown>>(
+ params?: GetExploreFiltersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExploreFilters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetExploreFiltersQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

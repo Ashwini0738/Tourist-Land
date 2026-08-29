@@ -13,6 +13,7 @@ export interface Property {
   location: string;
   area: string;
   propertyType: string;
+  amenities?: string[];
   verified: boolean;
   description: string;
   discoveryLabel: string;

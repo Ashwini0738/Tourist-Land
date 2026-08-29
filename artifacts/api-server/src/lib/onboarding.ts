@@ -8,12 +8,12 @@ export {
   type VendorApplicationField,
   type VendorApplicationFieldErrors,
   type VendorApplicationInput,
-} from "./onboarding-validation";
+} from "./onboarding-validation.ts";
 export {
   shouldClaimInvitedAccess,
   vendorApprovalAction,
   vendorRejectionStatus,
-} from "./onboarding-state";
+} from "./onboarding-state.ts";
 
 type LocalUserForClaim = {
   id: string;
