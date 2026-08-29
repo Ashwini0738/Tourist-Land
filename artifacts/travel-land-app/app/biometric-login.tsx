@@ -1,6 +1,6 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
@@ -13,18 +13,26 @@ export default function BiometricLoginScreen() {
   const { unlock } = useAuthSecurity();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const attemptedRef = useRef(false);
 
   const authenticate = async () => {
     if (Platform.OS === 'web') return setMessage('Use your PIN to unlock on the web.');
     setLoading(true);
-    const r = await LocalAuthentication.authenticateAsync({ promptMessage: 'Unlock Travel & Land', fallbackLabel: 'Use PIN' });
-    setLoading(false);
-    if (!r.success) return setMessage('We could not confirm your identity. Please use your PIN.');
-    await unlock();
-    router.replace('/(tabs)');
+    try {
+      const r = await LocalAuthentication.authenticateAsync({ promptMessage: 'Unlock Travel & Land', fallbackLabel: 'Use PIN' });
+      if (!r.success) return setMessage('We could not confirm your identity. Please use your PIN.');
+      await unlock();
+      router.replace('/(tabs)');
+    } catch {
+      setMessage('Biometric unlock could not be completed. Please use your PIN.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
+    if (attemptedRef.current) return;
+    attemptedRef.current = true;
     authenticate();
   }, []);
 

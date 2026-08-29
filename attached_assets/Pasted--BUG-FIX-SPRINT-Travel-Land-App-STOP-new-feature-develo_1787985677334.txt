@@ -1,0 +1,442 @@
+# BUG FIX SPRINT — Travel & Land App
+
+STOP new feature development temporarily.
+
+Do not implement Explore, Hotels, Booking, Payment, Maps, or new functionality.
+
+Focus only on diagnosing and fixing the following three existing issues.
+
+The application must continue supporting:
+
+* Android
+* iOS
+* Expo Go development
+* Mobile web / Replit preview
+* Clerk authentication
+* PIN authentication
+* Biometric authentication
+* Existing five-tab navigation
+
+Do not replace Clerk or rewrite the authentication system.
+
+---
+
+# BUG 1 — Replit Preview Blinking / Infinite Loading After "Skip for now"
+
+## Current behavior
+
+In the Replit browser/mobile-web preview:
+
+1. Application loads.
+2. User reaches the biometric/device security screen.
+3. User clicks "Skip for now".
+4. Screen starts blinking/re-rendering.
+5. Loading continues indefinitely.
+6. Browser becomes unresponsive and shows "Wait or close page".
+
+## Expected behavior
+
+When the user selects:
+
+"Skip for now"
+
+the application should:
+
+1. Stop the biometric setup flow.
+2. Persist the appropriate onboarding/setup state.
+3. Continue to the correct next screen.
+4. Stop all loading indicators.
+5. Stop any authentication/setup retry loop.
+6. Never continuously remount the screen.
+7. Never continuously trigger Clerk/session initialization.
+8. Never continuously trigger biometric detection.
+
+If the user is not authenticated yet, navigate to the appropriate authentication screen.
+
+If the user is already authenticated, continue to the appropriate authenticated screen.
+
+## Investigation
+
+Inspect:
+
+* Authentication state
+* Clerk session initialization
+* Biometric initialization
+* PIN initialization
+* "Skip for now" state
+* Expo Router redirects
+* Protected route guards
+* useEffect dependencies
+* navigation redirects
+* loading state management
+* AsyncStorage/local storage usage
+* React Query initialization
+* Any polling/retry loops
+
+Look specifically for:
+
+* useEffect causing repeated navigation
+* state updates inside effects causing infinite renders
+* authentication redirects fighting each other
+* loading state never becoming false
+* biometric initialization being triggered repeatedly
+* route guard redirect loops
+* session initialization running multiple times
+* component remount loops
+
+Add appropriate guards so initialization happens only once per intended lifecycle.
+
+Do NOT simply add arbitrary delays or setTimeout hacks.
+
+Fix the root cause.
+
+---
+
+# BUG 2 — Expo Go Icons Render as Unknown / Broken Symbols
+
+## Current behavior
+
+When opening the application through Expo Go after scanning the QR code:
+
+* Expected icons are not displayed.
+* Icons appear as unknown/wired/square symbols.
+* This affects the application's navigation and UI icons.
+
+The Replit preview currently appears to have icon support, but Expo Go does not render the icons correctly.
+
+## Expected behavior
+
+All icons should render correctly in Expo Go on Android.
+
+The same icon system must also be compatible with:
+
+* Android
+* iOS
+* Expo Go
+* Web
+
+## Investigation
+
+Inspect:
+
+* Icon library currently being used
+* Icon font loading
+* @expo/vector-icons configuration
+* Feather icons
+* Material Community icons
+* Font loading
+* Asset configuration
+* Expo configuration
+* Metro configuration
+* Babel configuration
+* Any custom icon wrapper
+
+Determine why icons work in web/Replit preview but fail in Expo Go.
+
+Do NOT replace icons with random Unicode characters.
+
+Do NOT use emoji as an icon substitute.
+
+Prefer the existing Expo-compatible icon package if it is already installed.
+
+If the application already has Feather/Material Community icon fonts preloaded, verify that the actual components are using the correct icon family and that the fonts are available at runtime.
+
+## Fix requirements
+
+* Icons must render correctly in Expo Go.
+* Navigation icons must render correctly.
+* Home quick-action icons must render correctly.
+* No missing-font warnings.
+* No broken glyphs.
+* No invalid icon-name warnings.
+
+After fixing, test multiple icons from each icon family currently used.
+
+---
+
+# BUG 3 — Biometric → Email → OTP Happens on Every Expo Go Scan
+
+## Current behavior
+
+Every time the user scans the Expo QR code:
+
+1. Biometric prompt appears.
+2. After biometric authentication, application moves to email login.
+3. User signs in with email/password.
+4. Clerk asks for an email OTP verification.
+5. User must complete OTP verification again.
+6. This repeats on subsequent scans.
+
+This creates the impression that the application is creating a new authentication flow every time Expo Go starts.
+
+## Expected behavior
+
+Separate these concepts:
+
+### Account authentication
+
+Clerk should authenticate the user and establish a persistent session.
+
+### Biometric unlock
+
+Biometric authentication should unlock an existing authenticated session/credential on the device.
+
+Biometrics must NOT:
+
+* create a new Clerk account
+* replace Clerk authentication
+* automatically restart email authentication
+* force email OTP every time the app is opened
+
+After the user has successfully authenticated once and enrolled biometrics:
+
+Next app launch should ideally be:
+
+App opens
+→ existing secure credential/session detected
+→ biometric prompt
+→ biometric succeeds
+→ user enters application
+
+If the Clerk session is still valid, do NOT show email login again.
+
+If the Clerk session has genuinely expired, then show the appropriate Clerk authentication flow.
+
+---
+
+# Important Expo Go Consideration
+
+Investigate whether Expo Go development behavior is causing the authentication state to reset.
+
+Determine whether the current implementation stores:
+
+* Clerk session
+* refresh/session state
+* biometric enrollment state
+* device setup state
+
+persistently across Expo Go reloads.
+
+Do not assume a QR scan itself should require a new login.
+
+A development reload/restart should not unnecessarily clear valid authentication state.
+
+If Expo Go has a legitimate limitation that prevents a particular persistence mechanism, document it clearly rather than implementing an insecure workaround.
+
+---
+
+# Clerk Authentication Investigation
+
+Inspect the current Clerk integration.
+
+Determine:
+
+* How ClerkProvider is configured
+* Whether token/session cache is persistent
+* Whether secure token cache is configured correctly for React Native
+* Whether session restoration occurs before route decisions
+* Whether route guards wait for Clerk initialization
+* Whether biometric code runs before Clerk session restoration
+* Whether the application incorrectly treats "Clerk not loaded yet" as "logged out"
+
+Important:
+
+Do not navigate to Login while Clerk is still initializing.
+
+The correct state model should distinguish:
+
+INITIALIZING
+AUTHENTICATED
+UNAUTHENTICATED
+SESSION_EXPIRED
+
+Do not treat INITIALIZING as UNAUTHENTICATED.
+
+---
+
+# OTP Investigation
+
+The email OTP should only appear when Clerk legitimately requires verification.
+
+Investigate why verification is being requested repeatedly.
+
+Check whether:
+
+* A new sign-in attempt is created on every app start.
+* The app calls signIn repeatedly.
+* The verification state is recreated after biometric authentication.
+* Session restoration is bypassed.
+* Email verification is incorrectly triggered even when the account/session is already verified.
+
+Do not bypass Clerk security or disable legitimate MFA/verification requirements.
+
+The goal is to preserve security while avoiding unnecessary repeated authentication.
+
+---
+
+# Biometric Flow
+
+The intended architecture should be approximately:
+
+FIRST LOGIN:
+
+Clerk Login
+→ Email verification/MFA if required
+→ Clerk session established
+→ User creates PIN
+→ User enables biometrics
+→ Secure credential/session state stored
+→ Home
+
+RETURNING USER:
+
+App Start
+→ Restore Clerk session
+→ If valid session exists
+→ Biometric unlock if enabled
+→ Home
+
+If biometric is unavailable:
+
+App Start
+→ Restore Clerk session
+→ PIN fallback
+→ Home
+
+If Clerk session has expired:
+
+App Start
+→ Clerk authentication
+→ Required verification
+→ New session
+→ Optional biometric enrollment
+
+Do not run the full account authentication flow on every launch.
+
+---
+
+# Security Requirements
+
+Do NOT:
+
+* Store passwords in AsyncStorage.
+* Store plaintext PINs.
+* Store biometric data.
+* Disable Clerk verification.
+* Hardcode OTPs.
+* Create fake authentication success.
+* Bypass MFA.
+* Store sensitive credentials insecurely.
+* Automatically trust an unauthenticated client.
+
+Maintain the existing server-side PIN hashing and lockout behavior.
+
+---
+
+# Testing Matrix
+
+After fixes, test separately:
+
+## Replit Web
+
+Test:
+
+1. First visit
+2. Skip for now
+3. Login
+4. Refresh
+5. Logout
+6. Login again
+7. Navigate between protected routes
+8. No blinking
+9. No infinite loading
+
+## Expo Go Android
+
+Test:
+
+1. QR scan
+2. Icons render correctly
+3. Login
+4. Email verification when legitimately required
+5. PIN setup
+6. Biometric enrollment
+7. Close/reload app
+8. Reopen app
+9. Biometric unlock
+10. PIN fallback
+11. Logout
+12. Login again
+
+## Authentication Persistence
+
+Test:
+
+FIRST TIME:
+Login → verification → session → biometric enrollment
+
+SECOND OPEN:
+Restore session → biometric → Home
+
+EXPIRED SESSION:
+Authentication → required verification → new session
+
+LOGOUT:
+Clear session → Login required
+
+---
+
+# Regression Tests
+
+Run the existing automated test suite.
+
+Current baseline is:
+
+32 automated tests passing.
+
+Do not reduce the existing test coverage.
+
+Add tests for:
+
+* Skip for now
+* Initialization state
+* Authentication persistence
+* Biometric returning-user flow
+* Logout
+* Session restoration
+* Broken icon fallback/loading
+* Route protection
+
+Run:
+
+* TypeScript check
+* Automated tests
+* Expo workflow
+* API workflow
+* Web export
+* Android export
+* iOS export
+
+---
+
+# Final Report
+
+When finished, report:
+
+1. Root cause of Replit preview blinking
+2. Exact fix for blinking
+3. Root cause of Expo Go icon problem
+4. Exact fix for icons
+5. Root cause of repeated biometric/email/OTP flow
+6. Exact authentication persistence fix
+7. Files changed
+8. Tests added
+9. Total tests passing
+10. Web validation
+11. Android validation
+12. iOS validation
+13. Any Expo Go limitations that remain
+
+Do not claim a bug is fixed unless it was actually reproduced and verified.
+
+Do not proceed to new feature development until all three bugs are addressed.
