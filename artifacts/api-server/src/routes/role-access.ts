@@ -27,7 +27,14 @@ import {
   vendorApprovalAction,
   vendorRejectionStatus,
 } from "../lib/onboarding";
-import { revokeClerkInvitation, sendClerkInvitation } from "../lib/invitations";
+import {
+  findClerkUserByEmail,
+  isClerkEmailTakenError,
+  revokeClerkInvitation,
+  sendClerkInvitation,
+  summarizeClerkError,
+} from "../lib/invitations";
+import { logger } from "../lib/logger";
 
 const roleAccessRouter: IRouter = Router();
 roleAccessRouter.use(requireAuth);
@@ -334,6 +341,72 @@ roleAccessRouter.get("/v1/admin/invitations", requireRole("admin"), async (_req,
   });
 });
 
+async function completeExistingVendorApproval(
+  application: typeof vendorApplications.$inferSelect,
+  clerkUser: { id: string; firstName: string | null; lastName: string | null; imageUrl: string },
+  reviewedBy: string,
+): Promise<typeof vendorApplications.$inferSelect> {
+  const expectedStatus = application.status === "approved" ? "approved" : "pending";
+  return db.transaction(async (tx) => {
+    const localByClerkId = (await tx
+      .select()
+      .from(users)
+      .where(eq(users.clerkUserId, clerkUser.id)))[0];
+    const localByEmail = (await tx
+      .select()
+      .from(users)
+      .where(eq(users.email, application.email)))[0];
+
+    if (localByEmail && localByEmail.clerkUserId !== clerkUser.id) {
+      throw new Error("A different local account already owns the vendor application email.");
+    }
+
+    const local = localByClerkId ?? localByEmail ?? (await tx.insert(users).values({
+      clerkUserId: clerkUser.id,
+      email: application.email,
+      displayName: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || null,
+      avatarUrl: clerkUser.imageUrl || null,
+    }).returning())[0];
+
+    if (!local) throw new Error("Local user provisioning did not complete.");
+
+    await tx.insert(userRoles)
+      .values({ userId: local.id, role: "vendor" })
+      .onConflictDoNothing();
+    await tx.insert(vendorProfiles)
+      .values({
+        userId: local.id,
+        businessName: application.businessName,
+        businessType: application.businessType,
+        contactName: application.contactName,
+        phone: application.phone,
+        email: application.email,
+        description: application.description,
+        address: application.address,
+        city: application.city,
+        state: application.state,
+        country: application.country,
+        status: "approved",
+      })
+      .onConflictDoNothing();
+
+    const accepted = (await tx.update(vendorApplications)
+      .set({
+        status: "accepted",
+        userId: local.id,
+        reviewedBy,
+        reviewedAt: new Date(),
+        invitedAt: null,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(vendorApplications.id, application.id), eq(vendorApplications.status, expectedStatus)))
+      .returning())[0];
+
+    if (!accepted) throw new Error("This application was already reviewed.");
+    return accepted;
+  });
+}
+
 roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("admin"), async (req, res) => {
   const applicationId = pathValue(req.params.id);
   const application = await db.query.vendorApplications.findFirst({ where: eq(vendorApplications.id, applicationId) });
@@ -350,6 +423,30 @@ roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("
     error(res, 409, "APPLICATION_STATE_INVALID", "Only pending vendor applications can be approved.");
     return;
   }
+  let existingClerkUser;
+  try {
+    existingClerkUser = await findClerkUserByEmail(application.email);
+  } catch (clerkError) {
+    logger.error(
+      { applicationId, clerkError: summarizeClerkError(clerkError) },
+      "Unable to check whether a vendor applicant already has a Clerk account",
+    );
+    error(res, 503, "CLERK_UNAVAILABLE", "Clerk is temporarily unavailable. Please try again.");
+    return;
+  }
+  if (existingClerkUser) {
+    try {
+      const accepted = await completeExistingVendorApproval(application, existingClerkUser, req.localUser!.id);
+      res.json(serializeVendorApplication(accepted));
+    } catch (approvalError) {
+      logger.error(
+        { applicationId, clerkUserId: existingClerkUser.id, approvalError },
+        "Unable to attach an existing Clerk account to a vendor application",
+      );
+      error(res, 503, "VENDOR_APPROVAL_UNAVAILABLE", "The vendor account could not be activated. Please try again.");
+    }
+    return;
+  }
   const approved = (await db.update(vendorApplications)
     .set({ status: "approved", reviewedBy: req.localUser!.id, reviewedAt: new Date(), updatedAt: new Date() })
     .where(and(eq(vendorApplications.id, application.id), eq(vendorApplications.status, "pending")))
@@ -361,11 +458,35 @@ roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("
   let clerkInvitationId: string;
   try {
     clerkInvitationId = await sendClerkInvitation(approved.email, "vendor");
-  } catch {
+  } catch (clerkError) {
+    logger.error(
+      { applicationId, clerkError: summarizeClerkError(clerkError) },
+      "Unable to send Clerk invitation for vendor application",
+    );
+    if (isClerkEmailTakenError(clerkError)) {
+      try {
+        const existingUser = await findClerkUserByEmail(approved.email);
+        if (existingUser) {
+          const accepted = await completeExistingVendorApproval(approved, existingUser, req.localUser!.id);
+          res.json(serializeVendorApplication(accepted));
+          return;
+        }
+      } catch (lookupError) {
+        logger.error(
+          { applicationId, clerkError: summarizeClerkError(lookupError) },
+          "Unable to resolve the existing Clerk account for a vendor application",
+        );
+      }
+      await db.update(vendorApplications)
+        .set({ status: "pending", reviewedBy: null, reviewedAt: null, updatedAt: new Date() })
+        .where(eq(vendorApplications.id, approved.id));
+      error(res, 409, "ACCOUNT_ALREADY_EXISTS", "This applicant already has a Clerk account. Ask them to sign in and try again.");
+      return;
+    }
     await db.update(vendorApplications)
       .set({ status: "pending", reviewedBy: null, reviewedAt: null, updatedAt: new Date() })
       .where(eq(vendorApplications.id, approved.id));
-    error(res, 503, "INVITATION_UNAVAILABLE", "The application was approved, but its invitation could not be sent. Please try again.");
+    error(res, 503, "INVITATION_UNAVAILABLE", "The application could not be approved because its invitation could not be sent. Please try again.");
     return;
   }
   const invited = (await db.update(vendorApplications)

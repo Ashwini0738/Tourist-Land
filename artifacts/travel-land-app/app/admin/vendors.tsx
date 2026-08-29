@@ -37,7 +37,7 @@ export default function AdminVendorsScreen() {
       <Text style={[styles.kicker, { color: colors.primary }]}>VENDOR REVIEW</Text>
       <Text style={[styles.title, { color: colors.foreground }]}>Welcome the right\nbusinesses in.</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-        Approving an application sends one Clerk invitation. The vendor account is created only when the recipient accepts it.
+        New applicants receive one Clerk invitation. Applicants who already have a Clerk account are activated immediately after approval.
       </Text>
       {applications.isLoading && <ActivityIndicator color={colors.primary} style={styles.loader} />}
       {!applications.isLoading && (applications.data?.items.length ?? 0) === 0 && (
@@ -66,7 +66,7 @@ export default function AdminVendorsScreen() {
               <Text style={[styles.actionText, { color: colors.destructive }]}>Reject</Text>
             </Pressable>
             <Pressable disabled={busy} onPress={() => run(application.id, 'approve')} style={[styles.action, { backgroundColor: colors.primary }]}>
-              {approve.isPending ? <ActivityIndicator color="#fff" /> : <Text style={[styles.actionText, { color: '#fff' }]}>Approve & invite</Text>}
+              {approve.isPending ? <ActivityIndicator color="#fff" /> : <Text style={[styles.actionText, { color: '#fff' }]}>Approve application</Text>}
             </Pressable>
           </View>
         </View>
