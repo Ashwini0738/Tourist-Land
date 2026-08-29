@@ -1,0 +1,473 @@
+# AUTHENTICATION FLOW FINAL CORRECTION — REMOVE APP PIN
+
+Important correction to the previous authentication implementation.
+
+The application must NOT have a separate application PIN.
+
+We do NOT want users to:
+
+* Create a 4-digit app PIN
+* Confirm a 4-digit app PIN
+* Remember another PIN
+* Change an app PIN
+* Have a server-side app PIN
+* Use a custom app PIN as biometric fallback
+
+The application should use the user's existing **device security** instead.
+
+---
+
+# FINAL REQUIRED AUTHENTICATION MODEL
+
+There are only two layers:
+
+## Layer 1 — Account Authentication
+
+Use Clerk for:
+
+* Email
+* Password
+* Email verification
+* OTP/MFA when legitimately required
+* Clerk session
+
+This establishes the user's account.
+
+## Layer 2 — Device Authentication
+
+Use the device's native authentication system for returning access:
+
+* Fingerprint
+* Face ID
+* Android device PIN/passcode/pattern where supported by the native OS authentication prompt
+
+The app must NOT know or store the device PIN/passcode.
+
+The operating system verifies the device credential.
+
+---
+
+# FIRST-TIME USER FLOW
+
+The correct first-time flow is:
+
+App Open
+↓
+Email Create Account / Sign In
+↓
+Email Verification / OTP / MFA when required
+↓
+Clerk session established
+↓
+Offer biometric/device authentication setup
+↓
+User enables Fingerprint / Face ID / device authentication
+↓
+Home
+
+Do NOT show a custom PIN creation screen.
+
+Do NOT create a separate app PIN.
+
+---
+
+# RETURNING USER FLOW
+
+When the user has already authenticated with Clerk and enabled device authentication:
+
+App Open
+↓
+Restore Clerk session
+↓
+Native biometric/device authentication prompt
+↓
+Success
+↓
+Home
+
+The user should NOT be asked for:
+
+* Email
+* Password
+* OTP
+* App PIN
+
+during a normal returning session.
+
+---
+
+# BIOMETRIC FALLBACK
+
+If biometric authentication is unavailable, cancelled, or fails:
+
+App Open
+↓
+Native device authentication
+↓
+Device PIN/passcode/pattern
+↓
+Success
+↓
+Home
+
+Use the operating system's secure authentication mechanism.
+
+The application must NOT display its own PIN keypad for this fallback.
+
+The application must NOT receive, read, store, or transmit the user's device PIN/passcode.
+
+---
+
+# VERY IMPORTANT: DO NOT CONFUSE DEVICE AUTHENTICATION WITH APP PIN
+
+Remove/disable the existing custom app PIN implementation if it is only used for the authentication flow.
+
+Remove from the user-facing authentication flow:
+
+* Create PIN
+* Confirm PIN
+* Enter PIN
+* Change PIN
+* Forgot PIN
+* PIN lockout
+* PIN API calls
+
+Do NOT remove unrelated security functionality unless it exists solely for the obsolete app PIN.
+
+Do not leave dead PIN screens or routes that users can accidentally reach.
+
+---
+
+# NATIVE AUTHENTICATION
+
+Use the platform's supported secure local authentication APIs.
+
+For Expo/React Native, use the appropriate Expo-supported local authentication capability.
+
+The application should request:
+
+* Fingerprint
+* Face ID
+* Device passcode/PIN fallback
+
+according to what the device supports.
+
+Do not implement a custom biometric system.
+
+Do not store biometric data.
+
+Do not store the device PIN/passcode.
+
+---
+
+# CLERK SESSION RESTORATION
+
+This is critical.
+
+At application startup:
+
+1. Initialize Clerk.
+2. Wait for Clerk to finish loading.
+3. Determine whether a valid Clerk session exists.
+4. Only then decide which authentication screen to show.
+
+Use separate states:
+
+INITIALIZING
+NO_SESSION
+SESSION_AVAILABLE
+DEVICE_AUTH_REQUIRED
+AUTHENTICATED
+
+Do NOT treat INITIALIZING as NO_SESSION.
+
+---
+
+# STARTUP DECISION LOGIC
+
+Use logic equivalent to:
+
+IF Clerk is initializing:
+Show startup/loading screen
+
+ELSE IF no Clerk session exists:
+Show Email Sign In / Create Account
+
+ELSE IF valid Clerk session exists AND device authentication is enabled:
+Show native biometric/device authentication
+
+ELSE IF valid Clerk session exists AND device authentication is not enabled:
+Open Home or offer device security setup according to the product flow
+
+ELSE:
+Require Clerk authentication
+
+---
+
+# FIRST AUTHENTICATION VS RETURNING USER
+
+The app must distinguish:
+
+### First authentication
+
+Email
+→ OTP/MFA if required
+→ Clerk session
+→ Device authentication setup
+→ Home
+
+### Returning user
+
+Existing Clerk session
+→ Native device authentication
+→ Home
+
+Do not run the first-time email/OTP flow every time the Expo app reloads.
+
+---
+
+# EXPO GO
+
+Investigate why every QR scan currently causes:
+
+Fingerprint
+→ Email
+→ OTP
+
+This indicates that the application is likely not correctly restoring the existing Clerk session or is incorrectly initiating a new authentication flow.
+
+Fix the root cause.
+
+A QR scan/reload must not automatically mean:
+
+"new user"
+
+or
+
+"new Clerk sign-in"
+
+if a valid session exists.
+
+Do NOT bypass Clerk verification.
+
+---
+
+# DEVICE AUTHENTICATION SETUP
+
+After the user's first successful Clerk authentication:
+
+Show a simple setup prompt such as:
+
+"Use Face ID / Fingerprint to sign in faster"
+
+Options:
+
+Enable
+Skip for now
+
+If the user chooses:
+
+### Enable
+
+Register/enable native device authentication.
+
+### Skip for now
+
+Do not repeatedly force the setup prompt during the same setup flow.
+
+The user can later enable device authentication from Profile/Security settings.
+
+---
+
+# IF USER SKIPS BIOMETRICS
+
+If the user selects "Skip for now":
+
+Do not create an app PIN.
+
+Do not ask them to create another PIN.
+
+Allow the authenticated Clerk session to continue normally.
+
+On future launches, if no device authentication is enabled and the Clerk session is still valid, restore the session and open the application according to the session state.
+
+---
+
+# EXPLICIT LOGOUT
+
+If the user selects Logout:
+
+Terminate the Clerk session.
+
+On the next launch:
+
+Email
+→ Password
+→ OTP/MFA if Clerk requires it
+→ Clerk session
+→ Device authentication setup if appropriate
+→ Home
+
+Do not automatically authenticate a logged-out user using an old biometric unlock state.
+
+---
+
+# SECURITY REQUIREMENTS
+
+The application must NEVER:
+
+* Read device PIN
+* Store device PIN
+* Transmit device PIN
+* Create a second app PIN
+* Store biometric data
+* Bypass Clerk MFA
+* Bypass email verification
+* Hardcode OTP
+* Automatically create a new account
+* Treat biometric success as a replacement for an authenticated Clerk session
+
+The OS should handle the actual device authentication.
+
+---
+
+# REMOVE OBSOLETE PIN IMPLEMENTATION
+
+Audit the existing codebase for the previous custom PIN implementation.
+
+Identify:
+
+* PIN screens
+* PIN routes
+* PIN components
+* PIN API endpoints
+* PIN database fields
+* PIN hooks
+* PIN services
+* PIN state
+* PIN lockout logic
+
+Determine which parts are now obsolete.
+
+Remove only the custom app-PIN functionality that is no longer required.
+
+Do not remove security mechanisms that are required by another feature.
+
+Avoid leaving unused authentication code that could create conflicting flows.
+
+---
+
+# TESTING
+
+Test the following.
+
+## First-time user
+
+Clean state
+→ Email
+→ Create account
+→ OTP
+→ Clerk session
+→ Enable biometric
+→ Home
+
+## Returning user
+
+Close app
+→ Open app
+→ Existing Clerk session restored
+→ Fingerprint/Face ID
+→ Home
+
+## Biometric fallback
+
+Open app
+→ Biometric
+→ Cancel/fail
+→ Native device authentication/passcode
+→ Home
+
+## No biometric setup
+
+Open app
+→ Existing valid Clerk session
+→ Continue without forced biometric setup
+
+## Session expired
+
+Open app
+→ No valid Clerk session
+→ Email authentication
+→ OTP/MFA if required
+→ Home
+
+## Explicit logout
+
+Logout
+→ Clerk session terminated
+→ Reopen app
+→ Email authentication required
+
+## Expo Go
+
+Reload/scan existing authenticated application
+→ Restore Clerk session
+→ Native authentication
+→ Home
+
+Must NOT repeatedly show:
+
+Fingerprint
+→ Email
+→ OTP
+
+---
+
+# REGRESSION
+
+Preserve:
+
+* Clerk authentication
+* Email verification
+* MFA
+* Protected routes
+* Secure logout
+* Home
+* Explore
+* Bookings
+* Land
+* Profile
+* Wallet
+* Existing API architecture
+* Existing UI
+
+Run:
+
+* TypeScript
+* Automated tests
+* Expo workflow
+* API workflow
+* Web export
+* Android export
+* iOS export
+
+---
+
+# FINAL REPORT
+
+Report:
+
+1. Custom app PIN functionality removed
+2. Native device authentication implementation
+3. Clerk session restoration implementation
+4. First-time authentication flow
+5. Returning-user flow
+6. Biometric fallback behavior
+7. Logout behavior
+8. Expo Go behavior
+9. Files changed
+10. Tests added
+11. Total tests passing
+12. Any platform limitations
+
+Do not proceed to new feature development until this authentication flow is verified.
