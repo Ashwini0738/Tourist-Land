@@ -149,6 +149,51 @@ export const ExploreItemType = {
   property: 'property',
 } as const;
 
+export type ExploreItemSource = typeof ExploreItemSource[keyof typeof ExploreItemSource];
+
+
+export const ExploreItemSource = {
+  development: 'development',
+  live: 'live',
+  unavailable: 'unavailable',
+} as const;
+
+export type ExploreItemAvailabilityStatus = typeof ExploreItemAvailabilityStatus[keyof typeof ExploreItemAvailabilityStatus];
+
+
+export const ExploreItemAvailabilityStatus = {
+  available: 'available',
+  unavailable: 'unavailable',
+} as const;
+
+export type ExploreItemAvailability = {
+  status: ExploreItemAvailabilityStatus;
+  priceAmount?: number;
+  currency?: string;
+  priceLabel?: string;
+  roomType?: string;
+  checkIn?: string;
+  checkOut?: string;
+};
+
+export type ExploreItemScheduleStatus = typeof ExploreItemScheduleStatus[keyof typeof ExploreItemScheduleStatus];
+
+
+export const ExploreItemScheduleStatus = {
+  scheduled: 'scheduled',
+  cancelled: 'cancelled',
+  unavailable: 'unavailable',
+} as const;
+
+export type ExploreItemSchedule = {
+  status: ExploreItemScheduleStatus;
+  startsAt?: string;
+  endsAt?: string;
+  dateLabel?: string;
+  venue?: string;
+  cancellationReason?: string;
+};
+
 export interface ExploreItem {
   id: string;
   type: ExploreItemType;
@@ -163,6 +208,12 @@ export interface ExploreItem {
   priceLabel?: string;
   area?: string;
   propertyType?: string;
+  source: ExploreItemSource;
+  sourceLabel: string;
+  sourceNotice: string;
+  checkedAt?: string;
+  availability?: ExploreItemAvailability;
+  schedule?: ExploreItemSchedule;
 }
 
 export type ExploreSuggestionType = typeof ExploreSuggestionType[keyof typeof ExploreSuggestionType];
@@ -684,6 +735,7 @@ export type RateLimitedResponse = ErrorResponse;
 export type SearchExploreParams = {
 q?: string;
 category?: string;
+id?: string;
 location?: string;
 /**
  * @minimum 1

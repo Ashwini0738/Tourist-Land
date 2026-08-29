@@ -432,7 +432,7 @@ export default function ExploreScreen() {
       ) : null}
       <View style={[styles.notice, { backgroundColor: colors.secondary }]}>
         <Feather name="info" size={15} color={colors.primary} />
-        <Text style={[styles.noticeText, { color: colors.mutedForeground }]}>Development content only. Hotel availability, pricing, events, and property inventory are not live.</Text>
+        <Text style={[styles.noticeText, { color: colors.mutedForeground }]}>{searchQuery.data?.notice ?? 'Development discovery content only. Live availability and schedules appear when approved providers are connected.'}</Text>
       </View>
     </View>
   );

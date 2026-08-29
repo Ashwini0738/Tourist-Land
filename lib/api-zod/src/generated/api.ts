@@ -214,6 +214,7 @@ export const searchExploreQueryMaxAreaMin = 0;
 export const SearchExploreQueryParams = zod.object({
   "q": zod.coerce.string().optional(),
   "category": zod.coerce.string().optional(),
+  "id": zod.coerce.string().optional(),
   "location": zod.coerce.string().optional(),
   "page": zod.coerce.number().min(1).default(searchExploreQueryPageDefault),
   "limit": zod.coerce.number().min(1).max(searchExploreQueryLimitMax).default(searchExploreQueryLimitDefault),
@@ -247,7 +248,28 @@ export const SearchExploreResponse = zod.object({
   "ratingLabel": zod.string().optional(),
   "priceLabel": zod.string().optional(),
   "area": zod.string().optional(),
-  "propertyType": zod.string().optional()
+  "propertyType": zod.string().optional(),
+  "source": zod.enum(['development', 'live', 'unavailable']),
+  "sourceLabel": zod.string(),
+  "sourceNotice": zod.string(),
+  "checkedAt": zod.coerce.date().optional(),
+  "availability": zod.object({
+  "status": zod.enum(['available', 'unavailable']),
+  "priceAmount": zod.number().optional(),
+  "currency": zod.string().optional(),
+  "priceLabel": zod.string().optional(),
+  "roomType": zod.string().optional(),
+  "checkIn": zod.string().optional(),
+  "checkOut": zod.string().optional()
+}).optional(),
+  "schedule": zod.object({
+  "status": zod.enum(['scheduled', 'cancelled', 'unavailable']),
+  "startsAt": zod.coerce.date().optional(),
+  "endsAt": zod.coerce.date().optional(),
+  "dateLabel": zod.string().optional(),
+  "venue": zod.string().optional(),
+  "cancellationReason": zod.string().optional()
+}).optional()
 })),
   "suggestions": zod.array(zod.object({
   "id": zod.string(),

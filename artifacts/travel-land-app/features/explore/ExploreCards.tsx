@@ -24,7 +24,17 @@ export function getExploreRoute(type: ExploreItemType, id: string) {
 
 function ExploreCard({ item, isFavorite, toggleFavorite, horizontal = false }: ExploreCardProps) {
   const colors = useColors();
-  const metadata = item.dateLabel ?? item.priceLabel ?? item.ratingLabel;
+  const metadata = item.type === 'hotel'
+    ? item.availability?.status === 'unavailable'
+      ? 'Currently unavailable'
+      : item.availability?.priceLabel ?? item.priceLabel ?? item.ratingLabel
+    : item.type === 'event'
+      ? item.schedule?.status === 'cancelled'
+        ? item.schedule.dateLabel ?? 'Cancelled'
+        : item.schedule?.status === 'unavailable'
+          ? 'Schedule unavailable'
+          : item.schedule?.dateLabel ?? item.dateLabel
+      : item.dateLabel ?? item.priceLabel ?? item.ratingLabel;
   const kindLabel = item.type === 'property' ? item.propertyType ?? 'Land opportunity' : item.category;
   const route = getExploreRoute(item.type, item.id);
   const openItem = () => {
@@ -76,6 +86,7 @@ function ExploreCard({ item, isFavorite, toggleFavorite, horizontal = false }: E
         <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={2}>{item.title}</Text>
         <Text style={[styles.location, { color: colors.mutedForeground }]} numberOfLines={1}>{item.location}</Text>
         {metadata ? <Text style={[styles.metadata, { color: colors.mutedForeground }]} numberOfLines={1}>{metadata}</Text> : null}
+        <Text style={[styles.source, { color: item.source === 'live' ? colors.primary : item.source === 'unavailable' ? colors.destructive : colors.mutedForeground }]} numberOfLines={1}>{item.sourceLabel}</Text>
       </View>
       {!horizontal ? <Feather name="arrow-up-right" size={17} color={colors.foreground} /> : null}
     </Pressable>
@@ -174,6 +185,12 @@ const styles = StyleSheet.create({
   },
   metadata: {
     fontSize: 11,
+    marginTop: 7,
+  },
+  source: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.7,
     marginTop: 7,
   },
 });

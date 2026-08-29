@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getExploreFilters, searchExploreItems } from "./explore.ts";
+import { getExploreFilters, searchExploreItems, searchExploreItemsLive } from "./explore.ts";
 
 test("Explore search matches titles, locations, and categories", () => {
   const result = searchExploreItems({ q: "coorg", limit: 50 });
@@ -46,4 +46,63 @@ test("Explore filters only advertise options relevant to the category", () => {
   assert.deepEqual(hotelFilters.amenities, ["Nature access", "Breakfast", "Quiet rooms"]);
   assert.deepEqual(eventFilters.types, ["Cultural", "Heritage"]);
   assert.deepEqual(propertyFilters.types, ["Agri-tourism", "Coastal retreat"]);
+});
+
+test("Explore keeps seeded results marked as development content without providers", () => {
+  const result = searchExploreItems({ category: "hotel" });
+
+  assert.equal(result.notice, "Development discovery content only. It is not live availability, booking, pricing, or location data.");
+  assert.ok(result.items.every((item) => item.source === "development"));
+  assert.ok(result.items.every((item) => item.availability === undefined));
+});
+
+test("Explore merges live hotel availability and cancelled event schedules", async () => {
+  const fetcher = async (input: string | URL) => {
+    const url = String(input);
+    if (url.startsWith("https://hotels.example")) {
+      return new Response(JSON.stringify({
+        items: [{ id: "01", status: "available", priceAmount: 9100, currency: "INR", roomType: "Garden room" }],
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    return new Response(JSON.stringify({
+      items: [{ id: "konkan-sunset-stories", status: "cancelled", cancellationReason: "Weather advisory" }],
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+
+  const result = await searchExploreItemsLive(
+    { category: "all", limit: 50 },
+    { fetcher, env: { HOTEL_AVAILABILITY_PROVIDER_URL: "https://hotels.example", EVENT_SCHEDULE_PROVIDER_URL: "https://events.example" } },
+  );
+  const hotel = result.items.find((item) => item.id === "01");
+  const event = result.items.find((item) => item.id === "konkan-sunset-stories");
+
+  assert.equal(hotel?.source, "live");
+  assert.equal(hotel?.availability?.status, "available");
+  assert.equal(hotel?.availability?.priceLabel, "₹9,100 / night");
+  assert.equal(event?.source, "live");
+  assert.equal(event?.schedule?.status, "cancelled");
+  assert.equal(event?.dateLabel, "Cancelled · Weather advisory");
+  assert.match(result.notice, /Live hotel availability/);
+});
+
+test("Explore isolates a failed hotel provider from a working event provider", async () => {
+  const fetcher = async (input: string | URL) => {
+    if (String(input).startsWith("https://hotels.example")) throw new Error("hotel provider offline");
+    return new Response(JSON.stringify({
+      items: [{ id: "coorg-harvest-notes", status: "scheduled", startsAt: "2026-09-12T09:00:00Z" }],
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+
+  const result = await searchExploreItemsLive(
+    { category: "all", limit: 50 },
+    { fetcher, env: { HOTEL_AVAILABILITY_PROVIDER_URL: "https://hotels.example", EVENT_SCHEDULE_PROVIDER_URL: "https://events.example" } },
+  );
+  const hotel = result.items.find((item) => item.id === "01");
+  const event = result.items.find((item) => item.id === "coorg-harvest-notes");
+
+  assert.equal(hotel?.source, "unavailable");
+  assert.equal(hotel?.availability?.status, "unavailable");
+  assert.equal(hotel?.priceLabel, undefined);
+  assert.equal(event?.source, "live");
+  assert.equal(event?.schedule?.status, "scheduled");
 });

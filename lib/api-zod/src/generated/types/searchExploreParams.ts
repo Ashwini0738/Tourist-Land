@@ -10,6 +10,7 @@ import type { SearchExploreSort } from './searchExploreSort';
 export type SearchExploreParams = {
 q?: string;
 category?: string;
+id?: string;
 location?: string;
 /**
  * @minimum 1

@@ -115,6 +115,9 @@ paths:
         - name: category
           in: query
           schema: { type: string }
+        - name: id
+          in: query
+          schema: { type: string }
         - name: location
           in: query
           schema: { type: string }
@@ -959,7 +962,38 @@ components:
         priceLabel: { type: string }
         area: { type: string }
         propertyType: { type: string }
-      required: [id, type, title, location, summary, category, imageKey]
+        source:
+          type: string
+          enum: [development, live, unavailable]
+        sourceLabel: { type: string }
+        sourceNotice: { type: string }
+        checkedAt: { type: string, format: date-time }
+        availability:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [available, unavailable]
+            priceAmount: { type: number }
+            currency: { type: string }
+            priceLabel: { type: string }
+            roomType: { type: string }
+            checkIn: { type: string }
+            checkOut: { type: string }
+          required: [status]
+        schedule:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [scheduled, cancelled, unavailable]
+            startsAt: { type: string, format: date-time }
+            endsAt: { type: string, format: date-time }
+            dateLabel: { type: string }
+            venue: { type: string }
+            cancellationReason: { type: string }
+          required: [status]
+      required: [id, type, title, location, summary, category, imageKey, source, sourceLabel, sourceNotice]
     ExploreSuggestion:
       type: object
       properties:
