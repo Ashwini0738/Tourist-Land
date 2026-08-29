@@ -42,15 +42,6 @@ export interface Destination {
   imageKey: string;
 }
 
-export interface Banner {
-  id: string;
-  title: string;
-  subtitle: string;
-  ctaLabel: string;
-  destinationId: string;
-  imageKey: string;
-}
-
 export interface Place {
   id: string;
   name: string;
@@ -73,6 +64,17 @@ export interface Event {
   imageKey: string;
 }
 
+export interface Food {
+  id: string;
+  name: string;
+  category: string;
+  location: string;
+  summary: string;
+  ratingLabel?: string;
+  destinationId: string;
+  imageKey: string;
+}
+
 export interface Hotel {
   id: string;
   name: string;
@@ -81,6 +83,25 @@ export interface Hotel {
   destinationId: string;
   ratingLabel: string;
   priceLabel: string;
+  imageKey: string;
+}
+
+export interface DestinationDetail {
+  destination: Destination;
+  places: Place[];
+  events: Event[];
+  foods: Food[];
+  hotels: Hotel[];
+  nearby: Place[];
+  sourceNotice: string;
+}
+
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+  destinationId: string;
   imageKey: string;
 }
 

@@ -26,7 +26,7 @@ import type {
   BannerList,
   ConflictResponse,
   CurrentUser,
-  Destination,
+  DestinationDetail,
   DestinationList,
   EmailInvitationInput,
   EventList,
@@ -1219,9 +1219,9 @@ export const getGetDestinationUrl = (id: string,) => {
   return `/api/v1/destinations/${id}`
 }
 
-export const getDestination = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Destination> => {
+export const getDestination = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<DestinationDetail> => {
 
-  return customFetch<Destination>(getGetDestinationUrl(id),
+  return customFetch<DestinationDetail>(getGetDestinationUrl(id),
   {
     ...options,
     method: 'GET'

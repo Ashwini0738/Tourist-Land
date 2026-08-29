@@ -1,0 +1,732 @@
+# DEVELOPMENT TASK — MAPS & LOCATION MODULE
+
+Continue development of the existing **Travel & Land** application.
+
+## IMPORTANT — COMPLETED MODULES
+
+Treat these as stable:
+
+* User authentication
+* Vendor authentication
+* Admin authentication
+* Clerk authentication
+* Email verification / OTP / MFA
+* Fingerprint / Face ID / native device authentication
+* Role-based authorization
+* User Home
+* Explore
+* Search
+* Explore filters and sorting
+* Destination Details
+* Existing API architecture
+* OpenAPI specification
+* Generated TypeScript API client
+* Generated React Query hooks
+* Generated Zod schemas
+
+Do NOT rebuild or modify authentication, roles, Home, Explore, or Destination Details.
+
+---
+
+# OBJECTIVE
+
+Build the **Maps + Location module** for Travel & Land.
+
+The module should allow users to:
+
+* View destinations on a map
+* View tourist places
+* View temples
+* View attractions
+* View hotels
+* View properties/land opportunities
+* See their current location when permission is granted
+* Search/select a location
+* View markers
+* Open location details
+* Navigate from map markers to details
+* Request directions when supported
+
+The implementation must support:
+
+* Android
+* iOS
+* Expo Go
+* Mobile web
+
+---
+
+# 1. MAP SCREEN
+
+Create a dedicated Maps screen.
+
+The screen should contain:
+
+* Full-screen map area
+* Back button
+* Search/location field
+* Current-location button
+* Category/filter controls
+* Map markers
+* Bottom result preview/list
+
+Use the existing Travel & Land design system.
+
+Keep the interface mobile-first.
+
+---
+
+# 2. MAP PROVIDER
+
+First inspect the existing project to determine whether a map provider is already configured.
+
+If a provider already exists:
+
+* Reuse it.
+* Do not replace it.
+
+If no provider exists:
+
+Choose an architecture that can support:
+
+* Android
+* iOS
+* Web
+
+Do NOT add a paid provider requiring a production API key without documenting the requirement.
+
+Do NOT hardcode API keys into source code.
+
+Use environment variables for provider credentials.
+
+---
+
+# 3. CURRENT LOCATION
+
+Implement current location functionality.
+
+When the user taps:
+
+"Use my location"
+
+request location permission.
+
+Do NOT automatically request location permission simply because the Maps screen opened unless the existing UX explicitly requires it.
+
+Handle:
+
+* Permission granted
+* Permission denied
+* Permission permanently denied
+* Location unavailable
+* GPS disabled
+* Loading location
+
+If permission is denied, the map must still work.
+
+Allow the user to manually search/select a location.
+
+---
+
+# 4. LOCATION DISPLAY
+
+When permission is granted:
+
+Display:
+
+* Current position
+* Location marker
+* Optional accuracy indicator
+
+Do not continuously track GPS unless required.
+
+Avoid unnecessary battery usage.
+
+Use a one-time location lookup initially.
+
+---
+
+# 5. REVERSE GEOCODING
+
+When coordinates are available, support reverse geocoding where appropriate.
+
+Example:
+
+Latitude/Longitude
+→ City
+→ State
+→ Country
+
+Reuse the existing location/reverse-geocoding architecture if already implemented.
+
+Do not create duplicate location services.
+
+---
+
+# 6. DESTINATION MARKERS
+
+Display destination markers.
+
+Each destination marker should contain:
+
+* Destination ID
+* Name
+* Coordinates
+* Category
+
+When tapped:
+
+Show a compact preview:
+
+* Image
+* Destination name
+* Location
+* Rating if available
+* View Details
+
+Navigation:
+
+Map
+→ Destination Details
+
+---
+
+# 7. TOURIST PLACE MARKERS
+
+Support markers for:
+
+* Attractions
+* Temples
+* Beaches
+* Waterfalls
+* Nature spots
+* Historical places
+* Viewpoints
+
+Marker tap should show a preview card.
+
+Navigation:
+
+Map
+→ Place Details
+
+---
+
+# 8. HOTEL MARKERS
+
+Support hotel markers.
+
+Display:
+
+* Hotel name
+* Location
+* Image where available
+* Rating
+* Starting price where available
+
+IMPORTANT:
+
+Current hotel data is development/sample data.
+
+Do NOT display:
+
+* Live availability
+* Confirmed room availability
+* Real-time pricing
+
+unless a real hotel availability service has been connected.
+
+Navigation:
+
+Map
+→ Hotel Details
+
+---
+
+# 9. PROPERTY / LAND MARKERS
+
+Support property/land markers.
+
+Display:
+
+* Property name
+* Location
+* Property type
+* Area
+* Price where available
+
+Clearly treat current data as development/sample data.
+
+Do not claim:
+
+* Ownership verification
+* Legal verification
+* Live availability
+* Confirmed pricing
+
+Navigation:
+
+Map
+→ Property Details
+
+---
+
+# 10. MAP FILTERS
+
+Create a filter control.
+
+Categories:
+
+* All
+* Destinations
+* Places
+* Temples
+* Events
+* Hotels
+* Land
+
+Selecting a category should update visible markers/results.
+
+Do not reload unrelated data unnecessarily.
+
+---
+
+# 11. SEARCH
+
+Allow users to search:
+
+* City
+* Destination
+* Place
+* Hotel
+* Property
+* Landmark
+
+Example:
+
+User searches:
+
+"Coorg"
+
+The map should:
+
+1. Find the matching destination/location.
+2. Move the map to that location.
+3. Display relevant markers.
+4. Show matching results.
+
+Reuse the existing Explore search/API architecture wherever possible.
+
+Do not create an entirely separate search system.
+
+---
+
+# 12. MAP REGION
+
+Support:
+
+* Zoom
+* Pan
+* Initial region
+* Selected location
+* Current location
+* Destination coordinates
+
+Do not constantly reset the map position after every API refresh.
+
+Preserve the user's map position when appropriate.
+
+---
+
+# 13. RESULT LIST
+
+Add a bottom sheet or horizontal result list.
+
+When the map contains multiple results:
+
+Show:
+
+* Image
+* Name
+* Category
+* Location
+* Rating/price if available
+* View Details
+
+Selecting a result should focus the map on that marker.
+
+Selecting the marker should focus the result card.
+
+---
+
+# 14. DIRECTIONS
+
+Add a:
+
+"Get Directions"
+
+action where appropriate.
+
+For the first implementation:
+
+Use the device/platform's supported map navigation mechanism if available.
+
+Do not build a complete turn-by-turn navigation engine.
+
+Do not create fake routes.
+
+If directions are unavailable:
+
+Show a graceful message.
+
+---
+
+# 15. DESTINATION INTEGRATION
+
+Update Destination Details so that:
+
+"View on Map"
+
+opens the Maps screen centered on that destination.
+
+Pass the destination ID/coordinates safely.
+
+Example:
+
+Destination Details
+→ View on Map
+→ Maps centered on Destination
+
+Do not duplicate destination data unnecessarily.
+
+---
+
+# 16. HOME INTEGRATION
+
+Verify the existing Home:
+
+Maps shortcut
+→ Maps
+
+Do not redesign Home.
+
+Only make the minimum navigation change required.
+
+---
+
+# 17. EXPLORE INTEGRATION
+
+Verify:
+
+Explore result
+→ Map
+
+and:
+
+Explore
+→ Destination
+→ View on Map
+
+Do not rebuild Explore.
+
+---
+
+# 18. API
+
+Inspect existing APIs before creating new endpoints.
+
+Potential endpoints:
+
+GET /api/v1/maps/places
+
+GET /api/v1/maps/nearby
+
+GET /api/v1/maps/search
+
+GET /api/v1/maps/properties
+
+Reuse existing catalog endpoints where appropriate.
+
+Do not create duplicate endpoints.
+
+If new endpoints are required:
+
+* Add them to OpenAPI
+* Generate TypeScript client
+* Generate React Query hooks
+* Generate Zod schemas
+
+---
+
+# 19. NEARBY SEARCH
+
+Support nearby discovery using coordinates.
+
+Example:
+
+latitude
+longitude
+radius
+
+Possible results:
+
+* Places
+* Attractions
+* Temples
+* Hotels
+* Properties
+
+Do not claim results are nearby unless they are actually calculated from coordinates.
+
+If coordinates are missing:
+
+Do not calculate fake distances.
+
+---
+
+# 20. DISTANCE
+
+When coordinates are available, calculate/display:
+
+* Distance from current location
+
+Examples:
+
+"1.2 km away"
+
+"5.8 km away"
+
+Use a consistent distance calculation.
+
+If current location is unavailable:
+
+Do not show fake distance.
+
+---
+
+# 21. LOCATION PERMISSIONS
+
+Handle all states gracefully.
+
+### Granted
+
+Show current location functionality.
+
+### Denied
+
+Show:
+
+"Location permission is disabled"
+
+with:
+
+"Enable Location"
+
+or manual location search.
+
+### Unavailable
+
+Allow manual location selection.
+
+Do not repeatedly trigger permission prompts.
+
+---
+
+# 22. LOADING STATES
+
+Implement:
+
+* Map loading
+* Location loading
+* Search loading
+* Marker loading
+* Nearby loading
+
+Do not allow the entire screen to blink.
+
+Do not remount the map unnecessarily.
+
+---
+
+# 23. ERROR STATES
+
+Handle:
+
+* Map provider failure
+* Location failure
+* Search failure
+* Nearby API failure
+
+The app must not crash.
+
+Example:
+
+"Unable to load nearby places"
+
+Retry
+
+The map itself should remain usable where possible.
+
+---
+
+# 24. EMPTY STATES
+
+Examples:
+
+"No places found nearby"
+
+"No hotels found in this area"
+
+"No properties found"
+
+"No results for this location"
+
+Do not insert fake results.
+
+---
+
+# 25. PERFORMANCE
+
+Important for mobile:
+
+* Avoid unnecessary map rerenders
+* Avoid rendering hundreds of markers at once
+* Use clustering if the provider supports it
+* Cache API results
+* Debounce map/search requests
+* Load results based on the visible region when appropriate
+* Avoid continuous GPS tracking
+
+---
+
+# 26. SECURITY
+
+Do not expose:
+
+* Private vendor information
+* Admin-only data
+* Private property records
+* User personal information
+
+Only return publicly discoverable location/catalog information to normal users.
+
+Keep vendor/admin APIs protected by existing role authorization.
+
+Do not modify the existing role architecture.
+
+---
+
+# 27. TESTING
+
+Add automated tests for:
+
+1. Maps screen loads
+2. Map renders
+3. Current location button
+4. Location permission granted
+5. Location permission denied
+6. Location unavailable
+7. Destination marker
+8. Place marker
+9. Hotel marker
+10. Property marker
+11. Marker selection
+12. Result selection
+13. Search
+14. Category filtering
+15. Nearby results
+16. Distance calculation
+17. Destination → Map navigation
+18. Home → Map navigation
+19. Explore → Map navigation
+20. Error handling
+21. Empty state
+22. Retry
+
+Regression tests:
+
+23. User login
+24. Vendor login
+25. Admin login
+26. Role authorization
+27. Home
+28. Explore
+29. Destination Details
+30. Biometric/device authentication
+
+---
+
+# 28. PLATFORM VALIDATION
+
+Verify on:
+
+### Android
+
+* Expo Go
+* Android build/export
+
+### iOS
+
+* iOS build/export
+
+### Web
+
+* Mobile web export
+
+Check:
+
+* Map rendering
+* Touch controls
+* Marker interaction
+* Search
+* Location permissions
+* Navigation
+* Layout
+
+If a feature is platform-specific, implement the appropriate fallback.
+
+---
+
+# 29. IMPORTANT DEVELOPMENT RULES
+
+Do NOT start:
+
+* Hotel availability
+* Booking
+* Payment
+* Wallet
+* Land sourcing workflow
+* Admin CMS
+* Vendor inventory management
+
+Those are later modules.
+
+Maps should provide the reusable location foundation for them.
+
+---
+
+# 30. FINAL REPORT
+
+When complete, report:
+
+1. Maps features implemented
+2. Map provider used
+3. Environment variables required
+4. Location permission behavior
+5. APIs created/reused
+6. Database changes
+7. OpenAPI changes
+8. Generated client/hooks changes
+9. Components created/reused
+10. Destination integration
+11. Explore integration
+12. Home integration
+13. Tests added
+14. Total tests passing
+15. Android validation
+16. iOS validation
+17. Web validation
+18. Known limitations
+19. Recommended next development task
+
+Do not proceed to Hotels until the Maps module is stable.

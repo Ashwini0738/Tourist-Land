@@ -263,7 +263,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Destination"
+                $ref: "#/components/schemas/DestinationDetail"
         "404":
           $ref: "#/components/responses/NotFound"
   /v1/properties:
@@ -809,6 +809,28 @@ components:
         summary: { type: string }
         imageKey: { type: string }
       required: [id, slug, name, region, country, summary, imageKey]
+    DestinationDetail:
+      type: object
+      properties:
+        destination:
+          $ref: "#/components/schemas/Destination"
+        places:
+          type: array
+          items: { $ref: "#/components/schemas/Place" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/Event" }
+        foods:
+          type: array
+          items: { $ref: "#/components/schemas/Food" }
+        hotels:
+          type: array
+          items: { $ref: "#/components/schemas/Hotel" }
+        nearby:
+          type: array
+          items: { $ref: "#/components/schemas/Place" }
+        sourceNotice: { type: string }
+      required: [destination, places, events, foods, hotels, nearby, sourceNotice]
     Banner:
       type: object
       properties:
@@ -855,6 +877,18 @@ components:
         priceLabel: { type: string }
         imageKey: { type: string }
       required: [id, name, location, summary, destinationId, ratingLabel, priceLabel, imageKey]
+    Food:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        category: { type: string }
+        location: { type: string }
+        summary: { type: string }
+        ratingLabel: { type: string }
+        destinationId: { type: string }
+        imageKey: { type: string }
+      required: [id, name, category, location, summary, destinationId, imageKey]
     Property:
       type: object
       properties:

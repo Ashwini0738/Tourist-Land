@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { requireAuth } from "../middlewares/requireAuth.ts";
+import { getDestinationDetail } from "./catalog-detail.ts";
 import {
   attractions,
   banners,
@@ -27,6 +28,7 @@ export {
 } from "./catalog-data.ts";
 
 const catalogRouter: IRouter = Router();
+export { getDestinationDetail } from "./catalog-detail.ts";
 
 catalogRouter.get("/v1/home", (_req, res) => {
   res.json({
@@ -71,12 +73,12 @@ catalogRouter.get("/v1/destinations", (_req, res) => {
 });
 
 catalogRouter.get("/v1/destinations/:id", (req, res) => {
-  const destination = destinations.find((item) => item.id === req.params.id);
-  if (!destination) {
+  const detail = getDestinationDetail(req.params.id);
+  if (!detail) {
     res.status(404).json({ error: { code: "NOT_FOUND", message: "Destination not found" } });
     return;
   }
-  res.json(destination);
+  res.json(detail);
 });
 
 catalogRouter.get("/v1/properties", (_req, res) => {

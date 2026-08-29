@@ -380,6 +380,7 @@ export const GetDestinationParams = zod.object({
 })
 
 export const GetDestinationResponse = zod.object({
+  "destination": zod.object({
   "id": zod.string(),
   "slug": zod.string(),
   "name": zod.string(),
@@ -387,6 +388,59 @@ export const GetDestinationResponse = zod.object({
   "country": zod.string(),
   "summary": zod.string(),
   "imageKey": zod.string()
+}),
+  "places": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "distanceLabel": zod.string().optional(),
+  "ratingLabel": zod.string().optional(),
+  "destinationId": zod.string(),
+  "imageKey": zod.string()
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "dateLabel": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "destinationId": zod.string(),
+  "imageKey": zod.string()
+})),
+  "foods": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "ratingLabel": zod.string().optional(),
+  "destinationId": zod.string(),
+  "imageKey": zod.string()
+})),
+  "hotels": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "destinationId": zod.string(),
+  "ratingLabel": zod.string(),
+  "priceLabel": zod.string(),
+  "imageKey": zod.string()
+})),
+  "nearby": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "distanceLabel": zod.string().optional(),
+  "ratingLabel": zod.string().optional(),
+  "destinationId": zod.string(),
+  "imageKey": zod.string()
+})),
+  "sourceNotice": zod.string()
 })
 
 
