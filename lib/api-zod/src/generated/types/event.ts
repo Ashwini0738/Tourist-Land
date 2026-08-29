@@ -5,6 +5,7 @@
  * Travel and land sourcing REST API
  * OpenAPI spec version: 0.1.0
  */
+import type { Coordinates } from './coordinates';
 
 export interface Event {
   id: string;
@@ -14,4 +15,5 @@ export interface Event {
   summary: string;
   destinationId: string;
   imageKey: string;
+  coordinates?: Coordinates;
 }

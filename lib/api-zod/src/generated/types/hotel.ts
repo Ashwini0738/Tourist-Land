@@ -5,6 +5,7 @@
  * Travel and land sourcing REST API
  * OpenAPI spec version: 0.1.0
  */
+import type { Coordinates } from './coordinates';
 
 export interface Hotel {
   id: string;
@@ -15,4 +16,5 @@ export interface Hotel {
   ratingLabel: string;
   priceLabel: string;
   imageKey: string;
+  coordinates?: Coordinates;
 }

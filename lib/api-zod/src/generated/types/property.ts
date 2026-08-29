@@ -5,6 +5,7 @@
  * Travel and land sourcing REST API
  * OpenAPI spec version: 0.1.0
  */
+import type { Coordinates } from './coordinates';
 
 export interface Property {
   id: string;
@@ -13,6 +14,7 @@ export interface Property {
   location: string;
   area: string;
   propertyType: string;
+  coordinates?: Coordinates;
   amenities?: string[];
   verified: boolean;
   description: string;

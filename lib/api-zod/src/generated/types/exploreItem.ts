@@ -5,6 +5,7 @@
  * Travel and land sourcing REST API
  * OpenAPI spec version: 0.1.0
  */
+import type { Coordinates } from './coordinates';
 import type { ExploreItemAvailability } from './exploreItemAvailability';
 import type { ExploreItemSchedule } from './exploreItemSchedule';
 import type { ExploreItemSource } from './exploreItemSource';
@@ -30,4 +31,7 @@ export interface ExploreItem {
   checkedAt?: Date;
   availability?: ExploreItemAvailability;
   schedule?: ExploreItemSchedule;
+  coordinates?: Coordinates;
+  /** @minimum 0 */
+  distanceKm?: number;
 }

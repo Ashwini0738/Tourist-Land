@@ -30,6 +30,12 @@
       "expo-font",
       "expo-web-browser",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Travel & Land to use your location to find nearby places."
+        }
+      ],
+      [
         "expo-local-authentication",
         {
           "faceIDPermission": "Allow Travel & Land to use Face ID for secure app unlock."

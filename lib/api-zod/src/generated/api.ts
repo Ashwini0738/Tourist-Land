@@ -13,6 +13,56 @@ export const HealthCheckResponse = zod.object({
 })
 
 
+export const getHomeResponseBannersItemCoordinatesLatitudeMin = -90;
+export const getHomeResponseBannersItemCoordinatesLatitudeMax = 90;
+
+export const getHomeResponseBannersItemCoordinatesLongitudeMin = -180;
+export const getHomeResponseBannersItemCoordinatesLongitudeMax = 180;
+
+export const getHomeResponseDestinationsItemCoordinatesLatitudeMin = -90;
+export const getHomeResponseDestinationsItemCoordinatesLatitudeMax = 90;
+
+export const getHomeResponseDestinationsItemCoordinatesLongitudeMin = -180;
+export const getHomeResponseDestinationsItemCoordinatesLongitudeMax = 180;
+
+export const getHomeResponseNearbyItemCoordinatesLatitudeMin = -90;
+export const getHomeResponseNearbyItemCoordinatesLatitudeMax = 90;
+
+export const getHomeResponseNearbyItemCoordinatesLongitudeMin = -180;
+export const getHomeResponseNearbyItemCoordinatesLongitudeMax = 180;
+
+export const getHomeResponseEventsItemCoordinatesLatitudeMin = -90;
+export const getHomeResponseEventsItemCoordinatesLatitudeMax = 90;
+
+export const getHomeResponseEventsItemCoordinatesLongitudeMin = -180;
+export const getHomeResponseEventsItemCoordinatesLongitudeMax = 180;
+
+export const getHomeResponseHotelsItemCoordinatesLatitudeMin = -90;
+export const getHomeResponseHotelsItemCoordinatesLatitudeMax = 90;
+
+export const getHomeResponseHotelsItemCoordinatesLongitudeMin = -180;
+export const getHomeResponseHotelsItemCoordinatesLongitudeMax = 180;
+
+export const getHomeResponsePropertiesItemCoordinatesLatitudeMin = -90;
+export const getHomeResponsePropertiesItemCoordinatesLatitudeMax = 90;
+
+export const getHomeResponsePropertiesItemCoordinatesLongitudeMin = -180;
+export const getHomeResponsePropertiesItemCoordinatesLongitudeMax = 180;
+
+export const getHomeResponseFeaturedDestinationsItemCoordinatesLatitudeMin = -90;
+export const getHomeResponseFeaturedDestinationsItemCoordinatesLatitudeMax = 90;
+
+export const getHomeResponseFeaturedDestinationsItemCoordinatesLongitudeMin = -180;
+export const getHomeResponseFeaturedDestinationsItemCoordinatesLongitudeMax = 180;
+
+export const getHomeResponseFeaturedPropertiesItemCoordinatesLatitudeMin = -90;
+export const getHomeResponseFeaturedPropertiesItemCoordinatesLatitudeMax = 90;
+
+export const getHomeResponseFeaturedPropertiesItemCoordinatesLongitudeMin = -180;
+export const getHomeResponseFeaturedPropertiesItemCoordinatesLongitudeMax = 180;
+
+
+
 export const GetHomeResponse = zod.object({
   "notice": zod.string(),
   "banners": zod.array(zod.object({
@@ -21,7 +71,13 @@ export const GetHomeResponse = zod.object({
   "subtitle": zod.string(),
   "ctaLabel": zod.string(),
   "destinationId": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getHomeResponseBannersItemCoordinatesLatitudeMin).max(getHomeResponseBannersItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getHomeResponseBannersItemCoordinatesLongitudeMin).max(getHomeResponseBannersItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 })),
   "destinations": zod.array(zod.object({
   "id": zod.string(),
@@ -30,7 +86,13 @@ export const GetHomeResponse = zod.object({
   "region": zod.string(),
   "country": zod.string(),
   "summary": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getHomeResponseDestinationsItemCoordinatesLatitudeMin).max(getHomeResponseDestinationsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getHomeResponseDestinationsItemCoordinatesLongitudeMin).max(getHomeResponseDestinationsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 })),
   "nearby": zod.array(zod.object({
   "id": zod.string(),
@@ -41,7 +103,13 @@ export const GetHomeResponse = zod.object({
   "distanceLabel": zod.string().optional(),
   "ratingLabel": zod.string().optional(),
   "destinationId": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getHomeResponseNearbyItemCoordinatesLatitudeMin).max(getHomeResponseNearbyItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getHomeResponseNearbyItemCoordinatesLongitudeMin).max(getHomeResponseNearbyItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 })),
   "events": zod.array(zod.object({
   "id": zod.string(),
@@ -50,7 +118,13 @@ export const GetHomeResponse = zod.object({
   "location": zod.string(),
   "summary": zod.string(),
   "destinationId": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getHomeResponseEventsItemCoordinatesLatitudeMin).max(getHomeResponseEventsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getHomeResponseEventsItemCoordinatesLongitudeMin).max(getHomeResponseEventsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 })),
   "hotels": zod.array(zod.object({
   "id": zod.string(),
@@ -60,7 +134,13 @@ export const GetHomeResponse = zod.object({
   "destinationId": zod.string(),
   "ratingLabel": zod.string(),
   "priceLabel": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getHomeResponseHotelsItemCoordinatesLatitudeMin).max(getHomeResponseHotelsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getHomeResponseHotelsItemCoordinatesLongitudeMin).max(getHomeResponseHotelsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 })),
   "properties": zod.array(zod.object({
   "id": zod.string(),
@@ -69,6 +149,12 @@ export const GetHomeResponse = zod.object({
   "location": zod.string(),
   "area": zod.string(),
   "propertyType": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getHomeResponsePropertiesItemCoordinatesLatitudeMin).max(getHomeResponsePropertiesItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getHomeResponsePropertiesItemCoordinatesLongitudeMin).max(getHomeResponsePropertiesItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.'),
   "amenities": zod.array(zod.string()).optional(),
   "verified": zod.boolean(),
   "description": zod.string(),
@@ -83,7 +169,13 @@ export const GetHomeResponse = zod.object({
   "region": zod.string(),
   "country": zod.string(),
   "summary": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getHomeResponseFeaturedDestinationsItemCoordinatesLatitudeMin).max(getHomeResponseFeaturedDestinationsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getHomeResponseFeaturedDestinationsItemCoordinatesLongitudeMin).max(getHomeResponseFeaturedDestinationsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 })),
   "featuredProperties": zod.array(zod.object({
   "id": zod.string(),
@@ -92,6 +184,12 @@ export const GetHomeResponse = zod.object({
   "location": zod.string(),
   "area": zod.string(),
   "propertyType": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getHomeResponseFeaturedPropertiesItemCoordinatesLatitudeMin).max(getHomeResponseFeaturedPropertiesItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getHomeResponseFeaturedPropertiesItemCoordinatesLongitudeMin).max(getHomeResponseFeaturedPropertiesItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.'),
   "amenities": zod.array(zod.string()).optional(),
   "verified": zod.boolean(),
   "description": zod.string(),
@@ -102,6 +200,14 @@ export const GetHomeResponse = zod.object({
 })
 
 
+export const listHomeBannersResponseItemsItemCoordinatesLatitudeMin = -90;
+export const listHomeBannersResponseItemsItemCoordinatesLatitudeMax = 90;
+
+export const listHomeBannersResponseItemsItemCoordinatesLongitudeMin = -180;
+export const listHomeBannersResponseItemsItemCoordinatesLongitudeMax = 180;
+
+
+
 export const ListHomeBannersResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.string(),
@@ -109,9 +215,23 @@ export const ListHomeBannersResponse = zod.object({
   "subtitle": zod.string(),
   "ctaLabel": zod.string(),
   "destinationId": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(listHomeBannersResponseItemsItemCoordinatesLatitudeMin).max(listHomeBannersResponseItemsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(listHomeBannersResponseItemsItemCoordinatesLongitudeMin).max(listHomeBannersResponseItemsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 }))
 })
+
+
+export const listHomeDestinationsResponseItemsItemCoordinatesLatitudeMin = -90;
+export const listHomeDestinationsResponseItemsItemCoordinatesLatitudeMax = 90;
+
+export const listHomeDestinationsResponseItemsItemCoordinatesLongitudeMin = -180;
+export const listHomeDestinationsResponseItemsItemCoordinatesLongitudeMax = 180;
+
 
 
 export const ListHomeDestinationsResponse = zod.object({
@@ -122,7 +242,13 @@ export const ListHomeDestinationsResponse = zod.object({
   "region": zod.string(),
   "country": zod.string(),
   "summary": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(listHomeDestinationsResponseItemsItemCoordinatesLatitudeMin).max(listHomeDestinationsResponseItemsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(listHomeDestinationsResponseItemsItemCoordinatesLongitudeMin).max(listHomeDestinationsResponseItemsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 }))
 })
 
@@ -130,6 +256,14 @@ export const ListHomeDestinationsResponse = zod.object({
 /**
  * @summary List general popular seed places, not device-location results
  */
+export const listHomeNearbyResponseItemsItemCoordinatesLatitudeMin = -90;
+export const listHomeNearbyResponseItemsItemCoordinatesLatitudeMax = 90;
+
+export const listHomeNearbyResponseItemsItemCoordinatesLongitudeMin = -180;
+export const listHomeNearbyResponseItemsItemCoordinatesLongitudeMax = 180;
+
+
+
 export const ListHomeNearbyResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.string(),
@@ -140,9 +274,23 @@ export const ListHomeNearbyResponse = zod.object({
   "distanceLabel": zod.string().optional(),
   "ratingLabel": zod.string().optional(),
   "destinationId": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(listHomeNearbyResponseItemsItemCoordinatesLatitudeMin).max(listHomeNearbyResponseItemsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(listHomeNearbyResponseItemsItemCoordinatesLongitudeMin).max(listHomeNearbyResponseItemsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 }))
 })
+
+
+export const listHomeEventsResponseItemsItemCoordinatesLatitudeMin = -90;
+export const listHomeEventsResponseItemsItemCoordinatesLatitudeMax = 90;
+
+export const listHomeEventsResponseItemsItemCoordinatesLongitudeMin = -180;
+export const listHomeEventsResponseItemsItemCoordinatesLongitudeMax = 180;
+
 
 
 export const ListHomeEventsResponse = zod.object({
@@ -153,9 +301,23 @@ export const ListHomeEventsResponse = zod.object({
   "location": zod.string(),
   "summary": zod.string(),
   "destinationId": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(listHomeEventsResponseItemsItemCoordinatesLatitudeMin).max(listHomeEventsResponseItemsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(listHomeEventsResponseItemsItemCoordinatesLongitudeMin).max(listHomeEventsResponseItemsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 }))
 })
+
+
+export const listHomeHotelsResponseItemsItemCoordinatesLatitudeMin = -90;
+export const listHomeHotelsResponseItemsItemCoordinatesLatitudeMax = 90;
+
+export const listHomeHotelsResponseItemsItemCoordinatesLongitudeMin = -180;
+export const listHomeHotelsResponseItemsItemCoordinatesLongitudeMax = 180;
+
 
 
 export const ListHomeHotelsResponse = zod.object({
@@ -167,9 +329,23 @@ export const ListHomeHotelsResponse = zod.object({
   "destinationId": zod.string(),
   "ratingLabel": zod.string(),
   "priceLabel": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(listHomeHotelsResponseItemsItemCoordinatesLatitudeMin).max(listHomeHotelsResponseItemsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(listHomeHotelsResponseItemsItemCoordinatesLongitudeMin).max(listHomeHotelsResponseItemsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 }))
 })
+
+
+export const listHomePropertiesResponseItemsItemCoordinatesLatitudeMin = -90;
+export const listHomePropertiesResponseItemsItemCoordinatesLatitudeMax = 90;
+
+export const listHomePropertiesResponseItemsItemCoordinatesLongitudeMin = -180;
+export const listHomePropertiesResponseItemsItemCoordinatesLongitudeMax = 180;
+
 
 
 export const ListHomePropertiesResponse = zod.object({
@@ -180,6 +356,12 @@ export const ListHomePropertiesResponse = zod.object({
   "location": zod.string(),
   "area": zod.string(),
   "propertyType": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(listHomePropertiesResponseItemsItemCoordinatesLatitudeMin).max(listHomePropertiesResponseItemsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(listHomePropertiesResponseItemsItemCoordinatesLongitudeMin).max(listHomePropertiesResponseItemsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.'),
   "amenities": zod.array(zod.string()).optional(),
   "verified": zod.boolean(),
   "description": zod.string(),
@@ -209,6 +391,15 @@ export const searchExploreQueryMinAreaMin = 0;
 
 export const searchExploreQueryMaxAreaMin = 0;
 
+export const searchExploreQueryLatitudeMin = -90;
+export const searchExploreQueryLatitudeMax = 90;
+
+export const searchExploreQueryLongitudeMin = -180;
+export const searchExploreQueryLongitudeMax = 180;
+
+export const searchExploreQueryRadiusKmMin = 0;
+export const searchExploreQueryRadiusKmMax = 500;
+
 
 
 export const SearchExploreQueryParams = zod.object({
@@ -226,8 +417,21 @@ export const SearchExploreQueryParams = zod.object({
   "eventType": zod.coerce.string().optional(),
   "amenity": zod.coerce.string().optional(),
   "minArea": zod.coerce.number().min(searchExploreQueryMinAreaMin).optional(),
-  "maxArea": zod.coerce.number().min(searchExploreQueryMaxAreaMin).optional()
+  "maxArea": zod.coerce.number().min(searchExploreQueryMaxAreaMin).optional(),
+  "latitude": zod.coerce.number().min(searchExploreQueryLatitudeMin).max(searchExploreQueryLatitudeMax).optional().describe('Optional user latitude used for honest distance sorting and radius filtering.'),
+  "longitude": zod.coerce.number().min(searchExploreQueryLongitudeMin).max(searchExploreQueryLongitudeMax).optional().describe('Optional user longitude used for honest distance sorting and radius filtering.'),
+  "radiusKm": zod.coerce.number().min(searchExploreQueryRadiusKmMin).max(searchExploreQueryRadiusKmMax).optional().describe('Optional radius in kilometres. Only records with catalog coordinates are eligible.')
 })
+
+export const searchExploreResponseItemsItemCoordinatesLatitudeMin = -90;
+export const searchExploreResponseItemsItemCoordinatesLatitudeMax = 90;
+
+export const searchExploreResponseItemsItemCoordinatesLongitudeMin = -180;
+export const searchExploreResponseItemsItemCoordinatesLongitudeMax = 180;
+
+export const searchExploreResponseItemsItemDistanceKmMin = 0;
+
+
 
 export const SearchExploreResponse = zod.object({
   "notice": zod.string(),
@@ -269,7 +473,14 @@ export const SearchExploreResponse = zod.object({
   "dateLabel": zod.string().optional(),
   "venue": zod.string().optional(),
   "cancellationReason": zod.string().optional()
-}).optional()
+}).optional(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(searchExploreResponseItemsItemCoordinatesLatitudeMin).max(searchExploreResponseItemsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(searchExploreResponseItemsItemCoordinatesLongitudeMin).max(searchExploreResponseItemsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.'),
+  "distanceKm": zod.number().min(searchExploreResponseItemsItemDistanceKmMin).optional()
 })),
   "suggestions": zod.array(zod.object({
   "id": zod.string(),
@@ -362,6 +573,14 @@ export const RemoveFavoriteParams = zod.object({
 export const RemoveFavoriteResponse = zod.void()
 
 
+export const listDestinationsResponseItemsItemCoordinatesLatitudeMin = -90;
+export const listDestinationsResponseItemsItemCoordinatesLatitudeMax = 90;
+
+export const listDestinationsResponseItemsItemCoordinatesLongitudeMin = -180;
+export const listDestinationsResponseItemsItemCoordinatesLongitudeMax = 180;
+
+
+
 export const ListDestinationsResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.string(),
@@ -370,7 +589,13 @@ export const ListDestinationsResponse = zod.object({
   "region": zod.string(),
   "country": zod.string(),
   "summary": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(listDestinationsResponseItemsItemCoordinatesLatitudeMin).max(listDestinationsResponseItemsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(listDestinationsResponseItemsItemCoordinatesLongitudeMin).max(listDestinationsResponseItemsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 }))
 })
 
@@ -378,6 +603,44 @@ export const ListDestinationsResponse = zod.object({
 export const GetDestinationParams = zod.object({
   "id": zod.coerce.string()
 })
+
+export const getDestinationResponseDestinationCoordinatesLatitudeMin = -90;
+export const getDestinationResponseDestinationCoordinatesLatitudeMax = 90;
+
+export const getDestinationResponseDestinationCoordinatesLongitudeMin = -180;
+export const getDestinationResponseDestinationCoordinatesLongitudeMax = 180;
+
+export const getDestinationResponsePlacesItemCoordinatesLatitudeMin = -90;
+export const getDestinationResponsePlacesItemCoordinatesLatitudeMax = 90;
+
+export const getDestinationResponsePlacesItemCoordinatesLongitudeMin = -180;
+export const getDestinationResponsePlacesItemCoordinatesLongitudeMax = 180;
+
+export const getDestinationResponseEventsItemCoordinatesLatitudeMin = -90;
+export const getDestinationResponseEventsItemCoordinatesLatitudeMax = 90;
+
+export const getDestinationResponseEventsItemCoordinatesLongitudeMin = -180;
+export const getDestinationResponseEventsItemCoordinatesLongitudeMax = 180;
+
+export const getDestinationResponseFoodsItemCoordinatesLatitudeMin = -90;
+export const getDestinationResponseFoodsItemCoordinatesLatitudeMax = 90;
+
+export const getDestinationResponseFoodsItemCoordinatesLongitudeMin = -180;
+export const getDestinationResponseFoodsItemCoordinatesLongitudeMax = 180;
+
+export const getDestinationResponseHotelsItemCoordinatesLatitudeMin = -90;
+export const getDestinationResponseHotelsItemCoordinatesLatitudeMax = 90;
+
+export const getDestinationResponseHotelsItemCoordinatesLongitudeMin = -180;
+export const getDestinationResponseHotelsItemCoordinatesLongitudeMax = 180;
+
+export const getDestinationResponseNearbyItemCoordinatesLatitudeMin = -90;
+export const getDestinationResponseNearbyItemCoordinatesLatitudeMax = 90;
+
+export const getDestinationResponseNearbyItemCoordinatesLongitudeMin = -180;
+export const getDestinationResponseNearbyItemCoordinatesLongitudeMax = 180;
+
+
 
 export const GetDestinationResponse = zod.object({
   "destination": zod.object({
@@ -387,7 +650,13 @@ export const GetDestinationResponse = zod.object({
   "region": zod.string(),
   "country": zod.string(),
   "summary": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getDestinationResponseDestinationCoordinatesLatitudeMin).max(getDestinationResponseDestinationCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getDestinationResponseDestinationCoordinatesLongitudeMin).max(getDestinationResponseDestinationCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 }),
   "places": zod.array(zod.object({
   "id": zod.string(),
@@ -398,7 +667,13 @@ export const GetDestinationResponse = zod.object({
   "distanceLabel": zod.string().optional(),
   "ratingLabel": zod.string().optional(),
   "destinationId": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getDestinationResponsePlacesItemCoordinatesLatitudeMin).max(getDestinationResponsePlacesItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getDestinationResponsePlacesItemCoordinatesLongitudeMin).max(getDestinationResponsePlacesItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 })),
   "events": zod.array(zod.object({
   "id": zod.string(),
@@ -407,7 +682,13 @@ export const GetDestinationResponse = zod.object({
   "location": zod.string(),
   "summary": zod.string(),
   "destinationId": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getDestinationResponseEventsItemCoordinatesLatitudeMin).max(getDestinationResponseEventsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getDestinationResponseEventsItemCoordinatesLongitudeMin).max(getDestinationResponseEventsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 })),
   "foods": zod.array(zod.object({
   "id": zod.string(),
@@ -417,7 +698,13 @@ export const GetDestinationResponse = zod.object({
   "summary": zod.string(),
   "ratingLabel": zod.string().optional(),
   "destinationId": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getDestinationResponseFoodsItemCoordinatesLatitudeMin).max(getDestinationResponseFoodsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getDestinationResponseFoodsItemCoordinatesLongitudeMin).max(getDestinationResponseFoodsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 })),
   "hotels": zod.array(zod.object({
   "id": zod.string(),
@@ -427,7 +714,13 @@ export const GetDestinationResponse = zod.object({
   "destinationId": zod.string(),
   "ratingLabel": zod.string(),
   "priceLabel": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getDestinationResponseHotelsItemCoordinatesLatitudeMin).max(getDestinationResponseHotelsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getDestinationResponseHotelsItemCoordinatesLongitudeMin).max(getDestinationResponseHotelsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 })),
   "nearby": zod.array(zod.object({
   "id": zod.string(),
@@ -438,10 +731,24 @@ export const GetDestinationResponse = zod.object({
   "distanceLabel": zod.string().optional(),
   "ratingLabel": zod.string().optional(),
   "destinationId": zod.string(),
-  "imageKey": zod.string()
+  "imageKey": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getDestinationResponseNearbyItemCoordinatesLatitudeMin).max(getDestinationResponseNearbyItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getDestinationResponseNearbyItemCoordinatesLongitudeMin).max(getDestinationResponseNearbyItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 })),
   "sourceNotice": zod.string()
 })
+
+
+export const listPropertiesResponseItemsItemCoordinatesLatitudeMin = -90;
+export const listPropertiesResponseItemsItemCoordinatesLatitudeMax = 90;
+
+export const listPropertiesResponseItemsItemCoordinatesLongitudeMin = -180;
+export const listPropertiesResponseItemsItemCoordinatesLongitudeMax = 180;
+
 
 
 export const ListPropertiesResponse = zod.object({
@@ -452,6 +759,12 @@ export const ListPropertiesResponse = zod.object({
   "location": zod.string(),
   "area": zod.string(),
   "propertyType": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(listPropertiesResponseItemsItemCoordinatesLatitudeMin).max(listPropertiesResponseItemsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(listPropertiesResponseItemsItemCoordinatesLongitudeMin).max(listPropertiesResponseItemsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.'),
   "amenities": zod.array(zod.string()).optional(),
   "verified": zod.boolean(),
   "description": zod.string(),
@@ -466,6 +779,14 @@ export const GetPropertyParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const getPropertyResponseCoordinatesLatitudeMin = -90;
+export const getPropertyResponseCoordinatesLatitudeMax = 90;
+
+export const getPropertyResponseCoordinatesLongitudeMin = -180;
+export const getPropertyResponseCoordinatesLongitudeMax = 180;
+
+
+
 export const GetPropertyResponse = zod.object({
   "id": zod.string(),
   "slug": zod.string(),
@@ -473,6 +794,12 @@ export const GetPropertyResponse = zod.object({
   "location": zod.string(),
   "area": zod.string(),
   "propertyType": zod.string(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getPropertyResponseCoordinatesLatitudeMin).max(getPropertyResponseCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getPropertyResponseCoordinatesLongitudeMin).max(getPropertyResponseCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.'),
   "amenities": zod.array(zod.string()).optional(),
   "verified": zod.boolean(),
   "description": zod.string(),

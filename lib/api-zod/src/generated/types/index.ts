@@ -17,6 +17,8 @@ export * from './authSessionStatusSessionAuthority';
 export * from './banner';
 export * from './bannerList';
 export * from './conflictResponse';
+export * from './coordinates';
+export * from './coordinatesPrecision';
 export * from './currentUser';
 export * from './destination';
 export * from './destinationDetail';

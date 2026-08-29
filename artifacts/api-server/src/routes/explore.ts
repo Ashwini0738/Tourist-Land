@@ -38,7 +38,13 @@ type ExploreItem = {
   propertyType?: string;
   amenities?: string[];
   popularity: number;
-  distanceKm: number;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+    precision: "place" | "area" | "region";
+    source: string;
+  };
+  distanceKm?: number;
   rating: number;
   priceValue?: number;
   areaValue?: number;
@@ -114,7 +120,7 @@ const itemIndex: ExploreItem[] = [
     category: "Destination",
     imageKey: item.imageKey,
     popularity: 100 - index,
-    distanceKm: index + 1,
+    coordinates: item.coordinates,
     rating: 4.8 - index * 0.1,
   })),
   ...nearby.map((item, index): BaseExploreItem => ({
@@ -127,7 +133,7 @@ const itemIndex: ExploreItem[] = [
     imageKey: item.imageKey,
     destinationId: item.destinationId,
     popularity: 78 - index,
-    distanceKm: index + 2,
+    coordinates: item.coordinates,
     rating: 4.6 + index * 0.2,
     ratingLabel: `Sample visitor note · ${(4.6 + index * 0.2).toFixed(1)}`,
   })),
@@ -141,7 +147,7 @@ const itemIndex: ExploreItem[] = [
     imageKey: item.imageKey,
     destinationId: item.destinationId,
     popularity: 74 - index,
-    distanceKm: Number(item.distanceLabel?.match(/\d+/)?.[0] ?? index + 3),
+    coordinates: item.coordinates,
     rating: Number(item.ratingLabel?.match(/4\.\d/)?.[0] ?? 4.6),
     ratingLabel: item.ratingLabel,
   })),
@@ -155,7 +161,7 @@ const itemIndex: ExploreItem[] = [
     imageKey: item.imageKey,
     destinationId: item.destinationId,
     popularity: 82 - index,
-    distanceKm: Number(item.distanceLabel?.match(/\d+/)?.[0] ?? index + 2),
+    coordinates: item.coordinates,
     rating: Number(item.ratingLabel?.match(/4\.\d/)?.[0] ?? 4.6),
     ratingLabel: item.ratingLabel,
   })),
@@ -170,7 +176,7 @@ const itemIndex: ExploreItem[] = [
     destinationId: item.destinationId,
     dateLabel: item.dateLabel,
     popularity: 70 - index,
-    distanceKm: index + 4,
+    coordinates: item.coordinates,
     rating: 4.5,
   })),
   ...foods.map((item, index): BaseExploreItem => ({
@@ -183,7 +189,7 @@ const itemIndex: ExploreItem[] = [
     imageKey: item.imageKey,
     destinationId: item.destinationId,
     popularity: 76 - index,
-    distanceKm: index + 3,
+    coordinates: item.coordinates,
     rating: Number(item.ratingLabel?.match(/4\.\d/)?.[0] ?? 4.6),
     ratingLabel: item.ratingLabel,
   })),
@@ -197,7 +203,7 @@ const itemIndex: ExploreItem[] = [
     imageKey: item.imageKey,
     destinationId: item.destinationId,
     popularity: 88 - index,
-    distanceKm: index + 2,
+    coordinates: item.coordinates,
     rating: Number(item.ratingLabel.match(/4\.\d/)?.[0] ?? 4.5),
     ratingLabel: item.ratingLabel,
     priceLabel: item.priceLabel,
@@ -216,7 +222,7 @@ const itemIndex: ExploreItem[] = [
     priceLabel: item.priceLabel,
     area: item.area,
     popularity: 66 - index,
-    distanceKm: index + 5,
+    coordinates: item.coordinates,
     rating: item.verified ? 4.7 : 4.3,
     priceValue: index === 0 ? 18500000 : 9200000,
     areaValue: index === 0 ? 2.4 : 1.1,
@@ -266,13 +272,34 @@ function scoreRelevance(item: ExploreItem, query: string): number {
 
 function sortItems(items: ExploreItem[], sort: ExploreSort, query: string): ExploreItem[] {
   return [...items].sort((a, b) => {
-    if (sort === "distance") return a.distanceKm - b.distanceKm;
+    if (sort === "distance") return (a.distanceKm ?? Number.MAX_SAFE_INTEGER) - (b.distanceKm ?? Number.MAX_SAFE_INTEGER);
     if (sort === "rating") return b.rating - a.rating;
     if (sort === "price_asc") return (a.priceValue ?? Number.MAX_SAFE_INTEGER) - (b.priceValue ?? Number.MAX_SAFE_INTEGER);
     if (sort === "price_desc") return (b.priceValue ?? 0) - (a.priceValue ?? 0);
     if (sort === "popularity") return b.popularity - a.popularity;
     return scoreRelevance(b, query) - scoreRelevance(a, query);
   });
+}
+
+function parseCoordinate(value: unknown, min: number, max: number): number | undefined {
+  const text = asText(value);
+  if (!text) return undefined;
+  const parsed = Number(text);
+  return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : undefined;
+}
+
+function calculateDistanceKm(
+  origin: { latitude: number; longitude: number },
+  point: { latitude: number; longitude: number },
+) {
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const latitudeDelta = toRadians(point.latitude - origin.latitude);
+  const longitudeDelta = toRadians(point.longitude - origin.longitude);
+  const latitude = toRadians(origin.latitude);
+  const pointLatitude = toRadians(point.latitude);
+  const a = Math.sin(latitudeDelta / 2) ** 2
+    + Math.cos(latitude) * Math.cos(pointLatitude) * Math.sin(longitudeDelta / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function getResponseNotice(items: ExploreItem[]) {
@@ -427,6 +454,14 @@ function searchExploreItemsFromIndex(rawQuery: Record<string, unknown>, sourceIn
   const maxPrice = asNumber(rawQuery.maxPrice, Number.MAX_SAFE_INTEGER);
   const minArea = asNumber(rawQuery.minArea, 0);
   const maxArea = asNumber(rawQuery.maxArea, Number.MAX_SAFE_INTEGER);
+  const latitude = parseCoordinate(rawQuery.latitude, -90, 90);
+  const longitude = parseCoordinate(rawQuery.longitude, -180, 180);
+  const radiusKm = asNumber(rawQuery.radiusKm, Number.MAX_SAFE_INTEGER);
+  const origin = latitude !== undefined && longitude !== undefined ? { latitude, longitude } : undefined;
+  const coordinateAwareIndex = sourceIndex.map((item) => {
+    const distanceKm = origin && item.coordinates ? calculateDistanceKm(origin, item.coordinates) : undefined;
+    return distanceKm === undefined ? item : { ...item, distanceKm };
+  });
   const requestedLimit = asNumber(rawQuery.limit, defaultLimit);
   const requestedPage = asNumber(rawQuery.page, 1);
   const limit = Math.min(MAX_LIMIT, Math.max(1, Math.floor(requestedLimit)));
@@ -434,7 +469,7 @@ function searchExploreItemsFromIndex(rawQuery: Record<string, unknown>, sourceIn
   const sort = parseSort(rawQuery.sort);
 
   const filtered = sortItems(
-    sourceIndex.filter((item) => {
+    coordinateAwareIndex.filter((item) => {
       if (category !== "all" && item.type !== category) return false;
       if (id && item.id !== id) return false;
       if (location && !item.location.toLowerCase().includes(location)) return false;
@@ -445,6 +480,7 @@ function searchExploreItemsFromIndex(rawQuery: Record<string, unknown>, sourceIn
       if (amenity && !item.amenities?.some((value) => value.toLowerCase() === amenity)) return false;
       if (item.priceValue !== undefined && (item.priceValue < minPrice || item.priceValue > maxPrice)) return false;
       if (item.type === "property" && item.areaValue !== undefined && (item.areaValue < minArea || item.areaValue > maxArea)) return false;
+      if (radiusKm !== Number.MAX_SAFE_INTEGER && (item.distanceKm === undefined || item.distanceKm > radiusKm)) return false;
       return true;
     }),
     sort,
@@ -452,7 +488,9 @@ function searchExploreItemsFromIndex(rawQuery: Record<string, unknown>, sourceIn
   );
 
   const offset = (page - 1) * limit;
-  const items = filtered.slice(offset, offset + limit).map(({ popularity, distanceKm, rating, priceValue, areaValue, ...item }) => item);
+  const items = filtered.slice(offset, offset + limit).map(({ popularity, distanceKm, rating, priceValue, areaValue, ...item }) => (
+    distanceKm === undefined ? item : { ...item, distanceKm: Number(distanceKm.toFixed(1)) }
+  ));
   const suggestionSource = query ? filtered.slice(0, 5) : [];
   const suggestions = suggestionSource.map((item) => ({
     id: `${item.type}:${item.id}`,

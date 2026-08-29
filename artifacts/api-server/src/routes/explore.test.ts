@@ -56,6 +56,32 @@ test("Explore keeps seeded results marked as development content without provide
   assert.ok(result.items.every((item) => item.availability === undefined));
 });
 
+test("Explore only returns honest distances when an origin is supplied", () => {
+  const withoutOrigin = searchExploreItems({ category: "hotel", limit: 50 });
+  const withOrigin = searchExploreItems({
+    category: "all",
+    latitude: 12.422,
+    longitude: 75.739,
+    sort: "distance",
+    limit: 50,
+  });
+  const nearbyOnly = searchExploreItems({
+    category: "all",
+    latitude: 12.422,
+    longitude: 75.739,
+    radiusKm: 2,
+    sort: "distance",
+    limit: 50,
+  });
+
+  assert.ok(withoutOrigin.items.every((item) => item.distanceKm === undefined));
+  const temple = withOrigin.items.find((item) => item.id === "coorg-omkareshwara-temple");
+  assert.equal(temple?.coordinates?.precision, "place");
+  assert.ok((temple?.distanceKm ?? 99) < 1);
+  assert.ok(nearbyOnly.items.length > 0);
+  assert.ok(nearbyOnly.items.every((item) => (item.distanceKm ?? 99) <= 2));
+});
+
 test("Explore merges live hotel availability and cancelled event schedules", async () => {
   const fetcher = async (input: string | URL) => {
     const url = String(input);

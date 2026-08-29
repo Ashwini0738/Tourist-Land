@@ -156,6 +156,18 @@ paths:
         - name: maxArea
           in: query
           schema: { type: number, minimum: 0 }
+        - name: latitude
+          in: query
+          description: Optional user latitude used for honest distance sorting and radius filtering.
+          schema: { type: number, minimum: -90, maximum: 90 }
+        - name: longitude
+          in: query
+          description: Optional user longitude used for honest distance sorting and radius filtering.
+          schema: { type: number, minimum: -180, maximum: 180 }
+        - name: radiusKm
+          in: query
+          description: Optional radius in kilometres. Only records with catalog coordinates are eligible.
+          schema: { type: number, minimum: 0, maximum: 500 }
       responses:
         "200":
           description: Paginated development discovery results and suggestions
@@ -808,7 +820,19 @@ components:
         country: { type: string }
         summary: { type: string }
         imageKey: { type: string }
+        coordinates: { $ref: "#/components/schemas/Coordinates" }
       required: [id, slug, name, region, country, summary, imageKey]
+    Coordinates:
+      type: object
+      description: Public catalog coordinates with an explicit precision and source. Coordinates are optional.
+      properties:
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        precision:
+          type: string
+          enum: [place, area, region]
+        source: { type: string }
+      required: [latitude, longitude, precision, source]
     DestinationDetail:
       type: object
       properties:
@@ -840,6 +864,7 @@ components:
         ctaLabel: { type: string }
         destinationId: { type: string }
         imageKey: { type: string }
+        coordinates: { $ref: "#/components/schemas/Coordinates" }
       required: [id, title, subtitle, ctaLabel, destinationId, imageKey]
     Place:
       type: object
@@ -853,6 +878,7 @@ components:
         ratingLabel: { type: string }
         destinationId: { type: string }
         imageKey: { type: string }
+        coordinates: { $ref: "#/components/schemas/Coordinates" }
       required: [id, name, category, location, summary, destinationId, imageKey]
     Event:
       type: object
@@ -864,6 +890,7 @@ components:
         summary: { type: string }
         destinationId: { type: string }
         imageKey: { type: string }
+        coordinates: { $ref: "#/components/schemas/Coordinates" }
       required: [id, title, dateLabel, location, summary, destinationId, imageKey]
     Hotel:
       type: object
@@ -876,6 +903,7 @@ components:
         ratingLabel: { type: string }
         priceLabel: { type: string }
         imageKey: { type: string }
+        coordinates: { $ref: "#/components/schemas/Coordinates" }
       required: [id, name, location, summary, destinationId, ratingLabel, priceLabel, imageKey]
     Food:
       type: object
@@ -888,6 +916,7 @@ components:
         ratingLabel: { type: string }
         destinationId: { type: string }
         imageKey: { type: string }
+        coordinates: { $ref: "#/components/schemas/Coordinates" }
       required: [id, name, category, location, summary, destinationId, imageKey]
     Property:
       type: object
@@ -898,6 +927,7 @@ components:
         location: { type: string }
         area: { type: string }
         propertyType: { type: string }
+        coordinates: { $ref: "#/components/schemas/Coordinates" }
         amenities:
           type: array
           items: { type: string }
@@ -1027,6 +1057,8 @@ components:
             venue: { type: string }
             cancellationReason: { type: string }
           required: [status]
+        coordinates: { $ref: "#/components/schemas/Coordinates" }
+        distanceKm: { type: number, minimum: 0 }
       required: [id, type, title, location, summary, category, imageKey, source, sourceLabel, sourceNotice]
     ExploreSuggestion:
       type: object

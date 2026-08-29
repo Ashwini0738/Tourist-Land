@@ -32,6 +32,33 @@ export interface FavoriteList {
   items: Favorite[];
 }
 
+export type CoordinatesPrecision = typeof CoordinatesPrecision[keyof typeof CoordinatesPrecision];
+
+
+export const CoordinatesPrecision = {
+  place: 'place',
+  area: 'area',
+  region: 'region',
+} as const;
+
+/**
+ * Public catalog coordinates with an explicit precision and source. Coordinates are optional.
+ */
+export interface Coordinates {
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+  precision: CoordinatesPrecision;
+  source: string;
+}
+
 export interface Destination {
   id: string;
   slug: string;
@@ -40,6 +67,7 @@ export interface Destination {
   country: string;
   summary: string;
   imageKey: string;
+  coordinates?: Coordinates;
 }
 
 export interface Place {
@@ -52,6 +80,7 @@ export interface Place {
   ratingLabel?: string;
   destinationId: string;
   imageKey: string;
+  coordinates?: Coordinates;
 }
 
 export interface Event {
@@ -62,6 +91,7 @@ export interface Event {
   summary: string;
   destinationId: string;
   imageKey: string;
+  coordinates?: Coordinates;
 }
 
 export interface Food {
@@ -73,6 +103,7 @@ export interface Food {
   ratingLabel?: string;
   destinationId: string;
   imageKey: string;
+  coordinates?: Coordinates;
 }
 
 export interface Hotel {
@@ -84,6 +115,7 @@ export interface Hotel {
   ratingLabel: string;
   priceLabel: string;
   imageKey: string;
+  coordinates?: Coordinates;
 }
 
 export interface DestinationDetail {
@@ -103,6 +135,7 @@ export interface Banner {
   ctaLabel: string;
   destinationId: string;
   imageKey: string;
+  coordinates?: Coordinates;
 }
 
 export interface Property {
@@ -112,6 +145,7 @@ export interface Property {
   location: string;
   area: string;
   propertyType: string;
+  coordinates?: Coordinates;
   amenities?: string[];
   verified: boolean;
   description: string;
@@ -235,6 +269,9 @@ export interface ExploreItem {
   checkedAt?: string;
   availability?: ExploreItemAvailability;
   schedule?: ExploreItemSchedule;
+  coordinates?: Coordinates;
+  /** @minimum 0 */
+  distanceKm?: number;
 }
 
 export type ExploreSuggestionType = typeof ExploreSuggestionType[keyof typeof ExploreSuggestionType];
@@ -792,6 +829,24 @@ minArea?: number;
  * @minimum 0
  */
 maxArea?: number;
+/**
+ * Optional user latitude used for honest distance sorting and radius filtering.
+ * @minimum -90
+ * @maximum 90
+ */
+latitude?: number;
+/**
+ * Optional user longitude used for honest distance sorting and radius filtering.
+ * @minimum -180
+ * @maximum 180
+ */
+longitude?: number;
+/**
+ * Optional radius in kilometres. Only records with catalog coordinates are eligible.
+ * @minimum 0
+ * @maximum 500
+ */
+radiusKm?: number;
 };
 
 export type SearchExploreSort = typeof SearchExploreSort[keyof typeof SearchExploreSort];

@@ -7,6 +7,7 @@ export const destinations = [
     country: "India",
     summary: "Where the forest meets the sea.",
     imageKey: "coastline",
+    coordinates: { latitude: 16.99, longitude: 73.31, precision: "region", source: "catalog" },
   },
   {
     id: "coorg",
@@ -16,6 +17,7 @@ export const destinations = [
     country: "India",
     summary: "Misty mornings and open roads.",
     imageKey: "highlands",
+    coordinates: { latitude: 12.42, longitude: 75.74, precision: "region", source: "catalog" },
   },
 ];
 
@@ -32,6 +34,7 @@ export const properties = [
     discoveryLabel: "Development property preview",
     priceLabel: "Sample asking price · ₹1.85 Cr",
     imageKey: "highlands",
+    coordinates: { latitude: 12.94, longitude: 75.78, precision: "area", source: "catalog" },
   },
   {
     id: "sea-wind-grove",
@@ -45,6 +48,7 @@ export const properties = [
     discoveryLabel: "Development property preview",
     priceLabel: "Sample asking price · ₹92 L",
     imageKey: "coastline",
+    coordinates: { latitude: 17.48, longitude: 73.19, precision: "area", source: "catalog" },
   },
 ];
 
@@ -56,6 +60,7 @@ export const banners = [
     ctaLabel: "Explore the coast",
     destinationId: "konkan",
     imageKey: "coastline",
+    coordinates: { latitude: 16.99, longitude: 73.31, precision: "region", source: "catalog" },
   },
   {
     id: "coorg-discovery",
@@ -64,6 +69,7 @@ export const banners = [
     ctaLabel: "Explore the highlands",
     destinationId: "coorg",
     imageKey: "highlands",
+    coordinates: { latitude: 12.42, longitude: 75.74, precision: "region", source: "catalog" },
   },
 ];
 
@@ -76,6 +82,7 @@ export const nearby = [
     summary: "A popular seed suggestion for a relaxed shoreline walk.",
     destinationId: "konkan",
     imageKey: "coastline",
+    coordinates: { latitude: 18.64, longitude: 72.87, precision: "area", source: "catalog" },
   },
   {
     id: "coorg-coffee-trail",
@@ -85,6 +92,7 @@ export const nearby = [
     summary: "A popular seed suggestion for an unhurried highland outing.",
     destinationId: "coorg",
     imageKey: "highlands",
+    coordinates: { latitude: 12.42, longitude: 75.74, precision: "area", source: "catalog" },
   },
 ];
 
@@ -97,6 +105,7 @@ export const events = [
     summary: "A development event preview celebrating coastal stories and local culture.",
     destinationId: "konkan",
     imageKey: "coastline",
+    coordinates: { latitude: 16.99, longitude: 73.31, precision: "region", source: "catalog" },
   },
   {
     id: "coorg-harvest-notes",
@@ -106,6 +115,7 @@ export const events = [
     summary: "A development event preview inspired by coffee harvest traditions.",
     destinationId: "coorg",
     imageKey: "highlands",
+    coordinates: { latitude: 12.42, longitude: 75.74, precision: "region", source: "catalog" },
   },
 ];
 
@@ -119,6 +129,7 @@ export const hotels = [
     ratingLabel: "Sample guest note · 4.9",
     priceLabel: "Sample nightly rate · ₹7,800",
     imageKey: "coastline",
+    coordinates: { latitude: 18.64, longitude: 72.87, precision: "area", source: "catalog" },
   },
   {
     id: "02",
@@ -129,6 +140,7 @@ export const hotels = [
     ratingLabel: "Sample guest note · 4.8",
     priceLabel: "Sample nightly rate · ₹6,400",
     imageKey: "highlands",
+    coordinates: { latitude: 12.42, longitude: 75.74, precision: "area", source: "catalog" },
   },
 ];
 
@@ -145,6 +157,7 @@ export const temples = [
     imageKey: "highlands",
     ratingLabel: "Sample visitor note · 4.7",
     distanceLabel: "Nearby · 3 km",
+    coordinates: { latitude: 12.422, longitude: 75.739, precision: "place", source: "catalog" },
   },
   {
     id: "konkan-ganpatipule-temple",
@@ -156,6 +169,7 @@ export const temples = [
     imageKey: "coastline",
     ratingLabel: "Sample visitor note · 4.8",
     distanceLabel: "Nearby · 8 km",
+    coordinates: { latitude: 17.144, longitude: 73.268, precision: "place", source: "catalog" },
   },
 ];
 
@@ -170,6 +184,7 @@ export const attractions = [
     imageKey: "coastline",
     ratingLabel: "Sample visitor note · 4.6",
     distanceLabel: "Nearby · 2 km",
+    coordinates: { latitude: 16.99, longitude: 73.31, precision: "region", source: "catalog" },
   },
   {
     id: "coorg-coffee-trail",
@@ -181,6 +196,7 @@ export const attractions = [
     imageKey: "highlands",
     ratingLabel: "Sample visitor note · 4.8",
     distanceLabel: "Nearby · 5 km",
+    coordinates: { latitude: 12.42, longitude: 75.74, precision: "region", source: "catalog" },
   },
 ];
 
@@ -193,6 +209,7 @@ export const foods = [
     summary: "A development food preview for local coastal flavours and seasonal plates.",
     destinationId: "konkan",
     imageKey: "coastline",
+    coordinates: { latitude: 16.99, longitude: 73.31, precision: "region", source: "catalog" },
     ratingLabel: "Sample guest note · 4.7",
   },
   {
@@ -203,6 +220,7 @@ export const foods = [
     summary: "A development food preview inspired by pepper, coffee, and slow lunches.",
     destinationId: "coorg",
     imageKey: "highlands",
+    coordinates: { latitude: 12.42, longitude: 75.74, precision: "region", source: "catalog" },
     ratingLabel: "Sample guest note · 4.8",
   },
 ];

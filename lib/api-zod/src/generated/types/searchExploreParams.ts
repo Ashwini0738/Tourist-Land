@@ -46,4 +46,22 @@ minArea?: number;
  * @minimum 0
  */
 maxArea?: number;
+/**
+ * Optional user latitude used for honest distance sorting and radius filtering.
+ * @minimum -90
+ * @maximum 90
+ */
+latitude?: number;
+/**
+ * Optional user longitude used for honest distance sorting and radius filtering.
+ * @minimum -180
+ * @maximum 180
+ */
+longitude?: number;
+/**
+ * Optional radius in kilometres. Only records with catalog coordinates are eligible.
+ * @minimum 0
+ * @maximum 500
+ */
+radiusKm?: number;
 };
