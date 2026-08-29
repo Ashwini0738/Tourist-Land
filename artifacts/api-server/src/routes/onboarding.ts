@@ -53,7 +53,8 @@ onboardingRouter.post("/v1/vendor/applications", async (req, res) => {
 onboardingRouter.get("/v1/vendor/applications/status", async (req, res) => {
   const id = typeof req.query.id === "string" ? req.query.id : "";
   const email = typeof req.query.email === "string" ? normalizeEmail(req.query.email) : "";
-  if (!id || !email) {
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidPattern.test(id) || !email) {
     error(res, 400, "INVALID_STATUS_LOOKUP", "Provide the application reference and the email used to apply.");
     return;
   }
