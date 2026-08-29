@@ -1,0 +1,616 @@
+# DEVELOPMENT TASK — EXPLORE MODULE
+
+Continue development of the existing **Travel & Land** application.
+
+## IMPORTANT — COMPLETED MODULES
+
+The following are completed and should be treated as stable:
+
+* User authentication
+* Vendor authentication
+* Admin authentication
+* Clerk authentication
+* Email/password
+* Email OTP/MFA when required
+* Fingerprint / Face ID / native device authentication
+* Session restoration
+* Role-based authorization
+* User role
+* Vendor role
+* Admin role
+* Role-based routing
+* User dashboard/Home
+* Vendor dashboard foundation
+* Admin dashboard foundation
+* Main navigation
+* Existing API architecture
+* OpenAPI specification
+* Generated TypeScript API client
+* Generated React Query hooks
+* Generated Zod schemas
+
+**DO NOT rebuild or modify the authentication system.**
+
+**DO NOT modify the User/Vendor/Admin role architecture unless Explore requires a minimal shared integration.**
+
+---
+
+# OBJECTIVE
+
+Build the **Explore module for USER/TRAVELLER**.
+
+Explore is the main discovery area of Travel & Land.
+
+Users should be able to discover:
+
+* Destinations
+* Temples
+* Tourist places
+* Attractions
+* Events
+* Food
+* Hotels
+* Land / Properties
+
+The module must work on:
+
+* Android
+* iOS
+* Expo Go
+* Mobile web
+
+---
+
+# 1. EXPLORE SCREEN
+
+Create a polished mobile-first Explore screen using the existing Travel & Land design system.
+
+Include:
+
+### Search bar
+
+Placeholder:
+
+"Search destinations, places, hotels..."
+
+### Categories
+
+Display:
+
+* Destinations
+* Temples
+* Attractions
+* Events
+* Food
+* Hotels
+* Land
+
+### Discovery sections
+
+Include appropriate sections such as:
+
+* Popular destinations
+* Popular places
+* Upcoming events
+* Recommended hotels
+* Land opportunities
+
+Use API/catalog data rather than creating unrelated hardcoded arrays.
+
+---
+
+# 2. SEARCH
+
+Implement API-backed search.
+
+Search should support:
+
+* Destination
+* Temple
+* Tourist place
+* Attraction
+* Event
+* Food
+* Hotel
+* Property
+* Location
+
+Use or create:
+
+GET /api/v1/explore/search
+
+Suggested parameters:
+
+* q
+* category
+* location
+* page
+* limit
+* sort
+
+Do not implement search using only frontend filtering of hardcoded data.
+
+---
+
+# 3. SEARCH SUGGESTIONS
+
+When the user types, show useful suggestions.
+
+Example:
+
+"Coorg"
+
+Could return:
+
+* Destination — Coorg
+* Place — Coffee Estate Trail
+* Hotel — Example Hotel
+* Property — Example Estate
+
+Debounce requests.
+
+Do not make an API request for every keystroke.
+
+---
+
+# 4. CATEGORY RESULTS
+
+Selecting a category should open the corresponding results.
+
+## Destinations
+
+Show:
+
+* Image
+* Name
+* Location
+* Description
+* Rating if available
+* Favorite
+
+## Temples / Attractions
+
+Show:
+
+* Image
+* Name
+* Category
+* Location
+* Distance if available
+* Rating
+
+## Events
+
+Show:
+
+* Image
+* Event name
+* Date
+* Location
+* Description
+
+## Food
+
+Show:
+
+* Image
+* Name
+* Cuisine/category
+* Location
+* Rating
+
+## Hotels
+
+Show:
+
+* Image
+* Hotel name
+* Location
+* Rating
+* Starting price
+
+IMPORTANT:
+
+Do not claim that the hotel has live availability unless a real availability API is connected.
+
+## Land / Properties
+
+Show:
+
+* Image
+* Property title
+* Location
+* Property type
+* Area
+* Price
+* Development/status where appropriate
+
+Do not present sample property information as verified live inventory.
+
+---
+
+# 5. FILTERS
+
+Implement filters based on the selected category.
+
+### General
+
+* Location
+* Distance
+* Rating
+
+### Hotels
+
+* Price
+* Rating
+* Amenities
+* Hotel type
+
+### Events
+
+* Date
+* Event type
+* Location
+
+### Land / Properties
+
+* Location
+* Property type
+* Price
+* Area
+* Purpose
+* Status
+
+Do not display irrelevant filters.
+
+---
+
+# 6. SORTING
+
+Support where appropriate:
+
+* Relevance
+* Popularity
+* Distance
+* Rating
+* Price low to high
+* Price high to low
+
+Only show valid options for the selected category.
+
+---
+
+# 7. RESULT CARDS
+
+Create reusable components rather than duplicating UI.
+
+Create/reuse:
+
+* DestinationCard
+* PlaceCard
+* EventCard
+* FoodCard
+* HotelCard
+* PropertyCard
+
+Cards should support:
+
+* Image
+* Title
+* Location
+* Metadata
+* Favorite
+* Navigation
+
+Use the existing design system.
+
+---
+
+# 8. PAGINATION
+
+Use:
+
+* Pagination or infinite scroll
+* React Query
+* Cached results
+* Loading-more state
+* End-of-results state
+
+Do not load the complete catalog into memory.
+
+Use optimized mobile lists.
+
+---
+
+# 9. FAVORITES
+
+Reuse the existing favorites architecture.
+
+Users should be able to favorite:
+
+* Destinations
+* Places
+* Hotels
+* Properties
+
+Do not create a duplicate favorites system.
+
+If favorites are currently stored only in AsyncStorage, keep that implementation working for now.
+
+Do not block Explore development waiting for server-side favorite synchronization.
+
+---
+
+# 10. NAVIGATION
+
+Connect Explore to existing detail screens.
+
+Required navigation:
+
+Explore
+→ Destination Details
+
+Explore
+→ Place Details
+
+Explore
+→ Event Details
+
+Explore
+→ Food Details
+
+Explore
+→ Hotel Details
+
+Explore
+→ Property Details
+
+Do not build the complete future modules inside Explore.
+
+If a required detail route is missing, create only the minimum screen needed to provide a valid navigation path.
+
+---
+
+# 11. DATABASE
+
+Before creating new tables, inspect the existing catalog/database models.
+
+Reuse existing models wherever possible.
+
+Avoid duplicate destination, hotel, property or event models.
+
+The catalog should support:
+
+Destination
+├── Places
+├── Temples
+├── Attractions
+├── Events
+├── Food
+└── Nearby locations
+
+Hotels and Properties should remain searchable independently.
+
+Add indexes where needed for:
+
+* Name
+* Category
+* Location
+* Price
+* Status
+
+Keep database changes minimal and clean.
+
+---
+
+# 12. API
+
+Create or reuse:
+
+GET /api/v1/explore/search
+
+GET /api/v1/explore/categories
+
+GET /api/v1/explore/filters
+
+Follow the existing REST API conventions.
+
+If equivalent APIs already exist, reuse them.
+
+Update OpenAPI when APIs are added or modified.
+
+Regenerate:
+
+* TypeScript API client
+* React Query hooks
+* Zod schemas
+
+Do not manually duplicate generated types.
+
+---
+
+# 13. LOCATION
+
+Explore can support location-based discovery.
+
+Use location only when needed.
+
+Examples:
+
+* Nearby places
+* Distance
+* Distance sorting
+* Location filter
+
+Do NOT automatically request location permission merely because Explore opened.
+
+If the user denies location:
+
+* Explore must continue working
+* Allow manual location selection
+* Do not repeatedly request permission
+
+---
+
+# 14. LOADING / EMPTY / ERROR STATES
+
+Every Explore API-driven section needs:
+
+### Loading
+
+Skeleton cards.
+
+### Empty
+
+"No results found"
+
+### Error
+
+"Unable to load results"
+
+with Retry.
+
+Do not allow one failed API request to blank the entire Explore screen.
+
+---
+
+# 15. PERFORMANCE
+
+Use:
+
+* Debounced search
+* React Query caching
+* Pagination
+* Virtualized lists
+* Optimized images
+* Memoization where useful
+
+Avoid unnecessary API requests.
+
+---
+
+# 16. ROLE SECURITY
+
+Explore is primarily a USER feature.
+
+Normal USERs can discover:
+
+* Destinations
+* Places
+* Events
+* Hotels
+* Properties
+
+Do NOT expose vendor management or admin functionality inside Explore.
+
+Vendor/admin APIs must remain protected by the existing server-side authorization middleware.
+
+Do not modify role authorization.
+
+---
+
+# 17. DEVELOPMENT DATA
+
+The current application contains seeded/development catalog data.
+
+Use it for Explore development.
+
+Clearly treat it as development content.
+
+Do NOT claim:
+
+* Live hotel availability
+* Real-time hotel pricing
+* Confirmed bookings
+* Verified property inventory
+* Real-time event availability
+
+Those will be implemented later.
+
+---
+
+# 18. TESTING
+
+Add automated tests for:
+
+### Explore
+
+1. Explore screen loads
+2. Search input
+3. Search debounce
+4. Search API
+5. Search suggestions
+6. Categories
+7. Filters
+8. Sorting
+9. Pagination
+10. Empty results
+11. API error
+12. Retry
+13. Favorites
+14. Destination navigation
+15. Place navigation
+16. Event navigation
+17. Hotel navigation
+18. Property navigation
+
+### Regression
+
+Verify:
+
+19. User login
+20. Vendor login
+21. Admin login
+22. User role protection
+23. Vendor role protection
+24. Admin role protection
+25. Home
+26. Biometric/device authentication
+27. Main navigation
+
+Do not break the existing role-based login architecture.
+
+---
+
+# 19. VALIDATION
+
+Run:
+
+* TypeScript check
+* Automated tests
+* Expo workflow
+* API workflow
+* Web export
+* Android export
+* iOS export
+
+The previous baseline was 37 passing tests.
+
+Report the new total.
+
+---
+
+# 20. FINAL REPORT
+
+When complete, provide:
+
+1. Explore features implemented
+2. Screens created/modified
+3. Components created/reused
+4. Database changes
+5. APIs created/reused
+6. OpenAPI changes
+7. Generated client/hooks updated
+8. Tests added
+9. Total tests passing
+10. Web validation
+11. Android validation
+12. iOS validation
+13. Known limitations
+14. Recommended next development task
+
+IMPORTANT:
+
+Do not start Hotels, Booking, Payment, Wallet, Land Sourcing, or Admin management development in this task.
+
+Complete and stabilize Explore first.
