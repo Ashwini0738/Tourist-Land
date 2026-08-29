@@ -41,9 +41,13 @@ Payments, live room inventory, maps, and notification delivery are intentionally
 
 ## Security and authentication
 
-No secrets are committed. Authentication uses Replit-managed Clerk for account verification and session lifecycle. Mobile session material is stored through Clerk's SecureStore-backed token cache; app PINs are salted and hashed server-side with scrypt, throttled after repeated failures, and never stored on-device. Fingerprint and Face ID use the operating system's biometric prompt only—no biometric information is stored by the app.
+No secrets are committed. Authentication uses Replit-managed Clerk for account verification and session lifecycle. Mobile session material is stored through Clerk's SecureStore-backed token cache. Fingerprint, Face ID, and supported device passcode fallback use the operating system's native authentication prompt only—no app PIN, device credential, or biometric information is stored by the app.
 
-Protected mobile routes require both a valid Clerk session and successful local PIN or biometric unlock. Protected API routes validate Clerk authentication and return a clean `401` response when a session is missing or expired.
+Protected mobile routes require a valid Clerk session and, when configured, successful native device authentication. Protected API routes validate Clerk authentication and return a clean `401` response when a session is missing or expired.
+
+### Legacy app-PIN data retirement
+
+The `user_pin_credentials` table belonged to the removed custom app-PIN flow. It is intentionally absent from `lib/db/src/schema/platform.ts`, and the API no longer creates or reads it. The exact retirement procedure and recovery decision are documented in [`docs/legacy-pin-retirement.md`](docs/legacy-pin-retirement.md).
 
 ## Database domains
 
