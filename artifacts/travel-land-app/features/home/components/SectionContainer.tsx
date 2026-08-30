@@ -11,10 +11,11 @@ interface SectionContainerProps {
   isEmpty: boolean;
   onRetry: () => void;
   emptyMessage?: string;
+  errorMessage?: string;
   children: React.ReactNode;
 }
 
-export function SectionContainer({ title, onViewAll, isLoading, isError, isEmpty, onRetry, emptyMessage, children }: SectionContainerProps) {
+export function SectionContainer({ title, onViewAll, isLoading, isError, isEmpty, onRetry, emptyMessage, errorMessage, children }: SectionContainerProps) {
   const colors = useColors();
 
   return (
@@ -46,8 +47,16 @@ export function SectionContainer({ title, onViewAll, isLoading, isError, isEmpty
       {!isLoading && isError && (
         <View style={{ marginHorizontal: 20, height: 180, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}>
           <Feather name="alert-circle" size={24} color={colors.destructive} />
-          <Text style={{ color: colors.foreground, marginTop: 8, fontWeight: '600' }}>Failed to load {title.toLowerCase()}</Text>
-          <Pressable onPress={onRetry} style={{ marginTop: 12, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.primary, borderRadius: 10 }}>
+          <Text style={{ color: colors.foreground, marginTop: 8, fontWeight: '600', textAlign: 'center' }}>
+            {errorMessage ?? `Failed to load ${title.toLowerCase()}`}
+          </Text>
+          <Pressable
+            testID={`retry-${title}`}
+            accessibilityRole="button"
+            accessibilityLabel={`Retry loading ${title.toLowerCase()}`}
+            onPress={onRetry}
+            style={{ marginTop: 12, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.primary, borderRadius: 10 }}
+          >
             <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 13 }}>Retry</Text>
           </Pressable>
         </View>

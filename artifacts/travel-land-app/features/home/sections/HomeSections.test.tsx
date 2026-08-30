@@ -36,6 +36,7 @@ jest.mock('../components/SectionContainer', () => ({
       isEmpty,
       onRetry,
       emptyMessage,
+       errorMessage,
       children,
     }: {
       title: string;
@@ -44,12 +45,13 @@ jest.mock('../components/SectionContainer', () => ({
       isEmpty: boolean;
       onRetry: () => void;
       emptyMessage?: string;
+       errorMessage?: string;
       children: React.ReactNode;
     }) => (
       <NativeView>
         <NativeText>{title}</NativeText>
         <NativeText>{isLoading ? 'loading' : isError ? 'error' : isEmpty ? 'empty' : 'content'}</NativeText>
-        {isError && <NativeText>Failed to load {title.toLowerCase()}</NativeText>}
+        {isError && <NativeText>{errorMessage ?? `Failed to load ${title.toLowerCase()}`}</NativeText>}
         {!isLoading && !isError && isEmpty && <NativeText>{emptyMessage ?? `No ${title.toLowerCase()} found.`}</NativeText>}
         <NativeText testID={`retry-${title}`} onPress={onRetry}>
           retry
@@ -183,13 +185,31 @@ describe('Featured for you section', () => {
     ]);
   });
 
-  it('shows the explicit empty and unavailable states', () => {
+  it('shows the explicit empty state', () => {
     mockedFeaturedHook.mockReturnValue(queryResult({ data: { items: [] } }));
     const empty = render(<BannerSection />);
     expect(empty.getByText('No featured content is available right now.')).toBeTruthy();
+  });
 
-    mockedFeaturedHook.mockReturnValue(queryResult({ data: undefined, isError: true }));
+  it('shows a retryable unavailable state for the 503 response', () => {
+    const refetch = jest.fn();
+    mockedFeaturedHook.mockReturnValue(queryResult({
+      data: undefined,
+      isError: true,
+      refetch,
+      error: {
+        status: 503,
+        data: {
+          error: {
+            code: 'FEATURED_CONTENT_UNAVAILABLE',
+            message: 'Featured content is temporarily unavailable.',
+          },
+        },
+      },
+    }));
     const unavailable = render(<BannerSection />);
-    expect(unavailable.getByText('Failed to load featured for you')).toBeTruthy();
+    expect(unavailable.getByText('Featured content is temporarily unavailable.')).toBeTruthy();
+    fireEvent.press(unavailable.getByText('retry'));
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 });

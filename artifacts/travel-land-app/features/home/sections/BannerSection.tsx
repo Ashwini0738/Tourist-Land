@@ -8,6 +8,8 @@ import { useAppState } from '@/context/AppStateContext';
 import { getImageSource } from '../utils/images';
 import { SectionContainer } from '../components/SectionContainer';
 
+const FEATURED_CONTENT_UNAVAILABLE = 'FEATURED_CONTENT_UNAVAILABLE';
+
 const labels: Record<FeaturedContentItem['entityType'], string> = {
   destination: 'Destination',
   hotel: 'Hotel',
@@ -72,8 +74,11 @@ function FeaturedCard({ item, isFavorite, toggleFavorite }: {
 }
 
 export function BannerSection() {
-  const { data, isLoading, isError, refetch } = useListHomeFeatured();
+  const { data, error, isLoading, isError, refetch } = useListHomeFeatured();
   const { isFavorite, toggleFavorite } = useAppState();
+  const isFeaturedContentUnavailable =
+    error?.status === 503 &&
+    error.data?.error?.code === FEATURED_CONTENT_UNAVAILABLE;
 
   return (
     <SectionContainer 
@@ -83,6 +88,11 @@ export function BannerSection() {
       isEmpty={!data?.items?.length}
       onRetry={refetch}
       emptyMessage="No featured content is available right now."
+      errorMessage={
+        isFeaturedContentUnavailable
+          ? 'Featured content is temporarily unavailable.'
+          : undefined
+      }
     >
       <FlatList
         horizontal
