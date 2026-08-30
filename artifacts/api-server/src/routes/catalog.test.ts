@@ -15,6 +15,7 @@ import {
 } from "@workspace/db";
 import { getDestinationDetail } from "./catalog-detail.ts";
 import {
+  createCatalogRouter,
   createFeaturedContentRouter,
   getFeaturedContent,
   type FeaturedContentList,
@@ -130,6 +131,96 @@ test("featured endpoint returns the resolver notice and ordered items over HTTP"
   assert.equal(resolverCalled, true);
   assert.equal(response.status, 200);
   assert.deepEqual(body, fixture);
+});
+
+test("home endpoint preserves the resolver notice and ordered featured items", async (t) => {
+  const fixture: FeaturedContentList = {
+    notice: "Featured content is curated for your next journey.",
+    items: [
+      {
+        id: "featured-selection-first",
+        entityType: "event",
+        entityId: "event-first",
+        sortOrder: 5,
+        title: "First Event",
+        subtitle: "Event · Dec 1, 2026",
+        location: "First Region, India",
+        summary: "The first featured event.",
+        imageKey: null,
+        destinationId: "destination-first",
+        dateLabel: "Dec 1, 2026",
+        ratingLabel: null,
+        priceLabel: null,
+      },
+      {
+        id: "featured-selection-second",
+        entityType: "offer",
+        entityId: "offer-second",
+        sortOrder: 15,
+        title: "Second Offer",
+        subtitle: "Offer",
+        location: "Second City, India",
+        summary: "The second featured offer.",
+        imageKey: null,
+        destinationId: "destination-second",
+        dateLabel: null,
+        ratingLabel: null,
+        priceLabel: "10% off",
+      },
+    ],
+  };
+  let resolverCalled = false;
+  const app = express();
+  app.use(createCatalogRouter(async () => {
+    resolverCalled = true;
+    return fixture;
+  }));
+
+  const server = http.createServer(app);
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+  t.after(() => new Promise<void>((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  }));
+
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Test server did not expose a TCP address.");
+  const response = await fetch(`http://127.0.0.1:${address.port}/v1/home`);
+  const body = await response.json() as {
+    notice: string;
+    banners: unknown[];
+    destinations: unknown[];
+    nearby: unknown[];
+    events: unknown[];
+    hotels: unknown[];
+    properties: unknown[];
+    featuredDestinations: unknown[];
+    featuredProperties: unknown[];
+    featured: FeaturedContentList["items"];
+  };
+
+  assert.equal(resolverCalled, true);
+  assert.equal(response.status, 200);
+  assert.deepEqual(Object.keys(body).sort(), [
+    "banners",
+    "destinations",
+    "events",
+    "featured",
+    "featuredDestinations",
+    "featuredProperties",
+    "hotels",
+    "nearby",
+    "notice",
+    "properties",
+  ]);
+  assert.equal(body.notice, fixture.notice);
+  assert.deepEqual(body.featured, fixture.items);
+  assert.deepEqual(
+    body.featured.map((item) => item.id),
+    ["featured-selection-first", "featured-selection-second"],
+  );
 });
 
 type FeaturedFixture = {
