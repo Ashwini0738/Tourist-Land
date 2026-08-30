@@ -10,8 +10,21 @@ export function getDirectionsUrl({ latitude, longitude }: MapDestination) {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${latitude},${longitude}`)}`;
 }
 
+export function getPlatformDirectionsUrl(
+  { title, latitude, longitude }: MapDestination,
+  platform: typeof Platform.OS = Platform.OS,
+) {
+  if (platform === 'ios') {
+    return `maps://?daddr=${encodeURIComponent(`${latitude},${longitude}`)}&dirflg=d`;
+  }
+  if (platform === 'android') {
+    return `geo:${latitude},${longitude}?q=${encodeURIComponent(`${latitude},${longitude} (${title})`)}`;
+  }
+  return getDirectionsUrl({ title, latitude, longitude });
+}
+
 export async function openDirections(destination: MapDestination): Promise<boolean> {
-  const url = getDirectionsUrl(destination);
+  const url = getPlatformDirectionsUrl(destination);
   try {
     if (Platform.OS === 'web') {
       const opened = globalThis.window?.open(url, '_blank', 'noopener,noreferrer');

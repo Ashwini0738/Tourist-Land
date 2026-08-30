@@ -25,7 +25,7 @@ jest.mock('@/features/maps/useMapLocation', () => ({
     location: null,
     loading: false,
     error: null,
-    requestLocation: jest.fn(),
+    requestLocation: mockRequestLocation,
   }),
 }));
 
@@ -59,6 +59,7 @@ jest.mock('@/components/PlatformIcon', () => ({
 
 const mockedSearch = useSearchExplore as jest.Mock;
 const mockedParams = useLocalSearchParams as jest.Mock;
+const mockRequestLocation = jest.fn();
 
 const items = [
   {
@@ -117,6 +118,14 @@ it('renders coordinate-backed markers and result cards', () => {
   expect(screen.getByTestId('map-marker-property-riverstone-estate')).toBeTruthy();
   expect(screen.getByTestId('map-result-destination-coorg')).toBeTruthy();
   expect(screen.getByTestId('map-result-property-riverstone-estate')).toBeTruthy();
+});
+
+it('does not request device location until the user taps Use my location', () => {
+  const screen = renderScreen();
+
+  expect(mockRequestLocation).not.toHaveBeenCalled();
+  fireEvent.press(screen.getByTestId('use-my-location'));
+  expect(mockRequestLocation).toHaveBeenCalledTimes(1);
 });
 
 it('keeps discovery usable while catalog results load or fail', () => {

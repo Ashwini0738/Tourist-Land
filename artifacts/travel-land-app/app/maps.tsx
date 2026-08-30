@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -118,10 +119,12 @@ function MapStatusBanner({
   message,
   error,
   onRetry,
+  actionLabel = 'Retry',
 }: {
   message: string;
   error?: boolean;
   onRetry?: () => void;
+  actionLabel?: string;
 }) {
   const colors = useColors();
   return (
@@ -130,7 +133,7 @@ function MapStatusBanner({
       <Text style={[styles.statusText, { color: colors.mutedForeground }]}>{message}</Text>
       {onRetry ? (
         <Pressable accessibilityRole="button" onPress={onRetry}>
-          <Text style={[styles.statusAction, { color: colors.primary }]}>Retry</Text>
+          <Text style={[styles.statusAction, { color: colors.primary }]}>{actionLabel}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -288,6 +291,15 @@ export default function MapsScreen() {
     setDirectionMessage(opened ? 'Directions opened in your map app.' : `Directions are unavailable here. Open ${getDirectionsUrl({ title: selectedItem.title, ...selectedItem.coordinates })} on a map service.`);
   };
 
+  const handleLocationRecovery = async () => {
+    try {
+      await Linking.openSettings();
+    } catch {
+      // The recovery copy remains visible if the platform cannot open Settings.
+    }
+  };
+
+  const locationBlocked = permission === 'blocked' || locationError === 'permission-blocked';
   const mapMessage = Platform.OS === 'web'
     ? 'Map tiles are unavailable here — showing an atlas view.'
     : 'Showing a provider-free atlas view so discovery works without map keys.';
@@ -325,7 +337,13 @@ export default function MapsScreen() {
       </View>
       <View style={styles.content}>
         <MapStatusBanner message={mapMessage} />
-        {locationMessage ? <MapStatusBanner message={locationMessage} /> : null}
+        {locationMessage ? (
+          <MapStatusBanner
+            message={locationMessage}
+            onRetry={locationBlocked && Platform.OS !== 'web' ? () => void handleLocationRecovery() : undefined}
+            actionLabel="Open Settings"
+          />
+        ) : null}
         {directionMessage ? <MapStatusBanner message={directionMessage} /> : null}
         {searchQuery.isError ? <MapStatusBanner message="The catalog could not be refreshed. Your map remains available; try again." error onRetry={() => void searchQuery.refetch()} /> : null}
         {searchQuery.data && searchQuery.data.total > mapItems.length ? <Text style={[styles.coordinateNote, { color: colors.mutedForeground }]}>{searchQuery.data.total - mapItems.length} result{searchQuery.data.total - mapItems.length === 1 ? '' : 's'} not shown on this map because this view only plots coordinate-backed map categories.</Text> : null}
