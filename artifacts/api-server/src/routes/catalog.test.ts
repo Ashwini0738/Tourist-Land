@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import http from "node:http";
 import test from "node:test";
+import express from "express";
 import { eq, inArray, sql } from "drizzle-orm";
 import {
   db,
@@ -12,7 +14,7 @@ import {
   users,
 } from "@workspace/db";
 import { getDestinationDetail } from "./catalog-detail.ts";
-import { getFeaturedContent } from "./catalog.ts";
+import { createFeaturedContentRouter, getFeaturedContent } from "./catalog.ts";
 
 test("destination details compose only related catalog content", () => {
   const result = getDestinationDetail("coorg");
@@ -30,6 +32,38 @@ test("destination details compose only related catalog content", () => {
 
 test("unknown destination details return no fabricated fallback", () => {
   assert.equal(getDestinationDetail("not-a-real-destination"), null);
+});
+
+test("featured endpoint returns a safe 503 when the resolver fails", async (t) => {
+  let resolverCalled = false;
+  const app = express();
+  app.use(createFeaturedContentRouter(async () => {
+    resolverCalled = true;
+    throw new Error("simulated database failure");
+  }));
+
+  const server = http.createServer(app);
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+  t.after(() => new Promise<void>((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  }));
+
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Test server did not expose a TCP address.");
+  const response = await fetch(`http://127.0.0.1:${address.port}/v1/home/featured`);
+  const body = await response.json();
+
+  assert.equal(resolverCalled, true);
+  assert.equal(response.status, 503);
+  assert.deepEqual(body, {
+    error: {
+      code: "FEATURED_CONTENT_UNAVAILABLE",
+      message: "Featured content is temporarily unavailable.",
+    },
+  });
 });
 
 type FeaturedFixture = {

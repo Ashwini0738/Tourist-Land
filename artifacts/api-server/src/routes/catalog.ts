@@ -62,6 +62,8 @@ export type FeaturedContentList = {
   items: FeaturedContentItem[];
 };
 
+type FeaturedContentResolver = () => Promise<FeaturedContentList>;
+
 function locationFor(parts: Array<string | null | undefined>): string {
   return parts.filter((part): part is string => Boolean(part?.trim())).join(", ");
 }
@@ -193,11 +195,12 @@ export async function getFeaturedContent(): Promise<FeaturedContentList> {
   };
 }
 
-async function featuredContentOrUnavailable(res: Response): Promise<FeaturedContentList | null> {
+async function featuredContentOrUnavailable(
+  res: Response,
+  resolveFeaturedContent: FeaturedContentResolver,
+): Promise<FeaturedContentList | null> {
   try {
-    const featured = await getFeaturedContent();
-    res.json(featured);
-    return featured;
+    return await resolveFeaturedContent();
   } catch {
     res.status(503).json({
       error: {
@@ -207,6 +210,17 @@ async function featuredContentOrUnavailable(res: Response): Promise<FeaturedCont
     });
     return null;
   }
+}
+
+export function createFeaturedContentRouter(
+  resolveFeaturedContent: FeaturedContentResolver = getFeaturedContent,
+): IRouter {
+  const router: IRouter = Router();
+  router.get("/v1/home/featured", async (_req, res) => {
+    const featured = await featuredContentOrUnavailable(res, resolveFeaturedContent);
+    if (featured) res.json(featured);
+  });
+  return router;
 }
 
 catalogRouter.get("/v1/home", async (_req, res) => {
@@ -234,10 +248,7 @@ catalogRouter.get("/v1/home", async (_req, res) => {
   });
 });
 
-catalogRouter.get("/v1/home/featured", async (_req, res) => {
-  const featured = await featuredContentOrUnavailable(res);
-  if (featured) res.json(featured);
-});
+catalogRouter.use(createFeaturedContentRouter());
 
 catalogRouter.get("/v1/home/banners", (_req, res) => {
   res.json({ items: [] });
