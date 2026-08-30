@@ -1844,10 +1844,16 @@ export interface AdminRoom {
   nightlyRate: number;
   currency: string;
   status: string;
-  /** @minimum 0 */
-  reservedUnits: number;
-  /** @minimum 0 */
-  availableUnits: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  reservedUnits: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  availableUnits: number | null;
 }
 
 export interface AdminAvailability {
@@ -1858,8 +1864,11 @@ export interface AdminAvailability {
   date: string;
   /** @minimum 0 */
   availableUnits: number;
-  /** @minimum 0 */
-  reservedUnits: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  reservedUnits: number | null;
   status: string;
   /** @nullable */
   blackoutReason: string | null;

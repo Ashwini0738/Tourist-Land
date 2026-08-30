@@ -4077,8 +4077,8 @@ export const GetAdminHotelDetailResponse = zod.object({
   "nightlyRate": zod.number(),
   "currency": zod.string(),
   "status": zod.string(),
-  "reservedUnits": zod.number().int().min(getAdminHotelDetailResponseRoomsItemReservedUnitsMin),
-  "availableUnits": zod.number().int().min(getAdminHotelDetailResponseRoomsItemAvailableUnitsMin)
+  "reservedUnits": zod.number().int().min(getAdminHotelDetailResponseRoomsItemReservedUnitsMin).nullable(),
+  "availableUnits": zod.number().int().min(getAdminHotelDetailResponseRoomsItemAvailableUnitsMin).nullable()
 })),
   "availability": zod.array(zod.object({
   "id": zod.string(),
@@ -4087,7 +4087,7 @@ export const GetAdminHotelDetailResponse = zod.object({
   "hotelName": zod.string(),
   "date": zod.coerce.date(),
   "availableUnits": zod.number().int().min(getAdminHotelDetailResponseAvailabilityItemAvailableUnitsMin),
-  "reservedUnits": zod.number().int().min(getAdminHotelDetailResponseAvailabilityItemReservedUnitsMin),
+  "reservedUnits": zod.number().int().min(getAdminHotelDetailResponseAvailabilityItemReservedUnitsMin).nullable(),
   "status": zod.string(),
   "blackoutReason": zod.string().nullable()
 }))
@@ -4167,8 +4167,8 @@ export const ListAdminRoomsResponse = zod.object({
   "nightlyRate": zod.number(),
   "currency": zod.string(),
   "status": zod.string(),
-  "reservedUnits": zod.number().int().min(listAdminRoomsResponseItemsItemReservedUnitsMin),
-  "availableUnits": zod.number().int().min(listAdminRoomsResponseItemsItemAvailableUnitsMin)
+  "reservedUnits": zod.number().int().min(listAdminRoomsResponseItemsItemReservedUnitsMin).nullable(),
+  "availableUnits": zod.number().int().min(listAdminRoomsResponseItemsItemAvailableUnitsMin).nullable()
 })),
   "meta": zod.object({
   "page": zod.number().int().min(1),
@@ -4214,7 +4214,7 @@ export const ListAdminAvailabilityResponse = zod.object({
   "hotelName": zod.string(),
   "date": zod.coerce.date(),
   "availableUnits": zod.number().int().min(listAdminAvailabilityResponseItemsItemAvailableUnitsMin),
-  "reservedUnits": zod.number().int().min(listAdminAvailabilityResponseItemsItemReservedUnitsMin),
+  "reservedUnits": zod.number().int().min(listAdminAvailabilityResponseItemsItemReservedUnitsMin).nullable(),
   "status": zod.string(),
   "blackoutReason": zod.string().nullable()
 })),

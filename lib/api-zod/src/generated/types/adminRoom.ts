@@ -16,8 +16,14 @@ export interface AdminRoom {
   nightlyRate: number;
   currency: string;
   status: string;
-  /** @minimum 0 */
-  reservedUnits: number;
-  /** @minimum 0 */
-  availableUnits: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  reservedUnits: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  availableUnits: number | null;
 }

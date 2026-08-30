@@ -1,0 +1,1194 @@
+# DEVELOPMENT TASK — LAND SOURCING MVP: PROPERTY + ENQUIRY + OWNER/AGENT WORKFLOW
+
+Continue development of the existing **Travel & Land** application.
+
+## IMPORTANT — COMPLETED MODULES
+
+Treat these as stable:
+
+* User authentication
+* Vendor authentication
+* Admin authentication
+* Clerk authentication
+* Email verification / OTP / MFA
+* Fingerprint / Face ID / device authentication
+* Role-based authorization
+* Home
+* Explore
+* Destinations
+* Maps & Location
+* Hotels
+* Availability
+* Booking
+* Payment
+* Wallet
+* Notifications
+* Favorites
+* Reviews
+* Vendor Portal
+* Admin Portal
+* Existing REST API
+* OpenAPI
+* Generated TypeScript API client
+* React Query hooks
+* Zod schemas
+* Hotel/vendor management
+* Admin content management
+
+Do NOT rebuild these modules.
+
+Do NOT modify the existing authentication flow.
+
+---
+
+# OBJECTIVE
+
+Build the **Land Sourcing MVP**.
+
+The goal is to allow:
+
+### Traveller/User
+
+* Discover land/property opportunities
+* Search properties
+* Filter properties
+* View property details
+* View property location
+* Save property to favorites
+* Submit an enquiry
+* Track enquiry status
+
+### Vendor/Owner/Agent
+
+* Create property listings
+* Edit their own listings
+* Manage property information
+* Receive enquiries
+* Respond/update enquiry status
+
+### Admin
+
+* Review property listings
+* Approve/reject listings
+* View enquiries
+* Manage property status
+* Monitor sourcing activity
+
+This is a **land sourcing and enquiry platform**, NOT a property transaction platform.
+
+Do NOT implement property purchase/sale transactions yet.
+
+---
+
+# 1. LAND HOME / DISCOVERY
+
+Use the existing Home → Land section.
+
+Replace development-only property behavior with database-backed property listings where available.
+
+Display:
+
+* Property image
+* Property name
+* Location
+* Property type
+* Land area
+* Price/price range
+* Development status
+* Verification/approval status where appropriate
+
+Do not display unapproved properties publicly.
+
+Do not show fake property listings.
+
+If no approved properties exist:
+
+Show:
+
+"No land opportunities available"
+
+with an appropriate Explore action.
+
+---
+
+# 2. LAND LISTING SCREEN
+
+Create/complete:
+
+Land
+→ Property Listings
+
+Support:
+
+* Search
+* Filters
+* Sorting
+* Pagination
+
+Search by:
+
+* Property name
+* Location
+* City
+* State
+* Property type
+
+---
+
+# 3. PROPERTY TYPES
+
+Support configurable property types such as:
+
+* Agricultural land
+* Residential plot
+* Commercial land
+* Farm land
+* Resort land
+* Development land
+* Other
+
+Do not hardcode the UI so tightly that future property types cannot be added.
+
+---
+
+# 4. LAND FILTERS
+
+Implement:
+
+### Location
+
+* State
+* City
+* Area/locality
+
+### Property type
+
+* Agricultural
+* Residential
+* Commercial
+* Farm
+* Resort
+* Development
+
+### Land area
+
+* Minimum
+* Maximum
+
+### Price
+
+* Minimum
+* Maximum
+
+### Status
+
+Only show publicly approved/active listings to users.
+
+Vendor/admin screens may use additional statuses.
+
+---
+
+# 5. SORTING
+
+Support:
+
+* Newest
+* Price low → high
+* Price high → low
+* Area small → large
+* Area large → small
+
+Use server-side sorting where appropriate.
+
+---
+
+# 6. PROPERTY DETAILS
+
+Create a complete Property Details screen.
+
+Display:
+
+### Basic information
+
+* Property name
+* Property type
+* Description
+* Land area
+* Asking price
+* Development status
+
+### Location
+
+* City
+* State
+* Locality
+* Map location
+* Coordinates where appropriate
+
+### Media
+
+* Property images
+* Image gallery
+
+### Additional information
+
+* Road access where available
+* Nearby landmarks where available
+* Available utilities where available
+* Suitable use
+* Development potential where applicable
+
+Do not invent missing information.
+
+---
+
+# 7. PROPERTY MAP
+
+Integrate the property with the existing Maps architecture.
+
+Display:
+
+* Property marker
+* Approximate location where exact location should remain private
+* Nearby landmarks where appropriate
+
+Important:
+
+Do not expose sensitive exact coordinates if the business rules require location privacy.
+
+Prepare the model to support:
+
+* public_latitude
+* public_longitude
+* exact_latitude
+* exact_longitude
+
+if required.
+
+---
+
+# 8. FAVORITES
+
+Reuse the existing account-synchronized Favorites module.
+
+User can:
+
+* Add property to favorites
+* Remove property from favorites
+* View saved properties
+
+Do NOT create another local-only favorite implementation.
+
+---
+
+# 9. ENQUIRY CTA
+
+Property Details must include a clear:
+
+**"Enquire Now"**
+
+action.
+
+This opens an enquiry form.
+
+---
+
+# 10. PROPERTY ENQUIRY FORM
+
+Fields:
+
+* Name
+* Phone
+* Email
+* Preferred contact method
+* Message
+* Preferred callback time
+* Optional budget
+* Optional preferred site-visit date
+
+Where user identity is already available:
+
+Pre-fill:
+
+* Name
+* Email
+* Phone
+
+Do not allow the user to impersonate another account.
+
+---
+
+# 11. ENQUIRY VALIDATION
+
+Validate:
+
+* Required fields
+* Phone format
+* Email format
+* Message length
+* Budget format
+* Date validity
+
+Server-side validation is mandatory.
+
+Do not trust client validation.
+
+---
+
+# 12. ENQUIRY MODEL
+
+Create/reuse:
+
+### PropertyEnquiry
+
+* id
+* property_id
+* user_id
+* vendor_id where applicable
+* assigned_admin_id where applicable
+* name
+* phone
+* email
+* message
+* preferred_contact_method
+* preferred_callback_time
+* preferred_site_visit_date
+* budget
+* status
+* created_at
+* updated_at
+
+Use the existing database conventions.
+
+Do not duplicate user/vendor information unnecessarily if it can be derived safely.
+
+---
+
+# 13. ENQUIRY STATUS
+
+Support a clear lifecycle:
+
+* submitted
+* received
+* contacted
+* site_visit_scheduled
+* negotiation
+* closed
+* cancelled
+
+Use only statuses required by the business workflow.
+
+---
+
+# 14. USER — MY LAND ENQUIRIES
+
+Create:
+
+Profile
+→ My Land Enquiries
+
+Display:
+
+* Property
+* Enquiry date
+* Status
+* Last updated
+* Next action where applicable
+
+User can open an enquiry.
+
+---
+
+# 15. ENQUIRY DETAILS FOR USER
+
+Display:
+
+* Property
+* Enquiry information
+* Current status
+* Submitted date
+* Updates
+* Contact/next step
+
+Do not expose internal admin notes.
+
+Do not expose vendor private information unless intended.
+
+---
+
+# 16. ENQUIRY STATUS HISTORY
+
+Create an internal status history.
+
+Suggested:
+
+### PropertyEnquiryStatusHistory
+
+* id
+* enquiry_id
+* old_status
+* new_status
+* changed_by
+* note
+* created_at
+
+This allows tracking:
+
+submitted
+→ contacted
+→ site visit
+→ negotiation
+→ closed
+
+Do not allow users to modify history.
+
+---
+
+# 17. VENDOR — PROPERTY MANAGEMENT
+
+Extend Vendor Portal.
+
+Create:
+
+Vendor
+→ Properties
+
+Vendor can:
+
+* View own properties
+* Add property
+* Edit property
+* Activate/deactivate where allowed
+* View property enquiries
+
+Vendor must only see properties they own/manage.
+
+---
+
+# 18. ADD PROPERTY
+
+Create property form.
+
+Fields:
+
+### Basic
+
+* Property name
+* Property type
+* Description
+* Land area
+* Unit of measurement
+
+### Pricing
+
+* Asking price
+* Price unit where applicable
+
+### Location
+
+* State
+* City
+* Locality
+* Public latitude
+* Public longitude
+
+### Property details
+
+* Road access
+* Water availability
+* Electricity availability
+* Suitable use
+* Development status
+
+### Media
+
+* Property images
+* Supporting documents where appropriate
+
+Do not allow vendor to mark their own property as verified.
+
+---
+
+# 19. PROPERTY APPROVAL
+
+When vendor creates a property:
+
+status:
+
+pending_approval
+
+Admin reviews it.
+
+Admin can:
+
+* Approve
+* Reject
+
+If rejected:
+
+Require rejection reason.
+
+Only approved + active properties should appear publicly.
+
+---
+
+# 20. PROPERTY DOCUMENTS
+
+Prepare secure document support for:
+
+* Ownership documents
+* Survey documents
+* Approval documents
+* Other supporting documents
+
+Important:
+
+Documents may contain sensitive information.
+
+Use private storage and access control.
+
+Do NOT expose private document URLs publicly.
+
+Do NOT claim documents are legally verified unless an actual verification process exists.
+
+---
+
+# 21. ADMIN — PROPERTY MANAGEMENT
+
+Extend Admin Portal.
+
+Admin can:
+
+* View properties
+* Search
+* Filter
+* Review
+* Approve
+* Reject
+* Activate
+* Deactivate
+
+Display:
+
+* Property
+* Vendor
+* Location
+* Area
+* Asking price
+* Status
+* Approval status
+* Created date
+
+---
+
+# 22. ADMIN — PROPERTY DETAILS
+
+Admin can view:
+
+* Property information
+* Vendor/owner/agent
+* Images
+* Documents
+* Coordinates
+* Enquiry count
+* Approval history
+* Status history
+
+Sensitive information must remain admin-only.
+
+---
+
+# 23. ADMIN — ENQUIRY MANAGEMENT
+
+Create:
+
+Admin
+→ Land Enquiries
+
+Display:
+
+* Enquiry ID
+* Property
+* User
+* Vendor
+* Status
+* Created date
+* Last updated
+
+Filters:
+
+* Status
+* Property
+* Vendor
+* Date
+
+---
+
+# 24. VENDOR — ENQUIRY MANAGEMENT
+
+Create:
+
+Vendor
+→ Property Enquiries
+
+Vendor sees only enquiries for their own properties.
+
+Display:
+
+* Enquiry ID
+* Property
+* Customer name
+* Contact information where permitted
+* Message
+* Status
+* Created date
+
+Vendor can update operational status according to allowed workflow.
+
+---
+
+# 25. ENQUIRY ASSIGNMENT
+
+Prepare admin assignment support.
+
+Admin can assign an enquiry to:
+
+* Vendor
+* Agent
+* Internal sourcing specialist
+
+Do not implement a complicated CRM.
+
+Keep MVP workflow simple.
+
+---
+
+# 26. SOURCING SPECIALIST SUPPORT
+
+Prepare an internal role/assignment architecture if the current role system supports it.
+
+Possible future role:
+
+land_sourcing_agent
+
+For now, do not create unnecessary authentication complexity.
+
+If the existing system cannot safely support this role, keep assignment admin/vendor based and document it as future work.
+
+---
+
+# 27. CONTACT PROTECTION
+
+Do not expose private vendor/owner contact information publicly.
+
+Public property page:
+
+→ Enquire Now
+
+rather than:
+
+→ Full owner phone/email
+
+This protects the sourcing business model.
+
+---
+
+# 28. LEAD PROTECTION
+
+Do not allow:
+
+* Public enquiry API without authentication
+* Duplicate spam submissions without protection
+* Client-controlled vendor_id
+* Client-controlled property owner
+* Client-controlled enquiry status
+
+The server must derive:
+
+* user_id
+* vendor_id
+* ownership
+
+from trusted relationships.
+
+---
+
+# 29. DUPLICATE ENQUIRIES
+
+Prevent obvious accidental duplicate enquiries.
+
+For example:
+
+Same user + same property + active open enquiry
+
+should warn:
+
+"You already have an active enquiry for this property."
+
+Do not prevent a new enquiry forever.
+
+Allow a new enquiry after the existing one is closed if business rules permit.
+
+---
+
+# 30. NOTIFICATIONS
+
+Integrate with the existing Notification system.
+
+Examples:
+
+User submits enquiry:
+
+→ Confirmation notification to user
+
+New enquiry:
+
+→ Notification to vendor/admin
+
+Enquiry status changed:
+
+→ Notification to user
+
+Site visit scheduled:
+
+→ Notification to user
+
+Enquiry closed:
+
+→ Notification to user
+
+Only create notifications from real events.
+
+---
+
+# 31. ANALYTICS / TRACKING
+
+Track basic operational metrics:
+
+* Property views
+* Favorites
+* Enquiries
+* Enquiry conversion where possible
+
+Do not implement advanced BI yet.
+
+Do not count fake events.
+
+---
+
+# 32. PROPERTY VIEW COUNT
+
+If implemented:
+
+Track unique/meaningful property views.
+
+Do not inflate view counts on every render.
+
+Do not expose internal analytics identifiers to users.
+
+---
+
+# 33. API
+
+Inspect existing API conventions first.
+
+Potential endpoints:
+
+GET /api/v1/properties
+
+GET /api/v1/properties/:id
+
+POST /api/v1/properties/:id/enquiries
+
+GET /api/v1/me/property-enquiries
+
+GET /api/v1/me/property-enquiries/:id
+
+GET /api/v1/vendor/properties
+
+POST /api/v1/vendor/properties
+
+PUT /api/v1/vendor/properties/:id
+
+GET /api/v1/vendor/property-enquiries
+
+PUT /api/v1/vendor/property-enquiries/:id/status
+
+GET /api/v1/admin/properties
+
+PUT /api/v1/admin/properties/:id/status
+
+GET /api/v1/admin/property-enquiries
+
+PUT /api/v1/admin/property-enquiries/:id
+
+Use existing patterns and do not duplicate existing endpoints.
+
+Update:
+
+* OpenAPI
+* Generated TypeScript client
+* React Query hooks
+* Zod schemas
+
+---
+
+# 34. DATABASE
+
+Inspect existing models first.
+
+Reuse the existing:
+
+* User
+* Vendor
+* Property
+* Favorite
+* Notification
+* Audit Log
+
+models.
+
+Add:
+
+* PropertyEnquiry
+* PropertyEnquiryStatusHistory
+
+only if missing.
+
+Use proper foreign keys and indexes.
+
+Add indexes for:
+
+* property_id
+* user_id
+* vendor_id
+* status
+* created_at
+
+---
+
+# 35. SECURITY
+
+Strictly enforce:
+
+### User
+
+Can:
+
+* View public properties
+* Favorite properties
+* Create own enquiries
+* View own enquiries
+
+Cannot:
+
+* View another user's enquiry
+* Change enquiry status
+* Access private property documents
+
+### Vendor
+
+Can:
+
+* Manage own properties
+* View own property enquiries
+* Update permitted enquiry statuses
+
+Cannot:
+
+* Manage another vendor's property
+* Approve own property
+* Access unrelated enquiries
+
+### Admin
+
+Can:
+
+* Review properties
+* Approve/reject
+* Manage platform enquiries
+* Assign enquiries
+* View sensitive operational information
+
+All authorization must be server-side.
+
+---
+
+# 36. PROPERTY DATA VALIDATION
+
+Validate:
+
+* Land area > 0
+* Price >= 0
+* Valid coordinates
+* Valid state/city
+* Valid property type
+* Valid images
+* Valid document types
+* Reasonable text lengths
+
+Do not accept arbitrary JSON without schema validation.
+
+---
+
+# 37. MEDIA SECURITY
+
+Inspect existing image/document storage.
+
+Reuse existing infrastructure.
+
+For documents:
+
+* Private access
+* Authenticated access
+* Signed/temporary URLs where appropriate
+* No public indexing
+
+For images:
+
+* Validate file type
+* Validate file size
+* Prevent executable uploads
+
+---
+
+# 38. RESPONSIVE UI
+
+User-facing Land screens must work on:
+
+* Android
+* iOS
+* Mobile web
+
+Vendor/Admin management must work well on:
+
+* Desktop web
+* Tablet
+* Mobile web where practical
+
+---
+
+# 39. LOADING / ERROR / EMPTY STATES
+
+Property listing:
+
+* Loading
+* Empty
+* Error
+* Retry
+
+Property details:
+
+* Loading
+* Error
+* Missing property
+
+Enquiry:
+
+* Submitting
+* Success
+* Error
+
+My enquiries:
+
+* Loading
+* Empty
+* Error
+
+Vendor properties:
+
+* Loading
+* Empty
+* Error
+
+Admin enquiries:
+
+* Loading
+* Empty
+* Error
+
+Do not blank entire screens when one API fails.
+
+---
+
+# 40. TESTING
+
+Add automated tests for:
+
+### Public property discovery
+
+1. Approved property appears
+2. Pending property does not appear
+3. Rejected property does not appear
+4. Property search
+5. Property filters
+6. Property sorting
+7. Property details
+
+### Favorites
+
+8. Add property favorite
+9. Remove property favorite
+10. Favorite synchronization
+
+### User enquiries
+
+11. Create enquiry
+12. Required-field validation
+13. Duplicate active enquiry handling
+14. User can view own enquiry
+15. User cannot view another user's enquiry
+16. User cannot change enquiry status
+
+### Vendor
+
+17. Vendor creates property
+18. Vendor edits own property
+19. Vendor cannot edit another vendor's property
+20. Vendor cannot approve own property
+21. Vendor views own enquiries
+22. Vendor cannot view unrelated enquiries
+23. Vendor updates permitted enquiry status
+
+### Admin
+
+24. Admin sees properties
+25. Admin approves property
+26. Admin rejects property
+27. Admin sees enquiries
+28. Admin assigns enquiry
+29. Admin updates enquiry
+30. Admin can view protected documents
+
+### Notifications
+
+31. New enquiry notification
+32. Enquiry status notification
+33. Site visit notification
+
+### Security
+
+34. Unauthenticated enquiry rejected
+35. User authorization
+36. Vendor authorization
+37. Admin authorization
+38. Property ownership validation
+39. Document access validation
+40. Server-side input validation
+
+### Regression
+
+41. User login
+42. Vendor login
+43. Admin login
+44. Home
+45. Explore
+46. Destinations
+47. Maps
+48. Hotels
+49. Availability
+50. Booking
+51. Payment
+52. Wallet
+53. Notifications
+54. Favorites
+55. Reviews
+56. Vendor Portal
+57. Admin Portal
+
+---
+
+# 41. PLATFORM VALIDATION
+
+Verify:
+
+### Android
+
+* Land discovery
+* Property details
+* Map
+* Favorite
+* Enquiry
+* My enquiries
+
+### iOS
+
+* Same complete flow
+
+### Mobile Web
+
+* Same complete flow
+
+### Desktop Web
+
+* Vendor property management
+* Vendor enquiries
+* Admin property management
+* Admin enquiry management
+
+---
+
+# 42. IMPORTANT — DO NOT BUILD YET
+
+Do NOT implement:
+
+* Property purchase
+* Property sale
+* Online land payment
+* Legal title verification automation
+* Escrow
+* Property registration
+* Broker commission settlement
+* Advanced CRM
+* Automated lead scoring
+* Property valuation
+* Loan/mortgage services
+* Full real-estate marketplace
+* Vendor payouts
+
+Those are future phases.
+
+---
+
+# 43. FINAL REPORT
+
+When complete, report:
+
+1. Public Land discovery
+2. Property listing
+3. Property details
+4. Search
+5. Filters
+6. Sorting
+7. Property map
+8. Favorites integration
+9. User enquiry
+10. My enquiries
+11. Enquiry status workflow
+12. Vendor property management
+13. Vendor enquiry management
+14. Admin property management
+15. Admin enquiry management
+16. Property approval workflow
+17. Document security
+18. Notifications
+19. Database changes
+20. APIs created/reused
+21. OpenAPI changes
+22. Generated client/hooks changes
+23. Authorization/security
+24. Audit logging
+25. Tests added
+26. Total tests passing
+27. Android validation
+28. iOS validation
+29. Mobile web validation
+30. Desktop web validation
+31. Known limitations
+32. Recommended next development task
+
+IMPORTANT:
+
+After completing this Land Sourcing MVP, the next major phase should be:
+
+**PRODUCTION INTEGRATIONS + REAL DATA — MAP PROVIDER, HOTEL INVENTORY, PAYMENT GATEWAY, PUSH NOTIFICATIONS, STORAGE & DATABASE CONTENT**

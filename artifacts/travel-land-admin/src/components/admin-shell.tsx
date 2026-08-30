@@ -66,8 +66,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <div className={`eyebrow mb-2 px-3 text-sidebar-foreground/35 ${collapsed ? 'text-center px-0' : ''}`}>{collapsed ? '•' : 'Governance'}</div>
           <nav className="space-y-1">{secondaryNav.map(navItem)}</nav>
         </div>
-        <div className="border-t border-sidebar-border p-3">
-          {!collapsed && <div className="mb-3 flex items-center gap-3 rounded-lg bg-sidebar-accent/65 p-3"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-[hsl(199_55%_31%)] text-xs font-semibold text-sidebar-foreground">AK</div><div className="min-w-0"><p className="truncate text-xs font-semibold text-sidebar-foreground">Avery Kim</p><p className="truncate text-[11px] text-sidebar-foreground/45">Platform administrator</p></div><ChevronDown size={14} className="ml-auto text-sidebar-foreground/40" /></div>}
+         <div className="border-t border-sidebar-border p-3">
+           {!collapsed && <div className="mb-3 flex items-center gap-3 rounded-lg bg-sidebar-accent/65 p-3"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-[hsl(199_55%_31%)] text-xs font-semibold text-sidebar-foreground"><ShieldCheck size={15} /></div><div className="min-w-0"><p className="truncate text-xs font-semibold text-sidebar-foreground">Signed-in administrator</p><p className="truncate text-[11px] text-sidebar-foreground/45">Platform access</p></div><ChevronDown size={14} className="ml-auto text-sidebar-foreground/40" /></div>}
           <button onClick={() => setLocation('/login')} data-testid="button-sign-out" className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground ${collapsed ? 'justify-center px-2' : ''}`}><LogOut size={16} />{!collapsed && 'Sign out'}</button>
         </div>
       </div>

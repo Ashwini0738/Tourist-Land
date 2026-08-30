@@ -14,8 +14,11 @@ export interface AdminAvailability {
   date: Date;
   /** @minimum 0 */
   availableUnits: number;
-  /** @minimum 0 */
-  reservedUnits: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  reservedUnits: number | null;
   status: string;
   /** @nullable */
   blackoutReason: string | null;
