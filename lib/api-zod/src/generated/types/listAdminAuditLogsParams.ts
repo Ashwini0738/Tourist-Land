@@ -5,12 +5,14 @@
  * Travel and land sourcing REST API
  * OpenAPI spec version: 0.1.0
  */
+import type { ListAdminAuditLogsEntityType } from './listAdminAuditLogsEntityType';
 
 export type ListAdminAuditLogsParams = {
 /**
  * @maxLength 160
  */
 q?: string;
+entityType?: ListAdminAuditLogsEntityType;
 /**
  * @minimum 1
  */

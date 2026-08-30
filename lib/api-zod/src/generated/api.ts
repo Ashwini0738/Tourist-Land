@@ -4921,6 +4921,7 @@ export const listAdminAuditLogsQueryLimitMax = 50;
 
 export const ListAdminAuditLogsQueryParams = zod.object({
   "q": zod.coerce.string().max(listAdminAuditLogsQueryQMax).optional(),
+  "entityType": zod.enum(['destination', 'hotel', 'event', 'offer', 'user', 'vendor', 'property', 'review', 'featured_content', 'notification']).optional(),
   "page": zod.coerce.number().int().min(1).default(listAdminAuditLogsQueryPageDefault),
   "limit": zod.coerce.number().int().min(1).max(listAdminAuditLogsQueryLimitMax).default(listAdminAuditLogsQueryLimitDefault)
 })
@@ -4939,6 +4940,7 @@ export const ListAdminAuditLogsResponse = zod.object({
   "action": zod.string(),
   "entityType": zod.string(),
   "entityId": zod.string(),
+  "destinationName": zod.string().nullable(),
   "metadata": zod.record(zod.string(), zod.unknown()),
   "createdAt": zod.coerce.date()
 })),

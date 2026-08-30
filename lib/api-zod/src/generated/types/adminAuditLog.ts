@@ -15,6 +15,8 @@ export interface AdminAuditLog {
   action: string;
   entityType: string;
   entityId: string;
+  /** @nullable */
+  destinationName: string | null;
   metadata: AdminAuditLogMetadata;
   createdAt: Date;
 }

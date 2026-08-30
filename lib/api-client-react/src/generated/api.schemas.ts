@@ -2281,6 +2281,8 @@ export interface AdminAuditLog {
   action: string;
   entityType: string;
   entityId: string;
+  /** @nullable */
+  destinationName: string | null;
   metadata: AdminAuditLogMetadata;
   createdAt: string;
 }
@@ -2901,6 +2903,7 @@ export type ListAdminAuditLogsParams = {
  * @maxLength 160
  */
 q?: string;
+entityType?: ListAdminAuditLogsEntityType;
 /**
  * @minimum 1
  */
@@ -2911,4 +2914,20 @@ page?: number;
  */
 limit?: number;
 };
+
+export type ListAdminAuditLogsEntityType = typeof ListAdminAuditLogsEntityType[keyof typeof ListAdminAuditLogsEntityType];
+
+
+export const ListAdminAuditLogsEntityType = {
+  destination: 'destination',
+  hotel: 'hotel',
+  event: 'event',
+  offer: 'offer',
+  user: 'user',
+  vendor: 'vendor',
+  property: 'property',
+  review: 'review',
+  featured_content: 'featured_content',
+  notification: 'notification',
+} as const;
 

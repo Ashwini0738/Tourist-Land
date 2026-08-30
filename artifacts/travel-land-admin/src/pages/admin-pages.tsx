@@ -127,7 +127,52 @@ export function ContentPage() {
     </QueryState>
   </div>;
 }
-export function AuditLogsPage() { const q = useListAdminAuditLogs(); return <CatalogPage title="Audit history" description="Immutable administrative actions, displayed as returned by the audit service." query={q} heads={['Time', 'Administrator', 'Action', 'Entity', 'Record']} render={(l: any) => <><Cell className="text-xs text-muted-foreground">{day(l.createdAt)}</Cell><Cell><p className="font-medium">{val(l.adminName, 'Unknown administrator')}</p><p className="mono text-[10px] text-muted-foreground">{l.adminUserId}</p></Cell><Cell><span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold">{l.action}</span></Cell><Cell className="text-xs">{l.entityType}</Cell><Cell className="mono text-xs">{l.entityId}</Cell></>} />; }
+export function AuditLogsPage() {
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const q = useListAdminAuditLogs({ entityType: 'destination', q: search || undefined, page, limit: 20 });
+  const items = q.data?.items ?? [];
+  const meta = q.data?.meta;
+  const hasSearch = Boolean(search.trim());
+  const metadata = (value: unknown) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value) || !Object.keys(value).length) return 'No additional details';
+    return Object.entries(value as Record<string, unknown>)
+      .map(([key, entry]) => `${key}: ${Array.isArray(entry) ? entry.join(', ') : String(entry)}`)
+      .join(' · ');
+  };
+  const updateSearch = (value: string) => { setSearch(value); setPage(1); };
+  return <div className="rise-in">
+    <Title eyebrow="Governance / immutable record" title="Audit history" description="Review attributable changes to destinations. Metadata is limited to the safe fields returned by the audit service." />
+    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <SearchBar value={search} onChange={updateSearch} placeholder="Search destination, action, or record ID" />
+      <span data-testid="text-audit-filter" className="rounded-lg border border-primary/25 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary">Destination changes</span>
+      <span data-testid="text-audit-count" className="rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">{meta?.total ?? 0} records</span>
+    </div>
+    <QueryState query={q}>
+      {!items.length ? <div data-testid="audit-empty-state" className="rounded-xl border border-dashed border-border bg-card/60 p-12 text-center">
+        <FileClock className="mx-auto mb-3 text-muted-foreground/60" size={25} />
+        <p className="font-semibold">{hasSearch ? 'No matching destination changes' : 'No destination changes yet'}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{hasSearch ? 'Try a different destination name, action, or record ID.' : 'Destination creation and edits will appear here once recorded.'}</p>
+        {hasSearch && <button type="button" data-testid="button-clear-audit-search" onClick={() => updateSearch('')} className="mt-5 rounded-md border border-border px-3 py-2 text-xs font-semibold hover:bg-muted">Clear search</button>}
+      </div> : <div className="space-y-4">
+        <Table heads={['Timestamp', 'Actor', 'Action', 'Destination', 'Safe metadata']}>{items.map((l: any) => <Row id={l.id} key={l.id}>
+          <Cell className="whitespace-nowrap text-xs text-muted-foreground">{day(l.createdAt)}<span className="mt-1 block text-[10px]">{new Intl.DateTimeFormat('en', { hour: 'numeric', minute: '2-digit' }).format(new Date(String(l.createdAt)))}</span></Cell>
+          <Cell><p className="font-medium">{val(l.adminName, 'Unknown administrator')}</p><p className="mono text-[10px] text-muted-foreground">{l.adminUserId}</p></Cell>
+          <Cell><span data-testid={`audit-action-${l.id}`} className="rounded-md bg-muted px-2 py-1 text-xs font-semibold">{l.action}</span></Cell>
+          <Cell><p data-testid={`audit-destination-${l.id}`} className="font-semibold">{val(l.destinationName, 'Destination unavailable')}</p><p className="mono text-[10px] text-muted-foreground">{l.entityId}</p></Cell>
+          <Cell className="max-w-[280px] text-xs text-muted-foreground">{metadata(l.metadata)}</Cell>
+        </Row>)}</Table>
+        {meta && (meta.page > 1 || meta.hasMore) && <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p data-testid="text-audit-pagination" className="text-xs text-muted-foreground">Page {meta.page} · Showing {items.length} of {meta.total} records</p>
+          <div className="flex gap-2">
+            <button type="button" data-testid="button-audit-previous" disabled={page <= 1 || q.isFetching} onClick={() => setPage(current => Math.max(1, current - 1))} className="rounded-md border border-border px-3 py-2 text-xs font-semibold hover:bg-muted disabled:opacity-40">Previous</button>
+            <button type="button" data-testid="button-audit-next" disabled={!meta.hasMore || q.isFetching} onClick={() => setPage(current => current + 1)} className="rounded-md border border-border px-3 py-2 text-xs font-semibold hover:bg-muted disabled:opacity-40">Next</button>
+          </div>
+        </div>}
+      </div>}
+    </QueryState>
+  </div>;
+}
 export function SettingsPage() {
   const q = useGetCurrentUser();
   const user: any = q.data;

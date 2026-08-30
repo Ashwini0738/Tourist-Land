@@ -2047,6 +2047,7 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: entityType, in: query, schema: { type: string, enum: [destination, hotel, event, offer, user, vendor, property, review, featured_content, notification] } }
         - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
       responses:
@@ -3728,9 +3729,10 @@ components:
         action: { type: string }
         entityType: { type: string }
         entityId: { type: string }
+        destinationName: { type: [string, "null"] }
         metadata: { type: object, additionalProperties: true }
         createdAt: { type: string, format: date-time }
-      required: [id, adminUserId, adminName, action, entityType, entityId, metadata, createdAt]
+      required: [id, adminUserId, adminName, action, entityType, entityId, destinationName, metadata, createdAt]
     AdminAuditLogPage:
       type: object
       properties:

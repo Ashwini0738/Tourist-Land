@@ -146,6 +146,7 @@ export * from './idempotencyKeyParameter';
 export * from './invalidInputResponse';
 export * from './inventoryProvenance';
 export * from './inventoryProvenanceFreshness';
+export * from './listAdminAuditLogsEntityType';
 export * from './listAdminAuditLogsParams';
 export * from './listAdminAvailabilityParams';
 export * from './listAdminBookingsParams';

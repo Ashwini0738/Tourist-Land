@@ -635,10 +635,47 @@ router.post("/v1/admin/notifications", async (req, res) => {
 router.get("/v1/admin/audit-logs", async (req, res) => {
   const page = pageFrom(req);
   const q = queryString(req, "q");
-  const conditions = [q ? or(ilike(adminAuditLogs.action, `%${q}%`), ilike(adminAuditLogs.entityType, `%${q}%`), ilike(adminAuditLogs.entityId, `%${q}%`)) : undefined].filter(Boolean) as any[];
+  const entityType = queryString(req, "entityType");
+  const conditions = [
+    entityType ? eq(adminAuditLogs.entityType, entityType) : undefined,
+    q ? or(
+      ilike(adminAuditLogs.action, `%${q}%`),
+      ilike(adminAuditLogs.entityType, `%${q}%`),
+      ilike(adminAuditLogs.entityId, `%${q}%`),
+      ilike(destinations.name, `%${q}%`),
+    ) : undefined,
+  ].filter(Boolean) as any[];
   const where = conditions.length ? and(...conditions) : undefined;
-  const [rows, totalRows] = await Promise.all([db.select({ log: adminAuditLogs, admin: users }).from(adminAuditLogs).innerJoin(users, eq(adminAuditLogs.adminUserId, users.id)).where(where).orderBy(desc(adminAuditLogs.createdAt)).limit(page.limit).offset(page.offset), db.select({ value: sql<number>`count(*)` }).from(adminAuditLogs).where(where)]);
-  res.json({ items: rows.map(({ log, admin }) => ({ id: log.id, adminUserId: log.adminUserId, adminName: admin.displayName, action: log.action, entityType: log.entityType, entityId: log.entityId, metadata: log.metadata ?? {}, createdAt: log.createdAt })), meta: pageMeta(page, Number(totalRows[0]?.value ?? 0)) });
+  const destinationJoin = and(eq(destinations.id, adminAuditLogs.entityId), eq(adminAuditLogs.entityType, "destination"));
+  const [rows, totalRows] = await Promise.all([
+    db.select({ log: adminAuditLogs, admin: users, destination: destinations })
+      .from(adminAuditLogs)
+      .innerJoin(users, eq(adminAuditLogs.adminUserId, users.id))
+      .leftJoin(destinations, destinationJoin)
+      .where(where)
+      .orderBy(desc(adminAuditLogs.createdAt))
+      .limit(page.limit)
+      .offset(page.offset),
+    db.select({ value: sql<number>`count(*)` })
+      .from(adminAuditLogs)
+      .innerJoin(users, eq(adminAuditLogs.adminUserId, users.id))
+      .leftJoin(destinations, destinationJoin)
+      .where(where),
+  ]);
+  res.json({
+    items: rows.map(({ log, admin, destination }) => ({
+      id: log.id,
+      adminUserId: log.adminUserId,
+      adminName: admin.displayName,
+      action: log.action,
+      entityType: log.entityType,
+      entityId: log.entityId,
+      destinationName: destination?.name ?? null,
+      metadata: log.metadata ?? {},
+      createdAt: log.createdAt,
+    })),
+    meta: pageMeta(page, Number(totalRows[0]?.value ?? 0)),
+  });
 });
 
   return router;

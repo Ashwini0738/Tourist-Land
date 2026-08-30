@@ -522,10 +522,21 @@ test("destination create and edit history is attributable, safe, and searchable"
     assert.equal(item.adminName, "Admin Fixture Operator");
     assert.equal(item.entityType, "destination");
     assert.equal(item.entityId, createdDestinationId);
+    assert.equal(item.destinationName, "Edited Audit Fixture Destination");
     assert.equal(typeof item.createdAt, "string");
   }
   assert.deepEqual(auditItems.find((item) => item.action === "created")?.metadata, {});
   assert.deepEqual(auditItems.find((item) => item.action === "updated")?.metadata, { fields: ["name", "summary"] });
+
+  const destinationFilter = await adminRequest(
+    server.baseUrl,
+    "/v1/admin/audit-logs?entityType=destination&q=Edited%20Audit%20Fixture%20Destination",
+    "admin",
+  );
+  assert.equal(destinationFilter.status, 200);
+  assert.deepEqual(destinationFilter.body.meta, { page: 1, limit: 20, total: 2, hasMore: false });
+  assert.equal((destinationFilter.body.items as JsonObject[]).length, 2);
+  assert.ok((destinationFilter.body.items as JsonObject[]).every((item) => item.destinationName === "Edited Audit Fixture Destination"));
 });
 
 test("admin lists support search, pagination, and safe serialization", async (t) => {
