@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request } from "express";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { db, adminInvitations, hotels, userRoles, users, vendorApplications, vendorProfiles } from "@workspace/db";
+import { db, adminInvitations, hotels, userRoles, users, vendorApplications, vendorApprovalHistory, vendorProfiles } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   requireAnyRole,
@@ -23,7 +23,9 @@ import {
 } from "../lib/roles";
 import {
   normalizeEmail,
+  recordVendorApproval,
   serializeVendorApplication,
+  serializeVendorApprovalHistory,
   VENDOR_ACCESS_ROLES,
   vendorApprovalAction,
   vendorRejectionStatus,
@@ -275,6 +277,26 @@ roleAccessRouter.get("/v1/admin/vendor-applications", requireRole("admin"), asyn
   res.json({ items: applications.map((application) => serializeVendorApplication(application)) });
 });
 
+roleAccessRouter.get("/v1/admin/vendor-approval-history", requireRole("admin"), async (_req, res) => {
+  const history = await db
+    .select({
+      record: vendorApprovalHistory,
+      approverId: users.id,
+      approverName: users.displayName,
+      approverEmail: users.email,
+    })
+    .from(vendorApprovalHistory)
+    .innerJoin(users, eq(vendorApprovalHistory.approvedBy, users.id))
+    .orderBy(desc(vendorApprovalHistory.approvedAt));
+  res.json({
+    items: history.map(({ record, approverId, approverName, approverEmail }) => serializeVendorApprovalHistory(record, {
+      id: approverId,
+      displayName: approverName,
+      email: approverEmail,
+    })),
+  });
+});
+
 function parseEmailBody(value: unknown): string | null {
   const body = bodyRecord(value);
   const email = body?.email;
@@ -478,6 +500,7 @@ roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("
         localUserId: existingLocalUser.id,
       }, req.localUser!.id);
       const approvalEmailStatus = await notifyVendorApproval(accepted, false);
+      await recordVendorApproval(accepted, req.localUser!.id, false, approvalEmailStatus);
       res.json(serializeVendorApplication(accepted, approvalEmailStatus));
     } catch (approvalError) {
       logger.error(
@@ -545,6 +568,7 @@ roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("
             imageUrl: existingUser.imageUrl,
           }, req.localUser!.id);
           const approvalEmailStatus = await notifyVendorApproval(accepted, false);
+          await recordVendorApproval(accepted, req.localUser!.id, false, approvalEmailStatus);
           res.json(serializeVendorApplication(accepted, approvalEmailStatus));
           return;
         }
@@ -571,6 +595,7 @@ roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("
     .where(and(eq(vendorApplications.id, approved.id), eq(vendorApplications.status, "approved")))
     .returning())[0];
   const approvalEmailStatus = await notifyVendorApproval(invited, true);
+  await recordVendorApproval(invited, req.localUser!.id, true, approvalEmailStatus);
   res.json(serializeVendorApplication(invited, approvalEmailStatus));
 });
 

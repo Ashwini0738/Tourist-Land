@@ -2,6 +2,7 @@ import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { useColors } from '@/hooks/useColors';
 import {
   useApproveVendorApplication,
+  useListAdminVendorApprovalHistory,
   useListAdminVendorApplications,
   useRejectVendorApplication,
 } from '@workspace/api-client-react';
@@ -14,10 +15,12 @@ export default function AdminVendorsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const applications = useListAdminVendorApplications();
+  const approvalHistory = useListAdminVendorApprovalHistory();
   const approve = useApproveVendorApplication();
   const reject = useRejectVendorApplication();
   const [message, setMessage] = React.useState('');
   const busy = approve.isPending || reject.isPending;
+  const refresh = () => Promise.all([applications.refetch(), approvalHistory.refetch()]);
 
   const run = async (id: string, action: 'approve' | 'reject') => {
     setMessage('');
@@ -31,7 +34,7 @@ export default function AdminVendorsScreen() {
         await reject.mutateAsync({ id });
         setMessage('Vendor application rejected.');
       }
-      await applications.refetch();
+      await refresh();
     } catch (error) {
       const value = error as { message?: string; error?: { message?: string } } | null;
       setMessage(value?.error?.message || value?.message || 'The application could not be updated.');
@@ -42,7 +45,7 @@ export default function AdminVendorsScreen() {
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]}
-      refreshControl={<RefreshControl refreshing={applications.isFetching} onRefresh={() => applications.refetch()} tintColor={colors.primary} />}
+      refreshControl={<RefreshControl refreshing={applications.isFetching || approvalHistory.isFetching} onRefresh={refresh} tintColor={colors.primary} />}
     >
       <Pressable accessibilityRole="button" accessibilityLabel="Back to admin dashboard" onPress={() => router.replace('/admin')} style={styles.back}>
         <Feather name="arrow-left" size={20} color={colors.foreground} />
@@ -86,6 +89,48 @@ export default function AdminVendorsScreen() {
           </View>
         </View>
       ))}
+      <View style={styles.historySection}>
+        <Text style={[styles.kicker, { color: colors.primary }]}>APPROVAL HISTORY</Text>
+        <Text style={[styles.historyIntro, { color: colors.mutedForeground }]}>
+          A record of who approved each vendor, how they were invited, and whether the confirmation email was delivered.
+        </Text>
+        {approvalHistory.isLoading && <ActivityIndicator color={colors.primary} style={styles.loader} />}
+        {!approvalHistory.isLoading && (approvalHistory.data?.items.length ?? 0) === 0 && (
+          <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="clock" size={24} color={colors.primary} />
+            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No approvals recorded</Text>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Completed vendor approvals will remain visible here.</Text>
+          </View>
+        )}
+        {approvalHistory.data?.items.map((approval) => {
+          const approvedDate = new Date(approval.approvedAt);
+          const approver = approval.approvedBy.displayName || approval.approvedBy.email;
+          return (
+            <View key={approval.id} style={[styles.historyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleCopy}>
+                  <Text style={[styles.business, { color: colors.foreground }]}>{approval.businessName}</Text>
+                  <Text style={[styles.meta, { color: colors.mutedForeground }]}>{approval.vendorEmail}</Text>
+                </View>
+                <View style={[styles.badge, { backgroundColor: approval.approvalEmailStatus === 'failed' ? `${colors.destructive}18` : colors.secondary }]}>
+                  <Text style={[styles.badgeText, { color: approval.approvalEmailStatus === 'failed' ? colors.destructive : colors.primary }]}>
+                    {approval.approvalEmailStatus === 'failed' ? 'EMAIL FAILED' : 'EMAIL SENT'}
+                  </Text>
+                </View>
+              </View>
+              <Text style={[styles.historyDetail, { color: colors.foreground }]}>
+                Approved by {approver}
+              </Text>
+              <Text style={[styles.historyMeta, { color: colors.mutedForeground }]}>
+                {approvedDate.toLocaleDateString()} at {approvedDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+              </Text>
+              <Text style={[styles.historyMeta, { color: colors.mutedForeground }]}>
+                {approval.invitationCreated ? 'Clerk invitation created' : 'Existing Clerk account activated'}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
     </ScrollView>
   );
 }
@@ -99,6 +144,8 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 15, lineHeight: 22, marginTop: 12, marginBottom: 24 },
   message: { fontSize: 13, lineHeight: 19, marginBottom: 18 },
   loader: { marginTop: 30 },
+  historySection: { marginTop: 24 },
+  historyIntro: { fontSize: 14, lineHeight: 20, marginTop: -2, marginBottom: 18 },
   empty: { borderWidth: 1, borderRadius: 20, padding: 24, alignItems: 'center' },
   emptyTitle: { fontSize: 16, fontWeight: '700', marginTop: 12 },
   emptyText: { fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 7 },
@@ -113,6 +160,9 @@ const styles = StyleSheet.create({
   description: { fontSize: 13, lineHeight: 19, marginTop: 8 },
   address: { fontSize: 12, marginTop: 8 },
   actions: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  historyCard: { borderWidth: 1, borderRadius: 20, padding: 16, marginBottom: 12 },
+  historyDetail: { fontSize: 13, fontWeight: '600', marginTop: 15 },
+  historyMeta: { fontSize: 12, marginTop: 6 },
   action: { flex: 1, minHeight: 46, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   rejectAction: { borderWidth: 1 },
   actionText: { fontSize: 13, fontWeight: '700' },

@@ -665,6 +665,32 @@ export interface VendorApplicationReceipt {
   message: string;
 }
 
+export type VendorApprovalHistoryApprovedBy = {
+  id: string;
+  /** @nullable */
+  displayName: string | null;
+  email: string;
+};
+
+export type VendorApprovalHistoryApprovalEmailStatus = typeof VendorApprovalHistoryApprovalEmailStatus[keyof typeof VendorApprovalHistoryApprovalEmailStatus];
+
+
+export const VendorApprovalHistoryApprovalEmailStatus = {
+  sent: 'sent',
+  failed: 'failed',
+} as const;
+
+export interface VendorApprovalHistory {
+  id: string;
+  applicationId: string;
+  businessName: string;
+  vendorEmail: string;
+  approvedBy: VendorApprovalHistoryApprovedBy;
+  approvedAt: string;
+  invitationCreated: boolean;
+  approvalEmailStatus: VendorApprovalHistoryApprovalEmailStatus;
+}
+
 export type VendorApplicationStatusResponseStatus = typeof VendorApplicationStatusResponseStatus[keyof typeof VendorApplicationStatusResponseStatus];
 
 
@@ -897,6 +923,10 @@ export type ListAdminUsers200 = {
 
 export type ListAdminVendorApplications200 = {
   items: VendorApplication[];
+};
+
+export type ListAdminVendorApprovalHistory200 = {
+  items: VendorApprovalHistory[];
 };
 
 export type ListAdminInvitations200 = {

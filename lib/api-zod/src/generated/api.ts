@@ -1227,6 +1227,27 @@ export const ListAdminVendorApplicationsResponse = zod.object({
 
 
 /**
+ * @summary List durable vendor approval decisions and email outcomes
+ */
+export const ListAdminVendorApprovalHistoryResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "applicationId": zod.string(),
+  "businessName": zod.string(),
+  "vendorEmail": zod.string(),
+  "approvedBy": zod.object({
+  "id": zod.string(),
+  "displayName": zod.string().nullable(),
+  "email": zod.string()
+}),
+  "approvedAt": zod.coerce.date(),
+  "invitationCreated": zod.boolean(),
+  "approvalEmailStatus": zod.enum(['sent', 'failed'])
+}))
+})
+
+
+/**
  * @summary Review listings created by vendors
  */
 export const ListAdminVendorListingsResponse = zod.object({

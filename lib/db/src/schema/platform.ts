@@ -3,6 +3,7 @@ import {
   check,
   date,
   integer,
+  index,
   jsonb,
   numeric,
   pgTable,
@@ -91,6 +92,26 @@ export const vendorApplications = pgTable(
   (table) => [
     uniqueIndex("vendor_application_email_unique").on(table.email),
     check("vendor_application_status_valid", sql`${table.status} in ('pending', 'approved', 'invited', 'accepted', 'rejected', 'revoked')`),
+  ],
+);
+
+export const vendorApprovalHistory = pgTable(
+  "vendor_approval_history",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    applicationId: uuid("application_id").references(() => vendorApplications.id, { onDelete: "cascade" }).notNull(),
+    approvedBy: uuid("approved_by").references(() => users.id, { onDelete: "restrict" }).notNull(),
+    approvedAt: timestamp("approved_at", { withTimezone: true }).defaultNow().notNull(),
+    businessName: text("business_name").notNull(),
+    vendorEmail: text("vendor_email").notNull(),
+    invitationCreated: boolean("invitation_created").notNull(),
+    approvalEmailStatus: text("approval_email_status").notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index("vendor_approval_history_application_idx").on(table.applicationId),
+    index("vendor_approval_history_approved_at_idx").on(table.approvedAt),
+    check("vendor_approval_history_email_status_valid", sql`${table.approvalEmailStatus} in ('sent', 'failed')`),
   ],
 );
 

@@ -599,6 +599,26 @@ paths:
                 required: [items]
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/vendor-approval-history:
+    get:
+      operationId: listAdminVendorApprovalHistory
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: List durable vendor approval decisions and email outcomes
+      responses:
+        "200":
+          description: Vendor approval history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/VendorApprovalHistory" }
+                required: [items]
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /v1/admin/vendor-listings:
     get:
       operationId: listAdminVendorListings
@@ -1301,6 +1321,24 @@ components:
         status: { type: string, enum: [pending] }
         message: { type: string }
       required: [id, email, status, message]
+    VendorApprovalHistory:
+      type: object
+      properties:
+        id: { type: string }
+        applicationId: { type: string }
+        businessName: { type: string }
+        vendorEmail: { type: string }
+        approvedBy:
+          type: object
+          properties:
+            id: { type: string }
+            displayName: { type: [string, "null"] }
+            email: { type: string }
+          required: [id, displayName, email]
+        approvedAt: { type: string, format: date-time }
+        invitationCreated: { type: boolean }
+        approvalEmailStatus: { type: string, enum: [sent, failed] }
+      required: [id, applicationId, businessName, vendorEmail, approvedBy, approvedAt, invitationCreated, approvalEmailStatus]
     VendorApplicationStatusResponse:
       type: object
       properties:

@@ -45,6 +45,7 @@ import type {
   ListAdminInvitations200,
   ListAdminUsers200,
   ListAdminVendorApplications200,
+  ListAdminVendorApprovalHistory200,
   ListDestinations200,
   ListProperties200,
   Listing,
@@ -2676,6 +2677,83 @@ export function useListAdminVendorApplications<TData = Awaited<ReturnType<typeof
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListAdminVendorApplicationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAdminVendorApprovalHistoryUrl = () => {
+
+
+
+
+  return `/api/v1/admin/vendor-approval-history`
+}
+
+/**
+ * @summary List durable vendor approval decisions and email outcomes
+ */
+export const listAdminVendorApprovalHistory = async ( options?: Parameters<typeof customFetch>[1]): Promise<ListAdminVendorApprovalHistory200> => {
+
+  return customFetch<ListAdminVendorApprovalHistory200>(getListAdminVendorApprovalHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminVendorApprovalHistoryQueryKey = () => {
+    return [
+    `/api/v1/admin/vendor-approval-history`
+    ] as const;
+    }
+
+
+export const getListAdminVendorApprovalHistoryQueryOptions = <TData = Awaited<ReturnType<typeof listAdminVendorApprovalHistory>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminVendorApprovalHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminVendorApprovalHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminVendorApprovalHistory>>> = ({ signal }) => listAdminVendorApprovalHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminVendorApprovalHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminVendorApprovalHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminVendorApprovalHistory>>>
+export type ListAdminVendorApprovalHistoryQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+/**
+ * @summary List durable vendor approval decisions and email outcomes
+ */
+
+export function useListAdminVendorApprovalHistory<TData = Awaited<ReturnType<typeof listAdminVendorApprovalHistory>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminVendorApprovalHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminVendorApprovalHistoryQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

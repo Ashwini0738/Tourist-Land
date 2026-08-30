@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { db, adminInvitations, userRoles, vendorApplications, vendorProfiles } from "@workspace/db";
+import { db, adminInvitations, userRoles, vendorApplications, vendorApprovalHistory, vendorProfiles } from "@workspace/db";
 import type { PrimaryRole } from "./roles";
 export {
   normalizeEmail,
@@ -23,6 +23,7 @@ type LocalUserForClaim = {
 };
 
 export type VendorApplicationRecord = typeof vendorApplications.$inferSelect;
+export type VendorApprovalHistoryRecord = typeof vendorApprovalHistory.$inferSelect;
 
 export type ApprovalEmailStatus = "sent" | "failed";
 
@@ -49,6 +50,45 @@ export function serializeVendorApplication(
     reviewedAt: application.reviewedAt?.toISOString() ?? null,
     invitedAt: application.invitedAt?.toISOString() ?? null,
     ...(approvalEmailStatus ? { approvalEmailStatus } : {}),
+  };
+}
+
+export async function recordVendorApproval(
+  application: VendorApplicationRecord,
+  approvedBy: string,
+  invitationCreated: boolean,
+  approvalEmailStatus: ApprovalEmailStatus,
+): Promise<VendorApprovalHistoryRecord> {
+  const record = (await db.insert(vendorApprovalHistory).values({
+    applicationId: application.id,
+    approvedBy,
+    approvedAt: application.reviewedAt ?? new Date(),
+    businessName: application.businessName,
+    vendorEmail: application.email,
+    invitationCreated,
+    approvalEmailStatus,
+  }).returning())[0];
+  if (!record) throw new Error("Vendor approval history was not recorded.");
+  return record;
+}
+
+export function serializeVendorApprovalHistory(
+  record: VendorApprovalHistoryRecord,
+  approver: { id: string; displayName: string | null; email: string },
+) {
+  return {
+    id: record.id,
+    applicationId: record.applicationId,
+    businessName: record.businessName,
+    vendorEmail: record.vendorEmail,
+    approvedBy: {
+      id: approver.id,
+      displayName: approver.displayName,
+      email: approver.email,
+    },
+    approvedAt: record.approvedAt.toISOString(),
+    invitationCreated: record.invitationCreated,
+    approvalEmailStatus: record.approvalEmailStatus as ApprovalEmailStatus,
   };
 }
 

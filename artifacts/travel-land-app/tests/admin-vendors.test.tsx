@@ -2,11 +2,13 @@ import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 const mockUseListAdminVendorApplications = jest.fn();
+const mockUseListAdminVendorApprovalHistory = jest.fn();
 const mockUseApproveVendorApplication = jest.fn();
 const mockUseRejectVendorApplication = jest.fn();
 
 jest.mock('@workspace/api-client-react', () => ({
   useListAdminVendorApplications: mockUseListAdminVendorApplications,
+  useListAdminVendorApprovalHistory: mockUseListAdminVendorApprovalHistory,
   useApproveVendorApplication: mockUseApproveVendorApplication,
   useRejectVendorApplication: mockUseRejectVendorApplication,
 }));
@@ -39,7 +41,7 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 
-const AdminVendorsScreen = require('./vendors').default as typeof import('./vendors').default;
+const AdminVendorsScreen = require('../app/admin/vendors').default as typeof import('../app/admin/vendors').default;
 
 const application = {
   id: 'application-1',
@@ -61,8 +63,24 @@ const application = {
   invitedAt: null,
 };
 
+const approval = {
+  id: 'approval-1',
+  applicationId: application.id,
+  businessName: application.businessName,
+  vendorEmail: application.email,
+  approvedBy: {
+    id: 'admin-1',
+    displayName: 'Admin Reviewer',
+    email: 'admin@example.com',
+  },
+  approvedAt: '2026-08-30T10:15:00.000Z',
+  invitationCreated: true,
+  approvalEmailStatus: 'failed',
+};
+
 describe('AdminVendorsScreen', () => {
-  const refetch = jest.fn().mockResolvedValue(undefined);
+  const applicationsRefetch = jest.fn().mockResolvedValue(undefined);
+  const historyRefetch = jest.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -70,7 +88,13 @@ describe('AdminVendorsScreen', () => {
       data: { items: [application] },
       isLoading: false,
       isFetching: false,
-      refetch,
+      refetch: applicationsRefetch,
+    });
+    mockUseListAdminVendorApprovalHistory.mockReturnValue({
+      data: { items: [approval] },
+      isLoading: false,
+      isFetching: false,
+      refetch: historyRefetch,
     });
     mockUseRejectVendorApplication.mockReturnValue({
       isPending: false,
@@ -88,7 +112,8 @@ describe('AdminVendorsScreen', () => {
     fireEvent.press(screen.getByText('Approve application'));
 
     await waitFor(() => expect(screen.getByText('Vendor approved and email sent.')).toBeTruthy());
-    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(applicationsRefetch).toHaveBeenCalledTimes(1);
+    expect(historyRefetch).toHaveBeenCalledTimes(1);
   });
 
   it('shows a visible warning when Resend rejects the approval email', async () => {
@@ -103,6 +128,16 @@ describe('AdminVendorsScreen', () => {
     await waitFor(() => expect(
       screen.getByText('Vendor approved, but the approval email could not be delivered.'),
     ).toBeTruthy());
-    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(applicationsRefetch).toHaveBeenCalledTimes(1);
+    expect(historyRefetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps failed approval emails visible in the durable history', () => {
+    const screen = render(<AdminVendorsScreen />);
+
+    expect(screen.getByText('APPROVAL HISTORY')).toBeTruthy();
+    expect(screen.getByText('EMAIL FAILED')).toBeTruthy();
+    expect(screen.getByText('Approved by Admin Reviewer')).toBeTruthy();
+    expect(screen.getByText('Clerk invitation created')).toBeTruthy();
   });
 });
