@@ -16,6 +16,7 @@ type DashboardNavItem = {
 
 const NAVIGATION: Record<DashboardRole, DashboardNavItem[]> = {
   vendor: [
+    { label: 'Traveller app', description: 'Explore destinations and manage your trips', icon: 'compass', route: '/(tabs)' },
     { label: 'Listings', description: 'Hotels, rooms, and properties', icon: 'briefcase', route: '/vendor/listings' },
     { label: 'Bookings', description: 'Bookings related to your listings', icon: 'calendar', route: '/vendor/bookings' },
     { label: 'Enquiries', description: 'Customer questions and follow-ups', icon: 'message-circle', route: '/vendor/enquiries' },

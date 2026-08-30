@@ -1,3 +1,5 @@
+export const VENDOR_ACCESS_ROLES = ["user", "vendor"] as const;
+
 export function vendorApprovalAction(status: string, hasInvitation: boolean): "send-invitation" | "already-invited" | null {
   if (status === "pending") return "send-invitation";
   if (status === "invited" && hasInvitation) return "already-invited";

@@ -10,6 +10,7 @@ describe('role routing', () => {
   it('returns the authenticated role home for direct access to another group', () => {
     expect(unauthorizedHome('user', 'admin')).toBe('/(tabs)');
     expect(unauthorizedHome('vendor', 'admin')).toBe('/vendor');
+    expect(unauthorizedHome('vendor', '(tabs)')).toBeNull();
     expect(unauthorizedHome('user', 'vendor')).toBe('/(tabs)');
     expect(unauthorizedHome('admin', 'vendor')).toBeNull();
     expect(unauthorizedHome('admin', '(tabs)')).toBeNull();

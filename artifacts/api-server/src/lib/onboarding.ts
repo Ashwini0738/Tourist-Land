@@ -11,9 +11,11 @@ export {
 } from "./onboarding-validation.ts";
 export {
   shouldClaimInvitedAccess,
+  VENDOR_ACCESS_ROLES,
   vendorApprovalAction,
   vendorRejectionStatus,
 } from "./onboarding-state.ts";
+import { VENDOR_ACCESS_ROLES } from "./onboarding-state.ts";
 
 type LocalUserForClaim = {
   id: string;
@@ -76,8 +78,26 @@ export async function claimInvitedAccess(user: LocalUserForClaim): Promise<Prima
           state: vendorApplication.state,
           country: vendorApplication.country,
           status: "approved",
-        }).onConflictDoNothing();
-        await tx.insert(userRoles).values({ userId: user.id, role: "vendor" }).onConflictDoNothing();
+        }).onConflictDoUpdate({
+          target: vendorProfiles.userId,
+          set: {
+            businessName: vendorApplication.businessName,
+            businessType: vendorApplication.businessType,
+            contactName: vendorApplication.contactName,
+            phone: vendorApplication.phone,
+            email,
+            description: vendorApplication.description,
+            address: vendorApplication.address,
+            city: vendorApplication.city,
+            state: vendorApplication.state,
+            country: vendorApplication.country,
+            status: "approved",
+            updatedAt: claimedAt,
+          },
+        });
+        await tx.insert(userRoles)
+          .values(VENDOR_ACCESS_ROLES.map((role) => ({ userId: user.id, role })))
+          .onConflictDoNothing();
         claimedRoles.push("vendor");
       }
     }

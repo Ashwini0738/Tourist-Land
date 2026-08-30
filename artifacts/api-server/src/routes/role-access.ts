@@ -24,6 +24,7 @@ import {
 import {
   normalizeEmail,
   serializeVendorApplication,
+  VENDOR_ACCESS_ROLES,
   vendorApprovalAction,
   vendorRejectionStatus,
 } from "../lib/onboarding";
@@ -343,35 +344,44 @@ roleAccessRouter.get("/v1/admin/invitations", requireRole("admin"), async (_req,
 
 async function completeExistingVendorApproval(
   application: typeof vendorApplications.$inferSelect,
-  clerkUser: { id: string; firstName: string | null; lastName: string | null; imageUrl: string },
+  identity: {
+    clerkUserId: string;
+    localUserId?: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    imageUrl?: string;
+  },
   reviewedBy: string,
 ): Promise<typeof vendorApplications.$inferSelect> {
   const expectedStatus = application.status === "approved" ? "approved" : "pending";
   return db.transaction(async (tx) => {
-    const localByClerkId = (await tx
+    const localById = identity.localUserId
+      ? (await tx.select().from(users).where(eq(users.id, identity.localUserId)))[0]
+      : undefined;
+    const localByClerkId = localById ?? (await tx
       .select()
       .from(users)
-      .where(eq(users.clerkUserId, clerkUser.id)))[0];
-    const localByEmail = (await tx
+      .where(eq(users.clerkUserId, identity.clerkUserId)))[0];
+    const localByEmail = localById ?? (await tx
       .select()
       .from(users)
       .where(eq(users.email, application.email)))[0];
 
-    if (localByEmail && localByEmail.clerkUserId !== clerkUser.id) {
+    if (localByEmail && localByEmail.clerkUserId !== identity.clerkUserId) {
       throw new Error("A different local account already owns the vendor application email.");
     }
 
     const local = localByClerkId ?? localByEmail ?? (await tx.insert(users).values({
-      clerkUserId: clerkUser.id,
+      clerkUserId: identity.clerkUserId,
       email: application.email,
-      displayName: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || null,
-      avatarUrl: clerkUser.imageUrl || null,
+      displayName: [identity.firstName, identity.lastName].filter(Boolean).join(" ") || null,
+      avatarUrl: identity.imageUrl || null,
     }).returning())[0];
 
     if (!local) throw new Error("Local user provisioning did not complete.");
 
     await tx.insert(userRoles)
-      .values({ userId: local.id, role: "vendor" })
+      .values(VENDOR_ACCESS_ROLES.map((role) => ({ userId: local.id, role })))
       .onConflictDoNothing();
     await tx.insert(vendorProfiles)
       .values({
@@ -388,7 +398,23 @@ async function completeExistingVendorApproval(
         country: application.country,
         status: "approved",
       })
-      .onConflictDoNothing();
+      .onConflictDoUpdate({
+        target: vendorProfiles.userId,
+        set: {
+          businessName: application.businessName,
+          businessType: application.businessType,
+          contactName: application.contactName,
+          phone: application.phone,
+          email: application.email,
+          description: application.description,
+          address: application.address,
+          city: application.city,
+          state: application.state,
+          country: application.country,
+          status: "approved",
+          updatedAt: new Date(),
+        },
+      });
 
     const accepted = (await tx.update(vendorApplications)
       .set({
@@ -423,6 +449,25 @@ roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("
     error(res, 409, "APPLICATION_STATE_INVALID", "Only pending vendor applications can be approved.");
     return;
   }
+  const existingLocalUser = await db.query.users.findFirst({
+    where: eq(users.email, application.email),
+  });
+  if (existingLocalUser) {
+    try {
+      const accepted = await completeExistingVendorApproval(application, {
+        clerkUserId: existingLocalUser.clerkUserId,
+        localUserId: existingLocalUser.id,
+      }, req.localUser!.id);
+      res.json(serializeVendorApplication(accepted));
+    } catch (approvalError) {
+      logger.error(
+        { applicationId, localUserId: existingLocalUser.id, approvalError },
+        "Unable to grant vendor access to an existing local account",
+      );
+      error(res, 503, "VENDOR_APPROVAL_UNAVAILABLE", "The vendor account could not be activated. Please try again.");
+    }
+    return;
+  }
   let existingClerkUser;
   try {
     existingClerkUser = await findClerkUserByEmail(application.email);
@@ -436,7 +481,12 @@ roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("
   }
   if (existingClerkUser) {
     try {
-      const accepted = await completeExistingVendorApproval(application, existingClerkUser, req.localUser!.id);
+      const accepted = await completeExistingVendorApproval(application, {
+        clerkUserId: existingClerkUser.id,
+        firstName: existingClerkUser.firstName,
+        lastName: existingClerkUser.lastName,
+        imageUrl: existingClerkUser.imageUrl,
+      }, req.localUser!.id);
       res.json(serializeVendorApplication(accepted));
     } catch (approvalError) {
       logger.error(
@@ -467,7 +517,12 @@ roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("
       try {
         const existingUser = await findClerkUserByEmail(approved.email);
         if (existingUser) {
-          const accepted = await completeExistingVendorApproval(approved, existingUser, req.localUser!.id);
+          const accepted = await completeExistingVendorApproval(approved, {
+            clerkUserId: existingUser.id,
+            firstName: existingUser.firstName,
+            lastName: existingUser.lastName,
+            imageUrl: existingUser.imageUrl,
+          }, req.localUser!.id);
           res.json(serializeVendorApplication(accepted));
           return;
         }

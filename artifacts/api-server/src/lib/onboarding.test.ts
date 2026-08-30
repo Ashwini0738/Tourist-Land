@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   shouldClaimInvitedAccess,
+  VENDOR_ACCESS_ROLES,
   vendorApprovalAction,
   vendorRejectionStatus,
 } from "./onboarding-state.ts";
@@ -28,6 +29,10 @@ test("only an invited application can claim vendor access after signup", () => {
   assert.equal(shouldClaimInvitedAccess("pending"), false);
   assert.equal(shouldClaimInvitedAccess("rejected"), false);
   assert.equal(shouldClaimInvitedAccess("invited"), true);
+});
+
+test("approved vendors retain traveller access while gaining vendor access", () => {
+  assert.deepEqual(VENDOR_ACCESS_ROLES, ["user", "vendor"]);
 });
 
 test("vendor application validation reports every invalid field", () => {
