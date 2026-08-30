@@ -71,6 +71,38 @@ test("featured endpoint returns a safe 503 when the resolver fails", async (t) =
   });
 });
 
+test("home endpoint returns a safe 503 when the featured resolver fails", async (t) => {
+  let resolverCalled = false;
+  const app = express();
+  app.use(createCatalogRouter(async () => {
+    resolverCalled = true;
+    throw new Error("simulated database failure");
+  }));
+
+  const server = http.createServer(app);
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+  t.after(() => new Promise<void>((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  }));
+
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Test server did not expose a TCP address.");
+  const response = await fetch(`http://127.0.0.1:${address.port}/v1/home`);
+  const body = await response.json();
+
+  assert.equal(resolverCalled, true);
+  assert.equal(response.status, 503);
+  assert.deepEqual(body, {
+    error: {
+      code: "FEATURED_CONTENT_UNAVAILABLE",
+      message: "Featured content is temporarily unavailable.",
+    },
+  });
+});
+
 test("featured endpoint returns the resolver notice and ordered items over HTTP", async (t) => {
   const fixture: FeaturedContentList = {
     notice: "Featured content is curated for your next journey.",
