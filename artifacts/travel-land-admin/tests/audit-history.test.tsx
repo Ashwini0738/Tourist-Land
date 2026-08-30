@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { useListAdminAuditLogs, useGetAdminAuditLog } = vi.hoisted(() => ({
@@ -52,6 +53,8 @@ const detailForCreatedItem = {
 };
 
 let emptyHistory = false;
+let auditHistoryShouldFail = false;
+let auditHistoryRefetch: ReturnType<typeof vi.fn>;
 
 function responseFor(params?: { q?: string; page?: number }) {
   if (emptyHistory && !params?.q) {
@@ -71,14 +74,21 @@ function responseFor(params?: { q?: string; page?: number }) {
 
 beforeEach(() => {
   emptyHistory = false;
+  auditHistoryShouldFail = false;
+  auditHistoryRefetch = vi.fn();
   useListAdminAuditLogs.mockReset();
-  useListAdminAuditLogs.mockImplementation((params) => ({
-    data: responseFor(params),
-    isLoading: false,
-    isError: false,
-    isFetching: false,
-    refetch: vi.fn(),
-  }));
+  useListAdminAuditLogs.mockImplementation((params) => {
+    const [isError, setIsError] = useState(auditHistoryShouldFail);
+    auditHistoryRefetch.mockImplementation(() => setIsError(false));
+
+    return {
+      data: isError ? undefined : responseFor(params),
+      isLoading: false,
+      isError,
+      isFetching: false,
+      refetch: auditHistoryRefetch,
+    };
+  });
   useGetAdminAuditLog.mockImplementation((id) => ({
     data: id === 'audit-updated' ? detailForUpdatedItem : detailForCreatedItem,
     isLoading: false,
@@ -137,6 +147,26 @@ describe('AuditLogsPage', () => {
       limit: 20,
     }));
     expect(screen.queryByTestId('text-audit-pagination')).not.toBeInTheDocument();
+  });
+
+  it('recovers from an audit history load error when retry is selected', async () => {
+    auditHistoryShouldFail = true;
+    render(<AuditLogsPage />);
+
+    expect(screen.getByText('This view could not load')).toBeInTheDocument();
+    expect(screen.getByText('Check administrator access or try again.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('button-retry'));
+
+    await waitFor(() => expect(screen.getByTestId('audit-destination-audit-updated')).toHaveTextContent('Kerala Backwaters'));
+    expect(auditHistoryRefetch).toHaveBeenCalledTimes(1);
+    expect(useListAdminAuditLogs).toHaveBeenCalledWith({
+      entityType: 'destination',
+      q: undefined,
+      page: 1,
+      limit: 20,
+    });
+    expect(screen.queryByText('This view could not load')).not.toBeInTheDocument();
   });
 
   it('distinguishes no matches from an empty audit history', () => {
