@@ -22,10 +22,16 @@ Useful validation and generation commands:
 
 ```bash
 pnpm --filter @workspace/api-spec run codegen
+pnpm run validate:api-contract
 pnpm --filter @workspace/travel-land-app run typecheck
 pnpm --filter @workspace/api-server run typecheck
 pnpm run typecheck
 ```
+
+Before releasing, run `pnpm run validate:api-contract`. It regenerates the
+React API client and Zod schemas from `lib/api-spec/openapi.yaml`, then fails
+if the generated output differs from the committed files. When it fails,
+review the generated changes and commit them with the OpenAPI update.
 
 Once `DATABASE_URL` is configured, apply the development schema with:
 
