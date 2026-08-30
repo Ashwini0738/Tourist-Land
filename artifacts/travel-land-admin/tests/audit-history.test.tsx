@@ -259,6 +259,31 @@ describe('AuditLogsPage', () => {
     expect(document.activeElement).toBe(screen.getByTestId('button-audit-details-audit-updated'));
   });
 
+  it('keeps Tab and Shift+Tab focus inside a revision detail view', () => {
+    auditDetailShouldFail = true;
+    render(<AuditLogsPage />);
+
+    fireEvent.click(screen.getByTestId('button-audit-details-audit-updated'));
+
+    const dialog = screen.getByRole('dialog');
+    const close = screen.getByTestId('button-close-audit-details');
+    const retry = screen.getByTestId('button-retry-audit-detail');
+
+    expect(document.activeElement).toBe(dialog);
+
+    fireEvent.keyDown(dialog, { key: 'Tab' });
+    expect(document.activeElement).toBe(close);
+
+    fireEvent.keyDown(close, { key: 'Tab' });
+    expect(document.activeElement).toBe(retry);
+
+    fireEvent.keyDown(retry, { key: 'Tab' });
+    expect(document.activeElement).toBe(close);
+
+    fireEvent.keyDown(close, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(retry);
+  });
+
   it('labels missing historical revision detail as unavailable', () => {
     render(<AuditLogsPage />);
 

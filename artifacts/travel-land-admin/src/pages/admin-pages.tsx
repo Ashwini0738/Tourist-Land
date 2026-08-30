@@ -42,6 +42,7 @@ declare module '@workspace/api-client-react' {
 const val = (v: unknown, fallback = 'Unavailable') => v === null || v === undefined || v === '' ? fallback : String(v);
 const day = (v: unknown) => v ? new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(String(v))) : 'Unavailable';
 const amount = (v: unknown, c?: unknown) => typeof v === 'number' ? `${val(c, '')} ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`.trim() : 'Unavailable';
+const dialogFocusableSelector = 'a[href], area[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function Button({ children, onClick, testId, variant = 'primary', disabled, type = 'button' }: { children: ReactNode; onClick?: () => void; testId: string; variant?: 'primary' | 'quiet'; disabled?: boolean; type?: 'button' | 'submit' }) {
   return <button type={type} data-testid={testId} onClick={onClick} disabled={disabled} className={`inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2.5 text-xs font-semibold transition duration-200 active:scale-[.98] disabled:opacity-50 ${variant === 'primary' ? 'bg-primary text-primary-foreground shadow-sm hover:-translate-y-0.5 hover:shadow-md' : 'border border-border bg-card hover:bg-muted'}`}>{children}</button>;
@@ -144,6 +145,27 @@ export function AuditLogsPage() {
       auditDetailTriggerRef.current?.focus();
     }
   }, [selectedAuditId]);
+  const keepFocusInAuditDialog = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Tab') return;
+
+    const focusable = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(dialogFocusableSelector));
+    if (!focusable.length) {
+      event.preventDefault();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const activeElement = document.activeElement;
+    const activeIndex = focusable.indexOf(activeElement as HTMLElement);
+
+    event.preventDefault();
+    if (event.shiftKey) {
+      focusable[activeIndex <= 0 ? focusable.length - 1 : activeIndex - 1].focus();
+    } else {
+      focusable[activeIndex === -1 || activeIndex === focusable.length - 1 ? 0 : activeIndex + 1].focus();
+    }
+  };
   const items = q.data?.items ?? [];
   const meta = q.data?.meta;
   const hasSearch = Boolean(search.trim());
@@ -186,7 +208,7 @@ export function AuditLogsPage() {
       </div>}
     </QueryState>
     {selectedAuditId && <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/25 p-5" onClick={() => setSelectedAuditId(null)}>
-      <section ref={auditDetailDialogRef} role="dialog" aria-modal="true" aria-labelledby="audit-detail-title" tabIndex={-1} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSelectedAuditId(null); } }} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+      <section ref={auditDetailDialogRef} role="dialog" aria-modal="true" aria-labelledby="audit-detail-title" tabIndex={-1} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSelectedAuditId(null); return; } keepFocusInAuditDialog(event); }} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="mb-6 flex items-start justify-between gap-4">
           <div><p className="eyebrow">Immutable revision context</p><h2 id="audit-detail-title" className="mt-1 text-xl font-semibold">Destination change details</h2><p className="mt-1 text-sm text-muted-foreground">Only values recorded by the audit service are shown.</p></div>
           <button type="button" aria-label="Close revision details" data-testid="button-close-audit-details" onClick={() => setSelectedAuditId(null)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"><X size={17} /></button>
