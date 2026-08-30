@@ -198,6 +198,7 @@ export const foodPlaces = pgTable("food_places", {
 
 export const hotels = pgTable("hotels", {
   id: uuid("id").defaultRandom().primaryKey(),
+  catalogId: text("catalog_id").unique(),
   destinationId: uuid("destination_id").references(() => destinations.id, { onDelete: "set null" }),
   ownerId: uuid("owner_id").references(() => users.id, { onDelete: "set null" }),
   name: text("name").notNull(),
@@ -211,6 +212,7 @@ export const hotels = pgTable("hotels", {
 
 export const hotelRooms = pgTable("hotel_rooms", {
   id: uuid("id").defaultRandom().primaryKey(),
+  catalogRoomId: text("catalog_room_id").unique(),
   hotelId: uuid("hotel_id").references(() => hotels.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   capacity: integer("capacity").notNull(),
@@ -238,9 +240,17 @@ export const bookings = pgTable("bookings", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "restrict" }).notNull(),
   reference: text("reference").notNull().unique(),
+  idempotencyKey: text("idempotency_key").unique(),
+  hotelCatalogId: text("hotel_catalog_id").notNull(),
   startsOn: date("starts_on").notNull(),
   endsOn: date("ends_on").notNull(),
+  adults: integer("adults").notNull(),
+  children: integer("children").default(0).notNull(),
   guestCount: integer("guest_count").notNull(),
+  roomCount: integer("room_count").notNull(),
+  guestName: text("guest_name").notNull(),
+  guestEmail: text("guest_email").notNull(),
+  guestPhone: text("guest_phone"),
   totalAmount: numeric("total_amount", { precision: 12, scale: 2 }).notNull(),
   currency: text("currency").default("INR").notNull(),
   status: text("status").default("pending").notNull(),

@@ -646,6 +646,312 @@ export const ListHotelNearbyResponse = zod.object({
 })
 
 
+/**
+ * @summary List only the authenticated traveller's bookings
+ */
+
+
+export const listBookingsResponseItemsItemChildrenMin = 0;
+
+
+
+
+export const listBookingsResponseItemsItemItemsItemNightlyRateMin = 0;
+
+export const listBookingsResponseItemsItemItemsItemRoomTotalMin = 0;
+
+export const listBookingsResponseItemsItemTotalMin = 0;
+
+
+
+export const ListBookingsResponse = zod.object({
+  "notice": zod.string(),
+  "items": zod.array(zod.object({
+  "reference": zod.string(),
+  "hotel": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "location": zod.string(),
+  "imageKey": zod.string()
+}),
+  "startsOn": zod.coerce.date(),
+  "endsOn": zod.coerce.date(),
+  "nights": zod.number().int().min(1),
+  "adults": zod.number().int().min(1),
+  "children": zod.number().int().min(listBookingsResponseItemsItemChildrenMin),
+  "guestCount": zod.number().int().min(1),
+  "roomCount": zod.number().int().min(1),
+  "guest": zod.object({
+  "name": zod.string(),
+  "email": zod.string().email(),
+  "phone": zod.string().nullable()
+}),
+  "items": zod.array(zod.object({
+  "roomId": zod.string(),
+  "name": zod.string(),
+  "quantity": zod.number().int().min(1),
+  "nightlyRate": zod.number().min(listBookingsResponseItemsItemItemsItemNightlyRateMin),
+  "roomTotal": zod.number().min(listBookingsResponseItemsItemItemsItemRoomTotalMin),
+  "currency": zod.string()
+})),
+  "total": zod.number().min(listBookingsResponseItemsItemTotalMin),
+  "currency": zod.string(),
+  "status": zod.enum(['pending_payment', 'cancelled']),
+  "paymentStatus": zod.enum(['unpaid']),
+  "sourceNotice": zod.string(),
+  "canCancel": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Create an unpaid development booking after final server revalidation
+ */
+export const createBookingHeaderIdempotencyKeyMin = 8;
+export const createBookingHeaderIdempotencyKeyMax = 128;
+
+
+
+export const CreateBookingHeader = zod.object({
+  "Idempotency-Key": zod.string().min(createBookingHeaderIdempotencyKeyMin).max(createBookingHeaderIdempotencyKeyMax).describe('Client-generated key reused when safely retrying the same create request.')
+})
+
+export const createBookingBodyHotelIdMax = 100;
+
+export const createBookingBodyAdultsMax = 40;
+
+export const createBookingBodyChildrenMin = 0;
+export const createBookingBodyChildrenMax = 40;
+
+export const createBookingBodyRoomsMax = 20;
+
+export const createBookingBodyItemsItemRoomIdMax = 100;
+
+export const createBookingBodyItemsItemQuantityMax = 20;
+
+export const createBookingBodyItemsMax = 20;
+
+export const createBookingBodyGuestNameMin = 2;
+export const createBookingBodyGuestNameMax = 120;
+
+export const createBookingBodyGuestEmailMax = 320;
+
+export const createBookingBodyGuestPhoneMax = 40;
+
+
+
+export const CreateBookingBody = zod.object({
+  "hotelId": zod.string().min(1).max(createBookingBodyHotelIdMax),
+  "checkIn": zod.coerce.date(),
+  "checkOut": zod.coerce.date(),
+  "adults": zod.number().int().min(1).max(createBookingBodyAdultsMax),
+  "children": zod.number().int().min(createBookingBodyChildrenMin).max(createBookingBodyChildrenMax),
+  "rooms": zod.number().int().min(1).max(createBookingBodyRoomsMax),
+  "items": zod.array(zod.object({
+  "roomId": zod.string().min(1).max(createBookingBodyItemsItemRoomIdMax),
+  "quantity": zod.number().int().min(1).max(createBookingBodyItemsItemQuantityMax)
+})).min(1).max(createBookingBodyItemsMax),
+  "guest": zod.object({
+  "name": zod.string().min(createBookingBodyGuestNameMin).max(createBookingBodyGuestNameMax),
+  "email": zod.string().email().max(createBookingBodyGuestEmailMax),
+  "phone": zod.string().max(createBookingBodyGuestPhoneMax).nullable()
+})
+})
+
+
+
+export const createBookingResponseBookingChildrenMin = 0;
+
+
+
+
+export const createBookingResponseBookingItemsItemNightlyRateMin = 0;
+
+export const createBookingResponseBookingItemsItemRoomTotalMin = 0;
+
+export const createBookingResponseBookingTotalMin = 0;
+
+
+
+export const CreateBookingResponse = zod.object({
+  "booking": zod.object({
+  "reference": zod.string(),
+  "hotel": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "location": zod.string(),
+  "imageKey": zod.string()
+}),
+  "startsOn": zod.coerce.date(),
+  "endsOn": zod.coerce.date(),
+  "nights": zod.number().int().min(1),
+  "adults": zod.number().int().min(1),
+  "children": zod.number().int().min(createBookingResponseBookingChildrenMin),
+  "guestCount": zod.number().int().min(1),
+  "roomCount": zod.number().int().min(1),
+  "guest": zod.object({
+  "name": zod.string(),
+  "email": zod.string().email(),
+  "phone": zod.string().nullable()
+}),
+  "items": zod.array(zod.object({
+  "roomId": zod.string(),
+  "name": zod.string(),
+  "quantity": zod.number().int().min(1),
+  "nightlyRate": zod.number().min(createBookingResponseBookingItemsItemNightlyRateMin),
+  "roomTotal": zod.number().min(createBookingResponseBookingItemsItemRoomTotalMin),
+  "currency": zod.string()
+})),
+  "total": zod.number().min(createBookingResponseBookingTotalMin),
+  "currency": zod.string(),
+  "status": zod.enum(['pending_payment', 'cancelled']),
+  "paymentStatus": zod.enum(['unpaid']),
+  "sourceNotice": zod.string(),
+  "canCancel": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Get one booking owned by the authenticated traveller
+ */
+export const getBookingPathReferenceMin = 8;
+export const getBookingPathReferenceMax = 32;
+
+
+
+export const GetBookingParams = zod.object({
+  "reference": zod.coerce.string().min(getBookingPathReferenceMin).max(getBookingPathReferenceMax)
+})
+
+
+
+export const getBookingResponseBookingChildrenMin = 0;
+
+
+
+
+export const getBookingResponseBookingItemsItemNightlyRateMin = 0;
+
+export const getBookingResponseBookingItemsItemRoomTotalMin = 0;
+
+export const getBookingResponseBookingTotalMin = 0;
+
+
+
+export const GetBookingResponse = zod.object({
+  "booking": zod.object({
+  "reference": zod.string(),
+  "hotel": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "location": zod.string(),
+  "imageKey": zod.string()
+}),
+  "startsOn": zod.coerce.date(),
+  "endsOn": zod.coerce.date(),
+  "nights": zod.number().int().min(1),
+  "adults": zod.number().int().min(1),
+  "children": zod.number().int().min(getBookingResponseBookingChildrenMin),
+  "guestCount": zod.number().int().min(1),
+  "roomCount": zod.number().int().min(1),
+  "guest": zod.object({
+  "name": zod.string(),
+  "email": zod.string().email(),
+  "phone": zod.string().nullable()
+}),
+  "items": zod.array(zod.object({
+  "roomId": zod.string(),
+  "name": zod.string(),
+  "quantity": zod.number().int().min(1),
+  "nightlyRate": zod.number().min(getBookingResponseBookingItemsItemNightlyRateMin),
+  "roomTotal": zod.number().min(getBookingResponseBookingItemsItemRoomTotalMin),
+  "currency": zod.string()
+})),
+  "total": zod.number().min(getBookingResponseBookingTotalMin),
+  "currency": zod.string(),
+  "status": zod.enum(['pending_payment', 'cancelled']),
+  "paymentStatus": zod.enum(['unpaid']),
+  "sourceNotice": zod.string(),
+  "canCancel": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Cancel an eligible booking owned by the authenticated traveller
+ */
+export const cancelBookingPathReferenceMin = 8;
+export const cancelBookingPathReferenceMax = 32;
+
+
+
+export const CancelBookingParams = zod.object({
+  "reference": zod.coerce.string().min(cancelBookingPathReferenceMin).max(cancelBookingPathReferenceMax)
+})
+
+
+
+export const cancelBookingResponseBookingChildrenMin = 0;
+
+
+
+
+export const cancelBookingResponseBookingItemsItemNightlyRateMin = 0;
+
+export const cancelBookingResponseBookingItemsItemRoomTotalMin = 0;
+
+export const cancelBookingResponseBookingTotalMin = 0;
+
+
+
+export const CancelBookingResponse = zod.object({
+  "booking": zod.object({
+  "reference": zod.string(),
+  "hotel": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "location": zod.string(),
+  "imageKey": zod.string()
+}),
+  "startsOn": zod.coerce.date(),
+  "endsOn": zod.coerce.date(),
+  "nights": zod.number().int().min(1),
+  "adults": zod.number().int().min(1),
+  "children": zod.number().int().min(cancelBookingResponseBookingChildrenMin),
+  "guestCount": zod.number().int().min(1),
+  "roomCount": zod.number().int().min(1),
+  "guest": zod.object({
+  "name": zod.string(),
+  "email": zod.string().email(),
+  "phone": zod.string().nullable()
+}),
+  "items": zod.array(zod.object({
+  "roomId": zod.string(),
+  "name": zod.string(),
+  "quantity": zod.number().int().min(1),
+  "nightlyRate": zod.number().min(cancelBookingResponseBookingItemsItemNightlyRateMin),
+  "roomTotal": zod.number().min(cancelBookingResponseBookingItemsItemRoomTotalMin),
+  "currency": zod.string()
+})),
+  "total": zod.number().min(cancelBookingResponseBookingTotalMin),
+  "currency": zod.string(),
+  "status": zod.enum(['pending_payment', 'cancelled']),
+  "paymentStatus": zod.enum(['unpaid']),
+  "sourceNotice": zod.string(),
+  "canCancel": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+})
+
+
 export const listHomePropertiesResponseItemsItemCoordinatesLatitudeMin = -90;
 export const listHomePropertiesResponseItemsItemCoordinatesLatitudeMax = 90;
 

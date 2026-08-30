@@ -7,6 +7,7 @@ import onboardingRouter from "./onboarding";
 import exploreRouter from "./explore";
 import favoritesRouter from "./favorites";
 import hotelsRouter from "./hotels";
+import bookingsRouter from "./bookings";
 
 const router: IRouter = Router();
 
@@ -15,6 +16,7 @@ router.use(catalogRouter);
 router.use(exploreRouter);
 router.use(favoritesRouter);
 router.use(hotelsRouter);
+router.use(bookingsRouter);
 router.use(onboardingRouter);
 router.use(authRouter);
 router.use(roleAccessRouter);

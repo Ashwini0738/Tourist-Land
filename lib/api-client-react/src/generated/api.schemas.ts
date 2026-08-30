@@ -326,6 +326,143 @@ export interface HotelNearbyList {
   items: HotelNearbyPlace[];
 }
 
+export interface BookingCreateItem {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  roomId: string;
+  /**
+     * @minimum 1
+     * @maximum 20
+     */
+  quantity: number;
+}
+
+export interface BookingGuestInput {
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  name: string;
+  /** @maxLength 320 */
+  email: string;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  phone: string | null;
+}
+
+export interface BookingCreateInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  hotelId: string;
+  checkIn: string;
+  checkOut: string;
+  /**
+     * @minimum 1
+     * @maximum 40
+     */
+  adults: number;
+  /**
+     * @minimum 0
+     * @maximum 40
+     */
+  children: number;
+  /**
+     * @minimum 1
+     * @maximum 20
+     */
+  rooms: number;
+  /**
+     * @minItems 1
+     * @maxItems 20
+     */
+  items: BookingCreateItem[];
+  guest: BookingGuestInput;
+}
+
+export interface BookingGuest {
+  name: string;
+  email: string;
+  /** @nullable */
+  phone: string | null;
+}
+
+export interface BookingHotel {
+  id: string;
+  name: string;
+  location: string;
+  imageKey: string;
+}
+
+export interface BookingItem {
+  roomId: string;
+  name: string;
+  /** @minimum 1 */
+  quantity: number;
+  /** @minimum 0 */
+  nightlyRate: number;
+  /** @minimum 0 */
+  roomTotal: number;
+  currency: string;
+}
+
+export type BookingStatus = typeof BookingStatus[keyof typeof BookingStatus];
+
+
+export const BookingStatus = {
+  pending_payment: 'pending_payment',
+  cancelled: 'cancelled',
+} as const;
+
+export type PaymentStatus = typeof PaymentStatus[keyof typeof PaymentStatus];
+
+
+export const PaymentStatus = {
+  unpaid: 'unpaid',
+} as const;
+
+export interface Booking {
+  reference: string;
+  hotel: BookingHotel;
+  startsOn: string;
+  endsOn: string;
+  /** @minimum 1 */
+  nights: number;
+  /** @minimum 1 */
+  adults: number;
+  /** @minimum 0 */
+  children: number;
+  /** @minimum 1 */
+  guestCount: number;
+  /** @minimum 1 */
+  roomCount: number;
+  guest: BookingGuest;
+  items: BookingItem[];
+  /** @minimum 0 */
+  total: number;
+  currency: string;
+  status: BookingStatus;
+  paymentStatus: PaymentStatus;
+  sourceNotice: string;
+  canCancel: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BookingResponse {
+  booking: Booking;
+}
+
+export interface BookingList {
+  notice: string;
+  items: Booking[];
+}
+
 export interface Property {
   id: string;
   slug: string;
@@ -1012,6 +1149,11 @@ export type ServiceUnavailableResponse = ErrorResponse;
  * Too many requests
  */
 export type RateLimitedResponse = ErrorResponse;
+
+/**
+ * Client-generated key reused when safely retrying the same create request.
+ */
+export type IdempotencyKeyParameter = string;
 
 export type SearchHotelsParams = {
 /**

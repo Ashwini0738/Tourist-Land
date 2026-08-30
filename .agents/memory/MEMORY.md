@@ -4,3 +4,4 @@
 - [Native unlock verification](native-unlock-verification.md) — mocked Expo tests protect routing logic but do not confirm biometric or device-passcode behavior.
 - [API pure route tests](api-pure-route-tests.md) — keep search and catalog normalization tests independent from database and authentication startup.
 - [Development schema application](development-schema-application.md) — additive Drizzle schema changes are applied by the post-merge flow, not from non-interactive agent shells or app startup.
+- [Orval Zod compatibility](orval-zod3-compatibility.md) — generated integer/email helpers need normalization while this workspace uses Zod 3.

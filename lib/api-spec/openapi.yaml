@@ -13,6 +13,7 @@ tags:
   - name: auth
   - name: vendor
   - name: admin
+  - name: bookings
 paths:
   /healthz:
     get:
@@ -241,6 +242,78 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/HotelNearbyList" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /v1/bookings:
+    get:
+      operationId: listBookings
+      tags: [bookings]
+      security: [{ bearerAuth: [] }]
+      summary: List only the authenticated traveller's bookings
+      responses:
+        "200":
+          description: Owned hotel bookings grouped by current booking state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingList" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      security: [{ bearerAuth: [] }]
+      summary: Create an unpaid development booking after final server revalidation
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookingCreateInput" }
+      responses:
+        "201":
+          description: Booking created in payment-pending state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingResponse" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /v1/bookings/{reference}:
+    get:
+      operationId: getBooking
+      tags: [bookings]
+      security: [{ bearerAuth: [] }]
+      summary: Get one booking owned by the authenticated traveller
+      parameters:
+        - $ref: "#/components/parameters/BookingReference"
+      responses:
+        "200":
+          description: Owned booking detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingResponse" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /v1/bookings/{reference}/cancel:
+    post:
+      operationId: cancelBooking
+      tags: [bookings]
+      security: [{ bearerAuth: [] }]
+      summary: Cancel an eligible booking owned by the authenticated traveller
+      parameters:
+        - $ref: "#/components/parameters/BookingReference"
+      responses:
+        "200":
+          description: Booking cancelled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingResponse" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /v1/home/properties:
     get:
       operationId: listHomeProperties
@@ -931,6 +1004,23 @@ components:
         type: string
         minLength: 1
         maxLength: 200
+    BookingReference:
+      name: reference
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 32
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Client-generated key reused when safely retrying the same create request.
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
   responses:
     NotFound:
       description: Resource not found
@@ -1220,6 +1310,106 @@ components:
           type: array
           items: { $ref: "#/components/schemas/HotelNearbyPlace" }
       required: [hotelId, notice, items]
+    BookingCreateInput:
+      type: object
+      properties:
+        hotelId: { type: string, minLength: 1, maxLength: 100 }
+        checkIn: { type: string, format: date }
+        checkOut: { type: string, format: date }
+        adults: { type: integer, minimum: 1, maximum: 40 }
+        children: { type: integer, minimum: 0, maximum: 40 }
+        rooms: { type: integer, minimum: 1, maximum: 20 }
+        items:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/BookingCreateItem"
+        guest:
+          $ref: "#/components/schemas/BookingGuestInput"
+      required: [hotelId, checkIn, checkOut, adults, children, rooms, items, guest]
+    BookingCreateItem:
+      type: object
+      properties:
+        roomId: { type: string, minLength: 1, maxLength: 100 }
+        quantity: { type: integer, minimum: 1, maximum: 20 }
+      required: [roomId, quantity]
+    BookingGuestInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        email: { type: string, format: email, maxLength: 320 }
+        phone: { type: ["string", "null"], maxLength: 40 }
+      required: [name, email, phone]
+    BookingGuest:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: ["string", "null"] }
+      required: [name, email, phone]
+    BookingHotel:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        location: { type: string }
+        imageKey: { type: string }
+      required: [id, name, location, imageKey]
+    BookingItem:
+      type: object
+      properties:
+        roomId: { type: string }
+        name: { type: string }
+        quantity: { type: integer, minimum: 1 }
+        nightlyRate: { type: number, minimum: 0 }
+        roomTotal: { type: number, minimum: 0 }
+        currency: { type: string }
+      required: [roomId, name, quantity, nightlyRate, roomTotal, currency]
+    BookingStatus:
+      type: string
+      enum: [pending_payment, cancelled]
+    PaymentStatus:
+      type: string
+      enum: [unpaid]
+    Booking:
+      type: object
+      properties:
+        reference: { type: string }
+        hotel: { $ref: "#/components/schemas/BookingHotel" }
+        startsOn: { type: string, format: date }
+        endsOn: { type: string, format: date }
+        nights: { type: integer, minimum: 1 }
+        adults: { type: integer, minimum: 1 }
+        children: { type: integer, minimum: 0 }
+        guestCount: { type: integer, minimum: 1 }
+        roomCount: { type: integer, minimum: 1 }
+        guest: { $ref: "#/components/schemas/BookingGuest" }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/BookingItem" }
+        total: { type: number, minimum: 0 }
+        currency: { type: string }
+        status: { $ref: "#/components/schemas/BookingStatus" }
+        paymentStatus: { $ref: "#/components/schemas/PaymentStatus" }
+        sourceNotice: { type: string }
+        canCancel: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [reference, hotel, startsOn, endsOn, nights, adults, children, guestCount, roomCount, guest, items, total, currency, status, paymentStatus, sourceNotice, canCancel, createdAt, updatedAt]
+    BookingResponse:
+      type: object
+      properties:
+        booking: { $ref: "#/components/schemas/Booking" }
+      required: [booking]
+    BookingList:
+      type: object
+      properties:
+        notice: { type: string }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Booking" }
+      required: [notice, items]
     Food:
       type: object
       properties:

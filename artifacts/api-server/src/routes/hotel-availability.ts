@@ -51,6 +51,10 @@ const developmentInventory: Record<string, DevelopmentRoom[]> = {
   "02": [],
 };
 
+export function getDevelopmentRoom(hotelId: string, roomId: string) {
+  return developmentInventory[hotelId]?.find((room) => room.id === roomId) ?? null;
+}
+
 function isRealCalendarDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T12:00:00Z`);

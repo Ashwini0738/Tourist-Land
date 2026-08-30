@@ -24,6 +24,9 @@ import type {
   AdminListingList,
   AuthSessionStatus,
   BannerList,
+  BookingCreateInput,
+  BookingList,
+  BookingResponse,
   ConflictResponse,
   CurrentUser,
   DestinationDetail,
@@ -1006,6 +1009,302 @@ export function useListHotelNearby<TData = Awaited<ReturnType<typeof listHotelNe
 
 
 
+
+export const getListBookingsUrl = () => {
+
+
+
+
+  return `/api/v1/bookings`
+}
+
+/**
+ * @summary List only the authenticated traveller's bookings
+ */
+export const listBookings = async ( options?: Parameters<typeof customFetch>[1]): Promise<BookingList> => {
+
+  return customFetch<BookingList>(getListBookingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBookingsQueryKey = () => {
+    return [
+    `/api/v1/bookings`
+    ] as const;
+    }
+
+
+export const getListBookingsQueryOptions = <TData = Awaited<ReturnType<typeof listBookings>>, TError = ErrorType<UnauthenticatedResponse | ServiceUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBookings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBookingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBookings>>> = ({ signal }) => listBookings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBookings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListBookingsQueryResult = NonNullable<Awaited<ReturnType<typeof listBookings>>>
+export type ListBookingsQueryError = ErrorType<UnauthenticatedResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary List only the authenticated traveller's bookings
+ */
+
+export function useListBookings<TData = Awaited<ReturnType<typeof listBookings>>, TError = ErrorType<UnauthenticatedResponse | ServiceUnavailableResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBookings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListBookingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateBookingUrl = () => {
+
+
+
+
+  return `/api/v1/bookings`
+}
+
+/**
+ * @summary Create an unpaid development booking after final server revalidation
+ */
+export const createBooking = async (bookingCreateInput: BookingCreateInput, options?: Parameters<typeof customFetch>[1]): Promise<BookingResponse> => {
+
+  return customFetch<BookingResponse>(getCreateBookingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(bookingCreateInput)
+  }
+);}
+
+
+
+
+
+export const getCreateBookingMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBooking>>, TError,{data: BodyType<BookingCreateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBooking>>, TError,{data: BodyType<BookingCreateInput>}, TContext> => {
+
+const mutationKey = ['createBooking'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBooking>>, {data: BodyType<BookingCreateInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createBooking(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBookingMutationResult = NonNullable<Awaited<ReturnType<typeof createBooking>>>
+    export type CreateBookingMutationBody = BodyType<BookingCreateInput>
+    export type CreateBookingMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Create an unpaid development booking after final server revalidation
+ */
+export const useCreateBooking = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBooking>>, TError,{data: BodyType<BookingCreateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createBooking>>,
+        TError,
+        {data: BodyType<BookingCreateInput>},
+        TContext
+      > => {
+      return useMutation(getCreateBookingMutationOptions(options));
+    }
+
+export const getGetBookingUrl = (reference: string,) => {
+
+
+
+
+  return `/api/v1/bookings/${reference}`
+}
+
+/**
+ * @summary Get one booking owned by the authenticated traveller
+ */
+export const getBooking = async (reference: string, options?: Parameters<typeof customFetch>[1]): Promise<BookingResponse> => {
+
+  return customFetch<BookingResponse>(getGetBookingUrl(reference),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBookingQueryKey = (reference: string,) => {
+    return [
+    `/api/v1/bookings/${reference}`
+    ] as const;
+    }
+
+
+export const getGetBookingQueryOptions = <TData = Awaited<ReturnType<typeof getBooking>>, TError = ErrorType<UnauthenticatedResponse | NotFoundResponse | ServiceUnavailableResponse>>(reference: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBooking>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBookingQueryKey(reference);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBooking>>> = ({ signal }) => getBooking(reference, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: reference !== null && reference !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBooking>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBookingQueryResult = NonNullable<Awaited<ReturnType<typeof getBooking>>>
+export type GetBookingQueryError = ErrorType<UnauthenticatedResponse | NotFoundResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary Get one booking owned by the authenticated traveller
+ */
+
+export function useGetBooking<TData = Awaited<ReturnType<typeof getBooking>>, TError = ErrorType<UnauthenticatedResponse | NotFoundResponse | ServiceUnavailableResponse>>(
+ reference: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBooking>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBookingQueryOptions(reference,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCancelBookingUrl = (reference: string,) => {
+
+
+
+
+  return `/api/v1/bookings/${reference}/cancel`
+}
+
+/**
+ * @summary Cancel an eligible booking owned by the authenticated traveller
+ */
+export const cancelBooking = async (reference: string, options?: Parameters<typeof customFetch>[1]): Promise<BookingResponse> => {
+
+  return customFetch<BookingResponse>(getCancelBookingUrl(reference),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCancelBookingMutationOptions = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelBooking>>, TError,{reference: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelBooking>>, TError,{reference: string}, TContext> => {
+
+const mutationKey = ['cancelBooking'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelBooking>>, {reference: string}> = (props) => {
+          const {reference} = props ?? {};
+
+          return  cancelBooking(reference,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelBookingMutationResult = NonNullable<Awaited<ReturnType<typeof cancelBooking>>>
+
+    export type CancelBookingMutationError = ErrorType<UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Cancel an eligible booking owned by the authenticated traveller
+ */
+export const useCancelBooking = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelBooking>>, TError,{reference: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cancelBooking>>,
+        TError,
+        {reference: string},
+        TContext
+      > => {
+      return useMutation(getCancelBookingMutationOptions(options));
+    }
 
 export const getListHomePropertiesUrl = () => {
 

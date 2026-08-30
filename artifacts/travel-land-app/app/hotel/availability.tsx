@@ -111,6 +111,27 @@ export default function HotelAvailabilityScreen() {
     void availabilityQuery.refetch();
   };
 
+  const continueToBooking = () => {
+    if (!availabilityQuery.data || selectedRoomCount !== selection.rooms) {
+      setFormMessage(`Select exactly ${selection.rooms} room${selection.rooms === 1 ? '' : 's'} to continue.`);
+      return;
+    }
+    router.push({
+      pathname: '/booking',
+      params: {
+        hotelId,
+        hotelName,
+        location,
+        checkIn: selection.checkIn,
+        checkOut: selection.checkOut,
+        adults: String(selection.adults),
+        children: String(selection.children),
+        rooms: String(selection.rooms),
+        items: JSON.stringify(Object.entries(quantities).filter(([, quantity]) => quantity > 0).map(([roomId, quantity]) => ({ roomId, quantity }))),
+      },
+    });
+  };
+
   if (hotelQuery.isLoading && !hotelQuery.data) return <AvailabilityLoading />;
   if (hotelQuery.isError || !hotelQuery.data?.hotel) {
     return <AvailabilityError onRetry={() => void hotelQuery.refetch()} />;
@@ -173,6 +194,17 @@ export default function HotelAvailabilityScreen() {
               total={displayTotal}
               serverEstimate={availabilityQuery.data.total}
             />
+            <Pressable
+              testID="availability-continue-booking"
+              accessibilityRole="button"
+              accessibilityLabel="Continue to booking"
+              disabled={selectedRoomCount !== selection.rooms}
+              onPress={continueToBooking}
+              style={[styles.continueButton, { backgroundColor: colors.primary, opacity: selectedRoomCount === selection.rooms ? 1 : 0.45 }]}
+            >
+              <Text style={[styles.stateButtonText, { color: colors.primaryForeground }]}>Continue to guest details</Text>
+              <Feather name="arrow-right" size={16} color={colors.primaryForeground} />
+            </Pressable>
           </>
         ) : (
           <View testID="availability-empty" style={[styles.stateCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -279,6 +311,7 @@ const styles = StyleSheet.create({
   summaryTotal: { fontSize: 19, fontWeight: '800' },
   summaryMeta: { fontSize: 11, fontWeight: '700', marginTop: 7 },
   summaryNote: { fontSize: 10, lineHeight: 15, marginTop: 10, opacity: 0.82 },
+  continueButton: { minHeight: 51, borderRadius: 15, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 12 },
   loading: { flex: 1 },
   loadingHero: { height: 100, margin: 18, borderRadius: 19 },
   loadingCopy: { padding: 18 },

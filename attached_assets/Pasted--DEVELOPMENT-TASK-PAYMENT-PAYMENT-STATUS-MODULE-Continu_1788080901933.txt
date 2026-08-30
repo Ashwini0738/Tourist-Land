@@ -1,0 +1,903 @@
+# DEVELOPMENT TASK — PAYMENT + PAYMENT STATUS MODULE
+
+Continue development of the existing **Travel & Land** application.
+
+## IMPORTANT — COMPLETED MODULES
+
+Treat these as stable:
+
+* User authentication
+* Vendor authentication
+* Admin authentication
+* Clerk authentication
+* Email verification / OTP / MFA
+* Fingerprint / Face ID / native device authentication
+* Role-based authorization
+* Home
+* Explore
+* Destination Details
+* Maps & Location
+* Hotels
+* Hotel Details
+* Hotel search
+* Hotel filters/sorting
+* Hotel availability
+* Room selection
+* Booking creation
+* My Bookings
+* Booking Details
+* Booking cancellation
+* Booking status
+* Payment status fields
+* Existing REST API
+* OpenAPI
+* Generated TypeScript API client
+* React Query hooks
+* Zod schemas
+
+Do NOT rebuild authentication, booking, hotels, availability, Home, Explore, or Maps.
+
+---
+
+# OBJECTIVE
+
+Implement the **Payment module** and connect it correctly to the existing Booking system.
+
+Target flow:
+
+Hotel
+→ Availability
+→ Select Room
+→ Booking Details
+→ Payment
+→ Payment Processing
+→ Payment Verification
+→ Booking Confirmation
+→ My Bookings
+
+The payment system must use a real payment gateway in production.
+
+For development environments where gateway credentials are unavailable, provide a clearly marked development/test mode.
+
+NEVER create a fake "Payment Successful" response.
+
+---
+
+# 1. PAYMENT SCREEN
+
+Create a mobile-first Payment screen.
+
+Display:
+
+### Booking summary
+
+* Hotel
+* Room
+* Check-in
+* Check-out
+* Guests
+* Number of rooms
+
+### Price summary
+
+* Room amount
+* Taxes
+* Fees
+* Discount
+* Total amount
+
+### Payment method
+
+Prepare support for the configured payment gateway.
+
+For India, prefer a gateway architecture suitable for:
+
+* UPI
+* Credit card
+* Debit card
+* Net banking
+* Wallet/payment methods supported by the selected provider
+
+Do not hardcode a payment provider if one is already configured in the project.
+
+First inspect the project for existing payment configuration.
+
+---
+
+# 2. PAYMENT PROVIDER
+
+Inspect the existing project and determine whether a payment provider is already configured.
+
+If one exists:
+
+Reuse it.
+
+If none exists:
+
+Choose a production-ready provider appropriate for the application's target market.
+
+Keep the provider integration behind a clean payment service abstraction.
+
+The application should be able to replace the provider later without rewriting the Booking module.
+
+Do NOT put secret API keys in:
+
+* React Native code
+* Expo public environment variables
+* Git
+* GitHub
+* client-side source
+
+Server-side secrets only.
+
+---
+
+# 3. ENVIRONMENT VARIABLES
+
+Use environment variables for payment configuration.
+
+Separate:
+
+### Server secrets
+
+Examples:
+
+* PAYMENT_SECRET_KEY
+* PAYMENT_WEBHOOK_SECRET
+
+### Client-safe configuration
+
+Only expose values that are explicitly safe for the client.
+
+Do not expose private payment credentials.
+
+Create/update the project's environment documentation.
+
+---
+
+# 4. PAYMENT ORDER / INTENT
+
+Before opening the payment UI, create a server-side payment order/intent.
+
+Potential endpoint:
+
+POST /api/v1/payments/create
+
+The server should:
+
+1. Authenticate the user.
+2. Verify booking ownership.
+3. Verify booking is payable.
+4. Revalidate booking status.
+5. Revalidate payment status.
+6. Verify the authoritative booking total.
+7. Create a payment order/intent with the gateway.
+8. Return only the client-safe payment information.
+
+Never allow the client to choose an arbitrary payment amount.
+
+---
+
+# 5. PAYMENT AMOUNT
+
+The payment amount must come from the server-side booking total.
+
+Do NOT trust:
+
+* amount from React Native
+* amount from route parameters
+* amount from local state
+* amount from AsyncStorage
+
+The server must determine the amount.
+
+---
+
+# 6. PAYMENT STATUS
+
+Maintain payment status separately from booking status.
+
+Suggested payment states:
+
+* unpaid
+* pending
+* processing
+* paid
+* failed
+* cancelled
+* refunded
+* partially_refunded
+
+Do not mark payment as "paid" based only on a frontend callback.
+
+---
+
+# 7. PAYMENT VERIFICATION
+
+This is critical.
+
+After the user completes payment:
+
+The server must verify the payment with the payment provider.
+
+Possible flow:
+
+Client
+→ Payment Gateway
+→ Payment Result
+→ Server Verification
+→ Webhook/Provider Confirmation
+→ Update Payment
+→ Update Booking
+
+The frontend callback must NOT be considered authoritative.
+
+---
+
+# 8. WEBHOOK
+
+Implement a secure payment webhook endpoint.
+
+Potential endpoint:
+
+POST /api/v1/payments/webhook
+
+The webhook must:
+
+* Verify provider signature
+* Reject invalid signatures
+* Process valid payment events
+* Be idempotent
+* Update payment status
+* Update booking status appropriately
+
+Never trust webhook data without signature verification.
+
+---
+
+# 9. IDEMPOTENCY
+
+Prevent duplicate payments and duplicate booking confirmation.
+
+Handle:
+
+* User double taps
+* Network retries
+* App restart
+* Payment callback retry
+* Webhook retry
+* Gateway retry
+
+The same payment event must not create duplicate transactions.
+
+---
+
+# 10. PAYMENT TRANSACTION MODEL
+
+Inspect the existing database first.
+
+If required, create a payment transaction model.
+
+Suggested fields:
+
+* id
+* booking_id
+* user_id
+* provider
+* provider_order_id
+* provider_payment_id
+* amount
+* currency
+* status
+* failure_code
+* failure_message
+* paid_at
+* created_at
+* updated_at
+
+Do not store sensitive card information.
+
+Never store:
+
+* Card number
+* CVV
+* PIN
+* Full banking credentials
+
+Use the payment provider's secure checkout/tokenization.
+
+---
+
+# 11. PAYMENT ATTEMPTS
+
+Support payment retries safely.
+
+Example:
+
+Booking:
+
+TL-2026-123456
+
+Payment attempt #1:
+
+FAILED
+
+User selects:
+
+"Retry Payment"
+
+Payment attempt #2:
+
+PENDING
+
+Do not create a new booking simply because the user retries payment.
+
+The same booking should support controlled payment retries where appropriate.
+
+---
+
+# 12. BOOKING STATUS TRANSITION
+
+Define safe transitions.
+
+Example:
+
+### Before payment
+
+Booking:
+
+pending_payment
+
+Payment:
+
+unpaid
+
+### Payment started
+
+Booking:
+
+pending_payment
+
+Payment:
+
+processing
+
+### Payment verified
+
+Booking:
+
+confirmed
+
+Payment:
+
+paid
+
+### Payment failed
+
+Booking:
+
+pending_payment
+
+Payment:
+
+failed
+
+### Booking cancelled
+
+Booking:
+
+cancelled
+
+Payment:
+
+refunded
+
+only when an actual refund has occurred.
+
+Do not invent successful/refunded states.
+
+---
+
+# 13. PAYMENT SUCCESS SCREEN
+
+Create a payment result screen.
+
+For successful verified payment:
+
+Display:
+
+"Payment Successful"
+
+Include:
+
+* Booking reference
+* Payment reference
+* Hotel
+* Room
+* Dates
+* Amount
+* Payment status
+
+Actions:
+
+* View Booking
+* My Bookings
+* Go Home
+
+Only show success after server verification.
+
+---
+
+# 14. PAYMENT FAILURE SCREEN
+
+If payment fails:
+
+Display:
+
+"Payment Failed"
+
+Show a user-friendly explanation.
+
+Actions:
+
+* Retry Payment
+* View Booking
+* Back to Home
+
+Do not cancel the booking automatically unless the business rules require it.
+
+---
+
+# 15. PAYMENT PENDING
+
+Support cases where payment confirmation is delayed.
+
+Display:
+
+"Payment is being verified"
+
+Do not immediately mark payment as failed.
+
+Allow the app to refresh/check status.
+
+Potential endpoint:
+
+GET /api/v1/payments/:id/status
+
+Do not poll aggressively.
+
+---
+
+# 16. BOOKING CONFIRMATION
+
+After verified payment:
+
+Update booking:
+
+booking_status = confirmed
+
+payment_status = paid
+
+Only then should the booking appear as a confirmed paid booking.
+
+My Bookings should clearly show:
+
+Confirmed
+
+Paid
+
+---
+
+# 17. UNPAID BOOKINGS
+
+If a booking remains:
+
+pending_payment
+
+show:
+
+"Payment Pending"
+
+with:
+
+"Complete Payment"
+
+button.
+
+Do not display it as confirmed.
+
+---
+
+# 18. PAYMENT HISTORY
+
+Add payment information to Booking Details.
+
+Display:
+
+* Payment status
+* Payment amount
+* Payment method type if safely available
+* Payment reference
+* Payment date
+* Provider
+
+Do not display sensitive payment information.
+
+---
+
+# 19. WALLET PREPARATION
+
+Do NOT implement the full Wallet module yet.
+
+However, structure payment transactions so future Wallet functionality can reuse:
+
+* Payment transaction
+* Refund
+* Credit
+* Debit
+* Transaction reference
+
+Do not mix wallet balance logic into the booking payment code.
+
+---
+
+# 20. REFUNDS
+
+Prepare the architecture for refunds.
+
+Do NOT build the complete refund UI yet.
+
+The payment service should support future:
+
+* Full refund
+* Partial refund
+* Refund status
+* Provider refund ID
+
+Never mark a refund successful until the payment provider confirms it.
+
+---
+
+# 21. CANCELLATION INTEGRATION
+
+When an eligible booking is cancelled:
+
+If payment has been made:
+
+Calculate refund eligibility using the actual cancellation policy.
+
+Do not automatically refund unless business rules and provider integration support it.
+
+The future refund process should be server-controlled.
+
+---
+
+# 22. SECURITY
+
+Strictly enforce:
+
+* Authenticated user
+* Booking ownership
+* Payment ownership
+* Server-side amount calculation
+* Provider signature verification
+* Webhook signature verification
+* Idempotency
+* Server-side payment status updates
+
+Never trust client-provided:
+
+* payment status
+* booking status
+* payment amount
+* user ID
+* booking owner
+* provider transaction status
+
+---
+
+# 23. API
+
+Inspect existing APIs before adding anything.
+
+Potential endpoints:
+
+POST /api/v1/payments/create
+
+POST /api/v1/payments/verify
+
+GET /api/v1/payments/:id/status
+
+POST /api/v1/payments/webhook
+
+GET /api/v1/bookings/:id/payment
+
+Do not create duplicate endpoints.
+
+Update:
+
+* OpenAPI
+* Generated TypeScript client
+* React Query hooks
+* Zod schemas
+
+---
+
+# 24. PAYMENT PROVIDER FAILURE
+
+Handle:
+
+* Gateway unavailable
+* Timeout
+* Network error
+* Payment declined
+* Payment cancelled by user
+* Invalid payment response
+* Webhook delayed
+* Webhook duplicated
+
+The app must remain stable.
+
+Never show an unverified success screen.
+
+---
+
+# 25. MOBILE UX
+
+Payment UI must work correctly on:
+
+### Android
+
+* Expo Go/test environment
+* Production Android build
+
+### iOS
+
+* Production iOS build
+
+### Web
+
+* Mobile web
+
+Use the payment provider's officially supported mobile/web integration.
+
+If a provider requires native SDK configuration, document the exact setup required.
+
+---
+
+# 26. DEEP LINK / RETURN FLOW
+
+If the payment provider redirects the user back to the app:
+
+Support:
+
+Payment Gateway
+→ Travel & Land
+→ Payment Verification
+→ Booking Result
+
+Handle:
+
+* Success return
+* Failure return
+* Cancelled return
+* App reopened after payment
+* Interrupted payment flow
+
+Do not rely solely on the return URL for final payment status.
+
+---
+
+# 27. LOADING STATES
+
+Implement:
+
+* Creating payment
+* Opening payment gateway
+* Payment processing
+* Payment verification
+* Payment pending
+
+Disable duplicate submission.
+
+Do not allow multiple payment orders from repeated taps.
+
+---
+
+# 28. ERROR STATES
+
+Examples:
+
+"Unable to start payment."
+
+"Payment was declined."
+
+"Payment verification is taking longer than expected."
+
+"Your payment status could not be confirmed."
+
+Provide appropriate retry/navigation actions.
+
+Never expose raw gateway errors, API keys, stack traces, or sensitive data.
+
+---
+
+# 29. TESTING
+
+Add automated tests for:
+
+### Payment creation
+
+1. Authenticated user
+2. Booking ownership
+3. Payable booking validation
+4. Server-side amount
+5. Payment order creation
+6. Duplicate payment prevention
+
+### Payment verification
+
+7. Valid payment
+8. Invalid payment
+9. Failed payment
+10. Pending payment
+11. Duplicate verification
+
+### Webhook
+
+12. Valid webhook signature
+13. Invalid webhook signature
+14. Duplicate webhook
+15. Payment success webhook
+16. Payment failure webhook
+
+### Booking state
+
+17. Pending payment
+18. Paid/confirmed
+19. Failed payment
+20. Cancelled booking
+
+### Security
+
+21. User cannot pay another user's booking
+22. Client cannot change payment amount
+23. Client cannot change payment status
+24. Invalid payment cannot confirm booking
+
+### Regression
+
+25. User login
+26. Vendor login
+27. Admin login
+28. Home
+29. Explore
+30. Destination Details
+31. Maps
+32. Hotels
+33. Hotel Details
+34. Availability
+35. Booking
+36. My Bookings
+37. Booking Details
+38. Biometric/device authentication
+
+---
+
+# 30. TEST MODE
+
+If real payment credentials are not available in Replit:
+
+Create a clearly separated payment test mode.
+
+Requirements:
+
+* Clearly label it DEVELOPMENT/TEST MODE
+* Never mix test transactions with production transactions
+* Never show fake production payment success
+* Document required production credentials
+* Keep provider integration production-ready
+
+Do NOT create a fake payment gateway that behaves like production without being clearly isolated.
+
+---
+
+# 31. ENVIRONMENT DOCUMENTATION
+
+Update the project documentation with:
+
+* Required payment provider
+* Required server environment variables
+* Webhook URL
+* Webhook secret
+* Android configuration
+* iOS configuration
+* Web configuration
+* Production setup
+* Test-mode setup
+
+Do not include actual secrets.
+
+---
+
+# 32. FINAL VALIDATION
+
+Verify the complete flow:
+
+Hotels
+→ Availability
+→ Booking
+→ Payment
+→ Payment Verification
+→ Confirmed Booking
+→ My Bookings
+
+Also verify failure:
+
+Booking
+→ Payment
+→ Payment Failed
+→ Retry
+
+And pending:
+
+Booking
+→ Payment
+→ Payment Pending
+→ Status Check
+→ Confirmed/Failed
+
+---
+
+# 33. IMPORTANT — DO NOT BUILD YET
+
+Do NOT implement:
+
+* Full Wallet
+* Wallet top-up
+* Wallet transfers
+* Vendor payouts
+* Admin payment dashboard
+* Full refund management UI
+* Push notifications
+* Production email notification system
+
+Those are separate upcoming modules.
+
+---
+
+# 34. FINAL REPORT
+
+When complete, report:
+
+1. Payment provider used
+2. Payment flow implemented
+3. Payment screen
+4. Payment order/intent creation
+5. Payment verification
+6. Webhook implementation
+7. Payment status lifecycle
+8. Booking status integration
+9. Retry handling
+10. Idempotency approach
+11. Refund preparation
+12. Database changes
+13. APIs created/reused
+14. OpenAPI changes
+15. Generated client/hooks changes
+16. Environment variables required
+17. Test mode behavior
+18. Security measures
+19. Tests added
+20. Total tests passing
+21. Android validation
+22. iOS validation
+23. Web validation
+24. Known limitations
+25. Recommended next development task
+
+IMPORTANT:
+
+The next development task after this should be:
+
+**WALLET + TRANSACTION HISTORY**
