@@ -236,26 +236,32 @@ export const roomAvailability = pgTable(
   (table) => [uniqueIndex("room_availability_unique").on(table.roomId, table.date)],
 );
 
-export const bookings = pgTable("bookings", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id").references(() => users.id, { onDelete: "restrict" }).notNull(),
-  reference: text("reference").notNull().unique(),
-  idempotencyKey: text("idempotency_key").unique(),
-  hotelCatalogId: text("hotel_catalog_id").notNull(),
-  startsOn: date("starts_on").notNull(),
-  endsOn: date("ends_on").notNull(),
-  adults: integer("adults").notNull(),
-  children: integer("children").default(0).notNull(),
-  guestCount: integer("guest_count").notNull(),
-  roomCount: integer("room_count").notNull(),
-  guestName: text("guest_name").notNull(),
-  guestEmail: text("guest_email").notNull(),
-  guestPhone: text("guest_phone"),
-  totalAmount: numeric("total_amount", { precision: 12, scale: 2 }).notNull(),
-  currency: text("currency").default("INR").notNull(),
-  status: text("status").default("pending").notNull(),
-  ...timestamps,
-});
+export const bookings = pgTable(
+  "bookings",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "restrict" }).notNull(),
+    reference: text("reference").notNull().unique(),
+    idempotencyKey: text("idempotency_key").unique(),
+    hotelCatalogId: text("hotel_catalog_id").notNull(),
+    startsOn: date("starts_on").notNull(),
+    endsOn: date("ends_on").notNull(),
+    adults: integer("adults").notNull(),
+    children: integer("children").default(0).notNull(),
+    guestCount: integer("guest_count").notNull(),
+    roomCount: integer("room_count").notNull(),
+    guestName: text("guest_name").notNull(),
+    guestEmail: text("guest_email").notNull(),
+    guestPhone: text("guest_phone"),
+    totalAmount: numeric("total_amount", { precision: 12, scale: 2 }).notNull(),
+    currency: text("currency").default("INR").notNull(),
+    status: text("status").default("pending_payment").notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    check("booking_status_valid", sql`${table.status} in ('pending_payment', 'confirmed', 'cancelled')`),
+  ],
+);
 
 export const bookingItems = pgTable("booking_items", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -266,17 +272,23 @@ export const bookingItems = pgTable("booking_items", {
   ...timestamps,
 });
 
-export const payments = pgTable("payments", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  bookingId: uuid("booking_id").references(() => bookings.id, { onDelete: "set null" }),
-  userId: uuid("user_id").references(() => users.id, { onDelete: "restrict" }).notNull(),
-  provider: text("provider").notNull(),
-  providerReference: text("provider_reference"),
-  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
-  currency: text("currency").default("INR").notNull(),
-  status: text("status").default("created").notNull(),
-  ...timestamps,
-});
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    bookingId: uuid("booking_id").references(() => bookings.id, { onDelete: "set null" }),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "restrict" }).notNull(),
+    provider: text("provider").notNull(),
+    providerReference: text("provider_reference"),
+    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    currency: text("currency").default("INR").notNull(),
+    status: text("status").default("unpaid").notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    check("payment_status_valid", sql`${table.status} in ('created', 'unpaid', 'processing', 'paid', 'failed', 'cancelled')`),
+  ],
+);
 
 export const wallets = pgTable("wallets", {
   id: uuid("id").defaultRandom().primaryKey(),

@@ -6,6 +6,7 @@ import { publishableKeyFromHost } from "@clerk/shared/keys";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./middlewares/clerkProxyMiddleware";
+import { WebhookHandlers } from "./webhookHandlers";
 
 const app: Express = express();
 
@@ -28,6 +29,20 @@ app.use(
     },
   }),
 );
+app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res): Promise<void> => {
+  const signature = req.headers["stripe-signature"];
+  if (!signature) {
+    res.status(400).json({ error: "Missing stripe-signature" });
+    return;
+  }
+  try {
+    await WebhookHandlers.processWebhook(req.body as Buffer, Array.isArray(signature) ? signature[0] : signature);
+    res.status(200).json({ received: true });
+  } catch (error) {
+    logger.warn({ err: error }, "Stripe webhook verification or processing failed");
+    res.status(400).json({ error: "Webhook processing error" });
+  }
+});
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(cors({ credentials: true, origin: true }));
 app.use(

@@ -696,8 +696,8 @@ export const ListBookingsResponse = zod.object({
 })),
   "total": zod.number().min(listBookingsResponseItemsItemTotalMin),
   "currency": zod.string(),
-  "status": zod.enum(['pending_payment', 'cancelled']),
-  "paymentStatus": zod.enum(['unpaid']),
+  "status": zod.enum(['pending_payment', 'confirmed', 'cancelled']),
+  "paymentStatus": zod.enum(['unpaid', 'processing', 'paid', 'failed', 'cancelled']),
   "sourceNotice": zod.string(),
   "canCancel": zod.boolean(),
   "createdAt": zod.coerce.date(),
@@ -806,8 +806,8 @@ export const CreateBookingResponse = zod.object({
 })),
   "total": zod.number().min(createBookingResponseBookingTotalMin),
   "currency": zod.string(),
-  "status": zod.enum(['pending_payment', 'cancelled']),
-  "paymentStatus": zod.enum(['unpaid']),
+  "status": zod.enum(['pending_payment', 'confirmed', 'cancelled']),
+  "paymentStatus": zod.enum(['unpaid', 'processing', 'paid', 'failed', 'cancelled']),
   "sourceNotice": zod.string(),
   "canCancel": zod.boolean(),
   "createdAt": zod.coerce.date(),
@@ -874,8 +874,86 @@ export const GetBookingResponse = zod.object({
 })),
   "total": zod.number().min(getBookingResponseBookingTotalMin),
   "currency": zod.string(),
-  "status": zod.enum(['pending_payment', 'cancelled']),
-  "paymentStatus": zod.enum(['unpaid']),
+  "status": zod.enum(['pending_payment', 'confirmed', 'cancelled']),
+  "paymentStatus": zod.enum(['unpaid', 'processing', 'paid', 'failed', 'cancelled']),
+  "sourceNotice": zod.string(),
+  "canCancel": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Start Stripe Checkout for an owned payment-pending booking
+ */
+export const createBookingCheckoutPathReferenceMin = 8;
+export const createBookingCheckoutPathReferenceMax = 32;
+
+
+
+export const CreateBookingCheckoutParams = zod.object({
+  "reference": zod.coerce.string().min(createBookingCheckoutPathReferenceMin).max(createBookingCheckoutPathReferenceMax)
+})
+
+export const createBookingCheckoutHeaderIdempotencyKeyMin = 8;
+export const createBookingCheckoutHeaderIdempotencyKeyMax = 128;
+
+
+
+export const CreateBookingCheckoutHeader = zod.object({
+  "Idempotency-Key": zod.string().min(createBookingCheckoutHeaderIdempotencyKeyMin).max(createBookingCheckoutHeaderIdempotencyKeyMax).describe('Client-generated key reused when safely retrying the same create request.')
+})
+
+
+
+export const createBookingCheckoutResponseBookingChildrenMin = 0;
+
+
+
+
+export const createBookingCheckoutResponseBookingItemsItemNightlyRateMin = 0;
+
+export const createBookingCheckoutResponseBookingItemsItemRoomTotalMin = 0;
+
+export const createBookingCheckoutResponseBookingTotalMin = 0;
+
+
+
+export const CreateBookingCheckoutResponse = zod.object({
+  "checkoutUrl": zod.string().url(),
+  "booking": zod.object({
+  "reference": zod.string(),
+  "hotel": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "location": zod.string(),
+  "imageKey": zod.string()
+}),
+  "startsOn": zod.coerce.date(),
+  "endsOn": zod.coerce.date(),
+  "nights": zod.number().int().min(1),
+  "adults": zod.number().int().min(1),
+  "children": zod.number().int().min(createBookingCheckoutResponseBookingChildrenMin),
+  "guestCount": zod.number().int().min(1),
+  "roomCount": zod.number().int().min(1),
+  "guest": zod.object({
+  "name": zod.string(),
+  "email": zod.string().email(),
+  "phone": zod.string().nullable()
+}),
+  "items": zod.array(zod.object({
+  "roomId": zod.string(),
+  "name": zod.string(),
+  "quantity": zod.number().int().min(1),
+  "nightlyRate": zod.number().min(createBookingCheckoutResponseBookingItemsItemNightlyRateMin),
+  "roomTotal": zod.number().min(createBookingCheckoutResponseBookingItemsItemRoomTotalMin),
+  "currency": zod.string()
+})),
+  "total": zod.number().min(createBookingCheckoutResponseBookingTotalMin),
+  "currency": zod.string(),
+  "status": zod.enum(['pending_payment', 'confirmed', 'cancelled']),
+  "paymentStatus": zod.enum(['unpaid', 'processing', 'paid', 'failed', 'cancelled']),
   "sourceNotice": zod.string(),
   "canCancel": zod.boolean(),
   "createdAt": zod.coerce.date(),
@@ -942,8 +1020,8 @@ export const CancelBookingResponse = zod.object({
 })),
   "total": zod.number().min(cancelBookingResponseBookingTotalMin),
   "currency": zod.string(),
-  "status": zod.enum(['pending_payment', 'cancelled']),
-  "paymentStatus": zod.enum(['unpaid']),
+  "status": zod.enum(['pending_payment', 'confirmed', 'cancelled']),
+  "paymentStatus": zod.enum(['unpaid', 'processing', 'paid', 'failed', 'cancelled']),
   "sourceNotice": zod.string(),
   "canCancel": zod.boolean(),
   "createdAt": zod.coerce.date(),

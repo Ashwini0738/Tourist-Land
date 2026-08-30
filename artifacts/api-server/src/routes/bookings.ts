@@ -5,6 +5,7 @@ import {
   CreateBookingBody,
   CreateBookingHeader,
   CreateBookingResponse,
+  CreateBookingCheckoutResponse,
   GetBookingParams,
   GetBookingResponse,
   ListBookingsResponse,
@@ -19,6 +20,7 @@ import {
   listUserBookings,
   parseBookingInput,
 } from "./booking.ts";
+import { startBookingCheckout } from "../lib/booking-payments.ts";
 
 const bookingsRouter: IRouter = Router();
 bookingsRouter.use(requireAuth);
@@ -47,9 +49,29 @@ bookingsRouter.get("/v1/bookings", async (req, res): Promise<void> => {
   try {
     const items = await listUserBookings(req.localUser!.id);
     res.json(ListBookingsResponse.parse({
-      notice: "These bookings belong to your authenticated Travel & Land account. Payment is not configured.",
+      notice: "These bookings belong to your authenticated Travel & Land account. Stripe confirms payment; supplier reservation remains a development preview.",
       items,
     }));
+  } catch (error) {
+    handleError(res, error);
+  }
+});
+
+bookingsRouter.post("/v1/bookings/:reference/checkout", async (req, res): Promise<void> => {
+  const params = GetBookingParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(404).json({ error: { code: "NOT_FOUND", message: "Booking not found." } });
+    return;
+  }
+  const header = CreateBookingHeader.safeParse({ "Idempotency-Key": req.get("Idempotency-Key") ?? "" });
+  if (!header.success) {
+    invalidInput(res, "An idempotency key is required to safely retry checkout.");
+    return;
+  }
+  const idempotencyKey = header.data["Idempotency-Key"];
+  try {
+    const checkout = await startBookingCheckout(req.localUser!.id, params.data.reference, idempotencyKey);
+    res.json(CreateBookingCheckoutResponse.parse(checkout));
   } catch (error) {
     handleError(res, error);
   }

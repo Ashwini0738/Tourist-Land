@@ -55,10 +55,20 @@ export default function BookingsTab() {
 
 function BookingCard({ booking, onPress }: { booking: Booking; onPress: () => void }) {
   const colors = useColors();
-  const pending = booking.status === 'pending_payment';
+  const paymentLabel = booking.status === 'cancelled'
+    ? 'CANCELLED'
+    : booking.paymentStatus === 'paid'
+      ? 'PAID'
+      : booking.paymentStatus === 'processing'
+        ? 'PAYMENT PROCESSING'
+        : booking.paymentStatus === 'failed'
+          ? 'PAYMENT FAILED'
+          : booking.paymentStatus === 'cancelled'
+            ? 'CHECKOUT CANCELLED'
+            : 'PAYMENT PENDING';
   return <Pressable testID={`booking-card-${booking.reference}`} onPress={onPress} style={[styles.booking, { backgroundColor: colors.card, borderColor: colors.border }]}>
     <View style={[styles.date, { backgroundColor: colors.secondary }]}><Text style={[styles.month, { color: colors.primary }]}>{dateValue(booking.startsOn).toLocaleDateString(undefined, { month: 'short' }).toUpperCase()}</Text><Text style={[styles.day, { color: colors.foreground }]}>{dateValue(booking.startsOn).getDate()}</Text></View>
-    <View style={styles.bookingCopy}><View style={styles.bookingTop}><Text style={[styles.bookingName, { color: colors.foreground }]} numberOfLines={1}>{booking.hotel.name}</Text><Feather name="chevron-right" size={18} color={colors.mutedForeground} /></View><Text style={[styles.bookingLocation, { color: colors.mutedForeground }]}>{booking.hotel.location} · {booking.nights} night{booking.nights === 1 ? '' : 's'}</Text><Text style={[styles.bookingDates, { color: colors.mutedForeground }]}>{formatDate(booking.startsOn)} – {formatDate(booking.endsOn)}</Text><View style={styles.bookingBottom}><Text style={[styles.status, { color: pending ? colors.primary : colors.destructive }]}>{pending ? 'PAYMENT PENDING' : 'CANCELLED'}</Text><Text style={[styles.bookingPrice, { color: colors.foreground }]}>{formatMoney(booking)}</Text></View></View>
+    <View style={styles.bookingCopy}><View style={styles.bookingTop}><Text style={[styles.bookingName, { color: colors.foreground }]} numberOfLines={1}>{booking.hotel.name}</Text><Feather name="chevron-right" size={18} color={colors.mutedForeground} /></View><Text style={[styles.bookingLocation, { color: colors.mutedForeground }]}>{booking.hotel.location} · {booking.nights} night{booking.nights === 1 ? '' : 's'}</Text><Text style={[styles.bookingDates, { color: colors.mutedForeground }]}>{formatDate(booking.startsOn)} – {formatDate(booking.endsOn)}</Text><View style={styles.bookingBottom}><Text style={[styles.status, { color: booking.status === 'cancelled' ? colors.destructive : booking.paymentStatus === 'failed' ? colors.destructive : booking.paymentStatus === 'paid' ? colors.primary : colors.foreground }]}>{paymentLabel}</Text><Text style={[styles.bookingPrice, { color: colors.foreground }]}>{formatMoney(booking)}</Text></View></View>
   </Pressable>;
 }
 

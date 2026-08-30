@@ -24,6 +24,7 @@ import type {
   AdminListingList,
   AuthSessionStatus,
   BannerList,
+  BookingCheckoutResponse,
   BookingCreateInput,
   BookingList,
   BookingResponse,
@@ -1234,6 +1235,77 @@ export function useGetBooking<TData = Awaited<ReturnType<typeof getBooking>>, TE
 
 
 
+
+export const getCreateBookingCheckoutUrl = (reference: string,) => {
+
+
+
+
+  return `/api/v1/bookings/${reference}/checkout`
+}
+
+/**
+ * @summary Start Stripe Checkout for an owned payment-pending booking
+ */
+export const createBookingCheckout = async (reference: string, options?: Parameters<typeof customFetch>[1]): Promise<BookingCheckoutResponse> => {
+
+  return customFetch<BookingCheckoutResponse>(getCreateBookingCheckoutUrl(reference),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCreateBookingCheckoutMutationOptions = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBookingCheckout>>, TError,{reference: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBookingCheckout>>, TError,{reference: string}, TContext> => {
+
+const mutationKey = ['createBookingCheckout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBookingCheckout>>, {reference: string}> = (props) => {
+          const {reference} = props ?? {};
+
+          return  createBookingCheckout(reference,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBookingCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof createBookingCheckout>>>
+
+    export type CreateBookingCheckoutMutationError = ErrorType<UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Start Stripe Checkout for an owned payment-pending booking
+ */
+export const useCreateBookingCheckout = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBookingCheckout>>, TError,{reference: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createBookingCheckout>>,
+        TError,
+        {reference: string},
+        TContext
+      > => {
+      return useMutation(getCreateBookingCheckoutMutationOptions(options));
+    }
 
 export const getCancelBookingUrl = (reference: string,) => {
 

@@ -18,7 +18,7 @@ export class BookingNotFoundError extends Error {}
 export class BookingConflictError extends Error {}
 
 export const bookingDevelopmentNotice =
-  "Development booking preview only. Your booking is unpaid and does not confirm a live supplier reservation.";
+  "Development hotel inventory only. Stripe payment confirms this booking request, but not a live supplier reservation.";
 
 export { calculateBookingNights, canCancelBooking, parseBookingInput } from "./booking-logic.ts";
 
@@ -53,7 +53,7 @@ function bookingPayload(
   booking: BookingRow,
   itemRows: Array<{ item: BookingItemRow; room: typeof hotelRooms.$inferSelect }>,
   hotel: BookingHotelRow | null,
-  paymentStatus = "unpaid" as const,
+  paymentStatus: "unpaid" | "processing" | "paid" | "failed" | "cancelled" = "unpaid",
 ) {
   const items = itemRows.map(({ item, room }) => ({
     roomId: room.catalogRoomId ?? item.id,
@@ -77,13 +77,22 @@ function bookingPayload(
     items,
     total: Number(booking.totalAmount),
     currency: booking.currency,
-    status: booking.status === "cancelled" ? "cancelled" as const : "pending_payment" as const,
+    status: booking.status === "cancelled"
+      ? "cancelled" as const
+      : booking.status === "confirmed"
+        ? "confirmed" as const
+        : "pending_payment" as const,
     paymentStatus,
     sourceNotice: bookingDevelopmentNotice,
     canCancel: canCancelBooking(booking.status, booking.startsOn),
     createdAt: booking.createdAt.toISOString(),
     updatedAt: booking.updatedAt.toISOString(),
   };
+}
+
+function normalizePaymentStatus(value: string | null | undefined): "unpaid" | "processing" | "paid" | "failed" | "cancelled" {
+  if (value === "processing" || value === "paid" || value === "failed" || value === "cancelled") return value;
+  return "unpaid";
 }
 
 async function getBookingRows(tx: any, userId: string, reference: string) {
@@ -107,7 +116,12 @@ function groupBookingRows(rows: Awaited<ReturnType<typeof getBookingRows>>) {
     existing.push({ item: row.item, room: row.room });
     grouped.set(row.booking.id, existing);
   }
-  return bookingPayload(first.booking, grouped.get(first.booking.id) ?? [], first.hotel, first.payment?.status === "unpaid" ? "unpaid" : "unpaid");
+  const paymentStatus = normalizePaymentStatus(first.payment?.status);
+  const canCancel = bookingPayload(first.booking, grouped.get(first.booking.id) ?? [], first.hotel, paymentStatus).canCancel;
+  return {
+    ...bookingPayload(first.booking, grouped.get(first.booking.id) ?? [], first.hotel, paymentStatus),
+    canCancel: canCancel && (paymentStatus === "unpaid" || paymentStatus === "failed" || paymentStatus === "cancelled"),
+  };
 }
 
 export async function findBooking(userId: string, reference: string) {
@@ -231,7 +245,7 @@ export async function createUserBooking(userId: string, input: BookingRequest, i
     await tx.insert(payments).values({
       bookingId: booking.id,
       userId,
-      provider: "development",
+      provider: "stripe",
       amount: String(pricing.total),
       currency: pricing.currency,
       status: "unpaid",
@@ -253,12 +267,15 @@ export async function cancelUserBooking(userId: string, reference: string) {
     const rows = await getBookingRows(tx, userId, reference);
     const current = groupBookingRows(rows);
     if (!current) throw new BookingNotFoundError("Booking not found.");
-    if (!current.canCancel) throw new BookingConflictError("This booking can no longer be cancelled.");
+    if (!current.canCancel) throw new BookingConflictError("This booking can no longer be cancelled while payment is processing or complete.");
     const [updated] = await tx.update(bookings)
       .set({ status: "cancelled", updatedAt: new Date() })
       .where(and(eq(bookings.userId, userId), eq(bookings.reference, reference), eq(bookings.status, "pending_payment")))
       .returning();
     if (!updated) throw new BookingConflictError("This booking changed before it could be cancelled.");
+    await tx.update(payments)
+      .set({ status: "cancelled", updatedAt: new Date() })
+      .where(and(eq(payments.bookingId, updated.id), eq(payments.userId, userId)));
     const refreshed = await getBookingRows(tx, userId, reference);
     return groupBookingRows(refreshed);
   });

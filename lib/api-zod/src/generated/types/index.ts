@@ -17,6 +17,7 @@ export * from './authSessionStatusSessionAuthority';
 export * from './banner';
 export * from './bannerList';
 export * from './booking';
+export * from './bookingCheckoutResponse';
 export * from './bookingCreateInput';
 export * from './bookingCreateItem';
 export * from './bookingGuest';

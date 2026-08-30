@@ -296,6 +296,25 @@ paths:
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /v1/bookings/{reference}/checkout:
+    post:
+      operationId: createBookingCheckout
+      tags: [bookings]
+      security: [{ bearerAuth: [] }]
+      summary: Start Stripe Checkout for an owned payment-pending booking
+      parameters:
+        - $ref: "#/components/parameters/BookingReference"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Hosted checkout URL and the booking's processing payment state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingCheckoutResponse" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /v1/bookings/{reference}/cancel:
     post:
       operationId: cancelBooking
@@ -1368,10 +1387,10 @@ components:
       required: [roomId, name, quantity, nightlyRate, roomTotal, currency]
     BookingStatus:
       type: string
-      enum: [pending_payment, cancelled]
+      enum: [pending_payment, confirmed, cancelled]
     PaymentStatus:
       type: string
-      enum: [unpaid]
+      enum: [unpaid, processing, paid, failed, cancelled]
     Booking:
       type: object
       properties:
@@ -1402,6 +1421,12 @@ components:
       properties:
         booking: { $ref: "#/components/schemas/Booking" }
       required: [booking]
+    BookingCheckoutResponse:
+      type: object
+      properties:
+        checkoutUrl: { type: string, format: uri }
+        booking: { $ref: "#/components/schemas/Booking" }
+      required: [checkoutUrl, booking]
     BookingList:
       type: object
       properties:

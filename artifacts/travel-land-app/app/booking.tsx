@@ -148,7 +148,7 @@ export default function BookingScreen() {
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 34 }]} keyboardShouldPersistTaps="handled">
       <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()}><Feather name="arrow-left" size={21} color={colors.foreground} /></Pressable><Text style={[styles.headerTitle, { color: colors.foreground }]}>Guest details</Text><Pressable accessibilityRole="button" accessibilityLabel="Close booking" onPress={() => router.back()}><Feather name="x" size={20} color={colors.foreground} /></Pressable></View>
-      <Text style={[styles.kicker, { color: colors.primary }]}>PAYMENT-PENDING BOOKING</Text>
+       <Text style={[styles.kicker, { color: colors.primary }]}>BOOKING REQUEST</Text>
       <Text style={[styles.title, { color: colors.foreground }]}>Review your stay.</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>The server will recheck the room, dates, capacity, quantity, and price when you submit.</Text>
 
@@ -168,7 +168,7 @@ export default function BookingScreen() {
         <SummaryRow label="Travellers" value={`${selection.adults} adult${selection.adults === 1 ? '' : 's'} · ${selection.children} child${selection.children === 1 ? '' : 'ren'}`} colors={colors} />
         <SummaryRow label="Selected-room estimate" value={selectedServerTotal ? `INR ${selectedServerTotal.toLocaleString()}` : availabilityQuery.isLoading ? 'Checking…' : 'Rechecked on submit'} colors={colors} />
       </View>
-      <NoticeBanner>{'Development provider only. No live inventory, payment gateway, confirmation email, or supplier reservation is connected.'}</NoticeBanner>
+       <NoticeBanner>{'Development hotel inventory only. Your request is saved unpaid; you can complete payment from My bookings.'}</NoticeBanner>
       {error ? <NoticeBanner error>{error}</NoticeBanner> : null}
       <Pressable testID="booking-submit" accessibilityRole="button" accessibilityLabel="Save booking request" disabled={submitting} onPress={() => void submit()} style={[styles.primaryButton, { backgroundColor: submitting ? colors.muted : colors.primary }]}>{submitting ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={[styles.primaryButtonText, { color: colors.primaryForeground }]}>Save booking request</Text>}</Pressable>
     </ScrollView>

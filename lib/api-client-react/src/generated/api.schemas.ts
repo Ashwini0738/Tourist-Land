@@ -416,6 +416,7 @@ export type BookingStatus = typeof BookingStatus[keyof typeof BookingStatus];
 
 export const BookingStatus = {
   pending_payment: 'pending_payment',
+  confirmed: 'confirmed',
   cancelled: 'cancelled',
 } as const;
 
@@ -424,6 +425,10 @@ export type PaymentStatus = typeof PaymentStatus[keyof typeof PaymentStatus];
 
 export const PaymentStatus = {
   unpaid: 'unpaid',
+  processing: 'processing',
+  paid: 'paid',
+  failed: 'failed',
+  cancelled: 'cancelled',
 } as const;
 
 export interface Booking {
@@ -455,6 +460,11 @@ export interface Booking {
 }
 
 export interface BookingResponse {
+  booking: Booking;
+}
+
+export interface BookingCheckoutResponse {
+  checkoutUrl: string;
   booking: Booking;
 }
 
