@@ -32,7 +32,7 @@ import {
   useListAdminAuditLogs,
   useGetCurrentUser,
 } from '@workspace/api-client-react';
-import { Activity, Bell, Check, CircleAlert, Clock3, Database, FilePlus2, Filter, Landmark, Loader2, MapPin, Plus, RefreshCw, Search, Send, ShieldAlert, Star, Tag, Users, X } from 'lucide-react';
+import { Activity, Bell, Check, CircleAlert, Clock3, Database, FileClock, FilePlus2, Filter, Landmark, Loader2, MapPin, Plus, RefreshCw, Search, Send, ShieldAlert, Star, Tag, Users, X } from 'lucide-react';
 
 declare module '@workspace/api-client-react' {
   interface CurrentUser { name?: string | null; }
