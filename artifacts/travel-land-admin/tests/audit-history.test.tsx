@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -11,6 +11,7 @@ vi.mock('@workspace/api-client-react', async () => {
   const actual = await vi.importActual<typeof import('@workspace/api-client-react')>('@workspace/api-client-react');
   return { ...actual, useListAdminAuditLogs, useGetAdminAuditLog };
 });
+
 
 import { AuditLogsPage } from '@/pages/admin-pages';
 
@@ -57,6 +58,8 @@ let auditHistoryShouldFail = false;
 let auditDetailShouldFail = false;
 let auditHistoryRefetch: ReturnType<typeof vi.fn>;
 let auditDetailRefetch: ReturnType<typeof vi.fn>;
+let auditDetailShouldLoad = false;
+let auditDetailResolve: () => void = () => {};
 
 function responseFor(params?: { q?: string; page?: number }) {
   if (emptyHistory && !params?.q) {
@@ -78,8 +81,10 @@ beforeEach(() => {
   emptyHistory = false;
   auditHistoryShouldFail = false;
   auditDetailShouldFail = false;
+  auditDetailShouldLoad = false;
   auditHistoryRefetch = vi.fn();
   auditDetailRefetch = vi.fn();
+  auditDetailResolve = () => {};
   useListAdminAuditLogs.mockReset();
   useListAdminAuditLogs.mockImplementation((params) => {
     const [isError, setIsError] = useState(auditHistoryShouldFail);
@@ -95,11 +100,24 @@ beforeEach(() => {
   });
   useGetAdminAuditLog.mockImplementation((id) => {
     const [isError, setIsError] = useState(auditDetailShouldFail);
-    auditDetailRefetch.mockImplementation(() => setIsError(false));
+    const [resolvedId, setResolvedId] = useState<string | null>(() => auditDetailShouldLoad ? null : id);
+    auditDetailRefetch.mockImplementation(() => {
+      setIsError(false);
+      setResolvedId(id);
+    });
+    auditDetailResolve = () => setResolvedId(id);
+    const hasCurrentDetail = resolvedId === id;
+    const data = auditDetailShouldLoad
+      ? hasCurrentDetail
+        ? id === 'audit-updated' ? detailForUpdatedItem : detailForCreatedItem
+        : resolvedId
+          ? resolvedId === 'audit-updated' ? detailForUpdatedItem : detailForCreatedItem
+          : undefined
+      : isError ? undefined : id === 'audit-updated' ? detailForUpdatedItem : detailForCreatedItem;
 
     return {
-      data: isError ? undefined : id === 'audit-updated' ? detailForUpdatedItem : detailForCreatedItem,
-      isLoading: false,
+      data,
+      isLoading: auditDetailShouldLoad && !hasCurrentDetail,
       isError,
       isFetching: false,
       refetch: auditDetailRefetch,
@@ -239,5 +257,49 @@ describe('AuditLogsPage', () => {
       page: 1,
       limit: 20,
     });
+  });
+
+  it('does not render a previous revision while the newly selected detail is loading', async () => {
+    auditDetailShouldLoad = true;
+    render(<AuditLogsPage />);
+
+    fireEvent.click(screen.getByTestId('button-audit-details-audit-updated'));
+    expect(screen.getByTestId('audit-detail-loading')).toBeInTheDocument();
+
+    act(() => auditDetailResolve());
+    await waitFor(() => expect(screen.getByTestId('audit-before-name')).toHaveTextContent('Kerala Backwaters'));
+    fireEvent.click(screen.getByTestId('button-close-audit-details'));
+
+    fireEvent.click(screen.getByTestId('button-audit-next'));
+    await waitFor(() => expect(screen.getByTestId('audit-destination-audit-created')).toHaveTextContent('Goa Coast'));
+    fireEvent.click(screen.getByTestId('button-audit-details-audit-created'));
+
+    expect(screen.getByTestId('audit-detail-loading')).toBeInTheDocument();
+    expect(screen.queryByText('Kerala Backwaters')).not.toBeInTheDocument();
+    expect(screen.queryByText('Original summary')).not.toBeInTheDocument();
+
+    act(() => auditDetailResolve());
+    await waitFor(() => expect(screen.getByTestId('audit-detail-unavailable')).toHaveTextContent('Unavailable'));
+    expect(screen.getByTestId('text-audit-detail-destination')).toHaveTextContent('Goa Coast');
+  });
+
+  it('keeps a recovered detail tied to the record selected before retry', async () => {
+    auditDetailShouldFail = true;
+    render(<AuditLogsPage />);
+
+    fireEvent.click(screen.getByTestId('button-audit-details-audit-updated'));
+    expect(screen.getByTestId('audit-detail-unavailable')).toHaveTextContent('Revision details unavailable');
+    fireEvent.click(screen.getByTestId('button-close-audit-details'));
+
+    fireEvent.click(screen.getByTestId('button-audit-next'));
+    await waitFor(() => expect(screen.getByTestId('audit-destination-audit-created')).toHaveTextContent('Goa Coast'));
+    fireEvent.click(screen.getByTestId('button-audit-details-audit-created'));
+    expect(screen.getByTestId('audit-detail-unavailable')).toHaveTextContent('Revision details unavailable');
+
+    fireEvent.click(screen.getByTestId('button-retry-audit-detail'));
+
+    await waitFor(() => expect(screen.getByTestId('text-audit-detail-destination')).toHaveTextContent('Goa Coast'));
+    expect(screen.getByTestId('audit-detail-unavailable')).toHaveTextContent('Unavailable');
+    expect(screen.queryByText('Original summary')).not.toBeInTheDocument();
   });
 });

@@ -134,6 +134,7 @@ export function AuditLogsPage() {
   const [selectedAuditId, setSelectedAuditId] = useState<string | null>(null);
   const q = useListAdminAuditLogs({ entityType: 'destination', q: search || undefined, page, limit: 20 });
   const detail = useGetAdminAuditLog(selectedAuditId ?? '', { query: { enabled: Boolean(selectedAuditId) } });
+  const currentDetail = detail.data?.id === selectedAuditId ? detail.data : undefined;
   const items = q.data?.items ?? [];
   const meta = q.data?.meta;
   const hasSearch = Boolean(search.trim());
@@ -181,24 +182,24 @@ export function AuditLogsPage() {
           <div><p className="eyebrow">Immutable revision context</p><h2 id="audit-detail-title" className="mt-1 text-xl font-semibold">Destination change details</h2><p className="mt-1 text-sm text-muted-foreground">Only values recorded by the audit service are shown.</p></div>
           <button type="button" aria-label="Close revision details" data-testid="button-close-audit-details" onClick={() => setSelectedAuditId(null)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"><X size={17} /></button>
         </div>
-        {detail.isLoading ? <div data-testid="audit-detail-loading" className="rounded-lg border border-border p-8 text-center text-sm text-muted-foreground">Loading revision details…</div>
+        {!currentDetail && !detail.isError ? <div data-testid="audit-detail-loading" className="rounded-lg border border-border p-8 text-center text-sm text-muted-foreground">Loading revision details…</div>
           : detail.isError ? <div data-testid="audit-detail-unavailable" className="rounded-lg border border-destructive/25 bg-destructive/5 p-8 text-center"><CircleAlert className="mx-auto mb-3 text-destructive" size={22} /><p className="font-semibold">Revision details unavailable</p><p className="mt-1 mb-4 text-sm text-muted-foreground">The audit record could not be loaded.</p><Button testId="button-retry-audit-detail" variant="quiet" onClick={() => detail.refetch()}>Try again</Button></div>
-          : <div className="space-y-5">
+          : currentDetail ? <div className="space-y-5">
             <div className="grid gap-4 rounded-lg border border-border bg-muted/25 p-4 sm:grid-cols-2">
-              <div><p className="eyebrow">Destination</p><p data-testid="text-audit-detail-destination" className="mt-1 font-semibold">{val(detail.data?.destinationName, 'Destination unavailable')}</p><p className="mono mt-1 text-[10px] text-muted-foreground">{detail.data?.entityId}</p></div>
-              <div><p className="eyebrow">Recorded change</p><p className="mt-1 font-semibold">{val(detail.data?.action)}</p><p className="mt-1 text-xs text-muted-foreground">{day(detail.data?.createdAt)} · {val(detail.data?.adminName, 'Unknown administrator')}</p></div>
+               <div><p className="eyebrow">Destination</p><p data-testid="text-audit-detail-destination" className="mt-1 font-semibold">{val(currentDetail.destinationName, 'Destination unavailable')}</p><p className="mono mt-1 text-[10px] text-muted-foreground">{currentDetail.entityId}</p></div>
+               <div><p className="eyebrow">Recorded change</p><p className="mt-1 font-semibold">{val(currentDetail.action)}</p><p className="mt-1 text-xs text-muted-foreground">{day(currentDetail.createdAt)} · {val(currentDetail.adminName, 'Unknown administrator')}</p></div>
             </div>
             <div>
-              <div className="mb-3 flex items-center justify-between gap-3"><div><p className="eyebrow">Field values</p><h3 className="mt-1 font-semibold">Before and after</h3></div><span data-testid="text-audit-detail-field-count" className="text-xs text-muted-foreground">{detail.data?.revision?.fields?.length ?? 0} fields recorded</span></div>
-              {!(detail.data?.revision?.fields?.length) ? <div data-testid="audit-detail-unavailable" className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">Unavailable — no field-level historical detail was recorded for this entry.</div>
-                : <div className="overflow-hidden rounded-lg border border-border"><table className="w-full text-left text-sm"><thead className="bg-muted/45"><tr className="border-b border-border"><th className="px-4 py-3 text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">Field</th><th className="px-4 py-3 text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">Before</th><th className="px-4 py-3 text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">After</th></tr></thead><tbody>{detail.data.revision.fields.map((field: string) => {
-                  const before = detail.data.revision.before;
-                  const after = detail.data.revision.after;
+               <div className="mb-3 flex items-center justify-between gap-3"><div><p className="eyebrow">Field values</p><h3 className="mt-1 font-semibold">Before and after</h3></div><span data-testid="text-audit-detail-field-count" className="text-xs text-muted-foreground">{currentDetail.revision?.fields?.length ?? 0} fields recorded</span></div>
+               {!(currentDetail.revision?.fields?.length) ? <div data-testid="audit-detail-unavailable" className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">Unavailable — no field-level historical detail was recorded for this entry.</div>
+                 : <div className="overflow-hidden rounded-lg border border-border"><table className="w-full text-left text-sm"><thead className="bg-muted/45"><tr className="border-b border-border"><th className="px-4 py-3 text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">Field</th><th className="px-4 py-3 text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">Before</th><th className="px-4 py-3 text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">After</th></tr></thead><tbody>{currentDetail.revision.fields.map((field: string) => {
+                   const before = currentDetail.revision.before;
+                   const after = currentDetail.revision.after;
                   const format = (values: Record<string, unknown> | null | undefined) => values && Object.prototype.hasOwnProperty.call(values, field) ? (values[field] === null ? 'null' : String(values[field])) : 'Unavailable';
                   return <tr key={field} className="border-b border-border last:border-0"><td className="mono px-4 py-3 text-xs font-semibold">{field}</td><td data-testid={`audit-before-${field}`} className="max-w-[220px] break-words px-4 py-3 text-xs text-muted-foreground">{format(before)}</td><td data-testid={`audit-after-${field}`} className="max-w-[220px] break-words px-4 py-3 text-xs">{format(after)}</td></tr>;
                 })}</tbody></table></div>}
             </div>
-          </div>}
+           </div> : null}
       </section>
     </div>}
   </div>;
