@@ -419,6 +419,115 @@ test("admin status transitions roll back when the audit record cannot be inserte
   assert.equal((await db.select().from(adminAuditLogs).where(eq(adminAuditLogs.adminUserId, fixture.adminId))).length, 0);
 });
 
+test("destination create and edit history is attributable, safe, and searchable", async (t) => {
+  if (!(await adminSchemaReady())) {
+    t.skip("development database schema is pending post-merge application");
+    return;
+  }
+  const fixture = await createFixture();
+  let createdDestinationId: string | undefined;
+  t.after(async () => {
+    if (createdDestinationId) await db.delete(destinations).where(eq(destinations.id, createdDestinationId));
+    await deleteFixture(fixture);
+  });
+  const server = await startTestServer(buildTestApp(fixture.adminId, fixture.targetUserId));
+  t.after(() => server.close());
+
+  const slug = `admin-audit-destination-${randomUUID()}`;
+  const created = await adminRequest(server.baseUrl, "/v1/admin/destinations", "admin", {
+    method: "POST",
+    body: JSON.stringify({
+      slug,
+      name: "Audit Fixture Destination",
+      country: "India",
+      region: "Audit Region",
+      summary: "A destination used to verify safe audit metadata.",
+    }),
+  });
+  assert.equal(created.status, 201);
+  createdDestinationId = created.body.id as string;
+  assert.equal(typeof createdDestinationId, "string");
+
+  const edited = await adminRequest(server.baseUrl, `/v1/admin/destinations/${createdDestinationId}`, "admin", {
+    method: "PATCH",
+    body: JSON.stringify({
+      name: "Edited Audit Fixture Destination",
+      summary: "Updated destination summary.",
+    }),
+  });
+  assert.equal(edited.status, 200);
+  assert.equal(edited.body.id, createdDestinationId);
+  assert.equal(edited.body.name, "Edited Audit Fixture Destination");
+
+  const duplicate = await adminRequest(server.baseUrl, "/v1/admin/destinations", "admin", {
+    method: "POST",
+    body: JSON.stringify({
+      slug,
+      name: "Misleading Duplicate",
+      country: "India",
+    }),
+  });
+  assert.equal(duplicate.status, 409);
+  assert.equal((duplicate.body.error as JsonObject).code, "CONFLICT");
+
+  const missingDestinationId = randomUUID();
+  const notFound = await adminRequest(server.baseUrl, `/v1/admin/destinations/${missingDestinationId}`, "admin", {
+    method: "PATCH",
+    body: JSON.stringify({ name: "Misleading Not Found" }),
+  });
+  assert.equal(notFound.status, 404);
+  assert.equal((notFound.body.error as JsonObject).code, "NOT_FOUND");
+
+  const logs = await db.select().from(adminAuditLogs)
+    .where(eq(adminAuditLogs.adminUserId, fixture.adminId));
+  assert.equal(logs.length, 2);
+  const createdLog = logs.find((log) => log.action === "created");
+  const updatedLog = logs.find((log) => log.action === "updated");
+  assert.ok(createdLog);
+  assert.ok(updatedLog);
+  for (const log of [createdLog, updatedLog]) {
+    assert.equal(log.adminUserId, fixture.adminId);
+    assert.equal(log.entityType, "destination");
+    assert.equal(log.entityId, createdDestinationId);
+    assert.ok(log.createdAt instanceof Date);
+  }
+  assert.deepEqual(createdLog.metadata, {});
+  assert.deepEqual(updatedLog.metadata, { fields: ["name", "summary"] });
+  assert.equal((await db.select().from(adminAuditLogs)
+    .where(eq(adminAuditLogs.entityId, missingDestinationId))).length, 0);
+
+  const auditPageOne = await adminRequest(
+    server.baseUrl,
+    `/v1/admin/audit-logs?q=${createdDestinationId}&page=1&limit=1`,
+    "admin",
+  );
+  assert.equal(auditPageOne.status, 200);
+  assert.deepEqual(auditPageOne.body.meta, { page: 1, limit: 1, total: 2, hasMore: true });
+
+  const auditPageTwo = await adminRequest(
+    server.baseUrl,
+    `/v1/admin/audit-logs?q=${createdDestinationId}&page=2&limit=1`,
+    "admin",
+  );
+  assert.equal(auditPageTwo.status, 200);
+  assert.deepEqual(auditPageTwo.body.meta, { page: 2, limit: 1, total: 2, hasMore: false });
+
+  const auditItems = [
+    ...(auditPageOne.body.items as JsonObject[]),
+    ...(auditPageTwo.body.items as JsonObject[]),
+  ];
+  assert.deepEqual(new Set(auditItems.map((item) => item.action)), new Set(["created", "updated"]));
+  for (const item of auditItems) {
+    assert.equal(item.adminUserId, fixture.adminId);
+    assert.equal(item.adminName, "Admin Fixture Operator");
+    assert.equal(item.entityType, "destination");
+    assert.equal(item.entityId, createdDestinationId);
+    assert.equal(typeof item.createdAt, "string");
+  }
+  assert.deepEqual(auditItems.find((item) => item.action === "created")?.metadata, {});
+  assert.deepEqual(auditItems.find((item) => item.action === "updated")?.metadata, { fields: ["name", "summary"] });
+});
+
 test("admin lists support search, pagination, and safe serialization", async (t) => {
   if (!(await adminSchemaReady())) {
     t.skip("development database schema is pending post-merge application");
