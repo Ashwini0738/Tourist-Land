@@ -1,7 +1,7 @@
-import { and, asc, desc, eq, gt, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, lt, or, sql } from "drizzle-orm";
 import { db, bookingItems, bookings, hotels, hotelRooms, payments } from "@workspace/db";
 import { getHotelCatalogRecord } from "./hotel-catalog.ts";
-import { getDevelopmentRoom, availabilityDevelopmentNotice } from "./hotel-availability.ts";
+import { getDevelopmentRoom, getManagedHotelAvailability, availabilityDevelopmentNotice } from "./hotel-availability.ts";
 import {
   sendBookingEmailSafely,
   type BookingEmail,
@@ -167,7 +167,16 @@ export async function listUserBookings(userId: string) {
 export async function createUserBooking(userId: string, input: BookingRequest, idempotencyKey: string) {
   const hotel = getHotelCatalogRecord(input.hotelId);
   if (!hotel) throw new BookingNotFoundError("Hotel not found.");
+  const managed = await getManagedHotelAvailability(input.hotelId, input);
+  if (managed && managed.status !== "available") {
+    throw new BookingConflictError("The selected vendor-managed rooms are no longer available for those dates.");
+  }
   const rooms = input.items.map((item) => {
+    const managedRoom = managed?.items.find((candidate) => candidate.id === item.roomId);
+    if (managedRoom) {
+      if (managedRoom.capacity * item.quantity < input.adults + input.children) throw new BookingConflictError("The selected room capacity no longer matches the travellers.");
+      return { ...managedRoom, roomId: item.roomId, quantity: item.quantity };
+    }
     const room = getDevelopmentRoom(input.hotelId, item.roomId);
     if (!room) throw new BookingNotFoundError("Selected room is not available from the development provider.");
     if (room.capacity * item.quantity < input.adults + input.children) throw new BookingConflictError("The selected room capacity no longer matches the travellers.");
@@ -187,10 +196,10 @@ export async function createUserBooking(userId: string, input: BookingRequest, i
 
     for (const room of rooms) {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${room.id}))`);
-      const [roomRecord] = await tx.select({ room: hotelRooms, hotel: hotels })
+        const [roomRecord] = await tx.select({ room: hotelRooms, hotel: hotels })
         .from(hotelRooms)
         .leftJoin(hotels, eq(hotels.id, hotelRooms.hotelId))
-        .where(eq(hotelRooms.catalogRoomId, room.id));
+          .where(or(eq(hotelRooms.catalogRoomId, room.id), eq(hotelRooms.id, room.id)));
       let persistedRoom = roomRecord?.room;
       let persistedHotel = roomRecord?.hotel ?? null;
       if (!persistedHotel) {

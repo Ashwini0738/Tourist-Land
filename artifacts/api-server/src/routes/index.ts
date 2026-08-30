@@ -10,6 +10,7 @@ import hotelsRouter from "./hotels";
 import bookingsRouter from "./bookings";
 import notificationsRouter from "./notifications";
 import reviewsRouter from "./reviews";
+import vendorPortalRouter from "./vendor-portal";
 
 const router: IRouter = Router();
 
@@ -23,6 +24,7 @@ router.use(notificationsRouter);
 router.use(reviewsRouter);
 router.use(onboardingRouter);
 router.use(authRouter);
+router.use(vendorPortalRouter);
 router.use(roleAccessRouter);
 
 export default router;

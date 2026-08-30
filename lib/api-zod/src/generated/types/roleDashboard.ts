@@ -7,10 +7,12 @@
  */
 import type { AccountStatus } from './accountStatus';
 import type { PrimaryRole } from './primaryRole';
+import type { RoleDashboardStats } from './roleDashboardStats';
 
 export interface RoleDashboard {
   role: PrimaryRole;
   status: AccountStatus;
   title: string;
   message: string;
+  stats?: RoleDashboardStats;
 }

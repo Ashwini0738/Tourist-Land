@@ -12,5 +12,6 @@ export type HotelAvailabilityResponseSource = typeof HotelAvailabilityResponseSo
 export const HotelAvailabilityResponseSource = {
   development: 'development',
   live: 'live',
+  vendor: 'vendor',
   unavailable: 'unavailable',
 } as const;

@@ -7,8 +7,9 @@ export default function VendorDashboardScreen() {
   return (
     <RoleDashboard
       role="vendor"
-      status="approved"
+      status={data?.status ?? 'approved'}
       message={data?.message ?? 'Your approved vendor workspace is ready.'}
+      stats={data?.stats}
     />
   );
 }

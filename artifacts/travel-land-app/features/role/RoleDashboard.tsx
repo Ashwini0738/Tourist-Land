@@ -5,7 +5,7 @@ import { useClerk } from '@clerk/expo';
 import React, { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { CurrentUser } from '@workspace/api-client-react';
+import type { CurrentUser, RoleDashboard as RoleDashboardData } from '@workspace/api-client-react';
 
 export type DashboardRole = 'vendor' | 'admin';
 
@@ -19,9 +19,11 @@ type DashboardNavItem = {
 const NAVIGATION: Record<DashboardRole, DashboardNavItem[]> = {
   vendor: [
     { label: 'Traveller app', description: 'Explore destinations and manage your trips', icon: 'compass', route: '/(tabs)' },
-    { label: 'Listings', description: 'Hotels, rooms, and properties', icon: 'briefcase', route: '/vendor/listings' },
-    { label: 'Bookings', description: 'Bookings related to your listings', icon: 'calendar', route: '/vendor/bookings' },
-    { label: 'Enquiries', description: 'Customer questions and follow-ups', icon: 'message-circle', route: '/vendor/enquiries' },
+    { label: 'Hotels', description: 'Manage your accommodation properties', icon: 'briefcase', route: '/vendor/hotels' },
+    { label: 'Rooms', description: 'Manage rooms, rates, and activation', icon: 'layers', route: '/vendor/rooms' },
+    { label: 'Availability', description: 'Set dated inventory and blackout dates', icon: 'calendar', route: '/vendor/availability' },
+    { label: 'Listings', description: 'Legacy listing tools for existing records', icon: 'box', route: '/vendor/listings' },
+    { label: 'Bookings', description: 'Bookings for your own hotels', icon: 'calendar', route: '/vendor/bookings' },
     { label: 'Profile', description: 'Business information and status', icon: 'user', route: '/vendor/profile' },
   ],
   admin: [
@@ -40,10 +42,12 @@ export function RoleDashboard({
   role,
   message,
   status,
+  stats,
 }: {
   role: DashboardRole;
   message: string;
   status: string;
+  stats?: RoleDashboardData['stats'];
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -80,6 +84,21 @@ export function RoleDashboard({
         </View>
         <Text style={[styles.statusBadge, { color: colors.accentForeground }]}>{status.toUpperCase()}</Text>
       </View>
+      {isVendor && stats && (
+        <View style={styles.statsGrid}>
+          {[
+            ['Hotels', stats.hotels],
+            ['Published', stats.publishedHotels],
+            ['Active rooms', stats.activeRooms],
+            ['Bookings', stats.activeBookings],
+          ].map(([label, value]) => (
+            <View key={String(label)} style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.statValue, { color: colors.foreground }]}>{value}</Text>
+              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{label}</Text>
+            </View>
+          ))}
+        </View>
+      )}
       <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>WORKSPACE</Text>
       <View style={styles.navigation}>
         {items.map((item) => (
@@ -293,6 +312,10 @@ const styles = StyleSheet.create({
   detailValue: { fontSize: 14, lineHeight: 20 },
   approvedStatus: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 16 },
   approvedText: { fontSize: 13, fontWeight: '700' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 26 },
+  statCard: { width: '48%', minHeight: 82, borderWidth: 1, borderRadius: 16, padding: 14, justifyContent: 'center' },
+  statValue: { fontSize: 24, fontWeight: '700' },
+  statLabel: { fontSize: 11, marginTop: 4 },
   profileNotice: { fontSize: 12, lineHeight: 18, marginTop: 14 },
   profileLogout: { minHeight: 50, borderWidth: 1, borderRadius: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 18 },
 });

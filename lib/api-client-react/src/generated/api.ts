@@ -63,6 +63,10 @@ import type {
   ListHotelReviewsForHotelParams,
   ListNotificationsParams,
   ListProperties200,
+  ListVendorAvailabilityParams,
+  ListVendorBookingsParams,
+  ListVendorHotelsParams,
+  ListVendorRoomsParams,
   Listing,
   ListingInput,
   ListingList,
@@ -95,7 +99,20 @@ import type {
   VendorApplicationInput,
   VendorApplicationReceipt,
   VendorApplicationStatusResponse,
-  VendorProfile
+  VendorAvailabilityInput,
+  VendorAvailabilityItem,
+  VendorAvailabilityResponse,
+  VendorBookingList,
+  VendorHotel,
+  VendorHotelInput,
+  VendorHotelList,
+  VendorHotelUpdate,
+  VendorProfile,
+  VendorProfileUpdate,
+  VendorRoom,
+  VendorRoomInput,
+  VendorRoomList,
+  VendorRoomUpdate
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -3854,6 +3871,1131 @@ export function useGetVendorProfile<TData = Awaited<ReturnType<typeof getVendorP
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetVendorProfileQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateVendorProfileUrl = () => {
+
+
+
+
+  return `/api/v1/vendor/profile`
+}
+
+/**
+ * @summary Update editable business profile fields for the authenticated vendor
+ */
+export const updateVendorProfile = async (vendorProfileUpdate: VendorProfileUpdate, options?: Parameters<typeof customFetch>[1]): Promise<VendorProfile> => {
+
+  return customFetch<VendorProfile>(getUpdateVendorProfileUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(vendorProfileUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateVendorProfileMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVendorProfile>>, TError,{data: BodyType<VendorProfileUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateVendorProfile>>, TError,{data: BodyType<VendorProfileUpdate>}, TContext> => {
+
+const mutationKey = ['updateVendorProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateVendorProfile>>, {data: BodyType<VendorProfileUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateVendorProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateVendorProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateVendorProfile>>>
+    export type UpdateVendorProfileMutationBody = BodyType<VendorProfileUpdate>
+    export type UpdateVendorProfileMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+    /**
+ * @summary Update editable business profile fields for the authenticated vendor
+ */
+export const useUpdateVendorProfile = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVendorProfile>>, TError,{data: BodyType<VendorProfileUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateVendorProfile>>,
+        TError,
+        {data: BodyType<VendorProfileUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateVendorProfileMutationOptions(options));
+    }
+
+export const getListVendorHotelsUrl = (params?: ListVendorHotelsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/vendor/hotels?${stringifiedParams}` : `/api/v1/vendor/hotels`
+}
+
+/**
+ * @summary List hotels owned by the authenticated approved vendor
+ */
+export const listVendorHotels = async (params?: ListVendorHotelsParams, options?: Parameters<typeof customFetch>[1]): Promise<VendorHotelList> => {
+
+  return customFetch<VendorHotelList>(getListVendorHotelsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVendorHotelsQueryKey = (params?: ListVendorHotelsParams,) => {
+    return [
+    `/api/v1/vendor/hotels`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListVendorHotelsQueryOptions = <TData = Awaited<ReturnType<typeof listVendorHotels>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListVendorHotelsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVendorHotels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVendorHotelsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVendorHotels>>> = ({ signal }) => listVendorHotels(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVendorHotels>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListVendorHotelsQueryResult = NonNullable<Awaited<ReturnType<typeof listVendorHotels>>>
+export type ListVendorHotelsQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+/**
+ * @summary List hotels owned by the authenticated approved vendor
+ */
+
+export function useListVendorHotels<TData = Awaited<ReturnType<typeof listVendorHotels>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListVendorHotelsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVendorHotels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListVendorHotelsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateVendorHotelUrl = () => {
+
+
+
+
+  return `/api/v1/vendor/hotels`
+}
+
+/**
+ * @summary Create a draft hotel owned by the authenticated vendor
+ */
+export const createVendorHotel = async (vendorHotelInput: VendorHotelInput, options?: Parameters<typeof customFetch>[1]): Promise<VendorHotel> => {
+
+  return customFetch<VendorHotel>(getCreateVendorHotelUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(vendorHotelInput)
+  }
+);}
+
+
+
+
+
+export const getCreateVendorHotelMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVendorHotel>>, TError,{data: BodyType<VendorHotelInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createVendorHotel>>, TError,{data: BodyType<VendorHotelInput>}, TContext> => {
+
+const mutationKey = ['createVendorHotel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createVendorHotel>>, {data: BodyType<VendorHotelInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createVendorHotel(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateVendorHotelMutationResult = NonNullable<Awaited<ReturnType<typeof createVendorHotel>>>
+    export type CreateVendorHotelMutationBody = BodyType<VendorHotelInput>
+    export type CreateVendorHotelMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse>
+
+    /**
+ * @summary Create a draft hotel owned by the authenticated vendor
+ */
+export const useCreateVendorHotel = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVendorHotel>>, TError,{data: BodyType<VendorHotelInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createVendorHotel>>,
+        TError,
+        {data: BodyType<VendorHotelInput>},
+        TContext
+      > => {
+      return useMutation(getCreateVendorHotelMutationOptions(options));
+    }
+
+export const getGetVendorHotelUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/vendor/hotels/${id}`
+}
+
+export const getVendorHotel = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<VendorHotel> => {
+
+  return customFetch<VendorHotel>(getGetVendorHotelUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVendorHotelQueryKey = (id: string,) => {
+    return [
+    `/api/v1/vendor/hotels/${id}`
+    ] as const;
+    }
+
+
+export const getGetVendorHotelQueryOptions = <TData = Awaited<ReturnType<typeof getVendorHotel>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVendorHotel>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVendorHotelQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVendorHotel>>> = ({ signal }) => getVendorHotel(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVendorHotel>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetVendorHotelQueryResult = NonNullable<Awaited<ReturnType<typeof getVendorHotel>>>
+export type GetVendorHotelQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+
+
+export function useGetVendorHotel<TData = Awaited<ReturnType<typeof getVendorHotel>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVendorHotel>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetVendorHotelQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateVendorHotelUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/vendor/hotels/${id}`
+}
+
+export const updateVendorHotel = async (id: string,
+    vendorHotelUpdate: VendorHotelUpdate, options?: Parameters<typeof customFetch>[1]): Promise<VendorHotel> => {
+
+  return customFetch<VendorHotel>(getUpdateVendorHotelUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(vendorHotelUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateVendorHotelMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVendorHotel>>, TError,{id: string;data: BodyType<VendorHotelUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateVendorHotel>>, TError,{id: string;data: BodyType<VendorHotelUpdate>}, TContext> => {
+
+const mutationKey = ['updateVendorHotel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateVendorHotel>>, {id: string;data: BodyType<VendorHotelUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateVendorHotel(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateVendorHotelMutationResult = NonNullable<Awaited<ReturnType<typeof updateVendorHotel>>>
+    export type UpdateVendorHotelMutationBody = BodyType<VendorHotelUpdate>
+    export type UpdateVendorHotelMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>
+
+    export const useUpdateVendorHotel = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVendorHotel>>, TError,{id: string;data: BodyType<VendorHotelUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateVendorHotel>>,
+        TError,
+        {id: string;data: BodyType<VendorHotelUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateVendorHotelMutationOptions(options));
+    }
+
+export const getSubmitVendorHotelUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/vendor/hotels/${id}/submit`
+}
+
+export const submitVendorHotel = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<VendorHotel> => {
+
+  return customFetch<VendorHotel>(getSubmitVendorHotelUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSubmitVendorHotelMutationOptions = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitVendorHotel>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitVendorHotel>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['submitVendorHotel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitVendorHotel>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  submitVendorHotel(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitVendorHotelMutationResult = NonNullable<Awaited<ReturnType<typeof submitVendorHotel>>>
+
+    export type SubmitVendorHotelMutationError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>
+
+    export const useSubmitVendorHotel = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitVendorHotel>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitVendorHotel>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getSubmitVendorHotelMutationOptions(options));
+    }
+
+export const getArchiveVendorHotelUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/vendor/hotels/${id}/archive`
+}
+
+export const archiveVendorHotel = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<VendorHotel> => {
+
+  return customFetch<VendorHotel>(getArchiveVendorHotelUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getArchiveVendorHotelMutationOptions = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveVendorHotel>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof archiveVendorHotel>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['archiveVendorHotel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archiveVendorHotel>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  archiveVendorHotel(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ArchiveVendorHotelMutationResult = NonNullable<Awaited<ReturnType<typeof archiveVendorHotel>>>
+
+    export type ArchiveVendorHotelMutationError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+    export const useArchiveVendorHotel = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveVendorHotel>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof archiveVendorHotel>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getArchiveVendorHotelMutationOptions(options));
+    }
+
+export const getListVendorRoomsUrl = (params?: ListVendorRoomsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/vendor/rooms?${stringifiedParams}` : `/api/v1/vendor/rooms`
+}
+
+export const listVendorRooms = async (params?: ListVendorRoomsParams, options?: Parameters<typeof customFetch>[1]): Promise<VendorRoomList> => {
+
+  return customFetch<VendorRoomList>(getListVendorRoomsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVendorRoomsQueryKey = (params?: ListVendorRoomsParams,) => {
+    return [
+    `/api/v1/vendor/rooms`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListVendorRoomsQueryOptions = <TData = Awaited<ReturnType<typeof listVendorRooms>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListVendorRoomsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVendorRooms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVendorRoomsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVendorRooms>>> = ({ signal }) => listVendorRooms(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVendorRooms>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListVendorRoomsQueryResult = NonNullable<Awaited<ReturnType<typeof listVendorRooms>>>
+export type ListVendorRoomsQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListVendorRooms<TData = Awaited<ReturnType<typeof listVendorRooms>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListVendorRoomsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVendorRooms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListVendorRoomsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateVendorRoomUrl = (hotelId: string,) => {
+
+
+
+
+  return `/api/v1/vendor/hotels/${hotelId}/rooms`
+}
+
+export const createVendorRoom = async (hotelId: string,
+    vendorRoomInput: VendorRoomInput, options?: Parameters<typeof customFetch>[1]): Promise<VendorRoom> => {
+
+  return customFetch<VendorRoom>(getCreateVendorRoomUrl(hotelId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(vendorRoomInput)
+  }
+);}
+
+
+
+
+
+export const getCreateVendorRoomMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVendorRoom>>, TError,{hotelId: string;data: BodyType<VendorRoomInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createVendorRoom>>, TError,{hotelId: string;data: BodyType<VendorRoomInput>}, TContext> => {
+
+const mutationKey = ['createVendorRoom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createVendorRoom>>, {hotelId: string;data: BodyType<VendorRoomInput>}> = (props) => {
+          const {hotelId,data} = props ?? {};
+
+          return  createVendorRoom(hotelId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateVendorRoomMutationResult = NonNullable<Awaited<ReturnType<typeof createVendorRoom>>>
+    export type CreateVendorRoomMutationBody = BodyType<VendorRoomInput>
+    export type CreateVendorRoomMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+    export const useCreateVendorRoom = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVendorRoom>>, TError,{hotelId: string;data: BodyType<VendorRoomInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createVendorRoom>>,
+        TError,
+        {hotelId: string;data: BodyType<VendorRoomInput>},
+        TContext
+      > => {
+      return useMutation(getCreateVendorRoomMutationOptions(options));
+    }
+
+export const getGetVendorRoomUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/vendor/rooms/${id}`
+}
+
+export const getVendorRoom = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<VendorRoom> => {
+
+  return customFetch<VendorRoom>(getGetVendorRoomUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVendorRoomQueryKey = (id: string,) => {
+    return [
+    `/api/v1/vendor/rooms/${id}`
+    ] as const;
+    }
+
+
+export const getGetVendorRoomQueryOptions = <TData = Awaited<ReturnType<typeof getVendorRoom>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVendorRoom>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVendorRoomQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVendorRoom>>> = ({ signal }) => getVendorRoom(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVendorRoom>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetVendorRoomQueryResult = NonNullable<Awaited<ReturnType<typeof getVendorRoom>>>
+export type GetVendorRoomQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+
+
+export function useGetVendorRoom<TData = Awaited<ReturnType<typeof getVendorRoom>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVendorRoom>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetVendorRoomQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateVendorRoomUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/vendor/rooms/${id}`
+}
+
+export const updateVendorRoom = async (id: string,
+    vendorRoomUpdate: VendorRoomUpdate, options?: Parameters<typeof customFetch>[1]): Promise<VendorRoom> => {
+
+  return customFetch<VendorRoom>(getUpdateVendorRoomUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(vendorRoomUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateVendorRoomMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVendorRoom>>, TError,{id: string;data: BodyType<VendorRoomUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateVendorRoom>>, TError,{id: string;data: BodyType<VendorRoomUpdate>}, TContext> => {
+
+const mutationKey = ['updateVendorRoom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateVendorRoom>>, {id: string;data: BodyType<VendorRoomUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateVendorRoom(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateVendorRoomMutationResult = NonNullable<Awaited<ReturnType<typeof updateVendorRoom>>>
+    export type UpdateVendorRoomMutationBody = BodyType<VendorRoomUpdate>
+    export type UpdateVendorRoomMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+    export const useUpdateVendorRoom = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVendorRoom>>, TError,{id: string;data: BodyType<VendorRoomUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateVendorRoom>>,
+        TError,
+        {id: string;data: BodyType<VendorRoomUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateVendorRoomMutationOptions(options));
+    }
+
+export const getActivateVendorRoomUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/vendor/rooms/${id}/activate`
+}
+
+export const activateVendorRoom = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<VendorRoom> => {
+
+  return customFetch<VendorRoom>(getActivateVendorRoomUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getActivateVendorRoomMutationOptions = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateVendorRoom>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof activateVendorRoom>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['activateVendorRoom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activateVendorRoom>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  activateVendorRoom(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActivateVendorRoomMutationResult = NonNullable<Awaited<ReturnType<typeof activateVendorRoom>>>
+
+    export type ActivateVendorRoomMutationError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+    export const useActivateVendorRoom = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateVendorRoom>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof activateVendorRoom>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getActivateVendorRoomMutationOptions(options));
+    }
+
+export const getDeactivateVendorRoomUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/vendor/rooms/${id}/deactivate`
+}
+
+export const deactivateVendorRoom = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<VendorRoom> => {
+
+  return customFetch<VendorRoom>(getDeactivateVendorRoomUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeactivateVendorRoomMutationOptions = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deactivateVendorRoom>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deactivateVendorRoom>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deactivateVendorRoom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deactivateVendorRoom>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deactivateVendorRoom(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeactivateVendorRoomMutationResult = NonNullable<Awaited<ReturnType<typeof deactivateVendorRoom>>>
+
+    export type DeactivateVendorRoomMutationError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+    export const useDeactivateVendorRoom = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deactivateVendorRoom>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deactivateVendorRoom>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeactivateVendorRoomMutationOptions(options));
+    }
+
+export const getListVendorAvailabilityUrl = (params: ListVendorAvailabilityParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/vendor/availability?${stringifiedParams}` : `/api/v1/vendor/availability`
+}
+
+export const listVendorAvailability = async (params: ListVendorAvailabilityParams, options?: Parameters<typeof customFetch>[1]): Promise<VendorAvailabilityResponse> => {
+
+  return customFetch<VendorAvailabilityResponse>(getListVendorAvailabilityUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVendorAvailabilityQueryKey = (params?: ListVendorAvailabilityParams,) => {
+    return [
+    `/api/v1/vendor/availability`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListVendorAvailabilityQueryOptions = <TData = Awaited<ReturnType<typeof listVendorAvailability>>, TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>(params: ListVendorAvailabilityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVendorAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVendorAvailabilityQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVendorAvailability>>> = ({ signal }) => listVendorAvailability(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVendorAvailability>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListVendorAvailabilityQueryResult = NonNullable<Awaited<ReturnType<typeof listVendorAvailability>>>
+export type ListVendorAvailabilityQueryError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+
+
+export function useListVendorAvailability<TData = Awaited<ReturnType<typeof listVendorAvailability>>, TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>(
+ params: ListVendorAvailabilityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVendorAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListVendorAvailabilityQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateVendorAvailabilityUrl = () => {
+
+
+
+
+  return `/api/v1/vendor/availability`
+}
+
+export const updateVendorAvailability = async (vendorAvailabilityInput: VendorAvailabilityInput, options?: Parameters<typeof customFetch>[1]): Promise<VendorAvailabilityItem> => {
+
+  return customFetch<VendorAvailabilityItem>(getUpdateVendorAvailabilityUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(vendorAvailabilityInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateVendorAvailabilityMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVendorAvailability>>, TError,{data: BodyType<VendorAvailabilityInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateVendorAvailability>>, TError,{data: BodyType<VendorAvailabilityInput>}, TContext> => {
+
+const mutationKey = ['updateVendorAvailability'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateVendorAvailability>>, {data: BodyType<VendorAvailabilityInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateVendorAvailability(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateVendorAvailabilityMutationResult = NonNullable<Awaited<ReturnType<typeof updateVendorAvailability>>>
+    export type UpdateVendorAvailabilityMutationBody = BodyType<VendorAvailabilityInput>
+    export type UpdateVendorAvailabilityMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>
+
+    export const useUpdateVendorAvailability = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVendorAvailability>>, TError,{data: BodyType<VendorAvailabilityInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateVendorAvailability>>,
+        TError,
+        {data: BodyType<VendorAvailabilityInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateVendorAvailabilityMutationOptions(options));
+    }
+
+export const getListVendorBookingsUrl = (params?: ListVendorBookingsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/vendor/bookings?${stringifiedParams}` : `/api/v1/vendor/bookings`
+}
+
+export const listVendorBookings = async (params?: ListVendorBookingsParams, options?: Parameters<typeof customFetch>[1]): Promise<VendorBookingList> => {
+
+  return customFetch<VendorBookingList>(getListVendorBookingsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVendorBookingsQueryKey = (params?: ListVendorBookingsParams,) => {
+    return [
+    `/api/v1/vendor/bookings`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListVendorBookingsQueryOptions = <TData = Awaited<ReturnType<typeof listVendorBookings>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListVendorBookingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVendorBookings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVendorBookingsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVendorBookings>>> = ({ signal }) => listVendorBookings(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVendorBookings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListVendorBookingsQueryResult = NonNullable<Awaited<ReturnType<typeof listVendorBookings>>>
+export type ListVendorBookingsQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListVendorBookings<TData = Awaited<ReturnType<typeof listVendorBookings>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListVendorBookingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVendorBookings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListVendorBookingsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

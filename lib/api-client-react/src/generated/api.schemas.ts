@@ -425,6 +425,7 @@ export type HotelAvailabilityRoomSource = typeof HotelAvailabilityRoomSource[key
 export const HotelAvailabilityRoomSource = {
   development: 'development',
   live: 'live',
+  vendor: 'vendor',
   unavailable: 'unavailable',
 } as const;
 
@@ -468,6 +469,7 @@ export type HotelAvailabilityResponseSource = typeof HotelAvailabilityResponseSo
 export const HotelAvailabilityResponseSource = {
   development: 'development',
   live: 'live',
+  vendor: 'vendor',
   unavailable: 'unavailable',
 } as const;
 
@@ -878,6 +880,333 @@ export const ListingStatus = {
   pending: 'pending',
 } as const;
 
+export type VendorHotelStatus = typeof VendorHotelStatus[keyof typeof VendorHotelStatus];
+
+
+export const VendorHotelStatus = {
+  draft: 'draft',
+  published: 'published',
+  archived: 'archived',
+} as const;
+
+export type VendorApprovalStatus = typeof VendorApprovalStatus[keyof typeof VendorApprovalStatus];
+
+
+export const VendorApprovalStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface VendorHotelInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name: string;
+  /**
+     * @maxLength 4000
+     * @nullable
+     */
+  description: string | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  propertyType: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  address: string;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  city: string | null;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  state: string | null;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  country: string | null;
+  /**
+     * @maxLength 30
+     * @nullable
+     */
+  postalCode: string | null;
+  /**
+     * @minimum -90
+     * @maximum 90
+     * @nullable
+     */
+  latitude: number | null;
+  /**
+     * @minimum -180
+     * @maximum 180
+     * @nullable
+     */
+  longitude: number | null;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  contactPhone: string | null;
+  /**
+     * @maxLength 320
+     * @nullable
+     */
+  contactEmail: string | null;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  website: string | null;
+  /**
+     * @maxItems 30
+     * @items.maxLength 120
+     */
+  amenities: string[];
+  /**
+     * @maxItems 20
+     * @items.maxLength 120
+     */
+  imageUrls: string[];
+  /**
+     * @maxLength 20
+     * @nullable
+     */
+  checkInTime: string | null;
+  /**
+     * @maxLength 20
+     * @nullable
+     */
+  checkOutTime: string | null;
+}
+
+export type VendorHotelUpdate = VendorHotelInput;
+
+export type VendorHotel = VendorHotelInput & ({
+  id: string;
+  /** @nullable */
+  catalogId: string | null;
+  status: VendorHotelStatus;
+  approvalStatus: VendorApprovalStatus;
+  createdAt: string;
+  updatedAt: string;
+});
+
+export interface VendorHotelList {
+  items: VendorHotel[];
+  page: number;
+  limit: number;
+  total: number;
+}
+
+export interface VendorRoomInput {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name: string;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  bedType: string | null;
+  /**
+     * @minimum 1
+     * @maximum 50
+     */
+  capacity: number;
+  /**
+     * @minimum 1
+     * @maximum 10000
+     */
+  totalUnits: number;
+  /**
+     * @minimum 0
+     * @maximum 10000000
+     */
+  nightlyRate: number;
+  /**
+     * @minLength 3
+     * @maxLength 3
+     */
+  currency: string;
+  /**
+     * @maxItems 30
+     * @items.maxLength 120
+     */
+  amenities: string[];
+  /**
+     * @maxItems 20
+     * @items.maxLength 120
+     */
+  imageUrls: string[];
+}
+
+export type VendorRoomUpdate = VendorRoomInput;
+
+export type VendorRoomStatus = typeof VendorRoomStatus[keyof typeof VendorRoomStatus];
+
+
+export const VendorRoomStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export type VendorRoom = VendorRoomInput & ({
+  id: string;
+  hotelId: string;
+  /** @nullable */
+  catalogRoomId: string | null;
+  status: VendorRoomStatus;
+  createdAt: string;
+  updatedAt: string;
+});
+
+export interface VendorRoomList {
+  items: VendorRoom[];
+}
+
+export type VendorAvailabilityInputStatus = typeof VendorAvailabilityInputStatus[keyof typeof VendorAvailabilityInputStatus];
+
+
+export const VendorAvailabilityInputStatus = {
+  available: 'available',
+  blackout: 'blackout',
+} as const;
+
+export interface VendorAvailabilityInput {
+  /** @minLength 1 */
+  roomId: string;
+  date: string;
+  /** @minimum 0 */
+  availableUnits: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  priceOverride: number | null;
+  status: VendorAvailabilityInputStatus;
+  /**
+     * @maxLength 240
+     * @nullable
+     */
+  blackoutReason: string | null;
+}
+
+export type VendorAvailabilityItemStatus = typeof VendorAvailabilityItemStatus[keyof typeof VendorAvailabilityItemStatus];
+
+
+export const VendorAvailabilityItemStatus = {
+  available: 'available',
+  blackout: 'blackout',
+} as const;
+
+export interface VendorAvailabilityItem {
+  date: string;
+  /** @minimum 0 */
+  availableUnits: number;
+  /** @minimum 1 */
+  totalUnits: number;
+  /** @minimum 0 */
+  reservedUnits?: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  priceOverride: number | null;
+  status: VendorAvailabilityItemStatus;
+  /** @nullable */
+  blackoutReason: string | null;
+}
+
+export interface VendorAvailabilityResponse {
+  roomId: string;
+  hotelId: string;
+  from: string;
+  to: string;
+  items: VendorAvailabilityItem[];
+}
+
+export interface VendorBookingItem {
+  roomName: string;
+  /** @minimum 1 */
+  quantity: number;
+}
+
+export type VendorBookingHotel = {
+  id: string;
+  name: string;
+};
+
+export type VendorBookingGuest = {
+  name: string;
+  email: string;
+};
+
+export interface VendorBooking {
+  reference: string;
+  hotel: VendorBookingHotel;
+  startsOn: string;
+  endsOn: string;
+  adults: number;
+  children: number;
+  guestCount: number;
+  roomCount: number;
+  guest: VendorBookingGuest;
+  items: VendorBookingItem[];
+  /** @minimum 0 */
+  total: number;
+  currency: string;
+  status: BookingStatus;
+  createdAt: string;
+}
+
+export interface VendorBookingList {
+  items: VendorBooking[];
+  page: number;
+  limit: number;
+  total: number;
+}
+
+export interface VendorProfileUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  businessName?: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  businessType?: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  contactName?: string;
+  /** @maxLength 40 */
+  phone?: string;
+  email?: string;
+  /** @maxLength 4000 */
+  description?: string;
+  /** @maxLength 500 */
+  address?: string;
+  /** @maxLength 100 */
+  city?: string;
+  /** @maxLength 100 */
+  state?: string;
+  /** @maxLength 100 */
+  country?: string;
+}
+
 export interface ListingInput {
   /**
      * @minLength 1
@@ -1284,11 +1613,23 @@ export interface AdminInvitation {
   message?: string | null;
 }
 
+export type RoleDashboardStats = {
+  /** @minimum 0 */
+  hotels: number;
+  /** @minimum 0 */
+  publishedHotels: number;
+  /** @minimum 0 */
+  activeRooms: number;
+  /** @minimum 0 */
+  activeBookings: number;
+};
+
 export interface RoleDashboard {
   role: PrimaryRole;
   status: AccountStatus;
   title: string;
   message: string;
+  stats?: RoleDashboardStats;
 }
 
 export interface RoleAssignmentInput {
@@ -1572,6 +1913,70 @@ id: string;
  */
 email: string;
 };
+
+export type ListVendorHotelsParams = {
+status?: ListVendorHotelsStatus;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListVendorHotelsStatus = typeof ListVendorHotelsStatus[keyof typeof ListVendorHotelsStatus];
+
+
+export const ListVendorHotelsStatus = {
+  draft: 'draft',
+  published: 'published',
+  archived: 'archived',
+} as const;
+
+export type ListVendorRoomsParams = {
+hotelId?: string;
+status?: ListVendorRoomsStatus;
+};
+
+export type ListVendorRoomsStatus = typeof ListVendorRoomsStatus[keyof typeof ListVendorRoomsStatus];
+
+
+export const ListVendorRoomsStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export type ListVendorAvailabilityParams = {
+roomId: string;
+from: string;
+to: string;
+};
+
+export type ListVendorBookingsParams = {
+hotelId?: string;
+status?: ListVendorBookingsStatus;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListVendorBookingsStatus = typeof ListVendorBookingsStatus[keyof typeof ListVendorBookingsStatus];
+
+
+export const ListVendorBookingsStatus = {
+  pending_payment: 'pending_payment',
+  confirmed: 'confirmed',
+  cancelled: 'cancelled',
+} as const;
 
 export type ListAdminUsers200 = {
   items: CurrentUser[];

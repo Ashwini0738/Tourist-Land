@@ -13,10 +13,13 @@ export default function VendorLayout() {
   if (!deviceAuthSetupComplete) return <Redirect href="/biometric" />;
   if (biometricsEnabled && !isUnlocked) return <Redirect href="/biometric-login" />;
   if (!roleReady) return null;
-  if (role !== 'vendor' && role !== 'admin') return <Redirect href="/(tabs)" />;
+  if (role !== 'vendor') return <Redirect href="/(tabs)" />;
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
+      <Stack.Screen name="hotels" />
+      <Stack.Screen name="rooms" />
+      <Stack.Screen name="availability" />
       <Stack.Screen name="listings" />
       <Stack.Screen name="bookings" />
       <Stack.Screen name="enquiries" />

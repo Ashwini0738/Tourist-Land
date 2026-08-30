@@ -12,5 +12,6 @@ export type HotelAvailabilityRoomSource = typeof HotelAvailabilityRoomSource[key
 export const HotelAvailabilityRoomSource = {
   development: 'development',
   live: 'live',
+  vendor: 'vendor',
   unavailable: 'unavailable',
 } as const;

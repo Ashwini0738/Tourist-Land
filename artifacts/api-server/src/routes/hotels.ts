@@ -16,6 +16,7 @@ import {
 } from "./hotel-catalog.ts";
 import {
   getHotelAvailability,
+  getManagedHotelAvailability,
   parseHotelAvailabilityInput,
 } from "./hotel-availability.ts";
 
@@ -55,7 +56,7 @@ hotelsRouter.get("/v1/hotels/:id/rooms", (req, res) => {
   res.json(ListHotelRoomsResponse.parse(rooms));
 });
 
-hotelsRouter.get("/v1/hotels/:id/availability", (req, res) => {
+hotelsRouter.get("/v1/hotels/:id/availability", async (req, res) => {
   const id = routeId(req.params.id);
   if (!id || !getHotelCatalogRecord(id)) {
     res.status(404).json({ error: { code: "NOT_FOUND", message: "Hotel not found" } });
@@ -66,7 +67,8 @@ hotelsRouter.get("/v1/hotels/:id/availability", (req, res) => {
     res.status(400).json({ error: { code: "INVALID_INPUT", message: parsed.error } });
     return;
   }
-  res.json(GetHotelAvailabilityResponse.parse(getHotelAvailability(id, parsed)));
+  const managed = await getManagedHotelAvailability(id, parsed);
+  res.json(GetHotelAvailabilityResponse.parse(managed ?? getHotelAvailability(id, parsed)));
 });
 
 hotelsRouter.get("/v1/hotels/:id/nearby", (req, res) => {

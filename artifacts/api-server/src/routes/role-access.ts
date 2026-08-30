@@ -130,7 +130,7 @@ async function serializeUserById(userId: string) {
   );
 }
 
-roleAccessRouter.get("/v1/vendor/dashboard", requireRole("vendor", "admin"), async (req, res) => {
+roleAccessRouter.get("/v1/vendor/dashboard", requireRole("vendor"), async (req, res) => {
   if (!(await requireApprovedVendor(req, res))) return;
   res.json({
     role: "vendor",
@@ -140,7 +140,7 @@ roleAccessRouter.get("/v1/vendor/dashboard", requireRole("vendor", "admin"), asy
   });
 });
 
-roleAccessRouter.get("/v1/vendor/profile", requireAnyRole("vendor", "admin"), async (req, res) => {
+roleAccessRouter.get("/v1/vendor/profile", requireRole("vendor"), async (req, res) => {
   const profile = await findVendorProfile(req.localUser!.id);
   if (!profile) {
     error(res, 404, "VENDOR_PROFILE_NOT_FOUND", "A vendor profile has not been submitted.");
@@ -149,11 +149,9 @@ roleAccessRouter.get("/v1/vendor/profile", requireAnyRole("vendor", "admin"), as
   res.json(serializeVendorProfile(profile));
 });
 
-roleAccessRouter.get("/v1/vendor/listings", requireRole("vendor", "admin"), async (req, res) => {
+roleAccessRouter.get("/v1/vendor/listings", requireRole("vendor"), async (req, res) => {
   if (!(await requireApprovedVendor(req, res))) return;
-  const listings = req.localUser!.role === "admin"
-    ? await db.select().from(hotels).orderBy(desc(hotels.updatedAt))
-    : await db.select().from(hotels).where(eq(hotels.ownerId, req.localUser!.id)).orderBy(desc(hotels.updatedAt));
+  const listings = await db.select().from(hotels).where(eq(hotels.ownerId, req.localUser!.id)).orderBy(desc(hotels.updatedAt));
   res.json({ items: listings.map(serializeListing) });
 });
 

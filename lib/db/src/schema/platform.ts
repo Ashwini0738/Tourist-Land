@@ -203,24 +203,50 @@ export const hotels = pgTable("hotels", {
   ownerId: uuid("owner_id").references(() => users.id, { onDelete: "set null" }),
   name: text("name").notNull(),
   description: text("description"),
+  propertyType: text("property_type").default("hotel"),
   address: text("address").notNull(),
+  city: text("city"),
+  state: text("state"),
+  country: text("country"),
+  postalCode: text("postal_code"),
+  latitude: numeric("latitude", { precision: 10, scale: 7 }),
+  longitude: numeric("longitude", { precision: 10, scale: 7 }),
+  contactPhone: text("contact_phone"),
+  contactEmail: text("contact_email"),
+  website: text("website"),
+  amenities: jsonb("amenities").default([]).notNull(),
+  imageUrls: jsonb("image_urls").default([]).notNull(),
   checkInTime: text("check_in_time"),
   checkOutTime: text("check_out_time"),
-  status: text("status").default("pending").notNull(),
+  status: text("status").default("draft").notNull(),
+  approvalStatus: text("approval_status").default("pending").notNull(),
   ...timestamps,
-});
+}, (table) => [
+  check("hotel_status_valid", sql`${table.status} in ('draft', 'published', 'archived')`),
+  check("hotel_approval_status_valid", sql`${table.approvalStatus} in ('pending', 'approved', 'rejected')`),
+  check("hotel_coordinates_pair", sql`(${table.latitude} is null and ${table.longitude} is null) or (${table.latitude} is not null and ${table.longitude} is not null)`),
+]);
 
 export const hotelRooms = pgTable("hotel_rooms", {
   id: uuid("id").defaultRandom().primaryKey(),
   catalogRoomId: text("catalog_room_id").unique(),
   hotelId: uuid("hotel_id").references(() => hotels.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
+  bedType: text("bed_type"),
   capacity: integer("capacity").notNull(),
+  totalUnits: integer("total_units").default(1).notNull(),
   nightlyRate: numeric("nightly_rate", { precision: 12, scale: 2 }).notNull(),
   currency: text("currency").default("INR").notNull(),
+  amenities: jsonb("amenities").default([]).notNull(),
+  imageUrls: jsonb("image_urls").default([]).notNull(),
   status: text("status").default("active").notNull(),
   ...timestamps,
-});
+}, (table) => [
+  check("hotel_room_capacity_positive", sql`${table.capacity} > 0`),
+  check("hotel_room_total_units_positive", sql`${table.totalUnits} > 0`),
+  check("hotel_room_rate_non_negative", sql`${table.nightlyRate} >= 0`),
+  check("hotel_room_status_valid", sql`${table.status} in ('active', 'inactive')`),
+]);
 
 export const roomAvailability = pgTable(
   "room_availability",
@@ -231,9 +257,32 @@ export const roomAvailability = pgTable(
     availableUnits: integer("available_units").default(0).notNull(),
     priceOverride: numeric("price_override", { precision: 12, scale: 2 }),
     status: text("status").default("available").notNull(),
+    blackoutReason: text("blackout_reason"),
     ...timestamps,
   },
-  (table) => [uniqueIndex("room_availability_unique").on(table.roomId, table.date)],
+  (table) => [
+    uniqueIndex("room_availability_unique").on(table.roomId, table.date),
+    check("room_availability_units_non_negative", sql`${table.availableUnits} >= 0`),
+    check("room_availability_price_non_negative", sql`${table.priceOverride} is null or ${table.priceOverride} >= 0`),
+    check("room_availability_status_valid", sql`${table.status} in ('available', 'blackout')`),
+  ],
+);
+
+export const vendorAuditLogs = pgTable(
+  "vendor_audit_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vendorId: uuid("vendor_id").references(() => users.id, { onDelete: "restrict" }).notNull(),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id").notNull(),
+    action: text("action").notNull(),
+    metadata: jsonb("metadata"),
+    ...timestamps,
+  },
+  (table) => [
+    index("vendor_audit_vendor_created_idx").on(table.vendorId, table.createdAt),
+    index("vendor_audit_entity_idx").on(table.entityType, table.entityId),
+  ],
 );
 
 export const bookings = pgTable(

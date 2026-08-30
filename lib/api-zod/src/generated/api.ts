@@ -574,7 +574,7 @@ export const GetHotelAvailabilityResponse = zod.object({
   "hotelId": zod.string(),
   "status": zod.enum(['available', 'no_availability', 'unavailable']),
   "notice": zod.string(),
-  "source": zod.enum(['development', 'live', 'unavailable']),
+  "source": zod.enum(['development', 'live', 'vendor', 'unavailable']),
   "sourceLabel": zod.string(),
   "sourceNotice": zod.string(),
   "checkIn": zod.coerce.date(),
@@ -595,7 +595,7 @@ export const GetHotelAvailabilityResponse = zod.object({
   "currency": zod.string(),
   "nights": zod.number().min(1),
   "roomTotal": zod.number().min(getHotelAvailabilityResponseItemsItemRoomTotalMin),
-  "source": zod.enum(['development', 'live', 'unavailable']),
+  "source": zod.enum(['development', 'live', 'vendor', 'unavailable']),
   "sourceLabel": zod.string(),
   "sourceNotice": zod.string()
 }).describe('A room result from a clearly labeled development or live availability provider.')),
@@ -1981,11 +1981,27 @@ export const GetCurrentUserResponse = zod.object({
 /**
  * @summary Get the authenticated vendor or admin vendor dashboard status
  */
+export const getVendorDashboardResponseStatsHotelsMin = 0;
+
+export const getVendorDashboardResponseStatsPublishedHotelsMin = 0;
+
+export const getVendorDashboardResponseStatsActiveRoomsMin = 0;
+
+export const getVendorDashboardResponseStatsActiveBookingsMin = 0;
+
+
+
 export const GetVendorDashboardResponse = zod.object({
   "role": zod.enum(['user', 'vendor', 'admin']),
   "status": zod.enum(['active', 'inactive', 'suspended']),
   "title": zod.string(),
-  "message": zod.string()
+  "message": zod.string(),
+  "stats": zod.object({
+  "hotels": zod.number().int().min(getVendorDashboardResponseStatsHotelsMin),
+  "publishedHotels": zod.number().int().min(getVendorDashboardResponseStatsPublishedHotelsMin),
+  "activeRooms": zod.number().int().min(getVendorDashboardResponseStatsActiveRoomsMin),
+  "activeBookings": zod.number().int().min(getVendorDashboardResponseStatsActiveBookingsMin)
+}).optional()
 })
 
 
@@ -2008,6 +2024,1121 @@ export const GetVendorProfileResponse = zod.object({
   "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update editable business profile fields for the authenticated vendor
+ */
+export const updateVendorProfileBodyBusinessNameMax = 200;
+
+export const updateVendorProfileBodyBusinessTypeMax = 100;
+
+export const updateVendorProfileBodyContactNameMax = 200;
+
+export const updateVendorProfileBodyPhoneMax = 40;
+
+export const updateVendorProfileBodyDescriptionMax = 4000;
+
+export const updateVendorProfileBodyAddressMax = 500;
+
+export const updateVendorProfileBodyCityMax = 100;
+
+export const updateVendorProfileBodyStateMax = 100;
+
+export const updateVendorProfileBodyCountryMax = 100;
+
+
+
+export const UpdateVendorProfileBody = zod.object({
+  "businessName": zod.string().min(1).max(updateVendorProfileBodyBusinessNameMax).optional(),
+  "businessType": zod.string().min(1).max(updateVendorProfileBodyBusinessTypeMax).optional(),
+  "contactName": zod.string().min(1).max(updateVendorProfileBodyContactNameMax).optional(),
+  "phone": zod.string().max(updateVendorProfileBodyPhoneMax).optional(),
+  "email": zod.string().email().optional(),
+  "description": zod.string().max(updateVendorProfileBodyDescriptionMax).optional(),
+  "address": zod.string().max(updateVendorProfileBodyAddressMax).optional(),
+  "city": zod.string().max(updateVendorProfileBodyCityMax).optional(),
+  "state": zod.string().max(updateVendorProfileBodyStateMax).optional(),
+  "country": zod.string().max(updateVendorProfileBodyCountryMax).optional()
+})
+
+export const UpdateVendorProfileResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List hotels owned by the authenticated approved vendor
+ */
+export const listVendorHotelsQueryPageDefault = 1;
+
+export const listVendorHotelsQueryLimitDefault = 20;
+export const listVendorHotelsQueryLimitMax = 50;
+
+
+
+export const ListVendorHotelsQueryParams = zod.object({
+  "status": zod.enum(['draft', 'published', 'archived']).optional(),
+  "page": zod.coerce.number().int().min(1).default(listVendorHotelsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listVendorHotelsQueryLimitMax).default(listVendorHotelsQueryLimitDefault)
+})
+
+export const listVendorHotelsResponseItemsItemOneNameMax = 200;
+
+export const listVendorHotelsResponseItemsItemOneDescriptionMax = 4000;
+
+export const listVendorHotelsResponseItemsItemOnePropertyTypeMax = 80;
+
+export const listVendorHotelsResponseItemsItemOneAddressMax = 500;
+
+export const listVendorHotelsResponseItemsItemOneCityMax = 120;
+
+export const listVendorHotelsResponseItemsItemOneStateMax = 120;
+
+export const listVendorHotelsResponseItemsItemOneCountryMax = 120;
+
+export const listVendorHotelsResponseItemsItemOnePostalCodeMax = 30;
+
+export const listVendorHotelsResponseItemsItemOneLatitudeMin = -90;
+export const listVendorHotelsResponseItemsItemOneLatitudeMax = 90;
+
+export const listVendorHotelsResponseItemsItemOneLongitudeMin = -180;
+export const listVendorHotelsResponseItemsItemOneLongitudeMax = 180;
+
+export const listVendorHotelsResponseItemsItemOneContactPhoneMax = 40;
+
+export const listVendorHotelsResponseItemsItemOneContactEmailMax = 320;
+
+export const listVendorHotelsResponseItemsItemOneWebsiteMax = 500;
+
+export const listVendorHotelsResponseItemsItemOneAmenitiesItemMax = 120;
+
+export const listVendorHotelsResponseItemsItemOneAmenitiesMax = 30;
+
+export const listVendorHotelsResponseItemsItemOneImageUrlsItemMax = 120;
+
+export const listVendorHotelsResponseItemsItemOneImageUrlsMax = 20;
+
+export const listVendorHotelsResponseItemsItemOneCheckInTimeMax = 20;
+
+export const listVendorHotelsResponseItemsItemOneCheckOutTimeMax = 20;
+
+
+
+export const ListVendorHotelsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "name": zod.string().min(1).max(listVendorHotelsResponseItemsItemOneNameMax),
+  "description": zod.string().max(listVendorHotelsResponseItemsItemOneDescriptionMax).nullable(),
+  "propertyType": zod.string().max(listVendorHotelsResponseItemsItemOnePropertyTypeMax).nullable(),
+  "address": zod.string().min(1).max(listVendorHotelsResponseItemsItemOneAddressMax),
+  "city": zod.string().max(listVendorHotelsResponseItemsItemOneCityMax).nullable(),
+  "state": zod.string().max(listVendorHotelsResponseItemsItemOneStateMax).nullable(),
+  "country": zod.string().max(listVendorHotelsResponseItemsItemOneCountryMax).nullable(),
+  "postalCode": zod.string().max(listVendorHotelsResponseItemsItemOnePostalCodeMax).nullable(),
+  "latitude": zod.number().min(listVendorHotelsResponseItemsItemOneLatitudeMin).max(listVendorHotelsResponseItemsItemOneLatitudeMax).nullable(),
+  "longitude": zod.number().min(listVendorHotelsResponseItemsItemOneLongitudeMin).max(listVendorHotelsResponseItemsItemOneLongitudeMax).nullable(),
+  "contactPhone": zod.string().max(listVendorHotelsResponseItemsItemOneContactPhoneMax).nullable(),
+  "contactEmail": zod.string().max(listVendorHotelsResponseItemsItemOneContactEmailMax).nullable(),
+  "website": zod.string().max(listVendorHotelsResponseItemsItemOneWebsiteMax).nullable(),
+  "amenities": zod.array(zod.string().max(listVendorHotelsResponseItemsItemOneAmenitiesItemMax)).max(listVendorHotelsResponseItemsItemOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(listVendorHotelsResponseItemsItemOneImageUrlsItemMax)).max(listVendorHotelsResponseItemsItemOneImageUrlsMax),
+  "checkInTime": zod.string().max(listVendorHotelsResponseItemsItemOneCheckInTimeMax).nullable(),
+  "checkOutTime": zod.string().max(listVendorHotelsResponseItemsItemOneCheckOutTimeMax).nullable()
+}).and(zod.object({
+  "id": zod.string(),
+  "catalogId": zod.string().nullable(),
+  "status": zod.enum(['draft', 'published', 'archived']),
+  "approvalStatus": zod.enum(['pending', 'approved', 'rejected']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))),
+  "page": zod.number().int(),
+  "limit": zod.number().int(),
+  "total": zod.number().int()
+})
+
+
+/**
+ * @summary Create a draft hotel owned by the authenticated vendor
+ */
+export const createVendorHotelBodyNameMax = 200;
+
+export const createVendorHotelBodyDescriptionMax = 4000;
+
+export const createVendorHotelBodyPropertyTypeMax = 80;
+
+export const createVendorHotelBodyAddressMax = 500;
+
+export const createVendorHotelBodyCityMax = 120;
+
+export const createVendorHotelBodyStateMax = 120;
+
+export const createVendorHotelBodyCountryMax = 120;
+
+export const createVendorHotelBodyPostalCodeMax = 30;
+
+export const createVendorHotelBodyLatitudeMin = -90;
+export const createVendorHotelBodyLatitudeMax = 90;
+
+export const createVendorHotelBodyLongitudeMin = -180;
+export const createVendorHotelBodyLongitudeMax = 180;
+
+export const createVendorHotelBodyContactPhoneMax = 40;
+
+export const createVendorHotelBodyContactEmailMax = 320;
+
+export const createVendorHotelBodyWebsiteMax = 500;
+
+export const createVendorHotelBodyAmenitiesItemMax = 120;
+
+export const createVendorHotelBodyAmenitiesMax = 30;
+
+export const createVendorHotelBodyImageUrlsItemMax = 120;
+
+export const createVendorHotelBodyImageUrlsMax = 20;
+
+export const createVendorHotelBodyCheckInTimeMax = 20;
+
+export const createVendorHotelBodyCheckOutTimeMax = 20;
+
+
+
+export const CreateVendorHotelBody = zod.object({
+  "name": zod.string().min(1).max(createVendorHotelBodyNameMax),
+  "description": zod.string().max(createVendorHotelBodyDescriptionMax).nullable(),
+  "propertyType": zod.string().max(createVendorHotelBodyPropertyTypeMax).nullable(),
+  "address": zod.string().min(1).max(createVendorHotelBodyAddressMax),
+  "city": zod.string().max(createVendorHotelBodyCityMax).nullable(),
+  "state": zod.string().max(createVendorHotelBodyStateMax).nullable(),
+  "country": zod.string().max(createVendorHotelBodyCountryMax).nullable(),
+  "postalCode": zod.string().max(createVendorHotelBodyPostalCodeMax).nullable(),
+  "latitude": zod.number().min(createVendorHotelBodyLatitudeMin).max(createVendorHotelBodyLatitudeMax).nullable(),
+  "longitude": zod.number().min(createVendorHotelBodyLongitudeMin).max(createVendorHotelBodyLongitudeMax).nullable(),
+  "contactPhone": zod.string().max(createVendorHotelBodyContactPhoneMax).nullable(),
+  "contactEmail": zod.string().max(createVendorHotelBodyContactEmailMax).nullable(),
+  "website": zod.string().max(createVendorHotelBodyWebsiteMax).nullable(),
+  "amenities": zod.array(zod.string().max(createVendorHotelBodyAmenitiesItemMax)).max(createVendorHotelBodyAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(createVendorHotelBodyImageUrlsItemMax)).max(createVendorHotelBodyImageUrlsMax),
+  "checkInTime": zod.string().max(createVendorHotelBodyCheckInTimeMax).nullable(),
+  "checkOutTime": zod.string().max(createVendorHotelBodyCheckOutTimeMax).nullable()
+})
+
+export const createVendorHotelResponseOneNameMax = 200;
+
+export const createVendorHotelResponseOneDescriptionMax = 4000;
+
+export const createVendorHotelResponseOnePropertyTypeMax = 80;
+
+export const createVendorHotelResponseOneAddressMax = 500;
+
+export const createVendorHotelResponseOneCityMax = 120;
+
+export const createVendorHotelResponseOneStateMax = 120;
+
+export const createVendorHotelResponseOneCountryMax = 120;
+
+export const createVendorHotelResponseOnePostalCodeMax = 30;
+
+export const createVendorHotelResponseOneLatitudeMin = -90;
+export const createVendorHotelResponseOneLatitudeMax = 90;
+
+export const createVendorHotelResponseOneLongitudeMin = -180;
+export const createVendorHotelResponseOneLongitudeMax = 180;
+
+export const createVendorHotelResponseOneContactPhoneMax = 40;
+
+export const createVendorHotelResponseOneContactEmailMax = 320;
+
+export const createVendorHotelResponseOneWebsiteMax = 500;
+
+export const createVendorHotelResponseOneAmenitiesItemMax = 120;
+
+export const createVendorHotelResponseOneAmenitiesMax = 30;
+
+export const createVendorHotelResponseOneImageUrlsItemMax = 120;
+
+export const createVendorHotelResponseOneImageUrlsMax = 20;
+
+export const createVendorHotelResponseOneCheckInTimeMax = 20;
+
+export const createVendorHotelResponseOneCheckOutTimeMax = 20;
+
+
+
+export const CreateVendorHotelResponse = zod.object({
+  "name": zod.string().min(1).max(createVendorHotelResponseOneNameMax),
+  "description": zod.string().max(createVendorHotelResponseOneDescriptionMax).nullable(),
+  "propertyType": zod.string().max(createVendorHotelResponseOnePropertyTypeMax).nullable(),
+  "address": zod.string().min(1).max(createVendorHotelResponseOneAddressMax),
+  "city": zod.string().max(createVendorHotelResponseOneCityMax).nullable(),
+  "state": zod.string().max(createVendorHotelResponseOneStateMax).nullable(),
+  "country": zod.string().max(createVendorHotelResponseOneCountryMax).nullable(),
+  "postalCode": zod.string().max(createVendorHotelResponseOnePostalCodeMax).nullable(),
+  "latitude": zod.number().min(createVendorHotelResponseOneLatitudeMin).max(createVendorHotelResponseOneLatitudeMax).nullable(),
+  "longitude": zod.number().min(createVendorHotelResponseOneLongitudeMin).max(createVendorHotelResponseOneLongitudeMax).nullable(),
+  "contactPhone": zod.string().max(createVendorHotelResponseOneContactPhoneMax).nullable(),
+  "contactEmail": zod.string().max(createVendorHotelResponseOneContactEmailMax).nullable(),
+  "website": zod.string().max(createVendorHotelResponseOneWebsiteMax).nullable(),
+  "amenities": zod.array(zod.string().max(createVendorHotelResponseOneAmenitiesItemMax)).max(createVendorHotelResponseOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(createVendorHotelResponseOneImageUrlsItemMax)).max(createVendorHotelResponseOneImageUrlsMax),
+  "checkInTime": zod.string().max(createVendorHotelResponseOneCheckInTimeMax).nullable(),
+  "checkOutTime": zod.string().max(createVendorHotelResponseOneCheckOutTimeMax).nullable()
+}).and(zod.object({
+  "id": zod.string(),
+  "catalogId": zod.string().nullable(),
+  "status": zod.enum(['draft', 'published', 'archived']),
+  "approvalStatus": zod.enum(['pending', 'approved', 'rejected']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+export const GetVendorHotelParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const getVendorHotelResponseOneNameMax = 200;
+
+export const getVendorHotelResponseOneDescriptionMax = 4000;
+
+export const getVendorHotelResponseOnePropertyTypeMax = 80;
+
+export const getVendorHotelResponseOneAddressMax = 500;
+
+export const getVendorHotelResponseOneCityMax = 120;
+
+export const getVendorHotelResponseOneStateMax = 120;
+
+export const getVendorHotelResponseOneCountryMax = 120;
+
+export const getVendorHotelResponseOnePostalCodeMax = 30;
+
+export const getVendorHotelResponseOneLatitudeMin = -90;
+export const getVendorHotelResponseOneLatitudeMax = 90;
+
+export const getVendorHotelResponseOneLongitudeMin = -180;
+export const getVendorHotelResponseOneLongitudeMax = 180;
+
+export const getVendorHotelResponseOneContactPhoneMax = 40;
+
+export const getVendorHotelResponseOneContactEmailMax = 320;
+
+export const getVendorHotelResponseOneWebsiteMax = 500;
+
+export const getVendorHotelResponseOneAmenitiesItemMax = 120;
+
+export const getVendorHotelResponseOneAmenitiesMax = 30;
+
+export const getVendorHotelResponseOneImageUrlsItemMax = 120;
+
+export const getVendorHotelResponseOneImageUrlsMax = 20;
+
+export const getVendorHotelResponseOneCheckInTimeMax = 20;
+
+export const getVendorHotelResponseOneCheckOutTimeMax = 20;
+
+
+
+export const GetVendorHotelResponse = zod.object({
+  "name": zod.string().min(1).max(getVendorHotelResponseOneNameMax),
+  "description": zod.string().max(getVendorHotelResponseOneDescriptionMax).nullable(),
+  "propertyType": zod.string().max(getVendorHotelResponseOnePropertyTypeMax).nullable(),
+  "address": zod.string().min(1).max(getVendorHotelResponseOneAddressMax),
+  "city": zod.string().max(getVendorHotelResponseOneCityMax).nullable(),
+  "state": zod.string().max(getVendorHotelResponseOneStateMax).nullable(),
+  "country": zod.string().max(getVendorHotelResponseOneCountryMax).nullable(),
+  "postalCode": zod.string().max(getVendorHotelResponseOnePostalCodeMax).nullable(),
+  "latitude": zod.number().min(getVendorHotelResponseOneLatitudeMin).max(getVendorHotelResponseOneLatitudeMax).nullable(),
+  "longitude": zod.number().min(getVendorHotelResponseOneLongitudeMin).max(getVendorHotelResponseOneLongitudeMax).nullable(),
+  "contactPhone": zod.string().max(getVendorHotelResponseOneContactPhoneMax).nullable(),
+  "contactEmail": zod.string().max(getVendorHotelResponseOneContactEmailMax).nullable(),
+  "website": zod.string().max(getVendorHotelResponseOneWebsiteMax).nullable(),
+  "amenities": zod.array(zod.string().max(getVendorHotelResponseOneAmenitiesItemMax)).max(getVendorHotelResponseOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(getVendorHotelResponseOneImageUrlsItemMax)).max(getVendorHotelResponseOneImageUrlsMax),
+  "checkInTime": zod.string().max(getVendorHotelResponseOneCheckInTimeMax).nullable(),
+  "checkOutTime": zod.string().max(getVendorHotelResponseOneCheckOutTimeMax).nullable()
+}).and(zod.object({
+  "id": zod.string(),
+  "catalogId": zod.string().nullable(),
+  "status": zod.enum(['draft', 'published', 'archived']),
+  "approvalStatus": zod.enum(['pending', 'approved', 'rejected']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+export const UpdateVendorHotelParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateVendorHotelBodyOneNameMax = 200;
+
+export const updateVendorHotelBodyOneDescriptionMax = 4000;
+
+export const updateVendorHotelBodyOnePropertyTypeMax = 80;
+
+export const updateVendorHotelBodyOneAddressMax = 500;
+
+export const updateVendorHotelBodyOneCityMax = 120;
+
+export const updateVendorHotelBodyOneStateMax = 120;
+
+export const updateVendorHotelBodyOneCountryMax = 120;
+
+export const updateVendorHotelBodyOnePostalCodeMax = 30;
+
+export const updateVendorHotelBodyOneLatitudeMin = -90;
+export const updateVendorHotelBodyOneLatitudeMax = 90;
+
+export const updateVendorHotelBodyOneLongitudeMin = -180;
+export const updateVendorHotelBodyOneLongitudeMax = 180;
+
+export const updateVendorHotelBodyOneContactPhoneMax = 40;
+
+export const updateVendorHotelBodyOneContactEmailMax = 320;
+
+export const updateVendorHotelBodyOneWebsiteMax = 500;
+
+export const updateVendorHotelBodyOneAmenitiesItemMax = 120;
+
+export const updateVendorHotelBodyOneAmenitiesMax = 30;
+
+export const updateVendorHotelBodyOneImageUrlsItemMax = 120;
+
+export const updateVendorHotelBodyOneImageUrlsMax = 20;
+
+export const updateVendorHotelBodyOneCheckInTimeMax = 20;
+
+export const updateVendorHotelBodyOneCheckOutTimeMax = 20;
+
+
+
+export const UpdateVendorHotelBody = zod.object({
+  "name": zod.string().min(1).max(updateVendorHotelBodyOneNameMax),
+  "description": zod.string().max(updateVendorHotelBodyOneDescriptionMax).nullable(),
+  "propertyType": zod.string().max(updateVendorHotelBodyOnePropertyTypeMax).nullable(),
+  "address": zod.string().min(1).max(updateVendorHotelBodyOneAddressMax),
+  "city": zod.string().max(updateVendorHotelBodyOneCityMax).nullable(),
+  "state": zod.string().max(updateVendorHotelBodyOneStateMax).nullable(),
+  "country": zod.string().max(updateVendorHotelBodyOneCountryMax).nullable(),
+  "postalCode": zod.string().max(updateVendorHotelBodyOnePostalCodeMax).nullable(),
+  "latitude": zod.number().min(updateVendorHotelBodyOneLatitudeMin).max(updateVendorHotelBodyOneLatitudeMax).nullable(),
+  "longitude": zod.number().min(updateVendorHotelBodyOneLongitudeMin).max(updateVendorHotelBodyOneLongitudeMax).nullable(),
+  "contactPhone": zod.string().max(updateVendorHotelBodyOneContactPhoneMax).nullable(),
+  "contactEmail": zod.string().max(updateVendorHotelBodyOneContactEmailMax).nullable(),
+  "website": zod.string().max(updateVendorHotelBodyOneWebsiteMax).nullable(),
+  "amenities": zod.array(zod.string().max(updateVendorHotelBodyOneAmenitiesItemMax)).max(updateVendorHotelBodyOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(updateVendorHotelBodyOneImageUrlsItemMax)).max(updateVendorHotelBodyOneImageUrlsMax),
+  "checkInTime": zod.string().max(updateVendorHotelBodyOneCheckInTimeMax).nullable(),
+  "checkOutTime": zod.string().max(updateVendorHotelBodyOneCheckOutTimeMax).nullable()
+})
+
+export const updateVendorHotelResponseOneNameMax = 200;
+
+export const updateVendorHotelResponseOneDescriptionMax = 4000;
+
+export const updateVendorHotelResponseOnePropertyTypeMax = 80;
+
+export const updateVendorHotelResponseOneAddressMax = 500;
+
+export const updateVendorHotelResponseOneCityMax = 120;
+
+export const updateVendorHotelResponseOneStateMax = 120;
+
+export const updateVendorHotelResponseOneCountryMax = 120;
+
+export const updateVendorHotelResponseOnePostalCodeMax = 30;
+
+export const updateVendorHotelResponseOneLatitudeMin = -90;
+export const updateVendorHotelResponseOneLatitudeMax = 90;
+
+export const updateVendorHotelResponseOneLongitudeMin = -180;
+export const updateVendorHotelResponseOneLongitudeMax = 180;
+
+export const updateVendorHotelResponseOneContactPhoneMax = 40;
+
+export const updateVendorHotelResponseOneContactEmailMax = 320;
+
+export const updateVendorHotelResponseOneWebsiteMax = 500;
+
+export const updateVendorHotelResponseOneAmenitiesItemMax = 120;
+
+export const updateVendorHotelResponseOneAmenitiesMax = 30;
+
+export const updateVendorHotelResponseOneImageUrlsItemMax = 120;
+
+export const updateVendorHotelResponseOneImageUrlsMax = 20;
+
+export const updateVendorHotelResponseOneCheckInTimeMax = 20;
+
+export const updateVendorHotelResponseOneCheckOutTimeMax = 20;
+
+
+
+export const UpdateVendorHotelResponse = zod.object({
+  "name": zod.string().min(1).max(updateVendorHotelResponseOneNameMax),
+  "description": zod.string().max(updateVendorHotelResponseOneDescriptionMax).nullable(),
+  "propertyType": zod.string().max(updateVendorHotelResponseOnePropertyTypeMax).nullable(),
+  "address": zod.string().min(1).max(updateVendorHotelResponseOneAddressMax),
+  "city": zod.string().max(updateVendorHotelResponseOneCityMax).nullable(),
+  "state": zod.string().max(updateVendorHotelResponseOneStateMax).nullable(),
+  "country": zod.string().max(updateVendorHotelResponseOneCountryMax).nullable(),
+  "postalCode": zod.string().max(updateVendorHotelResponseOnePostalCodeMax).nullable(),
+  "latitude": zod.number().min(updateVendorHotelResponseOneLatitudeMin).max(updateVendorHotelResponseOneLatitudeMax).nullable(),
+  "longitude": zod.number().min(updateVendorHotelResponseOneLongitudeMin).max(updateVendorHotelResponseOneLongitudeMax).nullable(),
+  "contactPhone": zod.string().max(updateVendorHotelResponseOneContactPhoneMax).nullable(),
+  "contactEmail": zod.string().max(updateVendorHotelResponseOneContactEmailMax).nullable(),
+  "website": zod.string().max(updateVendorHotelResponseOneWebsiteMax).nullable(),
+  "amenities": zod.array(zod.string().max(updateVendorHotelResponseOneAmenitiesItemMax)).max(updateVendorHotelResponseOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(updateVendorHotelResponseOneImageUrlsItemMax)).max(updateVendorHotelResponseOneImageUrlsMax),
+  "checkInTime": zod.string().max(updateVendorHotelResponseOneCheckInTimeMax).nullable(),
+  "checkOutTime": zod.string().max(updateVendorHotelResponseOneCheckOutTimeMax).nullable()
+}).and(zod.object({
+  "id": zod.string(),
+  "catalogId": zod.string().nullable(),
+  "status": zod.enum(['draft', 'published', 'archived']),
+  "approvalStatus": zod.enum(['pending', 'approved', 'rejected']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+export const SubmitVendorHotelParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const submitVendorHotelResponseOneNameMax = 200;
+
+export const submitVendorHotelResponseOneDescriptionMax = 4000;
+
+export const submitVendorHotelResponseOnePropertyTypeMax = 80;
+
+export const submitVendorHotelResponseOneAddressMax = 500;
+
+export const submitVendorHotelResponseOneCityMax = 120;
+
+export const submitVendorHotelResponseOneStateMax = 120;
+
+export const submitVendorHotelResponseOneCountryMax = 120;
+
+export const submitVendorHotelResponseOnePostalCodeMax = 30;
+
+export const submitVendorHotelResponseOneLatitudeMin = -90;
+export const submitVendorHotelResponseOneLatitudeMax = 90;
+
+export const submitVendorHotelResponseOneLongitudeMin = -180;
+export const submitVendorHotelResponseOneLongitudeMax = 180;
+
+export const submitVendorHotelResponseOneContactPhoneMax = 40;
+
+export const submitVendorHotelResponseOneContactEmailMax = 320;
+
+export const submitVendorHotelResponseOneWebsiteMax = 500;
+
+export const submitVendorHotelResponseOneAmenitiesItemMax = 120;
+
+export const submitVendorHotelResponseOneAmenitiesMax = 30;
+
+export const submitVendorHotelResponseOneImageUrlsItemMax = 120;
+
+export const submitVendorHotelResponseOneImageUrlsMax = 20;
+
+export const submitVendorHotelResponseOneCheckInTimeMax = 20;
+
+export const submitVendorHotelResponseOneCheckOutTimeMax = 20;
+
+
+
+export const SubmitVendorHotelResponse = zod.object({
+  "name": zod.string().min(1).max(submitVendorHotelResponseOneNameMax),
+  "description": zod.string().max(submitVendorHotelResponseOneDescriptionMax).nullable(),
+  "propertyType": zod.string().max(submitVendorHotelResponseOnePropertyTypeMax).nullable(),
+  "address": zod.string().min(1).max(submitVendorHotelResponseOneAddressMax),
+  "city": zod.string().max(submitVendorHotelResponseOneCityMax).nullable(),
+  "state": zod.string().max(submitVendorHotelResponseOneStateMax).nullable(),
+  "country": zod.string().max(submitVendorHotelResponseOneCountryMax).nullable(),
+  "postalCode": zod.string().max(submitVendorHotelResponseOnePostalCodeMax).nullable(),
+  "latitude": zod.number().min(submitVendorHotelResponseOneLatitudeMin).max(submitVendorHotelResponseOneLatitudeMax).nullable(),
+  "longitude": zod.number().min(submitVendorHotelResponseOneLongitudeMin).max(submitVendorHotelResponseOneLongitudeMax).nullable(),
+  "contactPhone": zod.string().max(submitVendorHotelResponseOneContactPhoneMax).nullable(),
+  "contactEmail": zod.string().max(submitVendorHotelResponseOneContactEmailMax).nullable(),
+  "website": zod.string().max(submitVendorHotelResponseOneWebsiteMax).nullable(),
+  "amenities": zod.array(zod.string().max(submitVendorHotelResponseOneAmenitiesItemMax)).max(submitVendorHotelResponseOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(submitVendorHotelResponseOneImageUrlsItemMax)).max(submitVendorHotelResponseOneImageUrlsMax),
+  "checkInTime": zod.string().max(submitVendorHotelResponseOneCheckInTimeMax).nullable(),
+  "checkOutTime": zod.string().max(submitVendorHotelResponseOneCheckOutTimeMax).nullable()
+}).and(zod.object({
+  "id": zod.string(),
+  "catalogId": zod.string().nullable(),
+  "status": zod.enum(['draft', 'published', 'archived']),
+  "approvalStatus": zod.enum(['pending', 'approved', 'rejected']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+export const ArchiveVendorHotelParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const archiveVendorHotelResponseOneNameMax = 200;
+
+export const archiveVendorHotelResponseOneDescriptionMax = 4000;
+
+export const archiveVendorHotelResponseOnePropertyTypeMax = 80;
+
+export const archiveVendorHotelResponseOneAddressMax = 500;
+
+export const archiveVendorHotelResponseOneCityMax = 120;
+
+export const archiveVendorHotelResponseOneStateMax = 120;
+
+export const archiveVendorHotelResponseOneCountryMax = 120;
+
+export const archiveVendorHotelResponseOnePostalCodeMax = 30;
+
+export const archiveVendorHotelResponseOneLatitudeMin = -90;
+export const archiveVendorHotelResponseOneLatitudeMax = 90;
+
+export const archiveVendorHotelResponseOneLongitudeMin = -180;
+export const archiveVendorHotelResponseOneLongitudeMax = 180;
+
+export const archiveVendorHotelResponseOneContactPhoneMax = 40;
+
+export const archiveVendorHotelResponseOneContactEmailMax = 320;
+
+export const archiveVendorHotelResponseOneWebsiteMax = 500;
+
+export const archiveVendorHotelResponseOneAmenitiesItemMax = 120;
+
+export const archiveVendorHotelResponseOneAmenitiesMax = 30;
+
+export const archiveVendorHotelResponseOneImageUrlsItemMax = 120;
+
+export const archiveVendorHotelResponseOneImageUrlsMax = 20;
+
+export const archiveVendorHotelResponseOneCheckInTimeMax = 20;
+
+export const archiveVendorHotelResponseOneCheckOutTimeMax = 20;
+
+
+
+export const ArchiveVendorHotelResponse = zod.object({
+  "name": zod.string().min(1).max(archiveVendorHotelResponseOneNameMax),
+  "description": zod.string().max(archiveVendorHotelResponseOneDescriptionMax).nullable(),
+  "propertyType": zod.string().max(archiveVendorHotelResponseOnePropertyTypeMax).nullable(),
+  "address": zod.string().min(1).max(archiveVendorHotelResponseOneAddressMax),
+  "city": zod.string().max(archiveVendorHotelResponseOneCityMax).nullable(),
+  "state": zod.string().max(archiveVendorHotelResponseOneStateMax).nullable(),
+  "country": zod.string().max(archiveVendorHotelResponseOneCountryMax).nullable(),
+  "postalCode": zod.string().max(archiveVendorHotelResponseOnePostalCodeMax).nullable(),
+  "latitude": zod.number().min(archiveVendorHotelResponseOneLatitudeMin).max(archiveVendorHotelResponseOneLatitudeMax).nullable(),
+  "longitude": zod.number().min(archiveVendorHotelResponseOneLongitudeMin).max(archiveVendorHotelResponseOneLongitudeMax).nullable(),
+  "contactPhone": zod.string().max(archiveVendorHotelResponseOneContactPhoneMax).nullable(),
+  "contactEmail": zod.string().max(archiveVendorHotelResponseOneContactEmailMax).nullable(),
+  "website": zod.string().max(archiveVendorHotelResponseOneWebsiteMax).nullable(),
+  "amenities": zod.array(zod.string().max(archiveVendorHotelResponseOneAmenitiesItemMax)).max(archiveVendorHotelResponseOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(archiveVendorHotelResponseOneImageUrlsItemMax)).max(archiveVendorHotelResponseOneImageUrlsMax),
+  "checkInTime": zod.string().max(archiveVendorHotelResponseOneCheckInTimeMax).nullable(),
+  "checkOutTime": zod.string().max(archiveVendorHotelResponseOneCheckOutTimeMax).nullable()
+}).and(zod.object({
+  "id": zod.string(),
+  "catalogId": zod.string().nullable(),
+  "status": zod.enum(['draft', 'published', 'archived']),
+  "approvalStatus": zod.enum(['pending', 'approved', 'rejected']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+export const ListVendorRoomsQueryParams = zod.object({
+  "hotelId": zod.coerce.string().optional(),
+  "status": zod.enum(['active', 'inactive']).optional()
+})
+
+export const listVendorRoomsResponseItemsItemOneNameMax = 160;
+
+export const listVendorRoomsResponseItemsItemOneBedTypeMax = 120;
+
+export const listVendorRoomsResponseItemsItemOneCapacityMax = 50;
+
+export const listVendorRoomsResponseItemsItemOneTotalUnitsMax = 10000;
+
+export const listVendorRoomsResponseItemsItemOneNightlyRateMin = 0;
+export const listVendorRoomsResponseItemsItemOneNightlyRateMax = 10000000;
+
+export const listVendorRoomsResponseItemsItemOneCurrencyMin = 3;
+export const listVendorRoomsResponseItemsItemOneCurrencyMax = 3;
+
+export const listVendorRoomsResponseItemsItemOneAmenitiesItemMax = 120;
+
+export const listVendorRoomsResponseItemsItemOneAmenitiesMax = 30;
+
+export const listVendorRoomsResponseItemsItemOneImageUrlsItemMax = 120;
+
+export const listVendorRoomsResponseItemsItemOneImageUrlsMax = 20;
+
+
+
+export const ListVendorRoomsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "name": zod.string().min(1).max(listVendorRoomsResponseItemsItemOneNameMax),
+  "bedType": zod.string().max(listVendorRoomsResponseItemsItemOneBedTypeMax).nullable(),
+  "capacity": zod.number().int().min(1).max(listVendorRoomsResponseItemsItemOneCapacityMax),
+  "totalUnits": zod.number().int().min(1).max(listVendorRoomsResponseItemsItemOneTotalUnitsMax),
+  "nightlyRate": zod.number().min(listVendorRoomsResponseItemsItemOneNightlyRateMin).max(listVendorRoomsResponseItemsItemOneNightlyRateMax),
+  "currency": zod.string().min(listVendorRoomsResponseItemsItemOneCurrencyMin).max(listVendorRoomsResponseItemsItemOneCurrencyMax),
+  "amenities": zod.array(zod.string().max(listVendorRoomsResponseItemsItemOneAmenitiesItemMax)).max(listVendorRoomsResponseItemsItemOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(listVendorRoomsResponseItemsItemOneImageUrlsItemMax)).max(listVendorRoomsResponseItemsItemOneImageUrlsMax)
+}).and(zod.object({
+  "id": zod.string(),
+  "hotelId": zod.string(),
+  "catalogRoomId": zod.string().nullable(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})))
+})
+
+
+export const CreateVendorRoomParams = zod.object({
+  "hotelId": zod.coerce.string()
+})
+
+export const createVendorRoomBodyNameMax = 160;
+
+export const createVendorRoomBodyBedTypeMax = 120;
+
+export const createVendorRoomBodyCapacityMax = 50;
+
+export const createVendorRoomBodyTotalUnitsMax = 10000;
+
+export const createVendorRoomBodyNightlyRateMin = 0;
+export const createVendorRoomBodyNightlyRateMax = 10000000;
+
+export const createVendorRoomBodyCurrencyMin = 3;
+export const createVendorRoomBodyCurrencyMax = 3;
+
+export const createVendorRoomBodyAmenitiesItemMax = 120;
+
+export const createVendorRoomBodyAmenitiesMax = 30;
+
+export const createVendorRoomBodyImageUrlsItemMax = 120;
+
+export const createVendorRoomBodyImageUrlsMax = 20;
+
+
+
+export const CreateVendorRoomBody = zod.object({
+  "name": zod.string().min(1).max(createVendorRoomBodyNameMax),
+  "bedType": zod.string().max(createVendorRoomBodyBedTypeMax).nullable(),
+  "capacity": zod.number().int().min(1).max(createVendorRoomBodyCapacityMax),
+  "totalUnits": zod.number().int().min(1).max(createVendorRoomBodyTotalUnitsMax),
+  "nightlyRate": zod.number().min(createVendorRoomBodyNightlyRateMin).max(createVendorRoomBodyNightlyRateMax),
+  "currency": zod.string().min(createVendorRoomBodyCurrencyMin).max(createVendorRoomBodyCurrencyMax),
+  "amenities": zod.array(zod.string().max(createVendorRoomBodyAmenitiesItemMax)).max(createVendorRoomBodyAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(createVendorRoomBodyImageUrlsItemMax)).max(createVendorRoomBodyImageUrlsMax)
+})
+
+export const createVendorRoomResponseOneNameMax = 160;
+
+export const createVendorRoomResponseOneBedTypeMax = 120;
+
+export const createVendorRoomResponseOneCapacityMax = 50;
+
+export const createVendorRoomResponseOneTotalUnitsMax = 10000;
+
+export const createVendorRoomResponseOneNightlyRateMin = 0;
+export const createVendorRoomResponseOneNightlyRateMax = 10000000;
+
+export const createVendorRoomResponseOneCurrencyMin = 3;
+export const createVendorRoomResponseOneCurrencyMax = 3;
+
+export const createVendorRoomResponseOneAmenitiesItemMax = 120;
+
+export const createVendorRoomResponseOneAmenitiesMax = 30;
+
+export const createVendorRoomResponseOneImageUrlsItemMax = 120;
+
+export const createVendorRoomResponseOneImageUrlsMax = 20;
+
+
+
+export const CreateVendorRoomResponse = zod.object({
+  "name": zod.string().min(1).max(createVendorRoomResponseOneNameMax),
+  "bedType": zod.string().max(createVendorRoomResponseOneBedTypeMax).nullable(),
+  "capacity": zod.number().int().min(1).max(createVendorRoomResponseOneCapacityMax),
+  "totalUnits": zod.number().int().min(1).max(createVendorRoomResponseOneTotalUnitsMax),
+  "nightlyRate": zod.number().min(createVendorRoomResponseOneNightlyRateMin).max(createVendorRoomResponseOneNightlyRateMax),
+  "currency": zod.string().min(createVendorRoomResponseOneCurrencyMin).max(createVendorRoomResponseOneCurrencyMax),
+  "amenities": zod.array(zod.string().max(createVendorRoomResponseOneAmenitiesItemMax)).max(createVendorRoomResponseOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(createVendorRoomResponseOneImageUrlsItemMax)).max(createVendorRoomResponseOneImageUrlsMax)
+}).and(zod.object({
+  "id": zod.string(),
+  "hotelId": zod.string(),
+  "catalogRoomId": zod.string().nullable(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+export const GetVendorRoomParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const getVendorRoomResponseOneNameMax = 160;
+
+export const getVendorRoomResponseOneBedTypeMax = 120;
+
+export const getVendorRoomResponseOneCapacityMax = 50;
+
+export const getVendorRoomResponseOneTotalUnitsMax = 10000;
+
+export const getVendorRoomResponseOneNightlyRateMin = 0;
+export const getVendorRoomResponseOneNightlyRateMax = 10000000;
+
+export const getVendorRoomResponseOneCurrencyMin = 3;
+export const getVendorRoomResponseOneCurrencyMax = 3;
+
+export const getVendorRoomResponseOneAmenitiesItemMax = 120;
+
+export const getVendorRoomResponseOneAmenitiesMax = 30;
+
+export const getVendorRoomResponseOneImageUrlsItemMax = 120;
+
+export const getVendorRoomResponseOneImageUrlsMax = 20;
+
+
+
+export const GetVendorRoomResponse = zod.object({
+  "name": zod.string().min(1).max(getVendorRoomResponseOneNameMax),
+  "bedType": zod.string().max(getVendorRoomResponseOneBedTypeMax).nullable(),
+  "capacity": zod.number().int().min(1).max(getVendorRoomResponseOneCapacityMax),
+  "totalUnits": zod.number().int().min(1).max(getVendorRoomResponseOneTotalUnitsMax),
+  "nightlyRate": zod.number().min(getVendorRoomResponseOneNightlyRateMin).max(getVendorRoomResponseOneNightlyRateMax),
+  "currency": zod.string().min(getVendorRoomResponseOneCurrencyMin).max(getVendorRoomResponseOneCurrencyMax),
+  "amenities": zod.array(zod.string().max(getVendorRoomResponseOneAmenitiesItemMax)).max(getVendorRoomResponseOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(getVendorRoomResponseOneImageUrlsItemMax)).max(getVendorRoomResponseOneImageUrlsMax)
+}).and(zod.object({
+  "id": zod.string(),
+  "hotelId": zod.string(),
+  "catalogRoomId": zod.string().nullable(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+export const UpdateVendorRoomParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateVendorRoomBodyOneNameMax = 160;
+
+export const updateVendorRoomBodyOneBedTypeMax = 120;
+
+export const updateVendorRoomBodyOneCapacityMax = 50;
+
+export const updateVendorRoomBodyOneTotalUnitsMax = 10000;
+
+export const updateVendorRoomBodyOneNightlyRateMin = 0;
+export const updateVendorRoomBodyOneNightlyRateMax = 10000000;
+
+export const updateVendorRoomBodyOneCurrencyMin = 3;
+export const updateVendorRoomBodyOneCurrencyMax = 3;
+
+export const updateVendorRoomBodyOneAmenitiesItemMax = 120;
+
+export const updateVendorRoomBodyOneAmenitiesMax = 30;
+
+export const updateVendorRoomBodyOneImageUrlsItemMax = 120;
+
+export const updateVendorRoomBodyOneImageUrlsMax = 20;
+
+
+
+export const UpdateVendorRoomBody = zod.object({
+  "name": zod.string().min(1).max(updateVendorRoomBodyOneNameMax),
+  "bedType": zod.string().max(updateVendorRoomBodyOneBedTypeMax).nullable(),
+  "capacity": zod.number().int().min(1).max(updateVendorRoomBodyOneCapacityMax),
+  "totalUnits": zod.number().int().min(1).max(updateVendorRoomBodyOneTotalUnitsMax),
+  "nightlyRate": zod.number().min(updateVendorRoomBodyOneNightlyRateMin).max(updateVendorRoomBodyOneNightlyRateMax),
+  "currency": zod.string().min(updateVendorRoomBodyOneCurrencyMin).max(updateVendorRoomBodyOneCurrencyMax),
+  "amenities": zod.array(zod.string().max(updateVendorRoomBodyOneAmenitiesItemMax)).max(updateVendorRoomBodyOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(updateVendorRoomBodyOneImageUrlsItemMax)).max(updateVendorRoomBodyOneImageUrlsMax)
+})
+
+export const updateVendorRoomResponseOneNameMax = 160;
+
+export const updateVendorRoomResponseOneBedTypeMax = 120;
+
+export const updateVendorRoomResponseOneCapacityMax = 50;
+
+export const updateVendorRoomResponseOneTotalUnitsMax = 10000;
+
+export const updateVendorRoomResponseOneNightlyRateMin = 0;
+export const updateVendorRoomResponseOneNightlyRateMax = 10000000;
+
+export const updateVendorRoomResponseOneCurrencyMin = 3;
+export const updateVendorRoomResponseOneCurrencyMax = 3;
+
+export const updateVendorRoomResponseOneAmenitiesItemMax = 120;
+
+export const updateVendorRoomResponseOneAmenitiesMax = 30;
+
+export const updateVendorRoomResponseOneImageUrlsItemMax = 120;
+
+export const updateVendorRoomResponseOneImageUrlsMax = 20;
+
+
+
+export const UpdateVendorRoomResponse = zod.object({
+  "name": zod.string().min(1).max(updateVendorRoomResponseOneNameMax),
+  "bedType": zod.string().max(updateVendorRoomResponseOneBedTypeMax).nullable(),
+  "capacity": zod.number().int().min(1).max(updateVendorRoomResponseOneCapacityMax),
+  "totalUnits": zod.number().int().min(1).max(updateVendorRoomResponseOneTotalUnitsMax),
+  "nightlyRate": zod.number().min(updateVendorRoomResponseOneNightlyRateMin).max(updateVendorRoomResponseOneNightlyRateMax),
+  "currency": zod.string().min(updateVendorRoomResponseOneCurrencyMin).max(updateVendorRoomResponseOneCurrencyMax),
+  "amenities": zod.array(zod.string().max(updateVendorRoomResponseOneAmenitiesItemMax)).max(updateVendorRoomResponseOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(updateVendorRoomResponseOneImageUrlsItemMax)).max(updateVendorRoomResponseOneImageUrlsMax)
+}).and(zod.object({
+  "id": zod.string(),
+  "hotelId": zod.string(),
+  "catalogRoomId": zod.string().nullable(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+export const ActivateVendorRoomParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const activateVendorRoomResponseOneNameMax = 160;
+
+export const activateVendorRoomResponseOneBedTypeMax = 120;
+
+export const activateVendorRoomResponseOneCapacityMax = 50;
+
+export const activateVendorRoomResponseOneTotalUnitsMax = 10000;
+
+export const activateVendorRoomResponseOneNightlyRateMin = 0;
+export const activateVendorRoomResponseOneNightlyRateMax = 10000000;
+
+export const activateVendorRoomResponseOneCurrencyMin = 3;
+export const activateVendorRoomResponseOneCurrencyMax = 3;
+
+export const activateVendorRoomResponseOneAmenitiesItemMax = 120;
+
+export const activateVendorRoomResponseOneAmenitiesMax = 30;
+
+export const activateVendorRoomResponseOneImageUrlsItemMax = 120;
+
+export const activateVendorRoomResponseOneImageUrlsMax = 20;
+
+
+
+export const ActivateVendorRoomResponse = zod.object({
+  "name": zod.string().min(1).max(activateVendorRoomResponseOneNameMax),
+  "bedType": zod.string().max(activateVendorRoomResponseOneBedTypeMax).nullable(),
+  "capacity": zod.number().int().min(1).max(activateVendorRoomResponseOneCapacityMax),
+  "totalUnits": zod.number().int().min(1).max(activateVendorRoomResponseOneTotalUnitsMax),
+  "nightlyRate": zod.number().min(activateVendorRoomResponseOneNightlyRateMin).max(activateVendorRoomResponseOneNightlyRateMax),
+  "currency": zod.string().min(activateVendorRoomResponseOneCurrencyMin).max(activateVendorRoomResponseOneCurrencyMax),
+  "amenities": zod.array(zod.string().max(activateVendorRoomResponseOneAmenitiesItemMax)).max(activateVendorRoomResponseOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(activateVendorRoomResponseOneImageUrlsItemMax)).max(activateVendorRoomResponseOneImageUrlsMax)
+}).and(zod.object({
+  "id": zod.string(),
+  "hotelId": zod.string(),
+  "catalogRoomId": zod.string().nullable(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+export const DeactivateVendorRoomParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const deactivateVendorRoomResponseOneNameMax = 160;
+
+export const deactivateVendorRoomResponseOneBedTypeMax = 120;
+
+export const deactivateVendorRoomResponseOneCapacityMax = 50;
+
+export const deactivateVendorRoomResponseOneTotalUnitsMax = 10000;
+
+export const deactivateVendorRoomResponseOneNightlyRateMin = 0;
+export const deactivateVendorRoomResponseOneNightlyRateMax = 10000000;
+
+export const deactivateVendorRoomResponseOneCurrencyMin = 3;
+export const deactivateVendorRoomResponseOneCurrencyMax = 3;
+
+export const deactivateVendorRoomResponseOneAmenitiesItemMax = 120;
+
+export const deactivateVendorRoomResponseOneAmenitiesMax = 30;
+
+export const deactivateVendorRoomResponseOneImageUrlsItemMax = 120;
+
+export const deactivateVendorRoomResponseOneImageUrlsMax = 20;
+
+
+
+export const DeactivateVendorRoomResponse = zod.object({
+  "name": zod.string().min(1).max(deactivateVendorRoomResponseOneNameMax),
+  "bedType": zod.string().max(deactivateVendorRoomResponseOneBedTypeMax).nullable(),
+  "capacity": zod.number().int().min(1).max(deactivateVendorRoomResponseOneCapacityMax),
+  "totalUnits": zod.number().int().min(1).max(deactivateVendorRoomResponseOneTotalUnitsMax),
+  "nightlyRate": zod.number().min(deactivateVendorRoomResponseOneNightlyRateMin).max(deactivateVendorRoomResponseOneNightlyRateMax),
+  "currency": zod.string().min(deactivateVendorRoomResponseOneCurrencyMin).max(deactivateVendorRoomResponseOneCurrencyMax),
+  "amenities": zod.array(zod.string().max(deactivateVendorRoomResponseOneAmenitiesItemMax)).max(deactivateVendorRoomResponseOneAmenitiesMax),
+  "imageUrls": zod.array(zod.string().max(deactivateVendorRoomResponseOneImageUrlsItemMax)).max(deactivateVendorRoomResponseOneImageUrlsMax)
+}).and(zod.object({
+  "id": zod.string(),
+  "hotelId": zod.string(),
+  "catalogRoomId": zod.string().nullable(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+export const ListVendorAvailabilityQueryParams = zod.object({
+  "roomId": zod.coerce.string(),
+  "from": zod.date(),
+  "to": zod.date()
+})
+
+export const listVendorAvailabilityResponseItemsItemAvailableUnitsMin = 0;
+
+
+export const listVendorAvailabilityResponseItemsItemReservedUnitsMin = 0;
+
+export const listVendorAvailabilityResponseItemsItemPriceOverrideMin = 0;
+
+
+
+export const ListVendorAvailabilityResponse = zod.object({
+  "roomId": zod.string(),
+  "hotelId": zod.string(),
+  "from": zod.coerce.date(),
+  "to": zod.coerce.date(),
+  "items": zod.array(zod.object({
+  "date": zod.coerce.date(),
+  "availableUnits": zod.number().int().min(listVendorAvailabilityResponseItemsItemAvailableUnitsMin),
+  "totalUnits": zod.number().int().min(1),
+  "reservedUnits": zod.number().int().min(listVendorAvailabilityResponseItemsItemReservedUnitsMin).optional(),
+  "priceOverride": zod.number().min(listVendorAvailabilityResponseItemsItemPriceOverrideMin).nullable(),
+  "status": zod.enum(['available', 'blackout']),
+  "blackoutReason": zod.string().nullable()
+}))
+})
+
+
+
+export const updateVendorAvailabilityBodyAvailableUnitsMin = 0;
+
+export const updateVendorAvailabilityBodyPriceOverrideMin = 0;
+
+export const updateVendorAvailabilityBodyBlackoutReasonMax = 240;
+
+
+
+export const UpdateVendorAvailabilityBody = zod.object({
+  "roomId": zod.string().min(1),
+  "date": zod.coerce.date(),
+  "availableUnits": zod.number().int().min(updateVendorAvailabilityBodyAvailableUnitsMin),
+  "priceOverride": zod.number().min(updateVendorAvailabilityBodyPriceOverrideMin).nullable(),
+  "status": zod.enum(['available', 'blackout']),
+  "blackoutReason": zod.string().max(updateVendorAvailabilityBodyBlackoutReasonMax).nullable()
+})
+
+export const updateVendorAvailabilityResponseAvailableUnitsMin = 0;
+
+
+export const updateVendorAvailabilityResponseReservedUnitsMin = 0;
+
+export const updateVendorAvailabilityResponsePriceOverrideMin = 0;
+
+
+
+export const UpdateVendorAvailabilityResponse = zod.object({
+  "date": zod.coerce.date(),
+  "availableUnits": zod.number().int().min(updateVendorAvailabilityResponseAvailableUnitsMin),
+  "totalUnits": zod.number().int().min(1),
+  "reservedUnits": zod.number().int().min(updateVendorAvailabilityResponseReservedUnitsMin).optional(),
+  "priceOverride": zod.number().min(updateVendorAvailabilityResponsePriceOverrideMin).nullable(),
+  "status": zod.enum(['available', 'blackout']),
+  "blackoutReason": zod.string().nullable()
+})
+
+
+export const listVendorBookingsQueryPageDefault = 1;
+
+export const listVendorBookingsQueryLimitDefault = 20;
+export const listVendorBookingsQueryLimitMax = 50;
+
+
+
+export const ListVendorBookingsQueryParams = zod.object({
+  "hotelId": zod.coerce.string().optional(),
+  "status": zod.enum(['pending_payment', 'confirmed', 'cancelled']).optional(),
+  "page": zod.coerce.number().int().min(1).default(listVendorBookingsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listVendorBookingsQueryLimitMax).default(listVendorBookingsQueryLimitDefault)
+})
+
+
+export const listVendorBookingsResponseItemsItemTotalMin = 0;
+
+
+
+export const ListVendorBookingsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "reference": zod.string(),
+  "hotel": zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+}),
+  "startsOn": zod.coerce.date(),
+  "endsOn": zod.coerce.date(),
+  "adults": zod.number().int(),
+  "children": zod.number().int(),
+  "guestCount": zod.number().int(),
+  "roomCount": zod.number().int(),
+  "guest": zod.object({
+  "name": zod.string(),
+  "email": zod.string().email()
+}),
+  "items": zod.array(zod.object({
+  "roomName": zod.string(),
+  "quantity": zod.number().int().min(1)
+})),
+  "total": zod.number().min(listVendorBookingsResponseItemsItemTotalMin),
+  "currency": zod.string(),
+  "status": zod.enum(['pending_payment', 'confirmed', 'cancelled']),
+  "createdAt": zod.coerce.date()
+})),
+  "page": zod.number().int(),
+  "limit": zod.number().int(),
+  "total": zod.number().int()
 })
 
 
@@ -2142,11 +3273,27 @@ export const ArchiveVendorListingResponse = zod.object({
 /**
  * @summary Get the authenticated admin dashboard status
  */
+export const getAdminDashboardResponseStatsHotelsMin = 0;
+
+export const getAdminDashboardResponseStatsPublishedHotelsMin = 0;
+
+export const getAdminDashboardResponseStatsActiveRoomsMin = 0;
+
+export const getAdminDashboardResponseStatsActiveBookingsMin = 0;
+
+
+
 export const GetAdminDashboardResponse = zod.object({
   "role": zod.enum(['user', 'vendor', 'admin']),
   "status": zod.enum(['active', 'inactive', 'suspended']),
   "title": zod.string(),
-  "message": zod.string()
+  "message": zod.string(),
+  "stats": zod.object({
+  "hotels": zod.number().int().min(getAdminDashboardResponseStatsHotelsMin),
+  "publishedHotels": zod.number().int().min(getAdminDashboardResponseStatsPublishedHotelsMin),
+  "activeRooms": zod.number().int().min(getAdminDashboardResponseStatsActiveRoomsMin),
+  "activeBookings": zod.number().int().min(getAdminDashboardResponseStatsActiveBookingsMin)
+}).optional()
 })
 
 

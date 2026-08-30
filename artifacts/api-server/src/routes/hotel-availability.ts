@@ -1,4 +1,6 @@
 import { getHotelCatalogRecord } from "./hotel-catalog.ts";
+import { and, eq, gt, inArray, lt, lte, sql } from "drizzle-orm";
+import { bookingItems, bookings, db, hotelRooms, hotels, roomAvailability } from "@workspace/db";
 
 export type HotelAvailabilityInput = {
   checkIn: string;
@@ -185,4 +187,92 @@ export function getHotelAvailability(id: string, input: HotelAvailabilityInput) 
     total: roomSubtotal,
     currency: items[0].currency,
   };
+}
+
+export async function getManagedHotelAvailability(id: string, input: HotelAvailabilityInput) {
+  const hotel = await db.query.hotels.findFirst({
+    where: and(
+      eq(hotels.catalogId, id),
+      eq(hotels.status, "published"),
+      eq(hotels.approvalStatus, "approved"),
+    ),
+  });
+  if (!hotel) return null;
+  const rooms = await db.query.hotelRooms.findMany({
+    where: and(eq(hotelRooms.hotelId, hotel.id), eq(hotelRooms.status, "active")),
+  });
+  if (!rooms.length) return null;
+  const nights = calculateNights(input.checkIn, input.checkOut);
+  const dates = Array.from({ length: nights }, (_, index) => {
+    const date = new Date(`${input.checkIn}T12:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + index);
+    return date.toISOString().slice(0, 10);
+  });
+  const items = [];
+  for (const room of rooms) {
+    const dailyRows = await db.select().from(roomAvailability)
+      .where(and(eq(roomAvailability.roomId, room.id), inArray(roomAvailability.date, dates)));
+    const byDate = new Map(dailyRows.map((row) => [row.date, row]));
+    const nightlyRates: number[] = [];
+    let availableUnits = room.totalUnits;
+    let blocked = false;
+    for (const date of dates) {
+      const row = byDate.get(date);
+      if (row?.status === "blackout") blocked = true;
+      availableUnits = Math.min(availableUnits, row?.availableUnits ?? room.totalUnits);
+      nightlyRates.push(row?.priceOverride === null || row?.priceOverride === undefined ? Number(room.nightlyRate) : Number(row.priceOverride));
+      const [reserved] = await db.select({ quantity: sql<number>`coalesce(sum(${bookingItems.quantity}), 0)` })
+        .from(bookingItems)
+        .innerJoin(bookings, eq(bookingItems.bookingId, bookings.id))
+        .where(and(
+          eq(bookingItems.roomId, room.id),
+          inArray(bookings.status, ["pending_payment", "confirmed"]),
+          lte(bookings.startsOn, date),
+          gt(bookings.endsOn, date),
+        ));
+      availableUnits = Math.min(availableUnits, room.totalUnits - Number(reserved?.quantity ?? 0));
+    }
+    if (blocked || availableUnits < input.rooms || room.capacity * input.rooms < input.adults + input.children) continue;
+    const nightlyRate = roundCurrency(nightlyRates.reduce((sum, rate) => sum + rate, 0) / nightlyRates.length);
+    items.push({
+      id: room.catalogRoomId ?? room.id,
+      name: room.name,
+      imageKey: "coastline",
+      bedType: room.bedType ?? "Room",
+      capacity: room.capacity,
+      amenities: jsonStrings(room.amenities),
+      availableUnits,
+      nightlyRate,
+      currency: room.currency,
+      nights,
+      roomTotal: roundCurrency(nightlyRate * nights),
+      source: "vendor" as const,
+      sourceLabel: "Vendor-managed inventory",
+      sourceNotice: "Availability and prices are supplied by the approved hotel vendor and rechecked by the server.",
+    });
+  }
+  const base = {
+    hotelId: id,
+    notice: "Vendor-managed availability is shown for planning only. Select rooms below; no booking is created.",
+    source: "vendor" as const,
+    sourceLabel: "Vendor-managed inventory",
+    sourceNotice: "Availability and prices are supplied by the approved hotel vendor and rechecked by the server.",
+    checkIn: input.checkIn,
+    checkOut: input.checkOut,
+    nights,
+    adults: input.adults,
+    children: input.children,
+    rooms: input.rooms,
+    items,
+    roomSubtotal: items.length ? roundCurrency(Math.min(...items.map((room) => room.nightlyRate)) * nights * input.rooms) : 0,
+    total: items.length ? roundCurrency(Math.min(...items.map((room) => room.nightlyRate)) * nights * input.rooms) : 0,
+    currency: rooms[0]?.currency ?? "INR",
+  };
+  return items.length
+    ? { ...base, status: "available" as const }
+    : { ...base, status: "no_availability" as const, notice: "No vendor-managed rooms match the requested dates and travellers." };
+}
+
+function jsonStrings(input: unknown): string[] {
+  return Array.isArray(input) ? input.filter((item): item is string => typeof item === "string") : [];
 }
