@@ -713,6 +713,41 @@ export interface Property {
   imageKey: string;
 }
 
+export type FeaturedContentType = typeof FeaturedContentType[keyof typeof FeaturedContentType];
+
+
+export const FeaturedContentType = {
+  destination: 'destination',
+  hotel: 'hotel',
+  event: 'event',
+  offer: 'offer',
+} as const;
+
+/**
+ * An active, eligible featured record in administrator-defined order.
+ */
+export interface FeaturedContentItem {
+  id: string;
+  entityType: FeaturedContentType;
+  entityId: string;
+  /** @minimum 0 */
+  sortOrder: number;
+  title: string;
+  subtitle: string;
+  location: string;
+  summary: string;
+  /** @nullable */
+  imageKey: string | null;
+  /** @nullable */
+  destinationId: string | null;
+  /** @nullable */
+  dateLabel: string | null;
+  /** @nullable */
+  ratingLabel: string | null;
+  /** @nullable */
+  priceLabel: string | null;
+}
+
 export interface HomeData {
   notice: string;
   banners: Banner[];
@@ -723,6 +758,12 @@ export interface HomeData {
   properties: Property[];
   featuredDestinations: Destination[];
   featuredProperties: Property[];
+  featured: FeaturedContentItem[];
+}
+
+export interface FeaturedContentList {
+  notice: string;
+  items: FeaturedContentItem[];
 }
 
 export interface BannerList {

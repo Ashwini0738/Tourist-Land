@@ -8,6 +8,7 @@
 import type { Banner } from './banner';
 import type { Destination } from './destination';
 import type { Event } from './event';
+import type { FeaturedContentItem } from './featuredContentItem';
 import type { Hotel } from './hotel';
 import type { Place } from './place';
 import type { Property } from './property';
@@ -22,4 +23,5 @@ export interface HomeData {
   properties: Property[];
   featuredDestinations: Destination[];
   featuredProperties: Property[];
+  featured: FeaturedContentItem[];
 }

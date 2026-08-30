@@ -10,7 +10,7 @@ jest.mock('@tanstack/react-query', () => ({
 }));
 
 jest.mock('@workspace/api-client-react', () => ({
-  getListHomeBannersQueryKey: () => ['/api/v1/home/banners'],
+  getListHomeFeaturedQueryKey: () => ['/api/v1/home/featured'],
   getListHomeDestinationsQueryKey: () => ['/api/v1/home/destinations'],
   getListHomeNearbyQueryKey: () => ['/api/v1/home/nearby'],
   getListHomeEventsQueryKey: () => ['/api/v1/home/events'],

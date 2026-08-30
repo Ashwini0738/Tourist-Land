@@ -73,6 +73,7 @@ import type {
   ExploreSearchResponse,
   Favorite,
   FavoriteList,
+  FeaturedContentList,
   ForbiddenResponse,
   GetExploreFiltersParams,
   GetHotelAvailabilityParams,
@@ -287,7 +288,7 @@ export const getGetHomeQueryKey = () => {
     }
 
 
-export const getGetHomeQueryOptions = <TData = Awaited<ReturnType<typeof getHome>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHome>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetHomeQueryOptions = <TData = Awaited<ReturnType<typeof getHome>>, TError = ErrorType<ServiceUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHome>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -306,11 +307,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetHomeQueryResult = NonNullable<Awaited<ReturnType<typeof getHome>>>
-export type GetHomeQueryError = ErrorType<unknown>
+export type GetHomeQueryError = ErrorType<ServiceUnavailableResponse>
 
 
 
-export function useGetHome<TData = Awaited<ReturnType<typeof getHome>>, TError = ErrorType<unknown>>(
+export function useGetHome<TData = Awaited<ReturnType<typeof getHome>>, TError = ErrorType<ServiceUnavailableResponse>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHome>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -336,6 +337,9 @@ export const getListHomeBannersUrl = () => {
   return `/api/v1/home/banners`
 }
 
+/**
+ * @deprecated
+ */
 export const listHomeBanners = async ( options?: Parameters<typeof customFetch>[1]): Promise<BannerList> => {
 
   return customFetch<BannerList>(getListHomeBannersUrl(),
@@ -380,6 +384,9 @@ export type ListHomeBannersQueryResult = NonNullable<Awaited<ReturnType<typeof l
 export type ListHomeBannersQueryError = ErrorType<unknown>
 
 
+/**
+ * @deprecated
+ */
 
 export function useListHomeBanners<TData = Awaited<ReturnType<typeof listHomeBanners>>, TError = ErrorType<unknown>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeBanners>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
@@ -387,6 +394,83 @@ export function useListHomeBanners<TData = Awaited<ReturnType<typeof listHomeBan
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListHomeBannersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListHomeFeaturedUrl = () => {
+
+
+
+
+  return `/api/v1/home/featured`
+}
+
+/**
+ * @summary List active featured content in administrator-defined order
+ */
+export const listHomeFeatured = async ( options?: Parameters<typeof customFetch>[1]): Promise<FeaturedContentList> => {
+
+  return customFetch<FeaturedContentList>(getListHomeFeaturedUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHomeFeaturedQueryKey = () => {
+    return [
+    `/api/v1/home/featured`
+    ] as const;
+    }
+
+
+export const getListHomeFeaturedQueryOptions = <TData = Awaited<ReturnType<typeof listHomeFeatured>>, TError = ErrorType<ServiceUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeFeatured>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHomeFeaturedQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHomeFeatured>>> = ({ signal }) => listHomeFeatured({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHomeFeatured>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHomeFeaturedQueryResult = NonNullable<Awaited<ReturnType<typeof listHomeFeatured>>>
+export type ListHomeFeaturedQueryError = ErrorType<ServiceUnavailableResponse>
+
+
+/**
+ * @summary List active featured content in administrator-defined order
+ */
+
+export function useListHomeFeatured<TData = Awaited<ReturnType<typeof listHomeFeatured>>, TError = ErrorType<ServiceUnavailableResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHomeFeatured>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHomeFeaturedQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

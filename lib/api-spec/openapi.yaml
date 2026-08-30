@@ -37,17 +37,32 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HomeData"
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /v1/home/banners:
     get:
       operationId: listHomeBanners
       tags: [discovery]
+      deprecated: true
       responses:
         "200":
-          description: Bounded development banner feed
+          description: Retired development banner feed; use the persisted featured-content feed instead
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/BannerList"
+  /v1/home/featured:
+    get:
+      operationId: listHomeFeatured
+      tags: [discovery]
+      summary: List active featured content in administrator-defined order
+      responses:
+        "200":
+          description: Active featured content whose source records remain eligible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeaturedContentList"
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /v1/home/destinations:
     get:
       operationId: listHomeDestinations
@@ -2672,7 +2687,39 @@ components:
         featuredProperties:
           type: array
           items: { $ref: "#/components/schemas/Property" }
-      required: [notice, banners, destinations, nearby, events, hotels, properties, featuredDestinations, featuredProperties]
+        featured:
+          type: array
+          items: { $ref: "#/components/schemas/FeaturedContentItem" }
+      required: [notice, banners, destinations, nearby, events, hotels, properties, featuredDestinations, featuredProperties, featured]
+    FeaturedContentType:
+      type: string
+      enum: [destination, hotel, event, offer]
+    FeaturedContentItem:
+      type: object
+      description: An active, eligible featured record in administrator-defined order.
+      properties:
+        id: { type: string }
+        entityType: { $ref: "#/components/schemas/FeaturedContentType" }
+        entityId: { type: string }
+        sortOrder: { type: integer, minimum: 0 }
+        title: { type: string }
+        subtitle: { type: string }
+        location: { type: string }
+        summary: { type: string }
+        imageKey: { type: [string, "null"] }
+        destinationId: { type: [string, "null"] }
+        dateLabel: { type: [string, "null"] }
+        ratingLabel: { type: [string, "null"] }
+        priceLabel: { type: [string, "null"] }
+      required: [id, entityType, entityId, sortOrder, title, subtitle, location, summary, imageKey, destinationId, dateLabel, ratingLabel, priceLabel]
+    FeaturedContentList:
+      type: object
+      properties:
+        notice: { type: string }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/FeaturedContentItem" }
+      required: [notice, items]
     BannerList:
       type: object
       properties:

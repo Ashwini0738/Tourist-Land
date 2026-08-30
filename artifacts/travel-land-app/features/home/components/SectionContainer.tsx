@@ -10,10 +10,11 @@ interface SectionContainerProps {
   isError: boolean;
   isEmpty: boolean;
   onRetry: () => void;
+  emptyMessage?: string;
   children: React.ReactNode;
 }
 
-export function SectionContainer({ title, onViewAll, isLoading, isError, isEmpty, onRetry, children }: SectionContainerProps) {
+export function SectionContainer({ title, onViewAll, isLoading, isError, isEmpty, onRetry, emptyMessage, children }: SectionContainerProps) {
   const colors = useColors();
 
   return (
@@ -55,7 +56,7 @@ export function SectionContainer({ title, onViewAll, isLoading, isError, isEmpty
       {!isLoading && !isError && isEmpty && (
         <View style={{ marginHorizontal: 20, height: 180, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}>
           <Feather name="box" size={24} color={colors.mutedForeground} />
-          <Text style={{ color: colors.mutedForeground, marginTop: 8, fontWeight: '500' }}>No {title.toLowerCase()} found.</Text>
+          <Text style={{ color: colors.mutedForeground, marginTop: 8, fontWeight: '500' }}>{emptyMessage ?? `No ${title.toLowerCase()} found.`}</Text>
         </View>
       )}
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render } from '@testing-library/react-native';
 import { Text, View } from 'react-native';
 import {
-  useListHomeBanners,
+  useListHomeFeatured,
   useListHomeDestinations,
   useListHomeEvents,
   useListHomeHotels,
@@ -17,7 +17,7 @@ import { NearbySection } from './NearbySection';
 import { PropertySection } from './PropertySection';
 
 jest.mock('@workspace/api-client-react', () => ({
-  useListHomeBanners: jest.fn(),
+  useListHomeFeatured: jest.fn(),
   useListHomeDestinations: jest.fn(),
   useListHomeEvents: jest.fn(),
   useListHomeHotels: jest.fn(),
@@ -86,7 +86,7 @@ jest.mock('expo-router', () => ({
 }));
 
 const sectionCases = [
-  { name: 'Featured', Component: BannerSection, hook: useListHomeBanners },
+  { name: 'Featured for you', Component: BannerSection, hook: useListHomeFeatured },
   { name: 'Destinations', Component: DestinationSection, hook: useListHomeDestinations },
   { name: 'Upcoming Events', Component: EventSection, hook: useListHomeEvents },
   { name: 'Sample Stays', Component: HotelSection, hook: useListHomeHotels },

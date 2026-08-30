@@ -14,7 +14,7 @@ import { EventSection } from './sections/EventSection';
 import { HotelSection } from './sections/HotelSection';
 import { PropertySection } from './sections/PropertySection';
 import {
-  getListHomeBannersQueryKey,
+  getListHomeFeaturedQueryKey,
   getListHomeDestinationsQueryKey,
   getListHomeNearbyQueryKey,
   getListHomeEventsQueryKey,
@@ -23,7 +23,7 @@ import {
 } from '@workspace/api-client-react';
 
 export const HOME_QUERY_KEYS = [
-  getListHomeBannersQueryKey(),
+  getListHomeFeaturedQueryKey(),
   getListHomeDestinationsQueryKey(),
   getListHomeNearbyQueryKey(),
   getListHomeEventsQueryKey(),

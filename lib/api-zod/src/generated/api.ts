@@ -61,6 +61,8 @@ export const getHomeResponseFeaturedPropertiesItemCoordinatesLatitudeMax = 90;
 export const getHomeResponseFeaturedPropertiesItemCoordinatesLongitudeMin = -180;
 export const getHomeResponseFeaturedPropertiesItemCoordinatesLongitudeMax = 180;
 
+export const getHomeResponseFeaturedItemSortOrderMin = 0;
+
 
 
 export const GetHomeResponse = zod.object({
@@ -196,10 +198,28 @@ export const GetHomeResponse = zod.object({
   "discoveryLabel": zod.string(),
   "priceLabel": zod.string(),
   "imageKey": zod.string()
-}))
+})),
+  "featured": zod.array(zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['destination', 'hotel', 'event', 'offer']),
+  "entityId": zod.string(),
+  "sortOrder": zod.number().int().min(getHomeResponseFeaturedItemSortOrderMin),
+  "title": zod.string(),
+  "subtitle": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "imageKey": zod.string().nullable(),
+  "destinationId": zod.string().nullable(),
+  "dateLabel": zod.string().nullable(),
+  "ratingLabel": zod.string().nullable(),
+  "priceLabel": zod.string().nullable()
+}).describe('An active, eligible featured record in administrator-defined order.'))
 })
 
 
+/**
+ * @deprecated
+ */
 export const listHomeBannersResponseItemsItemCoordinatesLatitudeMin = -90;
 export const listHomeBannersResponseItemsItemCoordinatesLatitudeMax = 90;
 
@@ -223,6 +243,33 @@ export const ListHomeBannersResponse = zod.object({
   "source": zod.string()
 }).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
 }))
+})
+
+
+/**
+ * @summary List active featured content in administrator-defined order
+ */
+export const listHomeFeaturedResponseItemsItemSortOrderMin = 0;
+
+
+
+export const ListHomeFeaturedResponse = zod.object({
+  "notice": zod.string(),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['destination', 'hotel', 'event', 'offer']),
+  "entityId": zod.string(),
+  "sortOrder": zod.number().int().min(listHomeFeaturedResponseItemsItemSortOrderMin),
+  "title": zod.string(),
+  "subtitle": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "imageKey": zod.string().nullable(),
+  "destinationId": zod.string().nullable(),
+  "dateLabel": zod.string().nullable(),
+  "ratingLabel": zod.string().nullable(),
+  "priceLabel": zod.string().nullable()
+}).describe('An active, eligible featured record in administrator-defined order.'))
 })
 
 
