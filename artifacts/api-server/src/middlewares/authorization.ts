@@ -6,7 +6,7 @@ import {
   roleIsAllowed,
   type AccountStatus,
   type PrimaryRole,
-} from "../lib/roles";
+} from "../lib/roles.ts";
 
 export type LocalUser = {
   id: string;

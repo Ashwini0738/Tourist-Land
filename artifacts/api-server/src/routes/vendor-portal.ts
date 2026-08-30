@@ -1,4 +1,4 @@
-import { Router, type IRouter, type Request, type Response } from "express";
+import { Router, type IRouter, type Request, type RequestHandler, type Response } from "express";
 import { and, asc, desc, eq, gt, gte, inArray, lt, lte, sql } from "drizzle-orm";
 import {
   bookingItems,
@@ -17,8 +17,7 @@ import { dateRange, isDate, parseInteger, parseNumber, parseString, parseStringA
 
 export { dateRange, isDate, parseInteger, parseNumber, parseString, parseStringArray } from "./vendor-portal-logic.ts";
 
-const vendorPortalRouter: IRouter = Router();
-vendorPortalRouter.use(requireAuth, requireRole("vendor"));
+const vendorPortalRoutes: IRouter = Router();
 
 function value(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
@@ -238,7 +237,7 @@ async function audit(vendorId: string, entityType: string, entityId: string, act
   await db.insert(vendorAuditLogs).values({ vendorId, entityType, entityId, action, metadata: metadata ?? null });
 }
 
-vendorPortalRouter.get("/v1/vendor/dashboard", async (req, res): Promise<void> => {
+vendorPortalRoutes.get("/v1/vendor/dashboard", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const vendorId = req.localUser!.id;
   const [hotelCount, publishedCount, roomCount, bookingCount, profile] = await Promise.all([
@@ -262,7 +261,7 @@ vendorPortalRouter.get("/v1/vendor/dashboard", async (req, res): Promise<void> =
   });
 });
 
-vendorPortalRouter.get("/v1/vendor/profile", async (req, res): Promise<void> => {
+vendorPortalRoutes.get("/v1/vendor/profile", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const profile = await db.query.vendorProfiles.findFirst({ where: eq(vendorProfiles.userId, req.localUser!.id) });
   if (!profile) {
@@ -277,7 +276,7 @@ vendorPortalRouter.get("/v1/vendor/profile", async (req, res): Promise<void> => 
   });
 });
 
-vendorPortalRouter.patch("/v1/vendor/profile", async (req, res): Promise<void> => {
+vendorPortalRoutes.patch("/v1/vendor/profile", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const body = bodyRecord(req.body);
   if (!body) {
@@ -309,7 +308,7 @@ vendorPortalRouter.patch("/v1/vendor/profile", async (req, res): Promise<void> =
   res.json({ ...updated, createdAt: updated.createdAt.toISOString(), updatedAt: updated.updatedAt.toISOString() });
 });
 
-vendorPortalRouter.get("/v1/vendor/hotels", async (req, res): Promise<void> => {
+vendorPortalRoutes.get("/v1/vendor/hotels", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const page = parseInteger(req.query.page, 1, 100000) ?? 1;
   const limit = parseInteger(req.query.limit, 1, 50) ?? 20;
@@ -323,7 +322,7 @@ vendorPortalRouter.get("/v1/vendor/hotels", async (req, res): Promise<void> => {
   res.json({ items: items.map(serializeHotel), page, limit, total: Number(total[0]?.count ?? 0) });
 });
 
-vendorPortalRouter.post("/v1/vendor/hotels", async (req, res): Promise<void> => {
+vendorPortalRoutes.post("/v1/vendor/hotels", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const input = parseHotelInput(req.body);
   if (!input || !("name" in input) || !("address" in input)) {
@@ -357,7 +356,7 @@ vendorPortalRouter.post("/v1/vendor/hotels", async (req, res): Promise<void> => 
   res.status(201).json(serializeHotel(hotel));
 });
 
-vendorPortalRouter.get("/v1/vendor/hotels/:id", async (req, res): Promise<void> => {
+vendorPortalRoutes.get("/v1/vendor/hotels/:id", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const hotel = await ownedHotel(req, value(req.params.id));
   if (!hotel) {
@@ -367,7 +366,7 @@ vendorPortalRouter.get("/v1/vendor/hotels/:id", async (req, res): Promise<void> 
   res.json(serializeHotel(hotel));
 });
 
-vendorPortalRouter.patch("/v1/vendor/hotels/:id", async (req, res): Promise<void> => {
+vendorPortalRoutes.patch("/v1/vendor/hotels/:id", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const hotel = await ownedHotel(req, value(req.params.id));
   if (!hotel) {
@@ -395,7 +394,7 @@ vendorPortalRouter.patch("/v1/vendor/hotels/:id", async (req, res): Promise<void
   res.json(serializeHotel(updated));
 });
 
-vendorPortalRouter.post("/v1/vendor/hotels/:id/submit", async (req, res): Promise<void> => {
+vendorPortalRoutes.post("/v1/vendor/hotels/:id/submit", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const hotel = await ownedHotel(req, value(req.params.id));
   if (!hotel) {
@@ -411,7 +410,7 @@ vendorPortalRouter.post("/v1/vendor/hotels/:id/submit", async (req, res): Promis
   res.json(serializeHotel(updated));
 });
 
-vendorPortalRouter.post("/v1/vendor/hotels/:id/archive", async (req, res): Promise<void> => {
+vendorPortalRoutes.post("/v1/vendor/hotels/:id/archive", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const hotel = await ownedHotel(req, value(req.params.id));
   if (!hotel) {
@@ -423,7 +422,7 @@ vendorPortalRouter.post("/v1/vendor/hotels/:id/archive", async (req, res): Promi
   res.json(serializeHotel(updated));
 });
 
-vendorPortalRouter.get("/v1/vendor/rooms", async (req, res): Promise<void> => {
+vendorPortalRoutes.get("/v1/vendor/rooms", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const conditions = [eq(hotels.ownerId, req.localUser!.id)];
   if (typeof req.query.hotelId === "string") conditions.push(eq(hotelRooms.hotelId, req.query.hotelId));
@@ -432,7 +431,7 @@ vendorPortalRouter.get("/v1/vendor/rooms", async (req, res): Promise<void> => {
   res.json({ items: rows.map(({ room }) => serializeRoom(room)) });
 });
 
-vendorPortalRouter.post("/v1/vendor/hotels/:hotelId/rooms", async (req, res): Promise<void> => {
+vendorPortalRoutes.post("/v1/vendor/hotels/:hotelId/rooms", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const hotel = await ownedHotel(req, value(req.params.hotelId));
   if (!hotel) {
@@ -461,7 +460,7 @@ vendorPortalRouter.post("/v1/vendor/hotels/:hotelId/rooms", async (req, res): Pr
   res.status(201).json(serializeRoom(room));
 });
 
-vendorPortalRouter.get("/v1/vendor/rooms/:id", async (req, res): Promise<void> => {
+vendorPortalRoutes.get("/v1/vendor/rooms/:id", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const result = await ownedRoom(req, value(req.params.id));
   if (!result) {
@@ -471,7 +470,7 @@ vendorPortalRouter.get("/v1/vendor/rooms/:id", async (req, res): Promise<void> =
   res.json(serializeRoom(result.room));
 });
 
-vendorPortalRouter.patch("/v1/vendor/rooms/:id", async (req, res): Promise<void> => {
+vendorPortalRoutes.patch("/v1/vendor/rooms/:id", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const result = await ownedRoom(req, value(req.params.id));
   if (!result) {
@@ -506,10 +505,10 @@ async function updateRoomStatus(req: Request, res: Response, status: "active" | 
   res.json(serializeRoom(updated));
 }
 
-vendorPortalRouter.post("/v1/vendor/rooms/:id/activate", (req, res) => updateRoomStatus(req, res, "active"));
-vendorPortalRouter.post("/v1/vendor/rooms/:id/deactivate", (req, res) => updateRoomStatus(req, res, "inactive"));
+vendorPortalRoutes.post("/v1/vendor/rooms/:id/activate", (req, res) => updateRoomStatus(req, res, "active"));
+vendorPortalRoutes.post("/v1/vendor/rooms/:id/deactivate", (req, res) => updateRoomStatus(req, res, "inactive"));
 
-vendorPortalRouter.get("/v1/vendor/availability", async (req, res): Promise<void> => {
+vendorPortalRoutes.get("/v1/vendor/availability", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const roomId = typeof req.query.roomId === "string" ? req.query.roomId : "";
   const from = typeof req.query.from === "string" ? req.query.from : "";
@@ -539,7 +538,7 @@ vendorPortalRouter.get("/v1/vendor/availability", async (req, res): Promise<void
   res.json({ roomId, hotelId: result.room.hotelId, from, to, items });
 });
 
-vendorPortalRouter.put("/v1/vendor/availability", async (req, res): Promise<void> => {
+vendorPortalRoutes.put("/v1/vendor/availability", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const body = bodyRecord(req.body);
   const roomId = typeof body?.roomId === "string" ? body.roomId : "";
@@ -607,7 +606,7 @@ vendorPortalRouter.put("/v1/vendor/availability", async (req, res): Promise<void
   });
 });
 
-vendorPortalRouter.get("/v1/vendor/bookings", async (req, res): Promise<void> => {
+vendorPortalRoutes.get("/v1/vendor/bookings", async (req, res): Promise<void> => {
   if (!(await requireApprovedVendor(req, res))) return;
   const page = parseInteger(req.query.page, 1, 100000) ?? 1;
   const limit = parseInteger(req.query.limit, 1, 50) ?? 20;
@@ -647,4 +646,10 @@ vendorPortalRouter.get("/v1/vendor/bookings", async (req, res): Promise<void> =>
   res.json({ items, page, limit, total: items.length });
 });
 
-export default vendorPortalRouter;
+export function createVendorPortalRouter(authMiddleware: RequestHandler = requireAuth): IRouter {
+  const vendorPortalRouter: IRouter = Router();
+  vendorPortalRouter.use(authMiddleware, requireRole("vendor"), vendorPortalRoutes);
+  return vendorPortalRouter;
+}
+
+export default createVendorPortalRouter();
