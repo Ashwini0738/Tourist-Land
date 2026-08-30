@@ -525,6 +525,90 @@ export const ListHotelRoomsResponse = zod.object({
 
 
 /**
+ * @summary Check server-backed hotel availability for a future stay request
+ */
+export const GetHotelAvailabilityParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+export const getHotelAvailabilityQueryChildrenMin = 0;
+
+
+
+
+export const GetHotelAvailabilityQueryParams = zod.object({
+  "checkIn": zod.date(),
+  "checkOut": zod.date(),
+  "adults": zod.coerce.number().int().min(1),
+  "children": zod.coerce.number().int().min(getHotelAvailabilityQueryChildrenMin),
+  "rooms": zod.coerce.number().int().min(1)
+})
+
+
+
+export const getHotelAvailabilityResponseChildrenMin = 0;
+
+
+
+export const getHotelAvailabilityResponseItemsItemAvailableUnitsMin = 0;
+
+export const getHotelAvailabilityResponseItemsItemNightlyRateMin = 0;
+
+
+export const getHotelAvailabilityResponseItemsItemRoomTotalMin = 0;
+
+export const getHotelAvailabilityResponseRoomSubtotalMin = 0;
+
+export const getHotelAvailabilityResponseTaxesMin = 0;
+
+export const getHotelAvailabilityResponseFeesMin = 0;
+
+export const getHotelAvailabilityResponseDiscountsMin = 0;
+
+export const getHotelAvailabilityResponseTotalMin = 0;
+
+
+
+export const GetHotelAvailabilityResponse = zod.object({
+  "hotelId": zod.string(),
+  "status": zod.enum(['available', 'no_availability', 'unavailable']),
+  "notice": zod.string(),
+  "source": zod.enum(['development', 'live', 'unavailable']),
+  "sourceLabel": zod.string(),
+  "sourceNotice": zod.string(),
+  "checkIn": zod.coerce.date(),
+  "checkOut": zod.coerce.date(),
+  "nights": zod.number().min(1),
+  "adults": zod.number().min(1),
+  "children": zod.number().min(getHotelAvailabilityResponseChildrenMin),
+  "rooms": zod.number().min(1),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "imageKey": zod.string().optional(),
+  "bedType": zod.string().optional(),
+  "capacity": zod.number().min(1),
+  "amenities": zod.array(zod.string()),
+  "availableUnits": zod.number().min(getHotelAvailabilityResponseItemsItemAvailableUnitsMin),
+  "nightlyRate": zod.number().min(getHotelAvailabilityResponseItemsItemNightlyRateMin),
+  "currency": zod.string(),
+  "nights": zod.number().min(1),
+  "roomTotal": zod.number().min(getHotelAvailabilityResponseItemsItemRoomTotalMin),
+  "source": zod.enum(['development', 'live', 'unavailable']),
+  "sourceLabel": zod.string(),
+  "sourceNotice": zod.string()
+}).describe('A room result from a clearly labeled development or live availability provider.')),
+  "roomSubtotal": zod.number().min(getHotelAvailabilityResponseRoomSubtotalMin),
+  "taxes": zod.number().min(getHotelAvailabilityResponseTaxesMin).optional(),
+  "fees": zod.number().min(getHotelAvailabilityResponseFeesMin).optional(),
+  "discounts": zod.number().min(getHotelAvailabilityResponseDiscountsMin).optional(),
+  "total": zod.number().min(getHotelAvailabilityResponseTotalMin),
+  "currency": zod.string()
+}).describe('Availability results and server-calculated pricing for a future stay request. Never a booking confirmation.')
+
+
+/**
  * @summary List catalog places associated with a hotel's destination
  */
 export const ListHotelNearbyParams = zod.object({

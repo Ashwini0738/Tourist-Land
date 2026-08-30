@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import {
   GetHotelResponse,
+  GetHotelAvailabilityResponse,
   ListHotelNearbyResponse,
   ListHotelRoomsResponse,
   SearchHotelsResponse,
@@ -13,6 +14,10 @@ import {
   parseHotelSearchInput,
   searchHotelCatalog,
 } from "./hotel-catalog.ts";
+import {
+  getHotelAvailability,
+  parseHotelAvailabilityInput,
+} from "./hotel-availability.ts";
 
 const hotelsRouter: IRouter = Router();
 
@@ -48,6 +53,20 @@ hotelsRouter.get("/v1/hotels/:id/rooms", (req, res) => {
     return;
   }
   res.json(ListHotelRoomsResponse.parse(rooms));
+});
+
+hotelsRouter.get("/v1/hotels/:id/availability", (req, res) => {
+  const id = routeId(req.params.id);
+  if (!id || !getHotelCatalogRecord(id)) {
+    res.status(404).json({ error: { code: "NOT_FOUND", message: "Hotel not found" } });
+    return;
+  }
+  const parsed = parseHotelAvailabilityInput(req.query as Record<string, unknown>);
+  if ("error" in parsed) {
+    res.status(400).json({ error: { code: "INVALID_INPUT", message: parsed.error } });
+    return;
+  }
+  res.json(GetHotelAvailabilityResponse.parse(getHotelAvailability(id, parsed)));
 });
 
 hotelsRouter.get("/v1/hotels/:id/nearby", (req, res) => {

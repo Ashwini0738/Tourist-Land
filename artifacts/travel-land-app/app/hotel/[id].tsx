@@ -107,9 +107,9 @@ export default function HotelDetailsScreen() {
           {detail.checkOutTime ? <Fact label="CHECK OUT" value={detail.checkOutTime} icon="clock" /> : null}
         </View>
         {detail.address ? <View style={[styles.addressRow, { borderColor: colors.border }]}><Feather name="map-pin" size={16} color={colors.primary} /><Text style={[styles.address, { color: colors.mutedForeground }]}>{detail.address}</Text>{hotel.coordinates ? <Pressable testID="hotel-open-map" accessibilityRole="button" accessibilityLabel="Open hotel on map" onPress={openMap}><Text style={[styles.mapText, { color: colors.primary }]}>Map</Text></Pressable> : null}</View> : null}
-        <Text style={[styles.sectionKicker, { color: colors.primary }]}>MAKE A REQUEST</Text>
+        <Text style={[styles.sectionKicker, { color: colors.primary }]}>CHECK A STAY</Text>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Plan the shape of your stay.</Text>
-        <Text style={[styles.sectionBody, { color: colors.mutedForeground }]}>These controls prepare a request only. Travel & Land does not connect to booking inventory here.</Text>
+        <Text style={[styles.sectionBody, { color: colors.mutedForeground }]}>Choose a future stay window to view clearly labeled development room availability. No booking is created here.</Text>
         <DateGuestControls selection={selection} onChange={setSelection} onPrepare={openAvailability} />
         {hotel.amenities.length ? <><Text style={[styles.sectionKicker, { color: colors.primary }]}>WHAT IS CATALOGUED</Text><View style={styles.amenities}>{hotel.amenities.map((amenity) => <View key={amenity} style={[styles.amenity, { backgroundColor: colors.secondary }]}><Feather name="check" size={13} color={colors.primary} /><Text style={[styles.amenityText, { color: colors.secondaryForeground }]}>{amenity}</Text></View>)}</View></> : null}
          <Text style={[styles.sectionKicker, { color: colors.primary }]}>ROOM NOTES</Text>

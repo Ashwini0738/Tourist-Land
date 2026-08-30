@@ -177,8 +177,8 @@ export function DateGuestControls({
         </Pressable>
       </View>
       {onPrepare ? (
-        <Pressable testID="hotel-prepare-request" accessibilityRole="button" accessibilityLabel="Prepare availability request" onPress={onPrepare} style={[styles.prepareButton, { backgroundColor: colors.primary }]}>
-          <Text style={[styles.prepareButtonText, { color: colors.primaryForeground }]}>Prepare availability request</Text>
+        <Pressable testID="hotel-prepare-request" accessibilityRole="button" accessibilityLabel="Check hotel availability" onPress={onPrepare} style={[styles.prepareButton, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.prepareButtonText, { color: colors.primaryForeground }]}>Check availability</Text>
           <Feather name="arrow-right" size={16} color={colors.primaryForeground} />
         </Pressable>
       ) : null}
@@ -190,7 +190,7 @@ export function DateGuestControls({
               <>
                 <Text style={[styles.sheetKicker, { color: colors.primary }]}>TRIP WINDOW</Text>
                 <Text style={[styles.sheetTitle, { color: colors.foreground }]}>When might you go?</Text>
-                <Text style={[styles.sheetBody, { color: colors.mutedForeground }]}>Dates help shape your discovery request. They do not check live inventory.</Text>
+                <Text style={[styles.sheetBody, { color: colors.mutedForeground }]}>Dates shape your discovery or availability request. Availability results are clearly labeled when a provider is configured.</Text>
                 <View style={styles.dateInputRow}>
                   <View style={styles.dateInputWrap}>
                     <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>CHECK-IN</Text>

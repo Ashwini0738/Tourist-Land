@@ -192,6 +192,41 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/HotelRoomList" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /v1/hotels/{id}/availability:
+    get:
+      operationId: getHotelAvailability
+      tags: [discovery]
+      summary: Check server-backed hotel availability for a future stay request
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - name: checkIn
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: checkOut
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: adults
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1 }
+        - name: children
+          in: query
+          required: true
+          schema: { type: integer, minimum: 0 }
+        - name: rooms
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Server-backed room availability and authoritative price calculations
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HotelAvailabilityResponse" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /v1/hotels/{id}/nearby:
     get:
       operationId: listHotelNearby
@@ -1109,6 +1144,59 @@ components:
           type: array
           items: { $ref: "#/components/schemas/HotelRoom" }
       required: [hotelId, notice, items]
+    HotelAvailabilityRoom:
+      type: object
+      description: A room result from a clearly labeled development or live availability provider.
+      properties:
+        id: { type: string }
+        name: { type: string }
+        imageKey: { type: string }
+        bedType: { type: string }
+        capacity: { type: number, minimum: 1 }
+        amenities:
+          type: array
+          items: { type: string }
+        availableUnits: { type: number, minimum: 0 }
+        nightlyRate: { type: number, minimum: 0 }
+        currency: { type: string }
+        nights: { type: number, minimum: 1 }
+        roomTotal: { type: number, minimum: 0 }
+        source:
+          type: string
+          enum: [development, live, unavailable]
+        sourceLabel: { type: string }
+        sourceNotice: { type: string }
+      required: [id, name, capacity, amenities, availableUnits, nightlyRate, currency, nights, roomTotal, source, sourceLabel, sourceNotice]
+    HotelAvailabilityResponse:
+      type: object
+      description: Availability results and server-calculated pricing for a future stay request. Never a booking confirmation.
+      properties:
+        hotelId: { type: string }
+        status:
+          type: string
+          enum: [available, no_availability, unavailable]
+        notice: { type: string }
+        source:
+          type: string
+          enum: [development, live, unavailable]
+        sourceLabel: { type: string }
+        sourceNotice: { type: string }
+        checkIn: { type: string, format: date }
+        checkOut: { type: string, format: date }
+        nights: { type: number, minimum: 1 }
+        adults: { type: number, minimum: 1 }
+        children: { type: number, minimum: 0 }
+        rooms: { type: number, minimum: 1 }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/HotelAvailabilityRoom" }
+        roomSubtotal: { type: number, minimum: 0 }
+        taxes: { type: number, minimum: 0 }
+        fees: { type: number, minimum: 0 }
+        discounts: { type: number, minimum: 0 }
+        total: { type: number, minimum: 0 }
+        currency: { type: string }
+      required: [hotelId, status, notice, source, sourceLabel, sourceNotice, checkIn, checkOut, nights, adults, children, rooms, items, roomSubtotal, total, currency]
     HotelNearbyPlace:
       type: object
       properties:

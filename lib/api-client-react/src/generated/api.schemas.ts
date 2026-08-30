@@ -221,6 +221,92 @@ export interface HotelRoomList {
   items: HotelRoom[];
 }
 
+export type HotelAvailabilityRoomSource = typeof HotelAvailabilityRoomSource[keyof typeof HotelAvailabilityRoomSource];
+
+
+export const HotelAvailabilityRoomSource = {
+  development: 'development',
+  live: 'live',
+  unavailable: 'unavailable',
+} as const;
+
+/**
+ * A room result from a clearly labeled development or live availability provider.
+ */
+export interface HotelAvailabilityRoom {
+  id: string;
+  name: string;
+  imageKey?: string;
+  bedType?: string;
+  /** @minimum 1 */
+  capacity: number;
+  amenities: string[];
+  /** @minimum 0 */
+  availableUnits: number;
+  /** @minimum 0 */
+  nightlyRate: number;
+  currency: string;
+  /** @minimum 1 */
+  nights: number;
+  /** @minimum 0 */
+  roomTotal: number;
+  source: HotelAvailabilityRoomSource;
+  sourceLabel: string;
+  sourceNotice: string;
+}
+
+export type HotelAvailabilityResponseStatus = typeof HotelAvailabilityResponseStatus[keyof typeof HotelAvailabilityResponseStatus];
+
+
+export const HotelAvailabilityResponseStatus = {
+  available: 'available',
+  no_availability: 'no_availability',
+  unavailable: 'unavailable',
+} as const;
+
+export type HotelAvailabilityResponseSource = typeof HotelAvailabilityResponseSource[keyof typeof HotelAvailabilityResponseSource];
+
+
+export const HotelAvailabilityResponseSource = {
+  development: 'development',
+  live: 'live',
+  unavailable: 'unavailable',
+} as const;
+
+/**
+ * Availability results and server-calculated pricing for a future stay request. Never a booking confirmation.
+ */
+export interface HotelAvailabilityResponse {
+  hotelId: string;
+  status: HotelAvailabilityResponseStatus;
+  notice: string;
+  source: HotelAvailabilityResponseSource;
+  sourceLabel: string;
+  sourceNotice: string;
+  checkIn: string;
+  checkOut: string;
+  /** @minimum 1 */
+  nights: number;
+  /** @minimum 1 */
+  adults: number;
+  /** @minimum 0 */
+  children: number;
+  /** @minimum 1 */
+  rooms: number;
+  items: HotelAvailabilityRoom[];
+  /** @minimum 0 */
+  roomSubtotal: number;
+  /** @minimum 0 */
+  taxes?: number;
+  /** @minimum 0 */
+  fees?: number;
+  /** @minimum 0 */
+  discounts?: number;
+  /** @minimum 0 */
+  total: number;
+  currency: string;
+}
+
 export interface HotelNearbyPlace {
   id: string;
   name: string;
@@ -1003,6 +1089,23 @@ export const SearchHotelsSort = {
   price_desc: 'price_desc',
   distance: 'distance',
 } as const;
+
+export type GetHotelAvailabilityParams = {
+checkIn: string;
+checkOut: string;
+/**
+ * @minimum 1
+ */
+adults: number;
+/**
+ * @minimum 0
+ */
+children: number;
+/**
+ * @minimum 1
+ */
+rooms: number;
+};
 
 export type SearchExploreParams = {
 q?: string;
