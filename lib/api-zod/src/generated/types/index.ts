@@ -8,8 +8,12 @@
 
 export * from './accountStatus';
 export * from './adminAuditLog';
+export * from './adminAuditLogDetail';
 export * from './adminAuditLogMetadata';
 export * from './adminAuditLogPage';
+export * from './adminAuditLogRevision';
+export * from './adminAuditLogRevisionAfter';
+export * from './adminAuditLogRevisionBefore';
 export * from './adminAvailability';
 export * from './adminAvailabilityPage';
 export * from './adminBooking';

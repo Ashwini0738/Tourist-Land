@@ -2293,6 +2293,28 @@ export interface AdminAuditLogPage {
 }
 
 /**
+ * @nullable
+ */
+export type AdminAuditLogRevisionBefore = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type AdminAuditLogRevisionAfter = { [key: string]: unknown } | null;
+
+export interface AdminAuditLogRevision {
+  fields: string[];
+  /** @nullable */
+  before: AdminAuditLogRevisionBefore;
+  /** @nullable */
+  after: AdminAuditLogRevisionAfter;
+}
+
+export type AdminAuditLogDetail = AdminAuditLog & {
+  revision: AdminAuditLogRevision;
+};
+
+/**
  * Resource not found
  */
 export type NotFoundResponse = ErrorResponse;

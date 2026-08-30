@@ -4953,3 +4953,26 @@ export const ListAdminAuditLogsResponse = zod.object({
 })
 
 
+export const GetAdminAuditLogParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetAdminAuditLogResponse = zod.object({
+  "id": zod.string(),
+  "adminUserId": zod.string(),
+  "adminName": zod.string().nullable(),
+  "action": zod.string(),
+  "entityType": zod.string(),
+  "entityId": zod.string(),
+  "destinationName": zod.string().nullable(),
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date()
+}).and(zod.object({
+  "revision": zod.object({
+  "fields": zod.array(zod.string()),
+  "before": zod.record(zod.string(), zod.unknown()).nullable(),
+  "after": zod.record(zod.string(), zod.unknown()).nullable()
+})
+}))
+
+

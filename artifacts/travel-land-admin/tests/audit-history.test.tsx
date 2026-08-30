@@ -1,13 +1,14 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { useListAdminAuditLogs } = vi.hoisted(() => ({
+const { useListAdminAuditLogs, useGetAdminAuditLog } = vi.hoisted(() => ({
   useListAdminAuditLogs: vi.fn(),
+  useGetAdminAuditLog: vi.fn(),
 }));
 
 vi.mock('@workspace/api-client-react', async () => {
   const actual = await vi.importActual<typeof import('@workspace/api-client-react')>('@workspace/api-client-react');
-  return { ...actual, useListAdminAuditLogs };
+  return { ...actual, useListAdminAuditLogs, useGetAdminAuditLog };
 });
 
 import { AuditLogsPage } from '@/pages/admin-pages';
@@ -36,6 +37,20 @@ const pageTwoItem = {
   createdAt: '2026-08-29T09:15:00.000Z',
 };
 
+const detailForUpdatedItem = {
+  ...pageOneItem,
+  revision: {
+    fields: ['name', 'summary'],
+    before: { name: 'Kerala Backwaters', summary: 'Original summary' },
+    after: { name: 'Kerala Backwaters', summary: 'Updated summary' },
+  },
+};
+
+const detailForCreatedItem = {
+  ...pageTwoItem,
+  revision: { fields: [], before: null, after: null },
+};
+
 let emptyHistory = false;
 
 function responseFor(params?: { q?: string; page?: number }) {
@@ -59,6 +74,13 @@ beforeEach(() => {
   useListAdminAuditLogs.mockReset();
   useListAdminAuditLogs.mockImplementation((params) => ({
     data: responseFor(params),
+    isLoading: false,
+    isError: false,
+    isFetching: false,
+    refetch: vi.fn(),
+  }));
+  useGetAdminAuditLog.mockImplementation((id) => ({
+    data: id === 'audit-updated' ? detailForUpdatedItem : detailForCreatedItem,
     isLoading: false,
     isError: false,
     isFetching: false,
@@ -132,5 +154,29 @@ describe('AuditLogsPage', () => {
     expect(screen.getByText('No destination changes yet')).toBeInTheDocument();
     expect(screen.getByText('Destination creation and edits will appear here once recorded.')).toBeInTheDocument();
     expect(screen.queryByTestId('button-clear-audit-search')).not.toBeInTheDocument();
+  });
+
+  it('opens a revision detail view with recorded before and after values', () => {
+    render(<AuditLogsPage />);
+
+    fireEvent.click(screen.getByTestId('button-audit-details-audit-updated'));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Original summary')).toBeInTheDocument();
+    expect(screen.getByText('Updated summary')).toBeInTheDocument();
+    expect(screen.getByTestId('audit-before-name')).toHaveTextContent('Kerala Backwaters');
+    expect(screen.getByTestId('audit-after-name')).toHaveTextContent('Kerala Backwaters');
+
+    fireEvent.click(screen.getByTestId('button-close-audit-details'));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('labels missing historical revision detail as unavailable', () => {
+    render(<AuditLogsPage />);
+
+    fireEvent.click(screen.getByTestId('button-audit-next'));
+    fireEvent.click(screen.getByTestId('button-audit-details-audit-created'));
+
+    expect(screen.getByTestId('audit-detail-unavailable')).toHaveTextContent('Unavailable');
   });
 });

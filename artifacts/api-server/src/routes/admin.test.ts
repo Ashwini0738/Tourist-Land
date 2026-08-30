@@ -492,7 +492,11 @@ test("destination create and edit history is attributable, safe, and searchable"
     assert.ok(log.createdAt instanceof Date);
   }
   assert.deepEqual(createdLog.metadata, {});
-  assert.deepEqual(updatedLog.metadata, { fields: ["name", "summary"] });
+  assert.deepEqual(updatedLog.metadata, {
+    fields: ["name", "summary"],
+    before: { name: "Audit Fixture Destination", summary: "A destination used to verify safe audit metadata." },
+    after: { name: "Edited Audit Fixture Destination", summary: "Updated destination summary." },
+  });
   assert.equal((await db.select().from(adminAuditLogs)
     .where(eq(adminAuditLogs.entityId, missingDestinationId))).length, 0);
 
@@ -526,7 +530,21 @@ test("destination create and edit history is attributable, safe, and searchable"
     assert.equal(typeof item.createdAt, "string");
   }
   assert.deepEqual(auditItems.find((item) => item.action === "created")?.metadata, {});
-  assert.deepEqual(auditItems.find((item) => item.action === "updated")?.metadata, { fields: ["name", "summary"] });
+  assert.deepEqual(auditItems.find((item) => item.action === "updated")?.metadata, {
+    fields: ["name", "summary"],
+    before: { name: "Audit Fixture Destination", summary: "A destination used to verify safe audit metadata." },
+    after: { name: "Edited Audit Fixture Destination", summary: "Updated destination summary." },
+  });
+
+  const updatedAuditItem = auditItems.find((item) => item.action === "updated");
+  assert.ok(updatedAuditItem);
+  const auditDetail = await adminRequest(server.baseUrl, `/v1/admin/audit-logs/${updatedAuditItem.id}`, "admin");
+  assert.equal(auditDetail.status, 200);
+  assert.deepEqual(auditDetail.body.revision, {
+    fields: ["name", "summary"],
+    before: { name: "Audit Fixture Destination", summary: "A destination used to verify safe audit metadata." },
+    after: { name: "Edited Audit Fixture Destination", summary: "Updated destination summary." },
+  });
 
   const destinationFilter = await adminRequest(
     server.baseUrl,

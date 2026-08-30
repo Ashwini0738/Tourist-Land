@@ -119,6 +119,43 @@ function serializeDestination(destination: typeof destinations.$inferSelect) {
   };
 }
 
+function objectValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function serializeAdminAuditLog(
+  log: typeof adminAuditLogs.$inferSelect,
+  admin: typeof users.$inferSelect,
+  destination: typeof destinations.$inferSelect | null,
+) {
+  return {
+    id: log.id,
+    adminUserId: log.adminUserId,
+    adminName: admin.displayName,
+    action: log.action,
+    entityType: log.entityType,
+    entityId: log.entityId,
+    destinationName: destination?.name ?? null,
+    metadata: log.metadata ?? {},
+    createdAt: log.createdAt,
+  };
+}
+
+function serializeAuditRevision(metadata: unknown) {
+  const record = objectValue(metadata);
+  const recordedFields = Array.isArray(record?.fields)
+    ? record.fields.filter((field): field is string => typeof field === "string")
+    : [];
+  const before = objectValue(record?.before);
+  const after = objectValue(record?.after);
+  const fields = [...new Set([...recordedFields, ...Object.keys(before ?? {}), ...Object.keys(after ?? {})])];
+  return {
+    fields,
+    before,
+    after,
+  };
+}
+
 function serializeHotel(hotel: typeof hotels.$inferSelect, owner?: typeof users.$inferSelect | null, roomCount = 0) {
   return {
     id: hotel.id,
@@ -508,9 +545,19 @@ router.patch("/v1/admin/destinations/:id", async (req, res) => {
   for (const key of ["slug", "name", "country", "region", "summary", "status"]) if (typeof body[key] === "string" || body[key] === null) patch[key] = body[key];
   if (typeof body.latitude === "number") patch.latitude = String(body.latitude);
   if (typeof body.longitude === "number") patch.longitude = String(body.longitude);
+  const current = (await db.select().from(destinations).where(eq(destinations.id, id(req))))[0];
+  if (!current) return fail(res, 404, "NOT_FOUND", "Destination not found.");
   const destination = (await db.update(destinations).set(patch as any).where(eq(destinations.id, id(req))).returning())[0];
   if (!destination) return fail(res, 404, "NOT_FOUND", "Destination not found.");
-  await audit(req, "updated", "destination", destination.id, { fields: Object.keys(patch).filter((key) => key !== "updatedAt") });
+  const fields = Object.keys(patch).filter((key) => key !== "updatedAt");
+  const beforeValues = serializeDestination(current) as Record<string, unknown>;
+  const afterValues = serializeDestination(destination) as Record<string, unknown>;
+  const valuesFor = (values: Record<string, unknown>) => Object.fromEntries(fields.map((field) => [field, values[field]]));
+  await audit(req, "updated", "destination", destination.id, {
+    fields,
+    before: valuesFor(beforeValues),
+    after: valuesFor(afterValues),
+  });
   res.json(serializeDestination(destination));
 });
 
@@ -663,18 +710,24 @@ router.get("/v1/admin/audit-logs", async (req, res) => {
       .where(where),
   ]);
   res.json({
-    items: rows.map(({ log, admin, destination }) => ({
-      id: log.id,
-      adminUserId: log.adminUserId,
-      adminName: admin.displayName,
-      action: log.action,
-      entityType: log.entityType,
-      entityId: log.entityId,
-      destinationName: destination?.name ?? null,
-      metadata: log.metadata ?? {},
-      createdAt: log.createdAt,
-    })),
+    items: rows.map(({ log, admin, destination }) => serializeAdminAuditLog(log, admin, destination)),
     meta: pageMeta(page, Number(totalRows[0]?.value ?? 0)),
+  });
+});
+
+router.get("/v1/admin/audit-logs/:id", async (req, res) => {
+  const row = (await db.select({ log: adminAuditLogs, admin: users, destination: destinations })
+    .from(adminAuditLogs)
+    .innerJoin(users, eq(adminAuditLogs.adminUserId, users.id))
+    .leftJoin(destinations, and(eq(destinations.id, adminAuditLogs.entityId), eq(adminAuditLogs.entityType, "destination")))
+    .where(eq(adminAuditLogs.id, id(req))))[0];
+  if (!row) {
+    fail(res, 404, "NOT_FOUND", "Audit record not found.");
+    return;
+  }
+  res.json({
+    ...serializeAdminAuditLog(row.log, row.admin, row.destination),
+    revision: serializeAuditRevision(row.log.metadata),
   });
 });
 

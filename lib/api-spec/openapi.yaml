@@ -2058,6 +2058,22 @@ paths:
               schema: { $ref: "#/components/schemas/AdminAuditLogPage" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/audit-logs/{id}:
+    get:
+      operationId: getAdminAuditLog
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/Id" }
+      responses:
+        "200":
+          description: Immutable admin audit record with revision context
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminAuditLogDetail" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
 components:
   securitySchemes:
     bearerAuth:
@@ -3739,3 +3755,17 @@ components:
         items: { type: array, items: { $ref: "#/components/schemas/AdminAuditLog" } }
         meta: { $ref: "#/components/schemas/AdminPageMeta" }
       required: [items, meta]
+    AdminAuditLogRevision:
+      type: object
+      properties:
+        fields: { type: array, items: { type: string } }
+        before: { type: [object, "null"], additionalProperties: true }
+        after: { type: [object, "null"], additionalProperties: true }
+      required: [fields, before, after]
+    AdminAuditLogDetail:
+      allOf:
+        - $ref: "#/components/schemas/AdminAuditLog"
+        - type: object
+          properties:
+            revision: { $ref: "#/components/schemas/AdminAuditLogRevision" }
+          required: [revision]
