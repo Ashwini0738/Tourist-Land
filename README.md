@@ -28,10 +28,13 @@ pnpm --filter @workspace/api-server run typecheck
 pnpm run typecheck
 ```
 
-Before releasing, run `pnpm run validate:api-contract`. It regenerates the
-React API client and Zod schemas from `lib/api-spec/openapi.yaml`, then fails
-if the generated output differs from the committed files. When it fails,
-review the generated changes and commit them with the OpenAPI update.
+Before releasing, run `pnpm run validate:api-contract`. The same check runs
+automatically in GitHub Actions for pull requests and pushes to `main`. It
+regenerates the React API client and Zod schemas from
+`lib/api-spec/openapi.yaml`, then fails if the generated output differs from
+the committed files. When it fails, run
+`pnpm --filter @workspace/api-spec run codegen`, review the generated changes,
+and commit them with the OpenAPI update.
 
 Once `DATABASE_URL` is configured, apply the development schema with:
 

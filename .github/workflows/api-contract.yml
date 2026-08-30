@@ -1,0 +1,48 @@
+name: API contract
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate generated API output
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate generated API contract
+        run: |
+          if pnpm run validate:api-contract; then
+            exit 0
+          fi
+
+          cat >&2 <<'EOF'
+          The committed API client or Zod schemas are stale.
+          Regenerate them with:
+            pnpm --filter @workspace/api-spec run codegen
+          Review the generated changes, then commit them together with the
+          corresponding lib/api-spec/openapi.yaml update.
+          EOF
+          exit 1
