@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
+import { useClerk } from '@clerk/react';
 import {
   Activity, Archive, Bell, BookOpen, Building2, ChevronDown, CircleHelp,
   ClipboardList, Compass, CreditCard, Database, DoorOpen, FileClock,
@@ -31,6 +32,7 @@ const secondaryNav = [
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
+  const { signOut } = useClerk();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const navItem = (item: typeof primaryNav[number]) => {
@@ -68,7 +70,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </div>
          <div className="border-t border-sidebar-border p-3">
            {!collapsed && <div className="mb-3 flex items-center gap-3 rounded-lg bg-sidebar-accent/65 p-3"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-[hsl(199_55%_31%)] text-xs font-semibold text-sidebar-foreground"><ShieldCheck size={15} /></div><div className="min-w-0"><p className="truncate text-xs font-semibold text-sidebar-foreground">Signed-in administrator</p><p className="truncate text-[11px] text-sidebar-foreground/45">Platform access</p></div><ChevronDown size={14} className="ml-auto text-sidebar-foreground/40" /></div>}
-          <button onClick={() => setLocation('/login')} data-testid="button-sign-out" className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground ${collapsed ? 'justify-center px-2' : ''}`}><LogOut size={16} />{!collapsed && 'Sign out'}</button>
+          <button onClick={() => void signOut({ redirectUrl: import.meta.env.BASE_URL.replace(/\/$/, '') || '/' })} data-testid="button-sign-out" className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground ${collapsed ? 'justify-center px-2' : ''}`}><LogOut size={16} />{!collapsed && 'Sign out'}</button>
         </div>
       </div>
       {open && <button aria-label="Close menu overlay" data-testid="button-menu-overlay" onClick={() => setOpen(false)} className="fixed inset-0 z-30 bg-[hsl(var(--foreground)/.26)] md:hidden" />}
