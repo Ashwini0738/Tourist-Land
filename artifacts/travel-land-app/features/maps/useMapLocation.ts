@@ -44,6 +44,7 @@ export function useMapLocation() {
   const requestLocation = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setLocation(null);
     try {
       const response = await Location.requestForegroundPermissionsAsync();
       if (response.status !== 'granted') {

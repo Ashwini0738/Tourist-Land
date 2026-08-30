@@ -21,4 +21,12 @@ describe('map directions', () => {
     await expect(openDirections({ title: 'Coorg Highlands', latitude: 12.42, longitude: 75.74 })).resolves.toBe(false);
     openURL.mockRestore();
   });
+
+  it('reports success when the native map app accepts the handoff', async () => {
+    const destination = { title: 'Coorg Highlands', latitude: 12.42, longitude: 75.74 };
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValueOnce(true);
+    await expect(openDirections(destination)).resolves.toBe(true);
+    expect(openURL).toHaveBeenCalledWith(getPlatformDirectionsUrl(destination));
+    openURL.mockRestore();
+  });
 });

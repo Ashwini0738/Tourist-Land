@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SearchHotelsParams, SearchHotelsSort, getSearchHotelsQueryKey, useSearchHotels } from '@workspace/api-client-react';
@@ -75,6 +75,15 @@ export default function HotelsScreen() {
   useEffect(() => { setPage(1); }, [debouncedQuery, filters.hotelType, filters.amenity, filters.minRating, filters.maxPrice, filters.radiusKm, filters.sort, selection.checkIn, selection.checkOut, selection.adults, selection.children, selection.rooms]);
   const reset = () => { setQuery(''); setFilters({ sort: 'recommended' }); setSelection({ adults: 1, children: 0, rooms: 1 }); setPage(1); };
   const activeFilterCount = [filters.hotelType, filters.amenity, filters.minRating, filters.maxPrice, filters.radiusKm].filter(Boolean).length;
+  const locationMessage = getMapLocationMessage(permission, locationError);
+  const locationNeedsSettings = Platform.OS !== 'web' && (permission === 'blocked' || locationError === 'permission-blocked' || locationError === 'gps-disabled');
+  const handleLocationRecovery = async () => {
+    try {
+      await Linking.openSettings();
+    } catch {
+      // The recovery copy remains visible if the platform cannot open Settings.
+    }
+  };
 
   return <View testID="hotels-screen" style={[styles.screen, { backgroundColor: colors.background }]}>
     <HotelHeader onBack={() => router.back()} title="Hotels" right={<Pressable testID="hotel-filter-button" accessibilityRole="button" accessibilityLabel={`Open hotel filters${activeFilterCount ? `, ${activeFilterCount} active` : ''}`} onPress={() => setFilterOpen(true)} style={styles.headerFilter}><Feather name="sliders" size={18} color={colors.primary} />{activeFilterCount ? <View style={[styles.filterDot, { backgroundColor: colors.accent }]} /> : null}</Pressable>} />
@@ -90,7 +99,7 @@ export default function HotelsScreen() {
       <DateGuestControls selection={selection} onChange={(next) => { setSelection(next); setPage(1); }} />
       <NoticeBanner>{search.data?.notice ?? 'Catalog discovery only. Dates and prices are sample context, not live availability.'}</NoticeBanner>
       {search.isError && !search.data ? <NoticeBanner error onRetry={() => void search.refetch()}>The hotel catalog could not be refreshed.</NoticeBanner> : null}
-       {getMapLocationMessage(permission, locationError) ? <NoticeBanner error>{getMapLocationMessage(permission, locationError)}</NoticeBanner> : null}
+        {locationMessage ? <NoticeBanner error onAction={locationNeedsSettings ? () => void handleLocationRecovery() : undefined} actionLabel="Open Settings" actionTestID="hotel-location-settings">{locationMessage}</NoticeBanner> : null}
       <View style={styles.resultsHeader}><Text style={[styles.resultsTitle, { color: colors.foreground }]}>{search.data ? `${search.data.total} catalog ${search.data.total === 1 ? 'stay' : 'stays'}` : 'Catalog stays'}</Text><Pressable testID="hotel-sort-quick" accessibilityRole="button" accessibilityLabel="Change hotel sort" onPress={() => setFilterOpen(true)}><Text style={[styles.sortText, { color: colors.primary }]}>{sortOptions.find((item) => item.value === filters.sort)?.label}</Text></Pressable></View>
       {search.isLoading && !search.data ? <><HotelSkeleton /><HotelSkeleton /></> : items.length ? items.map((item) => { const favoriteId = `hotel:${item.id}`; return <HotelCard key={item.id} item={item} favorite={isFavorite(favoriteId)} onFavorite={() => toggleFavorite(favoriteId)} onPress={() => router.push({ pathname: '/hotel/[id]', params: { id: item.id, checkIn: selection.checkIn ?? '', checkOut: selection.checkOut ?? '', adults: String(selection.adults), children: String(selection.children), rooms: String(selection.rooms) } } as any)} />; }) : search.isError ? null : <EmptyHotels query={query} onReset={reset} />}
       {search.data?.total ? <View style={styles.pagination}><Pressable testID="hotel-page-prev" accessibilityRole="button" accessibilityLabel="Previous hotel page" disabled={page <= 1} onPress={() => setPage((value) => Math.max(1, value - 1))} style={[styles.pageButton, { borderColor: colors.border, opacity: page <= 1 ? 0.35 : 1 }]}><Feather name="chevron-left" size={16} color={colors.primary} /><Text style={[styles.pageText, { color: colors.primary }]}>Back</Text></Pressable><Text style={[styles.pageNumber, { color: colors.mutedForeground }]}>Page {search.data.page}</Text><Pressable testID="hotel-page-next" accessibilityRole="button" accessibilityLabel="Next hotel page" disabled={!search.data.hasMore} onPress={() => setPage((value) => value + 1)} style={[styles.pageButton, { borderColor: colors.border, opacity: search.data.hasMore ? 1 : 0.35 }]}><Text style={[styles.pageText, { color: colors.primary }]}>More</Text><Feather name="chevron-right" size={16} color={colors.primary} /></Pressable></View> : null}

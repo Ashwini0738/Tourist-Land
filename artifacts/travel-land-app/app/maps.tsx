@@ -299,7 +299,7 @@ export default function MapsScreen() {
     }
   };
 
-  const locationBlocked = permission === 'blocked' || locationError === 'permission-blocked';
+  const locationNeedsSettings = Platform.OS !== 'web' && (permission === 'blocked' || locationError === 'permission-blocked' || locationError === 'gps-disabled');
   const mapMessage = Platform.OS === 'web'
     ? 'Map tiles are unavailable here — showing an atlas view.'
     : 'Showing a provider-free atlas view so discovery works without map keys.';
@@ -340,7 +340,7 @@ export default function MapsScreen() {
         {locationMessage ? (
           <MapStatusBanner
             message={locationMessage}
-            onRetry={locationBlocked && Platform.OS !== 'web' ? () => void handleLocationRecovery() : undefined}
+            onRetry={locationNeedsSettings ? () => void handleLocationRecovery() : undefined}
             actionLabel="Open Settings"
           />
         ) : null}

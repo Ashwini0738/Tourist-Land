@@ -76,4 +76,20 @@ describe('useMapLocation', () => {
     expect(getMapLocationMessage(result.current.permission, result.current.error)).toMatch(/unavailable/);
     expect(watchPosition).not.toHaveBeenCalled();
   });
+
+  it('clears an earlier fix when a later permission request is blocked', async () => {
+    const { result } = renderHook(() => useMapLocation());
+    await waitFor(() => expect(permission).toHaveBeenCalledTimes(1));
+
+    requestPermission.mockResolvedValue({ status: 'granted', granted: true, expires: 'never', canAskAgain: true } as never);
+    currentPosition.mockResolvedValue({ coords: { latitude: 12.42, longitude: 75.74, accuracy: 8 } } as never);
+    reverseGeocode.mockResolvedValue([] as never);
+    await act(async () => { await result.current.requestLocation(); });
+    expect(result.current.location).toMatchObject({ latitude: 12.42, longitude: 75.74 });
+
+    requestPermission.mockResolvedValue({ status: 'denied', granted: false, expires: 'never', canAskAgain: false } as never);
+    await act(async () => { await result.current.requestLocation(); });
+    expect(result.current.location).toBeNull();
+    expect(result.current.error).toBe('permission-blocked');
+  });
 });

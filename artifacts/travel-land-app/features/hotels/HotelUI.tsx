@@ -65,15 +65,31 @@ export function SourceBadge({ label, source }: { label: string; source?: string 
   );
 }
 
-export function NoticeBanner({ children, error = false, onRetry }: { children: React.ReactNode; error?: boolean; onRetry?: () => void }) {
+export function NoticeBanner({
+  children,
+  error = false,
+  onRetry,
+  onAction,
+  actionLabel,
+  actionTestID,
+}: {
+  children: React.ReactNode;
+  error?: boolean;
+  onRetry?: () => void;
+  onAction?: () => void;
+  actionLabel?: string;
+  actionTestID?: string;
+}) {
   const colors = useColors();
+  const action = onAction ?? onRetry;
+  const label = actionLabel ?? (onRetry ? 'Retry' : 'Action');
   return (
     <View style={[styles.notice, { backgroundColor: error ? colors.muted : colors.secondary, borderColor: colors.border }]}>
       <Feather name={error ? 'alert-circle' : 'shield'} size={16} color={error ? colors.destructive : colors.primary} />
       <Text style={[styles.noticeText, { color: colors.mutedForeground }]}>{children}</Text>
-      {onRetry ? (
-        <Pressable testID="hotel-retry" accessibilityRole="button" accessibilityLabel="Retry hotel request" onPress={onRetry}>
-          <Text style={[styles.noticeAction, { color: colors.primary }]}>Retry</Text>
+      {action ? (
+        <Pressable testID={actionTestID ?? (onRetry ? 'hotel-retry' : 'hotel-notice-action')} accessibilityRole="button" accessibilityLabel={label} onPress={action}>
+          <Text style={[styles.noticeAction, { color: colors.primary }]}>{label}</Text>
         </Pressable>
       ) : null}
     </View>
