@@ -213,12 +213,14 @@ describe('AuditLogsPage', () => {
     expect(screen.queryByTestId('button-clear-audit-search')).not.toBeInTheDocument();
   });
 
-  it('opens a revision detail view with recorded before and after values', () => {
+  it('moves focus into the revision detail view and restores it to the trigger when closed', () => {
     render(<AuditLogsPage />);
 
-    fireEvent.click(screen.getByTestId('button-audit-details-audit-updated'));
+    const trigger = screen.getByTestId('button-audit-details-audit-updated');
+    fireEvent.click(trigger);
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole('dialog'));
     expect(screen.getByText('Original summary')).toBeInTheDocument();
     expect(screen.getByText('Updated summary')).toBeInTheDocument();
     expect(screen.getByTestId('audit-before-name')).toHaveTextContent('Kerala Backwaters');
@@ -226,6 +228,17 @@ describe('AuditLogsPage', () => {
 
     fireEvent.click(screen.getByTestId('button-close-audit-details'));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('closes the revision detail view when Escape is pressed', () => {
+    render(<AuditLogsPage />);
+
+    fireEvent.click(screen.getByTestId('button-audit-details-audit-updated'));
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByTestId('button-audit-details-audit-updated'));
   });
 
   it('labels missing historical revision detail as unavailable', () => {

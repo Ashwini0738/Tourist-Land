@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type * as React from 'react';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import {
   useGetAdminOperationsDashboard,
@@ -132,9 +132,18 @@ export function AuditLogsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selectedAuditId, setSelectedAuditId] = useState<string | null>(null);
+  const auditDetailDialogRef = useRef<HTMLElement | null>(null);
+  const auditDetailTriggerRef = useRef<HTMLButtonElement | null>(null);
   const q = useListAdminAuditLogs({ entityType: 'destination', q: search || undefined, page, limit: 20 });
   const detail = useGetAdminAuditLog(selectedAuditId ?? '', { query: { enabled: Boolean(selectedAuditId) } });
   const currentDetail = detail.data?.id === selectedAuditId ? detail.data : undefined;
+  useEffect(() => {
+    if (selectedAuditId) {
+      auditDetailDialogRef.current?.focus();
+    } else {
+      auditDetailTriggerRef.current?.focus();
+    }
+  }, [selectedAuditId]);
   const items = q.data?.items ?? [];
   const meta = q.data?.meta;
   const hasSearch = Boolean(search.trim());
@@ -165,7 +174,7 @@ export function AuditLogsPage() {
           <Cell><span data-testid={`audit-action-${l.id}`} className="rounded-md bg-muted px-2 py-1 text-xs font-semibold">{l.action}</span></Cell>
           <Cell><p data-testid={`audit-destination-${l.id}`} className="font-semibold">{val(l.destinationName, 'Destination unavailable')}</p><p className="mono text-[10px] text-muted-foreground">{l.entityId}</p></Cell>
           <Cell className="max-w-[280px] text-xs text-muted-foreground">{metadata(l.metadata)}</Cell>
-          <Cell><button type="button" data-testid={`button-audit-details-${l.id}`} onClick={() => setSelectedAuditId(l.id)} className="whitespace-nowrap rounded-md border border-primary/35 px-2.5 py-1.5 text-[11px] font-semibold text-primary hover:bg-primary/5">Inspect revision</button></Cell>
+          <Cell><button type="button" data-testid={`button-audit-details-${l.id}`} onClick={event => { auditDetailTriggerRef.current = event.currentTarget; setSelectedAuditId(l.id); }} className="whitespace-nowrap rounded-md border border-primary/35 px-2.5 py-1.5 text-[11px] font-semibold text-primary hover:bg-primary/5">Inspect revision</button></Cell>
         </Row>)}</Table>
         {meta && (meta.page > 1 || meta.hasMore) && <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
           <p data-testid="text-audit-pagination" className="text-xs text-muted-foreground">Page {meta.page} · Showing {items.length} of {meta.total} records</p>
@@ -177,7 +186,7 @@ export function AuditLogsPage() {
       </div>}
     </QueryState>
     {selectedAuditId && <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/25 p-5" onClick={() => setSelectedAuditId(null)}>
-      <section role="dialog" aria-modal="true" aria-labelledby="audit-detail-title" className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+      <section ref={auditDetailDialogRef} role="dialog" aria-modal="true" aria-labelledby="audit-detail-title" tabIndex={-1} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSelectedAuditId(null); } }} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="mb-6 flex items-start justify-between gap-4">
           <div><p className="eyebrow">Immutable revision context</p><h2 id="audit-detail-title" className="mt-1 text-xl font-semibold">Destination change details</h2><p className="mt-1 text-sm text-muted-foreground">Only values recorded by the audit service are shown.</p></div>
           <button type="button" aria-label="Close revision details" data-testid="button-close-audit-details" onClick={() => setSelectedAuditId(null)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"><X size={17} /></button>
