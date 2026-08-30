@@ -2,8 +2,14 @@ import { and, eq } from "drizzle-orm";
 import Stripe from "stripe";
 import { db, bookings, payments } from "@workspace/db";
 import { logger } from "./logger.ts";
+import {
+  sendBookingEmailSafely,
+  type BookingEmail,
+  type BookingNotificationKind,
+} from "./email.ts";
 import { getUncachableStripeClient } from "./stripeClient.ts";
 import { BookingConflictError, BookingNotFoundError, findBooking } from "../routes/booking.ts";
+import { getHotelCatalogRecord } from "../routes/hotel-catalog.ts";
 
 const MINOR_UNIT_CURRENCIES = new Set(["bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "mga", "pyg", "rwf", "ugx", "vnd", "vuv", "xaf", "xof", "xpf"]);
 
@@ -109,6 +115,23 @@ function paidDetails(event: Stripe.Event, object: Stripe.Checkout.Session | Stri
   return { amount: object.amount_received || object.amount, currency: object.currency };
 }
 
+function paymentEmailInput(
+  booking: typeof bookings.$inferSelect,
+  kind: BookingNotificationKind,
+): BookingEmail {
+  return {
+    to: booking.guestEmail,
+    guestName: booking.guestName,
+    reference: booking.reference,
+    hotelName: getHotelCatalogRecord(booking.hotelCatalogId)?.name ?? "Selected hotel",
+    startsOn: String(booking.startsOn),
+    endsOn: String(booking.endsOn),
+    total: Number(booking.totalAmount),
+    currency: booking.currency,
+    kind,
+  };
+}
+
 export async function applyStripePaymentEvent(event: Stripe.Event) {
   const supported = new Set([
     "checkout.session.completed",
@@ -133,39 +156,50 @@ export async function applyStripePaymentEvent(event: Stripe.Event) {
         ? "cancelled"
         : "processing";
 
-  await db.transaction(async (tx) => {
+  const notification = await db.transaction(async (tx) => {
     const [row] = await tx
       .select({ booking: bookings, payment: payments })
       .from(bookings)
       .leftJoin(payments, eq(payments.bookingId, bookings.id))
       .where(bookingId ? eq(bookings.id, bookingId) : eq(bookings.reference, reference!));
-    if (!row?.payment) return;
+    if (!row?.payment) return null;
 
     if (outcome === "paid") {
       const details = paidDetails(event, object);
       const expectedAmount = toMinorUnits(String(row.booking.totalAmount), row.booking.currency);
       if (details.amount !== expectedAmount || details.currency?.toLowerCase() !== row.booking.currency.toLowerCase()) {
         logger.warn({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring Stripe payment with mismatched amount or currency");
-        return;
+        return null;
       }
       if (object.object === "checkout.session" && row.payment.providerReference && row.payment.providerReference !== object.id) {
         logger.info({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring an event for an older Stripe checkout session");
-        return;
+        return null;
       }
-      if (row.payment.status === "paid") return;
+      if (row.payment.status === "paid") return null;
       if (row.booking.status === "cancelled") {
         logger.warn({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring payment for a cancelled booking");
-        return;
+        return null;
       }
       await tx.update(payments).set({ status: "paid", provider: "stripe", updatedAt: new Date() }).where(eq(payments.id, row.payment.id));
       await tx.update(bookings).set({ status: "confirmed", updatedAt: new Date() }).where(and(eq(bookings.id, row.booking.id), eq(bookings.status, "pending_payment")));
-      return;
+      return paymentEmailInput(row.booking, "payment_confirmed");
     }
 
-    if (row.payment.status === "paid") return;
-    if (outcome === "processing" && row.payment.status !== "unpaid" && row.payment.status !== "processing") return;
+    if (row.payment.status === "paid") return null;
+    if (outcome === "processing" && row.payment.status !== "unpaid" && row.payment.status !== "processing") return null;
     const nextStatus = outcome === "failed" ? "failed" : outcome === "cancelled" ? "cancelled" : "processing";
-    if (row.payment.status === nextStatus) return;
+    if (row.payment.status === nextStatus) return null;
     await tx.update(payments).set({ status: nextStatus, provider: "stripe", updatedAt: new Date() }).where(eq(payments.id, row.payment.id));
+    const notificationKind: BookingNotificationKind =
+      outcome === "failed"
+        ? "payment_failed"
+        : outcome === "cancelled"
+          ? "payment_expired"
+          : "payment_processing";
+    return paymentEmailInput(row.booking, notificationKind);
   });
+  if (notification) {
+    await sendBookingEmailSafely(notification);
+  }
+  return notification;
 }

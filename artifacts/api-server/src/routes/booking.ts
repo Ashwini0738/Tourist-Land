@@ -3,6 +3,11 @@ import { db, bookingItems, bookings, hotels, hotelRooms, payments } from "@works
 import { getHotelCatalogRecord } from "./hotel-catalog.ts";
 import { getDevelopmentRoom, availabilityDevelopmentNotice } from "./hotel-availability.ts";
 import {
+  sendBookingEmailSafely,
+  type BookingEmail,
+  type BookingNotificationKind,
+} from "../lib/email.ts";
+import {
   calculateBookingNights,
   calculateBookingPricing as calculatePureBookingPricing,
   canCancelBooking,
@@ -90,6 +95,20 @@ function bookingPayload(
   };
 }
 
+function bookingEmailInput(booking: ReturnType<typeof bookingPayload>, kind: BookingNotificationKind): BookingEmail {
+  return {
+    to: booking.guest.email,
+    guestName: booking.guest.name,
+    reference: booking.reference,
+    hotelName: booking.hotel.name,
+    startsOn: booking.startsOn,
+    endsOn: booking.endsOn,
+    total: booking.total,
+    currency: booking.currency,
+    kind,
+  };
+}
+
 function normalizePaymentStatus(value: string | null | undefined): "unpaid" | "processing" | "paid" | "failed" | "cancelled" {
   if (value === "processing" || value === "paid" || value === "failed" || value === "cancelled") return value;
   return "unpaid";
@@ -155,14 +174,14 @@ export async function createUserBooking(userId: string, input: BookingRequest, i
   });
   const pricing = calculateBookingPricing(input, rooms);
 
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const existing = await tx.select({ booking: bookings }).from(bookings)
       .where(and(eq(bookings.userId, userId), eq(bookings.idempotencyKey, idempotencyKey)));
     if (existing[0]) {
       const saved = await getBookingRows(tx, userId, existing[0].booking.reference);
       const payload = groupBookingRows(saved);
       if (!payload) throw new BookingNotFoundError("The previous booking could not be loaded.");
-      return payload;
+      return { booking: payload, created: false };
     }
 
     for (const room of rooms) {
@@ -251,19 +270,26 @@ export async function createUserBooking(userId: string, input: BookingRequest, i
       status: "unpaid",
     });
 
-    return bookingPayload(
-      booking,
-      rooms.map((room) => ({
-        item: { id: "", bookingId: booking.id, roomId: persistedById.get(room.id)!.id, quantity: room.quantity, unitAmount: String(room.nightlyRate), createdAt: booking.createdAt, updatedAt: booking.updatedAt },
-        room: persistedById.get(room.id)!,
-      })),
-      persistedRooms.length ? null : null,
-    );
+    return {
+      booking: bookingPayload(
+        booking,
+        rooms.map((room) => ({
+          item: { id: "", bookingId: booking.id, roomId: persistedById.get(room.id)!.id, quantity: room.quantity, unitAmount: String(room.nightlyRate), createdAt: booking.createdAt, updatedAt: booking.updatedAt },
+          room: persistedById.get(room.id)!,
+        })),
+        persistedRooms.length ? null : null,
+      ),
+      created: true,
+    };
   });
+  if (result.created) {
+    await sendBookingEmailSafely(bookingEmailInput(result.booking, "request_received"));
+  }
+  return result.booking;
 }
 
 export async function cancelUserBooking(userId: string, reference: string) {
-  return db.transaction(async (tx) => {
+  const booking = await db.transaction(async (tx) => {
     const rows = await getBookingRows(tx, userId, reference);
     const current = groupBookingRows(rows);
     if (!current) throw new BookingNotFoundError("Booking not found.");
@@ -279,6 +305,10 @@ export async function cancelUserBooking(userId: string, reference: string) {
     const refreshed = await getBookingRows(tx, userId, reference);
     return groupBookingRows(refreshed);
   });
+  if (booking) {
+    await sendBookingEmailSafely(bookingEmailInput(booking, "cancelled"));
+  }
+  return booking;
 }
 
 export { availabilityDevelopmentNotice };
