@@ -3715,6 +3715,116 @@ export const GetAdminOperationsDashboardResponse = zod.object({
 })
 
 
+/**
+ * @summary List eligible catalog content and persisted featured selections
+ */
+export const listAdminFeaturedContentResponseItemsItemSortOrderMin = 0;
+
+export const listAdminFeaturedContentResponseCandidatesItemSortOrderMin = 0;
+
+
+
+export const ListAdminFeaturedContentResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['destination', 'hotel', 'event', 'offer']),
+  "entityId": zod.string(),
+  "title": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "sortOrder": zod.number().int().min(listAdminFeaturedContentResponseItemsItemSortOrderMin),
+  "isAvailable": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "candidates": zod.array(zod.object({
+  "entityType": zod.enum(['destination', 'hotel', 'event', 'offer']),
+  "entityId": zod.string(),
+  "title": zod.string(),
+  "sourceStatus": zod.string(),
+  "featuredId": zod.string().nullable(),
+  "sortOrder": zod.number().int().min(listAdminFeaturedContentResponseCandidatesItemSortOrderMin).nullable()
+}))
+})
+
+
+/**
+ * @summary Persist a catalog item as featured
+ */
+
+export const createAdminFeaturedContentBodySortOrderDefault = 0;
+export const createAdminFeaturedContentBodySortOrderMin = 0;
+
+
+
+export const CreateAdminFeaturedContentBody = zod.object({
+  "entityType": zod.enum(['destination', 'hotel', 'event', 'offer']),
+  "entityId": zod.string().min(1),
+  "sortOrder": zod.number().int().min(createAdminFeaturedContentBodySortOrderMin).default(createAdminFeaturedContentBodySortOrderDefault)
+})
+
+export const createAdminFeaturedContentResponseSortOrderMin = 0;
+
+
+
+export const CreateAdminFeaturedContentResponse = zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['destination', 'hotel', 'event', 'offer']),
+  "entityId": zod.string(),
+  "title": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "sortOrder": zod.number().int().min(createAdminFeaturedContentResponseSortOrderMin),
+  "isAvailable": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Change featured content order or publication state
+ */
+export const UpdateAdminFeaturedContentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateAdminFeaturedContentBodySortOrderMin = 0;
+
+
+
+export const UpdateAdminFeaturedContentBody = zod.object({
+  "status": zod.enum(['active', 'inactive']).optional(),
+  "sortOrder": zod.number().int().min(updateAdminFeaturedContentBodySortOrderMin).optional()
+})
+
+export const updateAdminFeaturedContentResponseSortOrderMin = 0;
+
+
+
+export const UpdateAdminFeaturedContentResponse = zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['destination', 'hotel', 'event', 'offer']),
+  "entityId": zod.string(),
+  "title": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "sortOrder": zod.number().int().min(updateAdminFeaturedContentResponseSortOrderMin),
+  "isAvailable": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a catalog item from featured content
+ */
+export const DeleteAdminFeaturedContentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteAdminFeaturedContentResponse = zod.object({
+  "deleted": zod.boolean(),
+  "id": zod.string()
+})
+
+
 export const listAdminUsersPageQueryQMax = 160;
 
 export const listAdminUsersPageQueryPageDefault = 1;

@@ -6,11 +6,13 @@ import {
   bookings,
   destinations,
   events,
+  featuredContent,
   favorites,
   foodPlaces,
   hotelRooms,
   hotels,
   notifications,
+  offers,
   payments,
   properties,
   propertyEnquiries,
@@ -133,6 +135,90 @@ function serializeHotel(hotel: typeof hotels.$inferSelect, owner?: typeof users.
   };
 }
 
+const featuredEntityTypes = ["destination", "hotel", "event", "offer"] as const;
+type FeaturedEntityType = typeof featuredEntityTypes[number];
+
+function isFeaturedEntityType(value: unknown): value is FeaturedEntityType {
+  return typeof value === "string" && (featuredEntityTypes as readonly string[]).includes(value);
+}
+
+type FeaturedEntity = {
+  title: string;
+  status: string;
+  eligible: boolean;
+};
+
+async function findFeaturedEntity(entityType: FeaturedEntityType, entityId: string): Promise<FeaturedEntity | null> {
+  if (entityType === "destination") {
+    const entity = await db.query.destinations.findFirst({ where: eq(destinations.id, entityId) });
+    return entity ? { title: entity.name, status: entity.status, eligible: entity.status === "published" } : null;
+  }
+  if (entityType === "hotel") {
+    const entity = await db.query.hotels.findFirst({ where: eq(hotels.id, entityId) });
+    return entity ? { title: entity.name, status: entity.status, eligible: entity.status === "published" && entity.approvalStatus === "approved" } : null;
+  }
+  if (entityType === "event") {
+    const entity = await db.query.events.findFirst({ where: eq(events.id, entityId) });
+    return entity ? { title: entity.name, status: entity.status, eligible: entity.status === "scheduled" } : null;
+  }
+  const entity = await db.query.offers.findFirst({ where: eq(offers.id, entityId) });
+  return entity ? { title: entity.title, status: entity.status, eligible: entity.status === "published" } : null;
+}
+
+function serializeFeaturedContent(
+  item: typeof featuredContent.$inferSelect,
+  entity: FeaturedEntity | null,
+) {
+  return {
+    id: item.id,
+    entityType: item.entityType as FeaturedEntityType,
+    entityId: item.entityId,
+    title: entity?.title ?? "Unavailable content",
+    status: item.status,
+    sortOrder: item.sortOrder,
+    isAvailable: Boolean(entity?.eligible),
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+}
+
+async function featuredContentResponse(): Promise<{
+  items: ReturnType<typeof serializeFeaturedContent>[];
+  candidates: Array<{
+    entityType: FeaturedEntityType;
+    entityId: string;
+    title: string;
+    sourceStatus: string;
+    featuredId: string | null;
+    sortOrder: number | null;
+  }>;
+}> {
+  const [items, destinationRows, hotelRows, eventRows, offerRows] = await Promise.all([
+    db.select().from(featuredContent).orderBy(asc(featuredContent.sortOrder), asc(featuredContent.createdAt)),
+    db.select().from(destinations).where(eq(destinations.status, "published")).orderBy(asc(destinations.name)),
+    db.select().from(hotels).where(and(eq(hotels.status, "published"), eq(hotels.approvalStatus, "approved"))).orderBy(asc(hotels.name)),
+    db.select().from(events).where(eq(events.status, "scheduled")).orderBy(asc(events.startsAt)),
+    db.select().from(offers).where(eq(offers.status, "published")).orderBy(asc(offers.title)),
+  ]);
+  const entityMap = new Map<string, FeaturedEntity>();
+  for (const row of destinationRows) entityMap.set(`destination:${row.id}`, { title: row.name, status: row.status, eligible: true });
+  for (const row of hotelRows) entityMap.set(`hotel:${row.id}`, { title: row.name, status: row.status, eligible: true });
+  for (const row of eventRows) entityMap.set(`event:${row.id}`, { title: row.name, status: row.status, eligible: true });
+  for (const row of offerRows) entityMap.set(`offer:${row.id}`, { title: row.title, status: row.status, eligible: true });
+  const serializedItems = items.map((item) => serializeFeaturedContent(item, entityMap.get(`${item.entityType}:${item.entityId}`) ?? null));
+  const persisted = new Map(items.map((item) => [`${item.entityType}:${item.entityId}`, item]));
+  const candidates = [
+    ...destinationRows.map((row) => ({ entityType: "destination" as const, entityId: row.id, title: row.name, sourceStatus: row.status })),
+    ...hotelRows.map((row) => ({ entityType: "hotel" as const, entityId: row.id, title: row.name, sourceStatus: row.status })),
+    ...eventRows.map((row) => ({ entityType: "event" as const, entityId: row.id, title: row.name, sourceStatus: row.status })),
+    ...offerRows.map((row) => ({ entityType: "offer" as const, entityId: row.id, title: row.title, sourceStatus: row.status })),
+  ].map((candidate) => {
+    const selected = persisted.get(`${candidate.entityType}:${candidate.entityId}`);
+    return { ...candidate, featuredId: selected?.id ?? null, sortOrder: selected?.sortOrder ?? null };
+  });
+  return { items: serializedItems, candidates };
+}
+
 router.get("/v1/admin/dashboard", async (_req, res) => {
   const [totalUsers, activeUsers, totalVendors, pendingVendors, approvedVendors, totalHotels, publishedHotels, pendingHotels, totalBookings, confirmedBookings, pendingBookings, paidPayments, paymentVolume] = await Promise.all([
     count(users),
@@ -159,6 +245,65 @@ router.get("/v1/admin/dashboard", async (_req, res) => {
     bookings: { total: totalBookings, active: confirmedBookings, pending: pendingBookings, approved: 0, rejected: 0, inactive: await count(bookings, eq(bookings.status, "cancelled")) },
     revenue: { status: "available", successfulPayments: paidPayments, paymentVolume: numberValue(paymentVolume[0]?.value) ?? 0, refundVolume: 0, currency: "INR" },
   });
+});
+
+router.get("/v1/admin/featured-content", async (_req, res) => {
+  res.json(await featuredContentResponse());
+});
+
+router.post("/v1/admin/featured-content", async (req, res) => {
+  const body = jsonBody(req);
+  const entityType = body?.entityType;
+  const entityId = typeof body?.entityId === "string" ? body.entityId.trim() : "";
+  const sortOrder = body?.sortOrder === undefined ? 0 : Number(body.sortOrder);
+  if (!isFeaturedEntityType(entityType) || !entityId || !Number.isInteger(sortOrder) || sortOrder < 0) {
+    return fail(res, 400, "INVALID_INPUT", "Entity type, entity ID, and a non-negative integer sort order are required.");
+  }
+  const entity = await findFeaturedEntity(entityType, entityId);
+  if (!entity) return fail(res, 404, "NOT_FOUND", "The selected content was not found.");
+  if (!entity.eligible) return fail(res, 409, "CONTENT_NOT_ELIGIBLE", "Only published and approved content can be featured.");
+  try {
+    const created = (await db.insert(featuredContent).values({
+      entityType,
+      entityId,
+      sortOrder,
+      createdBy: req.localUser!.id,
+    }).returning())[0];
+    await audit(req, "created", "featured_content", created.id, { entityType, entityId, sortOrder });
+    res.status(201).json(serializeFeaturedContent(created, entity));
+  } catch {
+    fail(res, 409, "CONFLICT", "This content is already featured.");
+  }
+});
+
+router.patch("/v1/admin/featured-content/:id", async (req, res) => {
+  const body = jsonBody(req);
+  const sortOrder = body?.sortOrder === undefined ? undefined : Number(body.sortOrder);
+  const status = body?.status;
+  if ((sortOrder !== undefined && (!Number.isInteger(sortOrder) || sortOrder < 0)) ||
+      (status !== undefined && status !== "active" && status !== "inactive") ||
+      (sortOrder === undefined && status === undefined)) {
+    return fail(res, 400, "INVALID_INPUT", "Provide an active or inactive status and/or a non-negative integer sort order.");
+  }
+  const current = await db.query.featuredContent.findFirst({ where: eq(featuredContent.id, id(req)) });
+  if (!current) return fail(res, 404, "NOT_FOUND", "Featured content record not found.");
+  const entityType = current.entityType as FeaturedEntityType;
+  const entity = await findFeaturedEntity(entityType, current.entityId);
+  if (status === "active" && (!entity || !entity.eligible)) return fail(res, 409, "CONTENT_NOT_ELIGIBLE", "Only published and approved content can be featured.");
+  const updated = (await db.update(featuredContent).set({
+    ...(sortOrder === undefined ? {} : { sortOrder }),
+    ...(status === undefined ? {} : { status }),
+    updatedAt: new Date(),
+  }).where(eq(featuredContent.id, current.id)).returning())[0];
+  await audit(req, "updated", "featured_content", updated.id, { status: status ?? null, sortOrder: sortOrder ?? null });
+  res.json(serializeFeaturedContent(updated, entity));
+});
+
+router.delete("/v1/admin/featured-content/:id", async (req, res) => {
+  const deleted = (await db.delete(featuredContent).where(eq(featuredContent.id, id(req))).returning())[0];
+  if (!deleted) return fail(res, 404, "NOT_FOUND", "Featured content record not found.");
+  await audit(req, "deleted", "featured_content", deleted.id, { entityType: deleted.entityType, entityId: deleted.entityId });
+  res.json({ deleted: true, id: deleted.id });
 });
 
 router.get("/v1/admin/users", async (req, res) => {

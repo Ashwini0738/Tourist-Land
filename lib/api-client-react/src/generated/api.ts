@@ -30,6 +30,10 @@ import type {
   AdminDestinationPage,
   AdminDestinationUpdate,
   AdminEventPage,
+  AdminFeaturedContent,
+  AdminFeaturedContentInput,
+  AdminFeaturedContentPage,
+  AdminFeaturedContentUpdate,
   AdminHotel,
   AdminHotelDetail,
   AdminHotelPage,
@@ -58,6 +62,7 @@ import type {
   ConflictResponse,
   CreateReviewInput,
   CurrentUser,
+  DeleteAdminFeaturedContent200,
   DestinationDetail,
   DestinationList,
   EligibleReviewList,
@@ -6149,6 +6154,297 @@ export function useGetAdminOperationsDashboard<TData = Awaited<ReturnType<typeof
 
 
 
+
+export const getListAdminFeaturedContentUrl = () => {
+
+
+
+
+  return `/api/v1/admin/featured-content`
+}
+
+/**
+ * @summary List eligible catalog content and persisted featured selections
+ */
+export const listAdminFeaturedContent = async ( options?: Parameters<typeof customFetch>[1]): Promise<AdminFeaturedContentPage> => {
+
+  return customFetch<AdminFeaturedContentPage>(getListAdminFeaturedContentUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminFeaturedContentQueryKey = () => {
+    return [
+    `/api/v1/admin/featured-content`
+    ] as const;
+    }
+
+
+export const getListAdminFeaturedContentQueryOptions = <TData = Awaited<ReturnType<typeof listAdminFeaturedContent>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminFeaturedContent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminFeaturedContentQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminFeaturedContent>>> = ({ signal }) => listAdminFeaturedContent({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminFeaturedContent>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminFeaturedContentQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminFeaturedContent>>>
+export type ListAdminFeaturedContentQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+/**
+ * @summary List eligible catalog content and persisted featured selections
+ */
+
+export function useListAdminFeaturedContent<TData = Awaited<ReturnType<typeof listAdminFeaturedContent>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminFeaturedContent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminFeaturedContentQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateAdminFeaturedContentUrl = () => {
+
+
+
+
+  return `/api/v1/admin/featured-content`
+}
+
+/**
+ * @summary Persist a catalog item as featured
+ */
+export const createAdminFeaturedContent = async (adminFeaturedContentInput: AdminFeaturedContentInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminFeaturedContent> => {
+
+  return customFetch<AdminFeaturedContent>(getCreateAdminFeaturedContentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminFeaturedContentInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAdminFeaturedContentMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminFeaturedContent>>, TError,{data: BodyType<AdminFeaturedContentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdminFeaturedContent>>, TError,{data: BodyType<AdminFeaturedContentInput>}, TContext> => {
+
+const mutationKey = ['createAdminFeaturedContent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdminFeaturedContent>>, {data: BodyType<AdminFeaturedContentInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdminFeaturedContent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdminFeaturedContentMutationResult = NonNullable<Awaited<ReturnType<typeof createAdminFeaturedContent>>>
+    export type CreateAdminFeaturedContentMutationBody = BodyType<AdminFeaturedContentInput>
+    export type CreateAdminFeaturedContentMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>
+
+    /**
+ * @summary Persist a catalog item as featured
+ */
+export const useCreateAdminFeaturedContent = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminFeaturedContent>>, TError,{data: BodyType<AdminFeaturedContentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAdminFeaturedContent>>,
+        TError,
+        {data: BodyType<AdminFeaturedContentInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAdminFeaturedContentMutationOptions(options));
+    }
+
+export const getUpdateAdminFeaturedContentUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/featured-content/${id}`
+}
+
+/**
+ * @summary Change featured content order or publication state
+ */
+export const updateAdminFeaturedContent = async (id: string,
+    adminFeaturedContentUpdate: AdminFeaturedContentUpdate, options?: Parameters<typeof customFetch>[1]): Promise<AdminFeaturedContent> => {
+
+  return customFetch<AdminFeaturedContent>(getUpdateAdminFeaturedContentUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminFeaturedContentUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminFeaturedContentMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminFeaturedContent>>, TError,{id: string;data: BodyType<AdminFeaturedContentUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminFeaturedContent>>, TError,{id: string;data: BodyType<AdminFeaturedContentUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminFeaturedContent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminFeaturedContent>>, {id: string;data: BodyType<AdminFeaturedContentUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAdminFeaturedContent(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminFeaturedContentMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminFeaturedContent>>>
+    export type UpdateAdminFeaturedContentMutationBody = BodyType<AdminFeaturedContentUpdate>
+    export type UpdateAdminFeaturedContentMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>
+
+    /**
+ * @summary Change featured content order or publication state
+ */
+export const useUpdateAdminFeaturedContent = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminFeaturedContent>>, TError,{id: string;data: BodyType<AdminFeaturedContentUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminFeaturedContent>>,
+        TError,
+        {id: string;data: BodyType<AdminFeaturedContentUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminFeaturedContentMutationOptions(options));
+    }
+
+export const getDeleteAdminFeaturedContentUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/featured-content/${id}`
+}
+
+/**
+ * @summary Remove a catalog item from featured content
+ */
+export const deleteAdminFeaturedContent = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<DeleteAdminFeaturedContent200> => {
+
+  return customFetch<DeleteAdminFeaturedContent200>(getDeleteAdminFeaturedContentUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteAdminFeaturedContentMutationOptions = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminFeaturedContent>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminFeaturedContent>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteAdminFeaturedContent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdminFeaturedContent>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAdminFeaturedContent(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdminFeaturedContentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminFeaturedContent>>>
+
+    export type DeleteAdminFeaturedContentMutationError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+    /**
+ * @summary Remove a catalog item from featured content
+ */
+export const useDeleteAdminFeaturedContent = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminFeaturedContent>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdminFeaturedContent>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteAdminFeaturedContentMutationOptions(options));
+    }
 
 export const getListAdminUsersPageUrl = (params?: ListAdminUsersPageParams,) => {
   const normalizedParams = new URLSearchParams();

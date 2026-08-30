@@ -1794,6 +1794,70 @@ export interface AdminStatusUpdate {
   reason?: string | null;
 }
 
+export type AdminFeaturedContentType = typeof AdminFeaturedContentType[keyof typeof AdminFeaturedContentType];
+
+
+export const AdminFeaturedContentType = {
+  destination: 'destination',
+  hotel: 'hotel',
+  event: 'event',
+  offer: 'offer',
+} as const;
+
+export type AdminFeaturedContentStatus = typeof AdminFeaturedContentStatus[keyof typeof AdminFeaturedContentStatus];
+
+
+export const AdminFeaturedContentStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface AdminFeaturedContent {
+  id: string;
+  entityType: AdminFeaturedContentType;
+  entityId: string;
+  title: string;
+  status: AdminFeaturedContentStatus;
+  /** @minimum 0 */
+  sortOrder: number;
+  isAvailable: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminFeaturedContentCandidate {
+  entityType: AdminFeaturedContentType;
+  entityId: string;
+  title: string;
+  sourceStatus: string;
+  /** @nullable */
+  featuredId: string | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  sortOrder: number | null;
+}
+
+export interface AdminFeaturedContentPage {
+  items: AdminFeaturedContent[];
+  candidates: AdminFeaturedContentCandidate[];
+}
+
+export interface AdminFeaturedContentInput {
+  entityType: AdminFeaturedContentType;
+  /** @minLength 1 */
+  entityId: string;
+  /** @minimum 0 */
+  sortOrder?: number;
+}
+
+export interface AdminFeaturedContentUpdate {
+  status?: AdminFeaturedContentStatus;
+  /** @minimum 0 */
+  sortOrder?: number;
+}
+
 export interface AdminVendor {
   userId: string;
   user: AdminUser;
@@ -2509,6 +2573,11 @@ export type ListAdminVendorApprovalHistory200 = {
 
 export type ListAdminInvitations200 = {
   items: AdminInvitation[];
+};
+
+export type DeleteAdminFeaturedContent200 = {
+  deleted: boolean;
+  id: string;
 };
 
 export type ListAdminUsersPageParams = {

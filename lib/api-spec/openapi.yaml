@@ -1509,6 +1509,84 @@ paths:
               schema: { $ref: "#/components/schemas/AdminDashboard" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/featured-content:
+    get:
+      operationId: listAdminFeaturedContent
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: List eligible catalog content and persisted featured selections
+      responses:
+        "200":
+          description: Featured selections and eligible catalog candidates
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminFeaturedContentPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createAdminFeaturedContent
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Persist a catalog item as featured
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminFeaturedContentInput" }
+      responses:
+        "201":
+          description: Persisted featured selection
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminFeaturedContent" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/admin/featured-content/{id}:
+    patch:
+      operationId: updateAdminFeaturedContent
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Change featured content order or publication state
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminFeaturedContentUpdate" }
+      responses:
+        "200":
+          description: Updated featured selection
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminFeaturedContent" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      operationId: deleteAdminFeaturedContent
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Remove a catalog item from featured content
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: Deleted featured selection
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted: { type: boolean }
+                  id: { type: string }
+                required: [deleted, id]
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /v1/admin/users:
     get:
       operationId: listAdminUsersPage
@@ -3281,6 +3359,54 @@ components:
         status: { type: string, enum: [active, inactive, suspended, approved, rejected, published, archived, pending, pending_payment, confirmed, cancelled] }
         reason: { type: [string, "null"], maxLength: 1000 }
       required: [status]
+    AdminFeaturedContentType:
+      type: string
+      enum: [destination, hotel, event, offer]
+    AdminFeaturedContentStatus:
+      type: string
+      enum: [active, inactive]
+    AdminFeaturedContent:
+      type: object
+      properties:
+        id: { type: string }
+        entityType: { $ref: "#/components/schemas/AdminFeaturedContentType" }
+        entityId: { type: string }
+        title: { type: string }
+        status: { $ref: "#/components/schemas/AdminFeaturedContentStatus" }
+        sortOrder: { type: integer, minimum: 0 }
+        isAvailable: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, entityType, entityId, title, status, sortOrder, isAvailable, createdAt, updatedAt]
+    AdminFeaturedContentCandidate:
+      type: object
+      properties:
+        entityType: { $ref: "#/components/schemas/AdminFeaturedContentType" }
+        entityId: { type: string }
+        title: { type: string }
+        sourceStatus: { type: string }
+        featuredId: { type: [string, "null"] }
+        sortOrder: { type: [integer, "null"], minimum: 0 }
+      required: [entityType, entityId, title, sourceStatus, featuredId, sortOrder]
+    AdminFeaturedContentPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminFeaturedContent" } }
+        candidates: { type: array, items: { $ref: "#/components/schemas/AdminFeaturedContentCandidate" } }
+      required: [items, candidates]
+    AdminFeaturedContentInput:
+      type: object
+      properties:
+        entityType: { $ref: "#/components/schemas/AdminFeaturedContentType" }
+        entityId: { type: string, minLength: 1 }
+        sortOrder: { type: integer, minimum: 0, default: 0 }
+      required: [entityType, entityId]
+    AdminFeaturedContentUpdate:
+      type: object
+      properties:
+        status: { $ref: "#/components/schemas/AdminFeaturedContentStatus" }
+        sortOrder: { type: integer, minimum: 0 }
+      minProperties: 1
     AdminVendor:
       type: object
       properties:

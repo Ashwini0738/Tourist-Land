@@ -303,6 +303,26 @@ export const adminAuditLogs = pgTable(
   ],
 );
 
+export const featuredContent = pgTable(
+  "featured_content",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id").notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    status: text("status").default("active").notNull(),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "restrict" }).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("featured_content_entity_unique").on(table.entityType, table.entityId),
+    index("featured_content_order_idx").on(table.status, table.sortOrder),
+    check("featured_content_entity_type_valid", sql`${table.entityType} in ('destination', 'hotel', 'event', 'offer')`),
+    check("featured_content_status_valid", sql`${table.status} in ('active', 'inactive')`),
+    check("featured_content_sort_order_non_negative", sql`${table.sortOrder} >= 0`),
+  ],
+);
+
 export const bookings = pgTable(
   "bookings",
   {

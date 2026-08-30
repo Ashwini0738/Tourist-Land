@@ -7,6 +7,8 @@ import { asc, eq, inArray, sql } from "drizzle-orm";
 import {
   adminAuditLogs,
   db,
+  destinations,
+  featuredContent,
   hotels,
   properties,
   reviews,
@@ -26,6 +28,7 @@ type AdminFixture = {
   hotelBId: string;
   propertyId: string;
   reviewId: string;
+  destinationId: string;
 };
 
 type TestServer = {
@@ -52,6 +55,7 @@ async function createFixture(): Promise<AdminFixture> {
     hotelBId: randomUUID(),
     propertyId: randomUUID(),
     reviewId: randomUUID(),
+    destinationId: randomUUID(),
   };
 
   await db.insert(users).values([
@@ -125,6 +129,13 @@ async function createFixture(): Promise<AdminFixture> {
     body: "A review used to verify moderation status writes.",
     status: "pending",
   });
+  await db.insert(destinations).values({
+    id: fixture.destinationId,
+    slug: `admin-fixture-destination-${fixture.destinationId}`,
+    name: "Admin Fixture Destination",
+    country: "India",
+    status: "published",
+  });
 
   return fixture;
 }
@@ -132,6 +143,8 @@ async function createFixture(): Promise<AdminFixture> {
 async function deleteFixture(fixture: AdminFixture): Promise<void> {
   await db.delete(adminAuditLogs).where(eq(adminAuditLogs.adminUserId, fixture.adminId));
   await db.delete(reviews).where(eq(reviews.id, fixture.reviewId));
+  await db.delete(featuredContent).where(eq(featuredContent.entityId, fixture.destinationId));
+  await db.delete(destinations).where(eq(destinations.id, fixture.destinationId));
   await db.delete(properties).where(eq(properties.id, fixture.propertyId));
   await db.delete(hotels).where(inArray(hotels.id, [fixture.hotelAId, fixture.hotelBId]));
   await db.delete(vendorProfiles).where(eq(vendorProfiles.userId, fixture.vendorId));
@@ -153,12 +166,17 @@ async function adminSchemaReady(): Promise<boolean> {
     "admin_audit_logs.entity_type",
     "admin_audit_logs.entity_id",
     "admin_audit_logs.metadata",
+    "featured_content.entity_type",
+    "featured_content.entity_id",
+    "featured_content.sort_order",
+    "featured_content.status",
+    "featured_content.created_by",
   ];
   const schemaRows = await db.execute(sql`
     select table_name, column_name
     from information_schema.columns
     where table_schema = 'public'
-      and table_name in ('users', 'user_roles', 'vendor_profiles', 'hotels', 'properties', 'reviews', 'admin_audit_logs')
+      and table_name in ('users', 'user_roles', 'vendor_profiles', 'hotels', 'properties', 'reviews', 'admin_audit_logs', 'featured_content')
   `);
   const availableColumns = new Set(schemaRows.rows.map((row) => `${row.table_name}.${row.column_name}`));
   return requiredColumns.every((column) => availableColumns.has(column));
@@ -220,6 +238,10 @@ async function adminRequest(
 
 const protectedAdminRoutes: Array<{ method: string; path: string; body?: JsonObject }> = [
   { method: "GET", path: "/v1/admin/dashboard" },
+  { method: "GET", path: "/v1/admin/featured-content" },
+  { method: "POST", path: "/v1/admin/featured-content", body: { entityType: "destination", entityId: randomUUID() } },
+  { method: "PATCH", path: `/v1/admin/featured-content/${randomUUID()}`, body: { sortOrder: 1 } },
+  { method: "DELETE", path: `/v1/admin/featured-content/${randomUUID()}` },
   { method: "GET", path: "/v1/admin/users" },
   { method: "GET", path: `/v1/admin/users/${randomUUID()}` },
   { method: "POST", path: `/v1/admin/users/${randomUUID()}/status`, body: { status: "active" } },
@@ -407,4 +429,45 @@ test("admin lists support search, pagination, and safe serialization", async (t)
   assert.equal(auditItem.entityId, fixture.propertyId);
   assert.deepEqual(auditItem.metadata, { status: "published", reason: "List serializer fixture" });
   assert.equal(typeof auditItem.createdAt, "string");
+});
+
+test("featured content is selected, ordered, and removed through persisted admin controls", async (t) => {
+  if (!(await adminSchemaReady())) {
+    t.skip("development database schema is pending post-merge application");
+    return;
+  }
+  const fixture = await createFixture();
+  t.after(() => deleteFixture(fixture));
+  const server = await startTestServer(buildTestApp(fixture.adminId, fixture.targetUserId));
+  t.after(() => server.close());
+
+  const initial = await adminRequest(server.baseUrl, "/v1/admin/featured-content", "admin");
+  assert.equal(initial.status, 200);
+  assert.ok((initial.body.candidates as JsonObject[]).some((candidate) => candidate.entityId === fixture.destinationId));
+
+  const created = await adminRequest(server.baseUrl, "/v1/admin/featured-content", "admin", {
+    method: "POST",
+    body: JSON.stringify({ entityType: "destination", entityId: fixture.destinationId, sortOrder: 3 }),
+  });
+  assert.equal(created.status, 201);
+  assert.equal(created.body.entityId, fixture.destinationId);
+  assert.equal(created.body.sortOrder, 3);
+  assert.equal(created.body.isAvailable, true);
+
+  const updated = await adminRequest(server.baseUrl, `/v1/admin/featured-content/${created.body.id}`, "admin", {
+    method: "PATCH",
+    body: JSON.stringify({ sortOrder: 0 }),
+  });
+  assert.equal(updated.status, 200);
+  assert.equal(updated.body.sortOrder, 0);
+
+  const listing = await adminRequest(server.baseUrl, "/v1/admin/featured-content", "admin");
+  assert.equal(listing.status, 200);
+  assert.equal((listing.body.items as JsonObject[]).find((item) => item.entityId === fixture.destinationId)?.sortOrder, 0);
+
+  const deleted = await adminRequest(server.baseUrl, `/v1/admin/featured-content/${created.body.id}`, "admin", { method: "DELETE" });
+  assert.equal(deleted.status, 200);
+  assert.equal(deleted.body.deleted, true);
+  const persisted = await db.select().from(featuredContent).where(eq(featuredContent.entityId, fixture.destinationId));
+  assert.equal(persisted.length, 0);
 });
