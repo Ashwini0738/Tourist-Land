@@ -6,9 +6,11 @@ import {
   getGetHotelQueryKey,
   getListHotelNearbyQueryKey,
   getListHotelRoomsQueryKey,
+  getListHotelReviewsForHotelQueryKey,
   useGetHotel,
   useListHotelNearby,
   useListHotelRooms,
+  useListHotelReviewsForHotel,
 } from '@workspace/api-client-react';
 import type { HotelDetail } from '@workspace/api-client-react';
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
@@ -41,6 +43,7 @@ export default function HotelDetailsScreen() {
   const detailQuery = useGetHotel(id, { query: { queryKey: getGetHotelQueryKey(id), enabled: Boolean(id), staleTime: 60_000, retry: 1 } });
   const roomsQuery = useListHotelRooms(id, { query: { queryKey: getListHotelRoomsQueryKey(id), enabled: Boolean(id), staleTime: 60_000, retry: 1 } });
   const nearbyQuery = useListHotelNearby(id, { query: { queryKey: getListHotelNearbyQueryKey(id), enabled: Boolean(id), staleTime: 60_000, retry: 1 } });
+  const reviewsQuery = useListHotelReviewsForHotel(id, undefined, { query: { queryKey: getListHotelReviewsForHotelQueryKey(id), enabled: Boolean(id), staleTime: 60_000, retry: 1 } });
   const detail: HotelDetail | undefined = detailQuery.data;
   const hotel = detail?.hotel;
   const favoriteId = `hotel:${id}`;
@@ -101,7 +104,7 @@ export default function HotelDetailsScreen() {
         <NoticeBanner>{detail.sourceNotice || hotel.sourceNotice}</NoticeBanner>
         <Text style={[styles.description, { color: colors.foreground }]}>{detail.description || hotel.summary}</Text>
         <View style={styles.factGrid}>
-          <Fact label="RATING" value={hotel.ratingLabel || hotel.rating.toFixed(1)} icon="star" />
+          <Fact label="GUEST RATING" value={reviewsQuery.data?.ratingAverage != null ? `${reviewsQuery.data.ratingAverage.toFixed(1)} · ${reviewsQuery.data.reviewCount} review${reviewsQuery.data.reviewCount === 1 ? '' : 's'}` : 'No guest ratings yet'} icon="star" />
           <Fact label="SAMPLE PRICE" value={hotel.priceLabel} icon="credit-card" />
           {detail.checkInTime ? <Fact label="CHECK IN" value={detail.checkInTime} icon="clock" /> : null}
           {detail.checkOutTime ? <Fact label="CHECK OUT" value={detail.checkOutTime} icon="clock" /> : null}
@@ -115,6 +118,9 @@ export default function HotelDetailsScreen() {
          <Text style={[styles.sectionKicker, { color: colors.primary }]}>ROOM NOTES</Text>
          {roomsQuery.isLoading ? <Text style={[styles.sectionBody, { color: colors.mutedForeground }]}>Loading room notes…</Text> : roomsQuery.data?.items.length ? <><Text style={[styles.sectionBody, { color: colors.mutedForeground }]}>{roomsQuery.data.notice}</Text>{roomsQuery.data.items.map((room) => <RoomRow key={room.id} room={room} />)}</> : <NoticeBanner>{roomsQuery.data?.notice ?? 'No room data is catalogued for this hotel yet.'}</NoticeBanner>}
         {roomsQuery.isError ? <NoticeBanner error onRetry={() => void roomsQuery.refetch()}>Room notes could not be loaded. The hotel page is still available.</NoticeBanner> : null}
+         <Text style={[styles.sectionKicker, { color: colors.primary }]}>GUEST REVIEWS</Text>
+         {reviewsQuery.isLoading ? <Text style={[styles.sectionBody, { color: colors.mutedForeground }]}>Loading verified traveller reviews…</Text> : reviewsQuery.data?.items.length ? reviewsQuery.data.items.slice(0, 3).map((review) => <View key={review.id} style={[styles.review, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={styles.reviewHead}><Text style={[styles.reviewAuthor, { color: colors.foreground }]}>{review.authorName}</Text><View style={styles.stars}>{Array.from({ length: 5 }, (_, index) => <Feather key={index} name="star" size={13} color={index < review.rating ? '#EAB308' : colors.border} fill={index < review.rating ? '#EAB308' : 'transparent'} />)}</View></View>{review.title ? <Text style={[styles.reviewTitle, { color: colors.foreground }]}>{review.title}</Text> : null}{review.body ? <Text style={[styles.reviewBody, { color: colors.mutedForeground }]}>{review.body}</Text> : null}</View>) : <Text style={[styles.sectionBody, { color: colors.mutedForeground }]}>No verified traveller reviews are published for this hotel yet.</Text>}
+         {reviewsQuery.isError ? <NoticeBanner error onRetry={() => void reviewsQuery.refetch()}>Guest reviews could not be loaded.</NoticeBanner> : null}
          <Text style={[styles.sectionKicker, { color: colors.primary }]}>NEARBY, IN THE CATALOG</Text>
          {nearbyQuery.isLoading ? <Text style={[styles.sectionBody, { color: colors.mutedForeground }]}>Loading nearby catalog places…</Text> : nearbyQuery.data?.items.length ? <><Text style={[styles.sectionBody, { color: colors.mutedForeground }]}>{nearbyQuery.data.notice}</Text>{nearbyQuery.data.items.map((place) => <NearbyRow key={place.id} place={place} onPress={() => router.push({ pathname: '/place/[id]', params: { id: place.id, title: place.name, location: place.location, category: place.category, summary: place.summary, imageKey: place.imageKey, destinationId: place.destinationId } } as any)} />)}</> : <Text style={[styles.sectionBody, { color: colors.mutedForeground }]}>No nearby catalog places are linked yet.</Text>}
         {nearbyQuery.isError ? <NoticeBanner error onRetry={() => void nearbyQuery.refetch()}>Nearby catalog places could not be loaded.</NoticeBanner> : null}
@@ -166,6 +172,12 @@ const styles = StyleSheet.create({
   amenities: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 18, marginTop: 4 },
   amenity: { borderRadius: 100, paddingHorizontal: 10, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 5 },
   amenityText: { fontSize: 11, fontWeight: '700' },
+  review: { borderWidth: 1, borderRadius: 16, padding: 13, marginHorizontal: 18, marginBottom: 9 },
+  reviewHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  reviewAuthor: { fontSize: 12, fontWeight: '800' },
+  stars: { flexDirection: 'row', gap: 2 },
+  reviewTitle: { fontSize: 13, fontWeight: '700', marginTop: 9 },
+  reviewBody: { fontSize: 12, lineHeight: 18, marginTop: 5 },
   loading: { flex: 1 },
   loadingHero: { height: 354 },
   loadingCopy: { padding: 20 },

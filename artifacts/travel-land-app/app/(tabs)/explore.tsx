@@ -24,6 +24,8 @@ import {
   useGetExploreFilters,
   useListExploreCategories,
   useSearchExplore,
+  useGetUnreadNotificationCount,
+  getGetUnreadNotificationCountQueryKey,
 } from '@workspace/api-client-react';
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { useColors } from '@/hooks/useColors';
@@ -261,6 +263,8 @@ function renderDiscoveryCard(item: ExploreItem, isFavorite: (id: string) => bool
 
 export default function ExploreScreen() {
   const colors = useColors();
+  const unreadQuery = useGetUnreadNotificationCount({ query: { queryKey: getGetUnreadNotificationCountQueryKey(), staleTime: 30_000, refetchInterval: 60_000 } });
+  const unreadCount = unreadQuery.data?.count ?? 0;
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ query?: string; filter?: string }>();
   const { isFavorite, toggleFavorite } = useAppState();
@@ -351,8 +355,9 @@ export default function ExploreScreen() {
           <Text style={[styles.kicker, { color: colors.primary }]}>EXPLORE</Text>
           <Text style={[styles.title, { color: colors.foreground }]}>Follow your{'\n'}curiosity.</Text>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Open notifications" onPress={() => router.push('/notifications')} style={styles.iconButton}>
+        <Pressable accessibilityRole="button" accessibilityLabel={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'} onPress={() => router.push('/notifications')} style={styles.iconButton}>
           <Feather name="bell" size={21} color={colors.foreground} />
+           {unreadCount > 0 ? <View style={[styles.badge, { backgroundColor: colors.destructive, borderColor: colors.background }]}><Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text></View> : null}
         </Pressable>
       </View>
       <View style={[styles.search, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -473,7 +478,9 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 },
   kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 8 },
   title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
-  iconButton: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  iconButton: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  badge: { position: 'absolute', top: -3, right: -4, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
+  badgeText: { color: '#fff', fontSize: 8, fontWeight: '800' },
   search: { height: 54, borderWidth: 1, borderRadius: 16, alignItems: 'center', flexDirection: 'row', paddingHorizontal: 15 },
   input: { flex: 1, fontSize: 14, marginLeft: 10 },
   suggestions: { borderWidth: 1, borderRadius: 16, padding: 14, gap: 12, marginTop: 8 },

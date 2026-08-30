@@ -26,10 +26,208 @@ export const FavoriteEntityType = {
 export interface Favorite {
   entityType: FavoriteEntityType;
   entityId: string;
+  name?: string | null;
+  location?: string | null;
+  imageKey?: string | null;
+  route?: string | null;
+  available?: boolean;
 }
 
 export interface FavoriteList {
   items: Favorite[];
+}
+
+export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
+
+
+export const NotificationType = {
+  booking_created: 'booking_created',
+  payment_pending: 'payment_pending',
+  payment_successful: 'payment_successful',
+  payment_failed: 'payment_failed',
+  booking_confirmed: 'booking_confirmed',
+  booking_cancelled: 'booking_cancelled',
+  refund_processed: 'refund_processed',
+  land_enquiry_updated: 'land_enquiry_updated',
+} as const;
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  relatedType?: string | null;
+  relatedId?: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationList {
+  items: Notification[];
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+export interface NotificationUnreadCount {
+  /** @minimum 0 */
+  count: number;
+}
+
+export interface NotificationsReadAllResponse {
+  /** @minimum 0 */
+  updated: number;
+}
+
+export type PushTokenInputPlatform = typeof PushTokenInputPlatform[keyof typeof PushTokenInputPlatform];
+
+
+export const PushTokenInputPlatform = {
+  android: 'android',
+  ios: 'ios',
+  web: 'web',
+} as const;
+
+export interface PushTokenInput {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  token: string;
+  platform: PushTokenInputPlatform;
+}
+
+export interface PushTokenRevokeInput {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  token: string;
+}
+
+export interface PushTokenResponse {
+  id: string;
+  platform: string;
+  registered: boolean;
+}
+
+export type ReviewEntityType = typeof ReviewEntityType[keyof typeof ReviewEntityType];
+
+
+export const ReviewEntityType = {
+  hotel: 'hotel',
+} as const;
+
+export type ReviewStatus = typeof ReviewStatus[keyof typeof ReviewStatus];
+
+
+export const ReviewStatus = {
+  pending: 'pending',
+  published: 'published',
+  rejected: 'rejected',
+} as const;
+
+export interface Review {
+  id: string;
+  entityType: ReviewEntityType;
+  entityId: string;
+  bookingReference: string | null;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  rating: number;
+  title: string | null;
+  body: string | null;
+  status: ReviewStatus;
+  authorName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewList {
+  items: Review[];
+}
+
+export interface HotelReviewList {
+  items: Review[];
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  ratingAverage: number | null;
+  /** @minimum 0 */
+  reviewCount: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+export type CreateReviewInputEntityType = typeof CreateReviewInputEntityType[keyof typeof CreateReviewInputEntityType];
+
+
+export const CreateReviewInputEntityType = {
+  hotel: 'hotel',
+} as const;
+
+export interface CreateReviewInput {
+  entityType: CreateReviewInputEntityType;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  entityId: string;
+  /**
+     * @minLength 8
+     * @maxLength 32
+     */
+  bookingReference: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  rating: number;
+  /** @maxLength 120 */
+  title?: string | null;
+  /**
+     * @minLength 10
+     * @maxLength 2000
+     */
+  body?: string | null;
+}
+
+export interface UpdateReviewInput {
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  rating: number;
+  /** @maxLength 120 */
+  title?: string | null;
+  /**
+     * @minLength 10
+     * @maxLength 2000
+     */
+  body?: string | null;
+}
+
+export type EligibleReviewEntityType = typeof EligibleReviewEntityType[keyof typeof EligibleReviewEntityType];
+
+
+export const EligibleReviewEntityType = {
+  hotel: 'hotel',
+} as const;
+
+export interface EligibleReview {
+  bookingReference: string;
+  entityType: EligibleReviewEntityType;
+  entityId: string;
+  hotelName: string;
+  stayEndedOn: string;
+}
+
+export interface EligibleReviewList {
+  items: EligibleReview[];
 }
 
 export type CoordinatesPrecision = typeof CoordinatesPrecision[keyof typeof CoordinatesPrecision];
@@ -1332,6 +1530,30 @@ export const SearchExploreSort = {
 
 export type GetExploreFiltersParams = {
 category?: string;
+};
+
+export type ListNotificationsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListHotelReviewsForHotelParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
 };
 
 export type ListDestinations200 = {

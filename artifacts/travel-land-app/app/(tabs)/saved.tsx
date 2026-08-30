@@ -1,23 +1,39 @@
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
+import { getFavoriteKey, useAppState } from '@/context/AppStateContext';
+import { useColors } from '@/hooks/useColors';
+import { getImageSource } from '@/features/home/utils/images';
+import { getListFavoritesQueryKey, useListFavorites, type Favorite } from '@workspace/api-client-react';
 import { router } from 'expo-router';
 import React from 'react';
-import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { destinations, properties, stays } from '@/lib/content';
-import { useAppState } from '@/context/AppStateContext';
-import { getFavoriteKey } from '@/context/AppStateContext';
-import { useColors } from '@/hooks/useColors';
+
+function entityLabel(type: Favorite['entityType']) {
+  return type === 'destination' ? 'Destination' : type === 'property' ? 'Land opportunity' : type.charAt(0).toUpperCase() + type.slice(1);
+}
 
 export default function SavedScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { favoriteIds, toggleFavorite } = useAppState();
-  const items = [
-    ...destinations.map((item) => ({ favoriteId: getFavoriteKey('destination', item.id), name: item.name, place: item.region, image: item.image, route: `/destination/${item.id}` as const })),
-    ...properties.map((item) => ({ favoriteId: getFavoriteKey('property', item.id), name: item.title, place: item.location, image: item.image, route: `/property/${item.id}` as const })),
-    ...stays.map((item) => ({ favoriteId: getFavoriteKey('hotel', item.id), name: item.name, place: item.location, image: item.image, route: `/hotel/${item.id}` as const })),
-  ].filter((item) => favoriteIds.includes(item.favoriteId));
-  return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 14, paddingBottom: Platform.OS === 'web' ? 102 : 118 }]}><Text style={[styles.kicker, { color: colors.primary }]}>YOUR COLLECTION</Text><Text style={[styles.title, { color: colors.foreground }]}>Saved for later.</Text><Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{items.length ? `${items.length} places worth coming back to` : 'Keep the good places close.'}</Text>{items.length ? items.map((item) => <Pressable key={item.favoriteId} onPress={() => router.push(item.route)} style={[styles.item, { backgroundColor: colors.card, borderColor: colors.border }]}><Image source={item.image} style={styles.image} /><View style={styles.copy}><Text style={[styles.name, { color: colors.foreground }]}>{item.name}</Text><Text style={[styles.place, { color: colors.mutedForeground }]}>{item.place}</Text></View><Pressable onPress={() => toggleFavorite(item.favoriteId)} hitSlop={12}><Feather name="heart" size={19} color={colors.destructive} fill={colors.destructive} /></Pressable></Pressable>) : <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={[styles.emptyIcon, { backgroundColor: colors.secondary }]}><Feather name="heart" size={25} color={colors.primary} /></View><Text style={[styles.emptyTitle, { color: colors.foreground }]}>Your collection is waiting</Text><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Tap the heart on a destination, stay, or parcel to save it here.</Text><Pressable onPress={() => router.push('/(tabs)/explore')} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Start exploring</Text></Pressable></View>}</ScrollView>;
+  const { favoriteIds, toggleFavorite, isHydrated } = useAppState();
+  const favoritesQuery = useListFavorites({ query: { queryKey: getListFavoritesQueryKey(), enabled: isHydrated, staleTime: 30_000, refetchOnReconnect: true } });
+  const items = (favoritesQuery.data?.items ?? []).filter((item) => favoriteIds.includes(getFavoriteKey(item.entityType, item.entityId)));
+
+  return (
+    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 14, paddingBottom: Platform.OS === 'web' ? 102 : 118 }]} showsVerticalScrollIndicator={false}>
+      <Text style={[styles.kicker, { color: colors.primary }]}>YOUR COLLECTION</Text>
+      <Text style={[styles.title, { color: colors.foreground }]}>Saved for later.</Text>
+      <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{items.length ? `${items.length} saved item${items.length === 1 ? '' : 's'} across your discovery catalog` : 'Keep the good places close.'}</Text>
+      {favoritesQuery.isLoading && !items.length ? <View style={styles.loading}><ActivityIndicator color={colors.primary} /></View> : null}
+      {favoritesQuery.isError ? <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border }]}><Feather name="alert-circle" size={23} color={colors.destructive} /><Text style={[styles.emptyTitle, { color: colors.foreground }]}>Your collection could not load</Text><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Saved changes are kept locally and will retry when you reconnect.</Text><Pressable onPress={() => void favoritesQuery.refetch()} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Try again</Text></Pressable></View> : null}
+      {!items.length && !favoritesQuery.isLoading && !favoritesQuery.isError ? <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={[styles.emptyIcon, { backgroundColor: colors.secondary }]}><Feather name="heart" size={25} color={colors.primary} /></View><Text style={[styles.emptyTitle, { color: colors.foreground }]}>Your collection is waiting</Text><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Tap the heart on a destination, place, event, food, hotel, or land opportunity to save it here.</Text><Pressable onPress={() => router.push('/(tabs)/explore')} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Start exploring</Text></Pressable></View> : null}
+      {items.map((item) => {
+        const favoriteId = getFavoriteKey(item.entityType, item.entityId);
+        const canOpen = Boolean(item.available && item.route);
+        return <View key={favoriteId} style={[styles.item, { backgroundColor: colors.card, borderColor: colors.border }]}><Pressable disabled={!canOpen} onPress={() => item.route && router.push(item.route as any)} style={styles.itemPress}><Image source={getImageSource(item.imageKey)} style={styles.image} /><View style={styles.copy}><Text style={[styles.kind, { color: colors.primary }]}>{entityLabel(item.entityType)}</Text><Text style={[styles.name, { color: colors.foreground }]} numberOfLines={2}>{item.name ?? item.entityId}</Text><Text style={[styles.place, { color: colors.mutedForeground }]} numberOfLines={1}>{item.location ?? (canOpen ? 'Catalog location not listed' : 'This item is no longer in the active catalog')}</Text></View></Pressable><Pressable accessibilityRole="button" accessibilityLabel={`Remove ${item.name ?? item.entityId} from favorites`} onPress={() => toggleFavorite(favoriteId)} hitSlop={12} style={styles.remove}><Feather name="heart" size={19} color={colors.destructive} fill={colors.destructive} /></Pressable></View>;
+      })}
+    </ScrollView>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -25,11 +41,15 @@ const styles = StyleSheet.create({
   kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 8 },
   title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { fontSize: 13, marginTop: 8, marginBottom: 24 },
+  loading: { alignItems: 'center', padding: 30 },
   item: { borderWidth: 1, borderRadius: 18, padding: 10, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  itemPress: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   image: { width: 72, height: 72, borderRadius: 12 },
-  copy: { flex: 1, marginLeft: 12 },
-  name: { fontSize: 16, fontWeight: '700' },
+  copy: { flex: 1, marginLeft: 12, paddingRight: 8 },
+  kind: { fontSize: 9, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
+  name: { fontSize: 16, fontWeight: '700', marginTop: 5 },
   place: { fontSize: 12, marginTop: 6 },
+  remove: { padding: 5 },
   empty: { borderWidth: 1, borderRadius: 22, alignItems: 'center', padding: 28, marginTop: 22 },
   emptyIcon: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontSize: 18, fontWeight: '700', marginTop: 16 },

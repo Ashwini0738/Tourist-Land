@@ -8,6 +8,7 @@ import {
   type BookingNotificationKind,
 } from "./email.ts";
 import { getUncachableStripeClient } from "./stripeClient.ts";
+import { createNotification } from "./notifications.ts";
 import { BookingConflictError, BookingNotFoundError, findBooking } from "../routes/booking.ts";
 import { getHotelCatalogRecord } from "../routes/hotel-catalog.ts";
 import {
@@ -163,6 +164,7 @@ export async function applyStripePaymentEvent(event: Stripe.Event) {
   const bookingId = metadata.bookingId;
   if (!reference && !bookingId) return;
 
+  let eventNotification: { userId: string; reference: string; type: "payment_successful" | "payment_failed" | "payment_pending"; title: string; body: string } | null = null;
   const notification = await db.transaction(async (tx) => {
     const [row] = await tx
       .select({ booking: bookings, payment: payments })
@@ -211,6 +213,13 @@ export async function applyStripePaymentEvent(event: Stripe.Event) {
         .returning();
       if (!updatedPayment) return null;
       await tx.update(bookings).set({ status: "confirmed", updatedAt: new Date() }).where(and(eq(bookings.id, row.booking.id), eq(bookings.status, "pending_payment")));
+      eventNotification = {
+        userId: row.booking.userId,
+        reference: row.booking.reference,
+        type: "payment_successful",
+        title: "Payment received",
+        body: `Payment for booking ${row.booking.reference} was received and the booking is confirmed.`,
+      };
       return paymentEmailInput(row.booking, "payment_confirmed");
     }
 
@@ -228,9 +237,41 @@ export async function applyStripePaymentEvent(event: Stripe.Event) {
         : outcome === "cancelled"
           ? "payment_expired"
           : "payment_processing";
+    eventNotification = {
+      userId: row.booking.userId,
+      reference: row.booking.reference,
+      type: outcome === "failed" ? "payment_failed" : "payment_pending",
+      title: outcome === "failed" ? "Payment failed" : "Payment update",
+      body: outcome === "failed"
+        ? `Payment for booking ${row.booking.reference} failed. You can try checkout again.`
+        : `Payment for booking ${row.booking.reference} is still being processed.`,
+    };
     return paymentEmailInput(row.booking, notificationKind);
   });
+  const completedEventNotification: {
+    userId: string;
+    reference: string;
+    type: "payment_successful" | "payment_failed" | "payment_pending";
+    title: string;
+    body: string;
+  } | null = eventNotification as {
+    userId: string;
+    reference: string;
+    type: "payment_successful" | "payment_failed" | "payment_pending";
+    title: string;
+    body: string;
+  } | null;
   if (notification) {
+    if (completedEventNotification) {
+      await createNotification(completedEventNotification.userId, {
+        type: completedEventNotification.type,
+        title: completedEventNotification.title,
+        body: completedEventNotification.body,
+        relatedType: "booking",
+        relatedId: completedEventNotification.reference,
+        dedupeKey: `payment-event:${event.id}`,
+      });
+    }
     await sendBookingEmailSafely(notification);
   }
   return notification;

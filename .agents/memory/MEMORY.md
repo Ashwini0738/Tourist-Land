@@ -8,3 +8,4 @@
 - [Stripe connector runtime](stripe-connector-runtime.md) — current Stripe connections expose `secret`; managed webhook signing secrets are persisted by Stripe Sync.
 - [Node source-module tests](node-source-module-tests.md) — direct Node TypeScript tests need explicit local module extensions and matching declaration-only compiler settings.
 - [Standalone API typecheck](standalone-api-typecheck.md) — build referenced workspace declarations before the API’s strict no-emit check.
+- [Monorepo package installs](monorepo-package-installs.md) — when the package helper targets the workspace root, use the app-scoped pnpm filter rather than changing root dependencies.

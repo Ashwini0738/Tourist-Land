@@ -364,13 +364,18 @@ export const reviews = pgTable("reviews", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "restrict" }).notNull(),
   entityType: text("entity_type").notNull(),
-  entityId: uuid("entity_id").notNull(),
+  entityId: text("entity_id").notNull(),
+  bookingId: uuid("booking_id").references(() => bookings.id, { onDelete: "set null" }),
   rating: integer("rating").notNull(),
   title: text("title"),
   body: text("body"),
   status: text("status").default("pending").notNull(),
   ...timestamps,
-});
+}, (table) => [
+  uniqueIndex("review_user_entity_booking_unique").on(table.userId, table.entityType, table.entityId, table.bookingId),
+  check("review_rating_valid", sql`${table.rating} between 1 and 5`),
+  check("review_status_valid", sql`${table.status} in ('pending', 'published', 'rejected')`),
+]);
 
 export const notifications = pgTable("notifications", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -379,10 +384,28 @@ export const notifications = pgTable("notifications", {
   title: text("title").notNull(),
   body: text("body").notNull(),
   data: jsonb("data"),
+  dedupeKey: text("dedupe_key"),
   readAt: timestamp("read_at", { withTimezone: true }),
   status: text("status").default("sent").notNull(),
   ...timestamps,
-});
+}, (table) => [
+  uniqueIndex("notification_user_dedupe_unique").on(table.userId, table.dedupeKey),
+  index("notifications_user_created_idx").on(table.userId, table.createdAt),
+  index("notifications_user_unread_idx").on(table.userId, table.readAt),
+]);
+
+export const pushTokens = pgTable("push_tokens", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  token: text("token").notNull(),
+  platform: text("platform").notNull(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("push_token_user_unique").on(table.userId, table.token),
+  index("push_tokens_token_idx").on(table.token),
+]);
 
 export const offers = pgTable("offers", {
   id: uuid("id").defaultRandom().primaryKey(),

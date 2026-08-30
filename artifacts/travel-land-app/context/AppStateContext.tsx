@@ -77,6 +77,12 @@ function applyPending(serverIds: string[], pending: Record<string, PendingFavori
   return [...merged];
 }
 
+function httpStatus(error: unknown) {
+  if (!error || typeof error !== 'object' || !('status' in error)) return null;
+  const status = (error as { status?: unknown }).status;
+  return typeof status === 'number' ? status : null;
+}
+
 async function readStoredKeys(key: string): Promise<string[]> {
   try {
     const stored = await AsyncStorage.getItem(key);
@@ -237,7 +243,25 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
             setLegacyFavoriteIds(remaining);
             persistKeys(FAVORITES_KEY, remaining);
           }
-        } catch {
+        } catch (error) {
+          const status = httpStatus(error);
+          const permanentFailure = status !== null && status >= 400 && status < 500 && ![408, 409, 429].includes(status);
+          if (permanentFailure) {
+            setPendingOperations((current) => {
+              if (current[key]?.desired !== operation.desired) return current;
+              const next = { ...current };
+              delete next[key];
+              persistPending(userStorageKey(PENDING_FAVORITES_PREFIX, accountId), next);
+              return next;
+            });
+            if (operation.desired) {
+              setFavoriteIds((current) => {
+                const next = current.filter((item) => item !== key);
+                persistKeys(userStorageKey(USER_FAVORITES_PREFIX, accountId), next);
+                return next;
+              });
+            }
+          }
           return;
         }
       }

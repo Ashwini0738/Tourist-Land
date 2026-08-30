@@ -3,11 +3,10 @@ import { and, asc, eq } from "drizzle-orm";
 import { db, favorites } from "@workspace/db";
 import {
   AddFavoriteParams,
-  AddFavoriteResponse,
-  ListFavoritesResponse,
   RemoveFavoriteParams,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { favoriteEntityTypes, getFavoriteCatalogItem, type FavoriteEntityType } from "./favorite-catalog.ts";
 
 const favoritesRouter: IRouter = Router();
 favoritesRouter.use(requireAuth);
@@ -16,8 +15,23 @@ function invalidParams(res: Parameters<Parameters<IRouter["get"]>[1]>[1], messag
   res.status(400).json({ error: { code: "INVALID_INPUT", message } });
 }
 
+function serializeFavorite(entityType: string, entityId: string) {
+  const catalog = favoriteEntityTypes.includes(entityType as FavoriteEntityType)
+    ? getFavoriteCatalogItem(entityType as FavoriteEntityType, entityId)
+    : null;
+  return {
+    entityType,
+    entityId,
+    name: catalog?.name ?? null,
+    location: catalog?.location ?? null,
+    imageKey: catalog?.imageKey ?? null,
+    route: catalog?.route ?? null,
+    available: Boolean(catalog),
+  };
+}
+
 favoritesRouter.get("/v1/favorites", async (req, res): Promise<void> => {
-  const items = await db
+  const rows = await db
     .select({
       entityType: favorites.entityType,
       entityId: favorites.entityId,
@@ -26,13 +40,17 @@ favoritesRouter.get("/v1/favorites", async (req, res): Promise<void> => {
     .where(eq(favorites.userId, req.localUser!.id))
     .orderBy(asc(favorites.createdAt));
 
-  res.json(ListFavoritesResponse.parse({ items }));
+  res.json({ items: rows.map((row) => serializeFavorite(row.entityType, row.entityId)) });
 });
 
 favoritesRouter.put("/v1/favorites/:entityType/:entityId", async (req, res): Promise<void> => {
   const parsed = AddFavoriteParams.safeParse(req.params);
   if (!parsed.success) {
     invalidParams(res, parsed.error.message);
+    return;
+  }
+  if (!getFavoriteCatalogItem(parsed.data.entityType, parsed.data.entityId)) {
+    res.status(404).json({ error: { code: "NOT_FOUND", message: "That catalog item is not available to save." } });
     return;
   }
 
@@ -52,7 +70,7 @@ favoritesRouter.put("/v1/favorites/:entityType/:entityId", async (req, res): Pro
       entityId: favorites.entityId,
     });
 
-  res.json(AddFavoriteResponse.parse(favorite));
+  res.json(serializeFavorite(favorite.entityType, favorite.entityId));
 });
 
 favoritesRouter.delete("/v1/favorites/:entityType/:entityId", async (req, res): Promise<void> => {

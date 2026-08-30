@@ -7,6 +7,7 @@ import {
   type BookingEmail,
   type BookingNotificationKind,
 } from "../lib/email.ts";
+import { createNotification } from "../lib/notifications.ts";
 import {
   calculateBookingNights,
   calculateBookingPricing as calculatePureBookingPricing,
@@ -283,6 +284,14 @@ export async function createUserBooking(userId: string, input: BookingRequest, i
     };
   });
   if (result.created) {
+    await createNotification(userId, {
+      type: "booking_created",
+      title: "Booking request received",
+      body: `Your booking request for ${hotel.name} is ready for payment.`,
+      relatedType: "booking",
+      relatedId: result.booking.reference,
+      dedupeKey: `booking-created:${result.booking.reference}`,
+    });
     await sendBookingEmailSafely(bookingEmailInput(result.booking, "request_received"));
   }
   return result.booking;
@@ -306,6 +315,14 @@ export async function cancelUserBooking(userId: string, reference: string) {
     return groupBookingRows(refreshed);
   });
   if (booking) {
+    await createNotification(userId, {
+      type: "booking_cancelled",
+      title: "Booking cancelled",
+      body: `Your booking ${booking.reference} was cancelled.`,
+      relatedType: "booking",
+      relatedId: booking.reference,
+      dedupeKey: `booking-cancelled:${booking.reference}`,
+    });
     await sendBookingEmailSafely(bookingEmailInput(booking, "cancelled"));
   }
   return booking;

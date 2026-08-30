@@ -29,9 +29,11 @@ import type {
   BookingList,
   BookingResponse,
   ConflictResponse,
+  CreateReviewInput,
   CurrentUser,
   DestinationDetail,
   DestinationList,
+  EligibleReviewList,
   EmailInvitationInput,
   EventList,
   ExploreCategoriesResponse,
@@ -49,6 +51,7 @@ import type {
   HotelDetail,
   HotelList,
   HotelNearbyList,
+  HotelReviewList,
   HotelRoomList,
   HotelSearchResponse,
   InvalidInputResponse,
@@ -57,6 +60,8 @@ import type {
   ListAdminVendorApplications200,
   ListAdminVendorApprovalHistory200,
   ListDestinations200,
+  ListHotelReviewsForHotelParams,
+  ListNotificationsParams,
   ListProperties200,
   Listing,
   ListingInput,
@@ -64,18 +69,28 @@ import type {
   ListingUpdate,
   LogoutStatus,
   NotFoundResponse,
+  Notification,
+  NotificationList,
+  NotificationUnreadCount,
+  NotificationsReadAllResponse,
   PlaceList,
   Property,
   PropertyEnquiryInput,
   PropertyEnquiryReceipt,
   PropertyList,
+  PushTokenInput,
+  PushTokenResponse,
+  PushTokenRevokeInput,
   RefreshStatus,
+  Review,
+  ReviewList,
   RoleAssignmentInput,
   RoleDashboard,
   SearchExploreParams,
   SearchHotelsParams,
   ServiceUnavailableResponse,
   UnauthenticatedResponse,
+  UpdateReviewInput,
   VendorApplication,
   VendorApplicationInput,
   VendorApplicationReceipt,
@@ -1915,6 +1930,985 @@ export const useRemoveFavorite = <TError = ErrorType<InvalidInputResponse | Unau
         TContext
       > => {
       return useMutation(getRemoveFavoriteMutationOptions(options));
+    }
+
+export const getListNotificationsUrl = (params?: ListNotificationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/notifications?${stringifiedParams}` : `/api/v1/notifications`
+}
+
+/**
+ * @summary List notifications for the authenticated account
+ */
+export const listNotifications = async (params?: ListNotificationsParams, options?: Parameters<typeof customFetch>[1]): Promise<NotificationList> => {
+
+  return customFetch<NotificationList>(getListNotificationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNotificationsQueryKey = (params?: ListNotificationsParams,) => {
+    return [
+    `/api/v1/notifications`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof listNotifications>>, TError = ErrorType<UnauthenticatedResponse>>(params?: ListNotificationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNotificationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNotifications>>> = ({ signal }) => listNotifications(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListNotificationsQueryResult = NonNullable<Awaited<ReturnType<typeof listNotifications>>>
+export type ListNotificationsQueryError = ErrorType<UnauthenticatedResponse>
+
+
+/**
+ * @summary List notifications for the authenticated account
+ */
+
+export function useListNotifications<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ErrorType<UnauthenticatedResponse>>(
+ params?: ListNotificationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListNotificationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetUnreadNotificationCountUrl = () => {
+
+
+
+
+  return `/api/v1/notifications/unread-count`
+}
+
+/**
+ * @summary Get the unread notification count
+ */
+export const getUnreadNotificationCount = async ( options?: Parameters<typeof customFetch>[1]): Promise<NotificationUnreadCount> => {
+
+  return customFetch<NotificationUnreadCount>(getGetUnreadNotificationCountUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetUnreadNotificationCountQueryKey = () => {
+    return [
+    `/api/v1/notifications/unread-count`
+    ] as const;
+    }
+
+
+export const getGetUnreadNotificationCountQueryOptions = <TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ErrorType<UnauthenticatedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUnreadNotificationCountQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUnreadNotificationCount>>> = ({ signal }) => getUnreadNotificationCount({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetUnreadNotificationCountQueryResult = NonNullable<Awaited<ReturnType<typeof getUnreadNotificationCount>>>
+export type GetUnreadNotificationCountQueryError = ErrorType<UnauthenticatedResponse>
+
+
+/**
+ * @summary Get the unread notification count
+ */
+
+export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ErrorType<UnauthenticatedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetUnreadNotificationCountQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getMarkAllNotificationsReadUrl = () => {
+
+
+
+
+  return `/api/v1/notifications/read-all`
+}
+
+/**
+ * @summary Mark every unread notification as read
+ */
+export const markAllNotificationsRead = async ( options?: Parameters<typeof customFetch>[1]): Promise<NotificationsReadAllResponse> => {
+
+  return customFetch<NotificationsReadAllResponse>(getMarkAllNotificationsReadUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkAllNotificationsReadMutationOptions = <TError = ErrorType<UnauthenticatedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllNotificationsRead>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markAllNotificationsRead>>, TError,void, TContext> => {
+
+const mutationKey = ['markAllNotificationsRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markAllNotificationsRead>>, void> = () => {
+
+
+          return  markAllNotificationsRead(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkAllNotificationsReadMutationResult = NonNullable<Awaited<ReturnType<typeof markAllNotificationsRead>>>
+
+    export type MarkAllNotificationsReadMutationError = ErrorType<UnauthenticatedResponse>
+
+    /**
+ * @summary Mark every unread notification as read
+ */
+export const useMarkAllNotificationsRead = <TError = ErrorType<UnauthenticatedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllNotificationsRead>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markAllNotificationsRead>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getMarkAllNotificationsReadMutationOptions(options));
+    }
+
+export const getRegisterPushTokenUrl = () => {
+
+
+
+
+  return `/api/v1/notifications/push-token`
+}
+
+/**
+ * @summary Register a device push token without sending push messages
+ */
+export const registerPushToken = async (pushTokenInput: PushTokenInput, options?: Parameters<typeof customFetch>[1]): Promise<PushTokenResponse> => {
+
+  return customFetch<PushTokenResponse>(getRegisterPushTokenUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pushTokenInput)
+  }
+);}
+
+
+
+
+
+export const getRegisterPushTokenMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,{data: BodyType<PushTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,{data: BodyType<PushTokenInput>}, TContext> => {
+
+const mutationKey = ['registerPushToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerPushToken>>, {data: BodyType<PushTokenInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  registerPushToken(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterPushTokenMutationResult = NonNullable<Awaited<ReturnType<typeof registerPushToken>>>
+    export type RegisterPushTokenMutationBody = BodyType<PushTokenInput>
+    export type RegisterPushTokenMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse>
+
+    /**
+ * @summary Register a device push token without sending push messages
+ */
+export const useRegisterPushToken = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,{data: BodyType<PushTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerPushToken>>,
+        TError,
+        {data: BodyType<PushTokenInput>},
+        TContext
+      > => {
+      return useMutation(getRegisterPushTokenMutationOptions(options));
+    }
+
+export const getRevokePushTokenUrl = () => {
+
+
+
+
+  return `/api/v1/notifications/push-token/revoke`
+}
+
+/**
+ * @summary Revoke a previously registered device push token
+ */
+export const revokePushToken = async (pushTokenRevokeInput: PushTokenRevokeInput, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getRevokePushTokenUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pushTokenRevokeInput)
+  }
+);}
+
+
+
+
+
+export const getRevokePushTokenMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokePushToken>>, TError,{data: BodyType<PushTokenRevokeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokePushToken>>, TError,{data: BodyType<PushTokenRevokeInput>}, TContext> => {
+
+const mutationKey = ['revokePushToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokePushToken>>, {data: BodyType<PushTokenRevokeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  revokePushToken(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokePushTokenMutationResult = NonNullable<Awaited<ReturnType<typeof revokePushToken>>>
+    export type RevokePushTokenMutationBody = BodyType<PushTokenRevokeInput>
+    export type RevokePushTokenMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse>
+
+    /**
+ * @summary Revoke a previously registered device push token
+ */
+export const useRevokePushToken = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokePushToken>>, TError,{data: BodyType<PushTokenRevokeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokePushToken>>,
+        TError,
+        {data: BodyType<PushTokenRevokeInput>},
+        TContext
+      > => {
+      return useMutation(getRevokePushTokenMutationOptions(options));
+    }
+
+export const getGetNotificationUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/notifications/${id}`
+}
+
+/**
+ * @summary Get one notification owned by the authenticated account
+ */
+export const getNotification = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Notification> => {
+
+  return customFetch<Notification>(getGetNotificationUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNotificationQueryKey = (id: string,) => {
+    return [
+    `/api/v1/notifications/${id}`
+    ] as const;
+    }
+
+
+export const getGetNotificationQueryOptions = <TData = Awaited<ReturnType<typeof getNotification>>, TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotification>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNotificationQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotification>>> = ({ signal }) => getNotification(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNotification>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetNotificationQueryResult = NonNullable<Awaited<ReturnType<typeof getNotification>>>
+export type GetNotificationQueryError = ErrorType<UnauthenticatedResponse | NotFoundResponse>
+
+
+/**
+ * @summary Get one notification owned by the authenticated account
+ */
+
+export function useGetNotification<TData = Awaited<ReturnType<typeof getNotification>>, TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotification>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetNotificationQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getMarkNotificationReadUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/notifications/${id}/read`
+}
+
+/**
+ * @summary Mark one owned notification as read
+ */
+export const markNotificationRead = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Notification> => {
+
+  return customFetch<Notification>(getMarkNotificationReadUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkNotificationReadMutationOptions = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNotificationRead>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markNotificationRead>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['markNotificationRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markNotificationRead>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  markNotificationRead(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkNotificationReadMutationResult = NonNullable<Awaited<ReturnType<typeof markNotificationRead>>>
+
+    export type MarkNotificationReadMutationError = ErrorType<UnauthenticatedResponse | NotFoundResponse>
+
+    /**
+ * @summary Mark one owned notification as read
+ */
+export const useMarkNotificationRead = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNotificationRead>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markNotificationRead>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getMarkNotificationReadMutationOptions(options));
+    }
+
+export const getListHotelReviewsForHotelUrl = (id: string,
+    params?: ListHotelReviewsForHotelParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/hotels/${id}/reviews?${stringifiedParams}` : `/api/v1/hotels/${id}/reviews`
+}
+
+/**
+ * @summary List published reviews and the real rating aggregate for a catalog hotel
+ */
+export const listHotelReviewsForHotel = async (id: string,
+    params?: ListHotelReviewsForHotelParams, options?: Parameters<typeof customFetch>[1]): Promise<HotelReviewList> => {
+
+  return customFetch<HotelReviewList>(getListHotelReviewsForHotelUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHotelReviewsForHotelQueryKey = (id: string,
+    params?: ListHotelReviewsForHotelParams,) => {
+    return [
+    `/api/v1/hotels/${id}/reviews`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListHotelReviewsForHotelQueryOptions = <TData = Awaited<ReturnType<typeof listHotelReviewsForHotel>>, TError = ErrorType<NotFoundResponse>>(id: string,
+    params?: ListHotelReviewsForHotelParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHotelReviewsForHotel>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHotelReviewsForHotelQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHotelReviewsForHotel>>> = ({ signal }) => listHotelReviewsForHotel(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHotelReviewsForHotel>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHotelReviewsForHotelQueryResult = NonNullable<Awaited<ReturnType<typeof listHotelReviewsForHotel>>>
+export type ListHotelReviewsForHotelQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary List published reviews and the real rating aggregate for a catalog hotel
+ */
+
+export function useListHotelReviewsForHotel<TData = Awaited<ReturnType<typeof listHotelReviewsForHotel>>, TError = ErrorType<NotFoundResponse>>(
+ id: string,
+    params?: ListHotelReviewsForHotelParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHotelReviewsForHotel>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHotelReviewsForHotelQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListMyReviewsUrl = () => {
+
+
+
+
+  return `/api/v1/reviews`
+}
+
+/**
+ * @summary List reviews authored by the authenticated traveller
+ */
+export const listMyReviews = async ( options?: Parameters<typeof customFetch>[1]): Promise<ReviewList> => {
+
+  return customFetch<ReviewList>(getListMyReviewsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyReviewsQueryKey = () => {
+    return [
+    `/api/v1/reviews`
+    ] as const;
+    }
+
+
+export const getListMyReviewsQueryOptions = <TData = Awaited<ReturnType<typeof listMyReviews>>, TError = ErrorType<UnauthenticatedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyReviewsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyReviews>>> = ({ signal }) => listMyReviews({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyReviews>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyReviews>>>
+export type ListMyReviewsQueryError = ErrorType<UnauthenticatedResponse>
+
+
+/**
+ * @summary List reviews authored by the authenticated traveller
+ */
+
+export function useListMyReviews<TData = Awaited<ReturnType<typeof listMyReviews>>, TError = ErrorType<UnauthenticatedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyReviewsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateReviewUrl = () => {
+
+
+
+
+  return `/api/v1/reviews`
+}
+
+/**
+ * @summary Review a hotel after a paid completed stay owned by the traveller
+ */
+export const createReview = async (createReviewInput: CreateReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<Review> => {
+
+  return customFetch<Review>(getCreateReviewUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createReviewInput)
+  }
+);}
+
+
+
+
+
+export const getCreateReviewMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{data: BodyType<CreateReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{data: BodyType<CreateReviewInput>}, TContext> => {
+
+const mutationKey = ['createReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createReview>>, {data: BodyType<CreateReviewInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createReview(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateReviewMutationResult = NonNullable<Awaited<ReturnType<typeof createReview>>>
+    export type CreateReviewMutationBody = BodyType<CreateReviewInput>
+    export type CreateReviewMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ConflictResponse>
+
+    /**
+ * @summary Review a hotel after a paid completed stay owned by the traveller
+ */
+export const useCreateReview = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{data: BodyType<CreateReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createReview>>,
+        TError,
+        {data: BodyType<CreateReviewInput>},
+        TContext
+      > => {
+      return useMutation(getCreateReviewMutationOptions(options));
+    }
+
+export const getListEligibleReviewsUrl = () => {
+
+
+
+
+  return `/api/v1/reviews/eligible`
+}
+
+/**
+ * @summary List completed paid hotel stays that can still be reviewed
+ */
+export const listEligibleReviews = async ( options?: Parameters<typeof customFetch>[1]): Promise<EligibleReviewList> => {
+
+  return customFetch<EligibleReviewList>(getListEligibleReviewsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEligibleReviewsQueryKey = () => {
+    return [
+    `/api/v1/reviews/eligible`
+    ] as const;
+    }
+
+
+export const getListEligibleReviewsQueryOptions = <TData = Awaited<ReturnType<typeof listEligibleReviews>>, TError = ErrorType<UnauthenticatedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEligibleReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEligibleReviewsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEligibleReviews>>> = ({ signal }) => listEligibleReviews({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEligibleReviews>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEligibleReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof listEligibleReviews>>>
+export type ListEligibleReviewsQueryError = ErrorType<UnauthenticatedResponse>
+
+
+/**
+ * @summary List completed paid hotel stays that can still be reviewed
+ */
+
+export function useListEligibleReviews<TData = Awaited<ReturnType<typeof listEligibleReviews>>, TError = ErrorType<UnauthenticatedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEligibleReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEligibleReviewsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateReviewUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/reviews/${id}`
+}
+
+/**
+ * @summary Edit an owned review
+ */
+export const updateReview = async (id: string,
+    updateReviewInput: UpdateReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<Review> => {
+
+  return customFetch<Review>(getUpdateReviewUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateReviewInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateReviewMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{id: string;data: BodyType<UpdateReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{id: string;data: BodyType<UpdateReviewInput>}, TContext> => {
+
+const mutationKey = ['updateReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateReview>>, {id: string;data: BodyType<UpdateReviewInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateReview(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateReviewMutationResult = NonNullable<Awaited<ReturnType<typeof updateReview>>>
+    export type UpdateReviewMutationBody = BodyType<UpdateReviewInput>
+    export type UpdateReviewMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse>
+
+    /**
+ * @summary Edit an owned review
+ */
+export const useUpdateReview = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{id: string;data: BodyType<UpdateReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateReview>>,
+        TError,
+        {id: string;data: BodyType<UpdateReviewInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateReviewMutationOptions(options));
+    }
+
+export const getDeleteReviewUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/reviews/${id}`
+}
+
+/**
+ * @summary Delete an owned review
+ */
+export const deleteReview = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteReviewUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteReviewMutationOptions = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteReview>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteReview>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteReview>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteReview(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteReviewMutationResult = NonNullable<Awaited<ReturnType<typeof deleteReview>>>
+
+    export type DeleteReviewMutationError = ErrorType<UnauthenticatedResponse | NotFoundResponse>
+
+    /**
+ * @summary Delete an owned review
+ */
+export const useDeleteReview = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteReview>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteReview>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteReviewMutationOptions(options));
     }
 
 export const getListDestinationsUrl = () => {

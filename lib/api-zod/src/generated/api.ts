@@ -1225,7 +1225,12 @@ export const GetExploreFiltersResponse = zod.object({
 export const ListFavoritesResponse = zod.object({
   "items": zod.array(zod.object({
   "entityType": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
-  "entityId": zod.string()
+  "entityId": zod.string(),
+  "name": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "imageKey": zod.string().nullish(),
+  "route": zod.string().nullish(),
+  "available": zod.boolean().optional()
 }))
 })
 
@@ -1244,7 +1249,12 @@ export const AddFavoriteParams = zod.object({
 
 export const AddFavoriteResponse = zod.object({
   "entityType": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
-  "entityId": zod.string()
+  "entityId": zod.string(),
+  "name": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "imageKey": zod.string().nullish(),
+  "route": zod.string().nullish(),
+  "available": zod.boolean().optional()
 })
 
 
@@ -1261,6 +1271,317 @@ export const RemoveFavoriteParams = zod.object({
 })
 
 export const RemoveFavoriteResponse = zod.void()
+
+
+/**
+ * @summary List notifications for the authenticated account
+ */
+export const listNotificationsQueryPageDefault = 1;
+
+export const listNotificationsQueryLimitDefault = 20;
+export const listNotificationsQueryLimitMax = 50;
+
+
+
+export const ListNotificationsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).default(listNotificationsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listNotificationsQueryLimitMax).default(listNotificationsQueryLimitDefault)
+})
+
+export const ListNotificationsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['booking_created', 'payment_pending', 'payment_successful', 'payment_failed', 'booking_confirmed', 'booking_cancelled', 'refund_processed', 'land_enquiry_updated']),
+  "title": zod.string(),
+  "message": zod.string(),
+  "relatedType": zod.string().nullish(),
+  "relatedId": zod.string().nullish(),
+  "readAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+})),
+  "page": zod.number().int(),
+  "limit": zod.number().int(),
+  "hasMore": zod.boolean()
+})
+
+
+/**
+ * @summary Get the unread notification count
+ */
+export const getUnreadNotificationCountResponseCountMin = 0;
+
+
+
+export const GetUnreadNotificationCountResponse = zod.object({
+  "count": zod.number().int().min(getUnreadNotificationCountResponseCountMin)
+})
+
+
+/**
+ * @summary Mark every unread notification as read
+ */
+export const markAllNotificationsReadResponseUpdatedMin = 0;
+
+
+
+export const MarkAllNotificationsReadResponse = zod.object({
+  "updated": zod.number().int().min(markAllNotificationsReadResponseUpdatedMin)
+})
+
+
+/**
+ * @summary Register a device push token without sending push messages
+ */
+export const registerPushTokenBodyTokenMax = 500;
+
+
+
+export const RegisterPushTokenBody = zod.object({
+  "token": zod.string().min(1).max(registerPushTokenBodyTokenMax),
+  "platform": zod.enum(['android', 'ios', 'web'])
+})
+
+export const RegisterPushTokenResponse = zod.object({
+  "id": zod.string(),
+  "platform": zod.string(),
+  "registered": zod.boolean()
+})
+
+
+/**
+ * @summary Revoke a previously registered device push token
+ */
+export const revokePushTokenBodyTokenMax = 500;
+
+
+
+export const RevokePushTokenBody = zod.object({
+  "token": zod.string().min(1).max(revokePushTokenBodyTokenMax)
+})
+
+export const RevokePushTokenResponse = zod.void()
+
+
+/**
+ * @summary Get one notification owned by the authenticated account
+ */
+export const GetNotificationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetNotificationResponse = zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['booking_created', 'payment_pending', 'payment_successful', 'payment_failed', 'booking_confirmed', 'booking_cancelled', 'refund_processed', 'land_enquiry_updated']),
+  "title": zod.string(),
+  "message": zod.string(),
+  "relatedType": zod.string().nullish(),
+  "relatedId": zod.string().nullish(),
+  "readAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Mark one owned notification as read
+ */
+export const MarkNotificationReadParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const MarkNotificationReadResponse = zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['booking_created', 'payment_pending', 'payment_successful', 'payment_failed', 'booking_confirmed', 'booking_cancelled', 'refund_processed', 'land_enquiry_updated']),
+  "title": zod.string(),
+  "message": zod.string(),
+  "relatedType": zod.string().nullish(),
+  "relatedId": zod.string().nullish(),
+  "readAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List published reviews and the real rating aggregate for a catalog hotel
+ */
+export const ListHotelReviewsForHotelParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const listHotelReviewsForHotelQueryPageDefault = 1;
+
+export const listHotelReviewsForHotelQueryLimitDefault = 10;
+export const listHotelReviewsForHotelQueryLimitMax = 50;
+
+
+
+export const ListHotelReviewsForHotelQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).default(listHotelReviewsForHotelQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listHotelReviewsForHotelQueryLimitMax).default(listHotelReviewsForHotelQueryLimitDefault)
+})
+
+export const listHotelReviewsForHotelResponseItemsItemRatingMax = 5;
+
+export const listHotelReviewsForHotelResponseRatingAverageMin = 0;
+export const listHotelReviewsForHotelResponseRatingAverageMax = 5;
+
+export const listHotelReviewsForHotelResponseReviewCountMin = 0;
+
+
+
+export const ListHotelReviewsForHotelResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['hotel']),
+  "entityId": zod.string(),
+  "bookingReference": zod.string().nullable(),
+  "rating": zod.number().int().min(1).max(listHotelReviewsForHotelResponseItemsItemRatingMax),
+  "title": zod.string().nullable(),
+  "body": zod.string().nullable(),
+  "status": zod.enum(['pending', 'published', 'rejected']),
+  "authorName": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "ratingAverage": zod.number().min(listHotelReviewsForHotelResponseRatingAverageMin).max(listHotelReviewsForHotelResponseRatingAverageMax).nullable(),
+  "reviewCount": zod.number().int().min(listHotelReviewsForHotelResponseReviewCountMin),
+  "page": zod.number().int(),
+  "limit": zod.number().int(),
+  "hasMore": zod.boolean()
+})
+
+
+/**
+ * @summary List reviews authored by the authenticated traveller
+ */
+export const listMyReviewsResponseItemsItemRatingMax = 5;
+
+
+
+export const ListMyReviewsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['hotel']),
+  "entityId": zod.string(),
+  "bookingReference": zod.string().nullable(),
+  "rating": zod.number().int().min(1).max(listMyReviewsResponseItemsItemRatingMax),
+  "title": zod.string().nullable(),
+  "body": zod.string().nullable(),
+  "status": zod.enum(['pending', 'published', 'rejected']),
+  "authorName": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Review a hotel after a paid completed stay owned by the traveller
+ */
+export const createReviewBodyEntityIdMax = 200;
+
+export const createReviewBodyBookingReferenceMin = 8;
+export const createReviewBodyBookingReferenceMax = 32;
+
+export const createReviewBodyRatingMax = 5;
+
+export const createReviewBodyTitleMax = 120;
+
+export const createReviewBodyBodyMin = 10;
+export const createReviewBodyBodyMax = 2000;
+
+
+
+export const CreateReviewBody = zod.object({
+  "entityType": zod.enum(['hotel']),
+  "entityId": zod.string().min(1).max(createReviewBodyEntityIdMax),
+  "bookingReference": zod.string().min(createReviewBodyBookingReferenceMin).max(createReviewBodyBookingReferenceMax),
+  "rating": zod.number().int().min(1).max(createReviewBodyRatingMax),
+  "title": zod.string().max(createReviewBodyTitleMax).nullish(),
+  "body": zod.string().min(createReviewBodyBodyMin).max(createReviewBodyBodyMax).nullish()
+})
+
+export const createReviewResponseRatingMax = 5;
+
+
+
+export const CreateReviewResponse = zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['hotel']),
+  "entityId": zod.string(),
+  "bookingReference": zod.string().nullable(),
+  "rating": zod.number().int().min(1).max(createReviewResponseRatingMax),
+  "title": zod.string().nullable(),
+  "body": zod.string().nullable(),
+  "status": zod.enum(['pending', 'published', 'rejected']),
+  "authorName": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List completed paid hotel stays that can still be reviewed
+ */
+export const ListEligibleReviewsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "bookingReference": zod.string(),
+  "entityType": zod.enum(['hotel']),
+  "entityId": zod.string(),
+  "hotelName": zod.string(),
+  "stayEndedOn": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Edit an owned review
+ */
+export const UpdateReviewParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateReviewBodyRatingMax = 5;
+
+export const updateReviewBodyTitleMax = 120;
+
+export const updateReviewBodyBodyMin = 10;
+export const updateReviewBodyBodyMax = 2000;
+
+
+
+export const UpdateReviewBody = zod.object({
+  "rating": zod.number().int().min(1).max(updateReviewBodyRatingMax),
+  "title": zod.string().max(updateReviewBodyTitleMax).nullish(),
+  "body": zod.string().min(updateReviewBodyBodyMin).max(updateReviewBodyBodyMax).nullish()
+})
+
+export const updateReviewResponseRatingMax = 5;
+
+
+
+export const UpdateReviewResponse = zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['hotel']),
+  "entityId": zod.string(),
+  "bookingReference": zod.string().nullable(),
+  "rating": zod.number().int().min(1).max(updateReviewResponseRatingMax),
+  "title": zod.string().nullable(),
+  "body": zod.string().nullable(),
+  "status": zod.enum(['pending', 'published', 'rejected']),
+  "authorName": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete an owned review
+ */
+export const DeleteReviewParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteReviewResponse = zod.void()
 
 
 export const listDestinationsResponseItemsItemCoordinatesLatitudeMin = -90;

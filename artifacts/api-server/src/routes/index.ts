@@ -8,6 +8,8 @@ import exploreRouter from "./explore";
 import favoritesRouter from "./favorites";
 import hotelsRouter from "./hotels";
 import bookingsRouter from "./bookings";
+import notificationsRouter from "./notifications";
+import reviewsRouter from "./reviews";
 
 const router: IRouter = Router();
 
@@ -17,6 +19,8 @@ router.use(exploreRouter);
 router.use(favoritesRouter);
 router.use(hotelsRouter);
 router.use(bookingsRouter);
+router.use(notificationsRouter);
+router.use(reviewsRouter);
 router.use(onboardingRouter);
 router.use(authRouter);
 router.use(roleAccessRouter);

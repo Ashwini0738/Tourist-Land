@@ -487,6 +487,217 @@ paths:
         "400": { $ref: "#/components/responses/InvalidInput" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /v1/notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      summary: List notifications for the authenticated account
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        "200":
+          description: Paginated notifications
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationList" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /v1/notifications/unread-count:
+    get:
+      operationId: getUnreadNotificationCount
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      summary: Get the unread notification count
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationUnreadCount" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /v1/notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      summary: Mark every unread notification as read
+      responses:
+        "200":
+          description: Number of notifications updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationsReadAllResponse" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /v1/notifications/push-token:
+    post:
+      operationId: registerPushToken
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      summary: Register a device push token without sending push messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PushTokenInput" }
+      responses:
+        "201":
+          description: Push token registered
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PushTokenResponse" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /v1/notifications/push-token/revoke:
+    post:
+      operationId: revokePushToken
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      summary: Revoke a previously registered device push token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PushTokenRevokeInput" }
+      responses:
+        "204": { description: Push token revoked }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /v1/notifications/{id}:
+    get:
+      operationId: getNotification
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      summary: Get one notification owned by the authenticated account
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Notification
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Notification" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/notifications/{id}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      summary: Mark one owned notification as read
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Read notification
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Notification" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/hotels/{id}/reviews:
+    get:
+      operationId: listHotelReviewsForHotel
+      tags: [reviews]
+      summary: List published reviews and the real rating aggregate for a catalog hotel
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        "200":
+          description: Published hotel reviews
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HotelReviewList" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/reviews:
+    get:
+      operationId: listMyReviews
+      tags: [reviews]
+      security: [{ bearerAuth: [] }]
+      summary: List reviews authored by the authenticated traveller
+      responses:
+        "200":
+          description: The authenticated traveller's reviews
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewList" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+    post:
+      operationId: createReview
+      tags: [reviews]
+      security: [{ bearerAuth: [] }]
+      summary: Review a hotel after a paid completed stay owned by the traveller
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateReviewInput" }
+      responses:
+        "201":
+          description: Review created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Review" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/reviews/eligible:
+    get:
+      operationId: listEligibleReviews
+      tags: [reviews]
+      security: [{ bearerAuth: [] }]
+      summary: List completed paid hotel stays that can still be reviewed
+      responses:
+        "200":
+          description: Eligible stays
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EligibleReviewList" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /v1/reviews/{id}:
+    put:
+      operationId: updateReview
+      tags: [reviews]
+      security: [{ bearerAuth: [] }]
+      summary: Edit an owned review
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateReviewInput" }
+      responses:
+        "200":
+          description: Updated review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Review" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteReview
+      tags: [reviews]
+      security: [{ bearerAuth: [] }]
+      summary: Delete an owned review
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204": { description: Review deleted }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /v1/destinations:
     get:
       operationId: listDestinations
@@ -1080,6 +1291,11 @@ components:
       properties:
         entityType: { $ref: "#/components/schemas/FavoriteEntityType" }
         entityId: { type: string }
+        name: { type: string, nullable: true }
+        location: { type: string, nullable: true }
+        imageKey: { type: string, nullable: true }
+        route: { type: string, nullable: true }
+        available: { type: boolean }
       required: [entityType, entityId]
     FavoriteList:
       type: object
@@ -1087,6 +1303,118 @@ components:
         items:
           type: array
           items: { $ref: "#/components/schemas/Favorite" }
+      required: [items]
+    NotificationType:
+      type: string
+      enum: [booking_created, payment_pending, payment_successful, payment_failed, booking_confirmed, booking_cancelled, refund_processed, land_enquiry_updated]
+    Notification:
+      type: object
+      properties:
+        id: { type: string }
+        type: { $ref: "#/components/schemas/NotificationType" }
+        title: { type: string }
+        message: { type: string }
+        relatedType: { type: string, nullable: true }
+        relatedId: { type: string, nullable: true }
+        readAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+      required: [id, type, title, message, readAt, createdAt]
+    NotificationList:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Notification" } }
+        page: { type: integer }
+        limit: { type: integer }
+        hasMore: { type: boolean }
+      required: [items, page, limit, hasMore]
+    NotificationUnreadCount:
+      type: object
+      properties:
+        count: { type: integer, minimum: 0 }
+      required: [count]
+    NotificationsReadAllResponse:
+      type: object
+      properties:
+        updated: { type: integer, minimum: 0 }
+      required: [updated]
+    PushTokenInput:
+      type: object
+      properties:
+        token: { type: string, minLength: 1, maxLength: 500 }
+        platform: { type: string, enum: [android, ios, web] }
+      required: [token, platform]
+    PushTokenRevokeInput:
+      type: object
+      properties:
+        token: { type: string, minLength: 1, maxLength: 500 }
+      required: [token]
+    PushTokenResponse:
+      type: object
+      properties:
+        id: { type: string }
+        platform: { type: string }
+        registered: { type: boolean }
+      required: [id, platform, registered]
+    Review:
+      type: object
+      properties:
+        id: { type: string }
+        entityType: { type: string, enum: [hotel] }
+        entityId: { type: string }
+        bookingReference: { type: string, nullable: true }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        title: { type: string, nullable: true }
+        body: { type: string, nullable: true }
+        status: { type: string, enum: [pending, published, rejected] }
+        authorName: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, entityType, entityId, bookingReference, rating, title, body, status, authorName, createdAt, updatedAt]
+    ReviewList:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Review" } }
+      required: [items]
+    HotelReviewList:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Review" } }
+        ratingAverage: { type: number, minimum: 0, maximum: 5, nullable: true }
+        reviewCount: { type: integer, minimum: 0 }
+        page: { type: integer }
+        limit: { type: integer }
+        hasMore: { type: boolean }
+      required: [items, ratingAverage, reviewCount, page, limit, hasMore]
+    CreateReviewInput:
+      type: object
+      properties:
+        entityType: { type: string, enum: [hotel] }
+        entityId: { type: string, minLength: 1, maxLength: 200 }
+        bookingReference: { type: string, minLength: 8, maxLength: 32 }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        title: { type: string, maxLength: 120, nullable: true }
+        body: { type: string, minLength: 10, maxLength: 2000, nullable: true }
+      required: [entityType, entityId, bookingReference, rating]
+    UpdateReviewInput:
+      type: object
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        title: { type: string, maxLength: 120, nullable: true }
+        body: { type: string, minLength: 10, maxLength: 2000, nullable: true }
+      required: [rating]
+    EligibleReview:
+      type: object
+      properties:
+        bookingReference: { type: string }
+        entityType: { type: string, enum: [hotel] }
+        entityId: { type: string }
+        hotelName: { type: string }
+        stayEndedOn: { type: string, format: date }
+      required: [bookingReference, entityType, entityId, hotelName, stayEndedOn]
+    EligibleReviewList:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/EligibleReview" } }
       required: [items]
     Destination:
       type: object

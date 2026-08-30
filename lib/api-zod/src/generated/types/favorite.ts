@@ -10,4 +10,9 @@ import type { FavoriteEntityType } from './favoriteEntityType';
 export interface Favorite {
   entityType: FavoriteEntityType;
   entityId: string;
+  name?: string | null;
+  location?: string | null;
+  imageKey?: string | null;
+  route?: string | null;
+  available?: boolean;
 }
