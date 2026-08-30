@@ -1,7 +1,5 @@
 import { ReplitConnectors } from "@replit/connectors-sdk";
 
-const DEFAULT_FROM = "Travel & Land <onboarding@resend.dev>";
-
 export type VendorApprovalEmail = {
   to: string;
   businessName: string;
@@ -15,6 +13,14 @@ export type ResendProxyOptions = {
 };
 
 type ResendProxy = (path: string, options: ResendProxyOptions) => Promise<Response>;
+
+function configuredSender(): string {
+  const sender = process.env.TRAVEL_LAND_EMAIL_FROM?.trim();
+  if (!sender) {
+    throw new Error("TRAVEL_LAND_EMAIL_FROM is required for vendor approval email delivery.");
+  }
+  return sender;
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -37,7 +43,7 @@ export function buildVendorApprovalEmail(input: VendorApprovalEmail): {
     ? "A separate Clerk invitation email will help you finish setting up your vendor sign-in."
     : "Sign in with your existing Travel & Land account to open your vendor workspace.";
   return {
-    from: process.env.TRAVEL_LAND_EMAIL_FROM?.trim() || DEFAULT_FROM,
+    from: configuredSender(),
     to: [input.to],
     subject: "Your Travel & Land vendor application is approved",
     text: [

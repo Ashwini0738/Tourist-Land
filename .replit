@@ -21,3 +21,8 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+TRAVEL_LAND_EMAIL_FROM = "swiftland@thebluefaith.com"
