@@ -40,7 +40,11 @@ import type {
   GetVendorApplicationStatusParams,
   HealthStatus,
   HomeData,
+  HotelDetail,
   HotelList,
+  HotelNearbyList,
+  HotelRoomList,
+  HotelSearchResponse,
   InvalidInputResponse,
   ListAdminInvitations200,
   ListAdminUsers200,
@@ -63,6 +67,7 @@ import type {
   RoleAssignmentInput,
   RoleDashboard,
   SearchExploreParams,
+  SearchHotelsParams,
   ServiceUnavailableResponse,
   UnauthenticatedResponse,
   VendorApplication,
@@ -590,6 +595,315 @@ export function useListHomeHotels<TData = Awaited<ReturnType<typeof listHomeHote
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListHomeHotelsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSearchHotelsUrl = (params?: SearchHotelsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/hotels?${stringifiedParams}` : `/api/v1/hotels`
+}
+
+/**
+ * @summary Search the honest hotel discovery catalog, not live availability
+ */
+export const searchHotels = async (params?: SearchHotelsParams, options?: Parameters<typeof customFetch>[1]): Promise<HotelSearchResponse> => {
+
+  return customFetch<HotelSearchResponse>(getSearchHotelsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchHotelsQueryKey = (params?: SearchHotelsParams,) => {
+    return [
+    `/api/v1/hotels`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchHotelsQueryOptions = <TData = Awaited<ReturnType<typeof searchHotels>>, TError = ErrorType<InvalidInputResponse>>(params?: SearchHotelsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchHotels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchHotelsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchHotels>>> = ({ signal }) => searchHotels(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchHotels>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchHotelsQueryResult = NonNullable<Awaited<ReturnType<typeof searchHotels>>>
+export type SearchHotelsQueryError = ErrorType<InvalidInputResponse>
+
+
+/**
+ * @summary Search the honest hotel discovery catalog, not live availability
+ */
+
+export function useSearchHotels<TData = Awaited<ReturnType<typeof searchHotels>>, TError = ErrorType<InvalidInputResponse>>(
+ params?: SearchHotelsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchHotels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchHotelsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetHotelUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/hotels/${id}`
+}
+
+export const getHotel = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<HotelDetail> => {
+
+  return customFetch<HotelDetail>(getGetHotelUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetHotelQueryKey = (id: string,) => {
+    return [
+    `/api/v1/hotels/${id}`
+    ] as const;
+    }
+
+
+export const getGetHotelQueryOptions = <TData = Awaited<ReturnType<typeof getHotel>>, TError = ErrorType<NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHotel>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetHotelQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHotel>>> = ({ signal }) => getHotel(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHotel>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetHotelQueryResult = NonNullable<Awaited<ReturnType<typeof getHotel>>>
+export type GetHotelQueryError = ErrorType<NotFoundResponse>
+
+
+
+export function useGetHotel<TData = Awaited<ReturnType<typeof getHotel>>, TError = ErrorType<NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHotel>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetHotelQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListHotelRoomsUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/hotels/${id}/rooms`
+}
+
+/**
+ * @summary List catalog-backed room details when room records exist
+ */
+export const listHotelRooms = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<HotelRoomList> => {
+
+  return customFetch<HotelRoomList>(getListHotelRoomsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHotelRoomsQueryKey = (id: string,) => {
+    return [
+    `/api/v1/hotels/${id}/rooms`
+    ] as const;
+    }
+
+
+export const getListHotelRoomsQueryOptions = <TData = Awaited<ReturnType<typeof listHotelRooms>>, TError = ErrorType<NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHotelRooms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHotelRoomsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHotelRooms>>> = ({ signal }) => listHotelRooms(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHotelRooms>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHotelRoomsQueryResult = NonNullable<Awaited<ReturnType<typeof listHotelRooms>>>
+export type ListHotelRoomsQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary List catalog-backed room details when room records exist
+ */
+
+export function useListHotelRooms<TData = Awaited<ReturnType<typeof listHotelRooms>>, TError = ErrorType<NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHotelRooms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHotelRoomsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListHotelNearbyUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/hotels/${id}/nearby`
+}
+
+/**
+ * @summary List catalog places associated with a hotel's destination
+ */
+export const listHotelNearby = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<HotelNearbyList> => {
+
+  return customFetch<HotelNearbyList>(getListHotelNearbyUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHotelNearbyQueryKey = (id: string,) => {
+    return [
+    `/api/v1/hotels/${id}/nearby`
+    ] as const;
+    }
+
+
+export const getListHotelNearbyQueryOptions = <TData = Awaited<ReturnType<typeof listHotelNearby>>, TError = ErrorType<NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHotelNearby>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHotelNearbyQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHotelNearby>>> = ({ signal }) => listHotelNearby(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHotelNearby>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHotelNearbyQueryResult = NonNullable<Awaited<ReturnType<typeof listHotelNearby>>>
+export type ListHotelNearbyQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary List catalog places associated with a hotel's destination
+ */
+
+export function useListHotelNearby<TData = Awaited<ReturnType<typeof listHotelNearby>>, TError = ErrorType<NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHotelNearby>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHotelNearbyQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

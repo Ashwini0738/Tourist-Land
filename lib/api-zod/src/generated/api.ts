@@ -340,6 +340,228 @@ export const ListHomeHotelsResponse = zod.object({
 })
 
 
+/**
+ * @summary Search the honest hotel discovery catalog, not live availability
+ */
+export const searchHotelsQueryAdultsDefault = 1;
+
+export const searchHotelsQueryChildrenDefault = 0;
+export const searchHotelsQueryChildrenMin = 0;
+
+export const searchHotelsQueryRoomsDefault = 1;
+
+export const searchHotelsQueryMinRatingMin = 0;
+export const searchHotelsQueryMinRatingMax = 5;
+
+export const searchHotelsQueryMaxPriceMin = 0;
+
+export const searchHotelsQueryLatitudeMin = -90;
+export const searchHotelsQueryLatitudeMax = 90;
+
+export const searchHotelsQueryLongitudeMin = -180;
+export const searchHotelsQueryLongitudeMax = 180;
+
+export const searchHotelsQueryRadiusKmMin = 0;
+export const searchHotelsQueryRadiusKmMax = 500;
+
+export const searchHotelsQueryPageDefault = 1;
+
+export const searchHotelsQueryLimitDefault = 12;
+export const searchHotelsQueryLimitMax = 50;
+
+
+
+export const SearchHotelsQueryParams = zod.object({
+  "q": zod.coerce.string().optional().describe('Search hotel name, city, destination, or location.'),
+  "location": zod.coerce.string().optional(),
+  "destinationId": zod.coerce.string().optional(),
+  "checkIn": zod.date().optional().describe('Optional future check-in date carried for future availability; it does not check inventory.'),
+  "checkOut": zod.date().optional().describe('Optional future check-out date carried for future availability; it does not check inventory.'),
+  "adults": zod.coerce.number().int().min(1).default(searchHotelsQueryAdultsDefault),
+  "children": zod.coerce.number().int().min(searchHotelsQueryChildrenMin).default(searchHotelsQueryChildrenDefault),
+  "rooms": zod.coerce.number().int().min(1).default(searchHotelsQueryRoomsDefault),
+  "minRating": zod.coerce.number().min(searchHotelsQueryMinRatingMin).max(searchHotelsQueryMinRatingMax).optional(),
+  "maxPrice": zod.coerce.number().min(searchHotelsQueryMaxPriceMin).optional().describe('Sample nightly price ceiling; not a live price filter.'),
+  "hotelType": zod.coerce.string().optional(),
+  "amenity": zod.coerce.string().optional(),
+  "latitude": zod.coerce.number().min(searchHotelsQueryLatitudeMin).max(searchHotelsQueryLatitudeMax).optional(),
+  "longitude": zod.coerce.number().min(searchHotelsQueryLongitudeMin).max(searchHotelsQueryLongitudeMax).optional(),
+  "radiusKm": zod.coerce.number().min(searchHotelsQueryRadiusKmMin).max(searchHotelsQueryRadiusKmMax).optional(),
+  "page": zod.coerce.number().int().min(1).default(searchHotelsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(searchHotelsQueryLimitMax).default(searchHotelsQueryLimitDefault),
+  "sort": zod.enum(['recommended', 'rating', 'price_asc', 'price_desc', 'distance']).optional()
+})
+
+
+export const searchHotelsResponseLimitMax = 50;
+
+export const searchHotelsResponseTotalMin = 0;
+
+export const searchHotelsResponseItemsItemRatingMin = 0;
+export const searchHotelsResponseItemsItemRatingMax = 5;
+
+export const searchHotelsResponseItemsItemPriceValueMin = 0;
+
+export const searchHotelsResponseItemsItemCoordinatesLatitudeMin = -90;
+export const searchHotelsResponseItemsItemCoordinatesLatitudeMax = 90;
+
+export const searchHotelsResponseItemsItemCoordinatesLongitudeMin = -180;
+export const searchHotelsResponseItemsItemCoordinatesLongitudeMax = 180;
+
+export const searchHotelsResponseItemsItemDistanceKmMin = 0;
+
+
+
+export const SearchHotelsResponse = zod.object({
+  "notice": zod.string(),
+  "page": zod.number().min(1),
+  "limit": zod.number().min(1).max(searchHotelsResponseLimitMax),
+  "total": zod.number().min(searchHotelsResponseTotalMin),
+  "hasMore": zod.boolean(),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "destinationId": zod.string(),
+  "hotelType": zod.string(),
+  "rating": zod.number().min(searchHotelsResponseItemsItemRatingMin).max(searchHotelsResponseItemsItemRatingMax),
+  "ratingLabel": zod.string(),
+  "priceValue": zod.number().min(searchHotelsResponseItemsItemPriceValueMin),
+  "priceLabel": zod.string(),
+  "imageKey": zod.string(),
+  "amenities": zod.array(zod.string()),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(searchHotelsResponseItemsItemCoordinatesLatitudeMin).max(searchHotelsResponseItemsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(searchHotelsResponseItemsItemCoordinatesLongitudeMin).max(searchHotelsResponseItemsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.'),
+  "distanceKm": zod.number().min(searchHotelsResponseItemsItemDistanceKmMin).optional(),
+  "source": zod.enum(['development', 'live', 'unavailable']),
+  "sourceLabel": zod.string(),
+  "sourceNotice": zod.string()
+}).describe('A hotel discovery record with development or live provenance; never a booking offer.'))
+})
+
+
+export const GetHotelParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const getHotelResponseHotelRatingMin = 0;
+export const getHotelResponseHotelRatingMax = 5;
+
+export const getHotelResponseHotelPriceValueMin = 0;
+
+export const getHotelResponseHotelCoordinatesLatitudeMin = -90;
+export const getHotelResponseHotelCoordinatesLatitudeMax = 90;
+
+export const getHotelResponseHotelCoordinatesLongitudeMin = -180;
+export const getHotelResponseHotelCoordinatesLongitudeMax = 180;
+
+export const getHotelResponseHotelDistanceKmMin = 0;
+
+
+
+export const GetHotelResponse = zod.object({
+  "hotel": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "destinationId": zod.string(),
+  "hotelType": zod.string(),
+  "rating": zod.number().min(getHotelResponseHotelRatingMin).max(getHotelResponseHotelRatingMax),
+  "ratingLabel": zod.string(),
+  "priceValue": zod.number().min(getHotelResponseHotelPriceValueMin),
+  "priceLabel": zod.string(),
+  "imageKey": zod.string(),
+  "amenities": zod.array(zod.string()),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(getHotelResponseHotelCoordinatesLatitudeMin).max(getHotelResponseHotelCoordinatesLatitudeMax),
+  "longitude": zod.number().min(getHotelResponseHotelCoordinatesLongitudeMin).max(getHotelResponseHotelCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.'),
+  "distanceKm": zod.number().min(getHotelResponseHotelDistanceKmMin).optional(),
+  "source": zod.enum(['development', 'live', 'unavailable']),
+  "sourceLabel": zod.string(),
+  "sourceNotice": zod.string()
+}).describe('A hotel discovery record with development or live provenance; never a booking offer.'),
+  "description": zod.string(),
+  "address": zod.string().nullable(),
+  "checkInTime": zod.string().nullable(),
+  "checkOutTime": zod.string().nullable(),
+  "galleryImageKeys": zod.array(zod.string()),
+  "sourceNotice": zod.string()
+})
+
+
+/**
+ * @summary List catalog-backed room details when room records exist
+ */
+export const ListHotelRoomsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+export const listHotelRoomsResponseItemsItemNightlyRateMin = 0;
+
+
+
+export const ListHotelRoomsResponse = zod.object({
+  "hotelId": zod.string(),
+  "notice": zod.string(),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "capacity": zod.number().min(1),
+  "nightlyRate": zod.number().min(listHotelRoomsResponseItemsItemNightlyRateMin),
+  "currency": zod.string(),
+  "status": zod.string()
+}))
+})
+
+
+/**
+ * @summary List catalog places associated with a hotel's destination
+ */
+export const ListHotelNearbyParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const listHotelNearbyResponseItemsItemCoordinatesLatitudeMin = -90;
+export const listHotelNearbyResponseItemsItemCoordinatesLatitudeMax = 90;
+
+export const listHotelNearbyResponseItemsItemCoordinatesLongitudeMin = -180;
+export const listHotelNearbyResponseItemsItemCoordinatesLongitudeMax = 180;
+
+
+
+export const ListHotelNearbyResponse = zod.object({
+  "hotelId": zod.string(),
+  "notice": zod.string(),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "location": zod.string(),
+  "summary": zod.string(),
+  "destinationId": zod.string(),
+  "imageKey": zod.string(),
+  "distanceLabel": zod.string().optional(),
+  "ratingLabel": zod.string().optional(),
+  "coordinates": zod.object({
+  "latitude": zod.number().min(listHotelNearbyResponseItemsItemCoordinatesLatitudeMin).max(listHotelNearbyResponseItemsItemCoordinatesLatitudeMax),
+  "longitude": zod.number().min(listHotelNearbyResponseItemsItemCoordinatesLongitudeMin).max(listHotelNearbyResponseItemsItemCoordinatesLongitudeMax),
+  "precision": zod.enum(['place', 'area', 'region']),
+  "source": zod.string()
+}).optional().describe('Public catalog coordinates with an explicit precision and source. Coordinates are optional.')
+}))
+})
+
+
 export const listHomePropertiesResponseItemsItemCoordinatesLatitudeMin = -90;
 export const listHomePropertiesResponseItemsItemCoordinatesLatitudeMax = 90;
 

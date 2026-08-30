@@ -138,6 +138,108 @@ export interface Banner {
   coordinates?: Coordinates;
 }
 
+export type HotelSummarySource = typeof HotelSummarySource[keyof typeof HotelSummarySource];
+
+
+export const HotelSummarySource = {
+  development: 'development',
+  live: 'live',
+  unavailable: 'unavailable',
+} as const;
+
+/**
+ * A hotel discovery record with development or live provenance; never a booking offer.
+ */
+export interface HotelSummary {
+  id: string;
+  name: string;
+  location: string;
+  summary: string;
+  destinationId: string;
+  hotelType: string;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  rating: number;
+  ratingLabel: string;
+  /** @minimum 0 */
+  priceValue: number;
+  priceLabel: string;
+  imageKey: string;
+  amenities: string[];
+  coordinates?: Coordinates;
+  /** @minimum 0 */
+  distanceKm?: number;
+  source: HotelSummarySource;
+  sourceLabel: string;
+  sourceNotice: string;
+}
+
+export interface HotelSearchResponse {
+  notice: string;
+  /** @minimum 1 */
+  page: number;
+  /**
+     * @minimum 1
+     * @maximum 50
+     */
+  limit: number;
+  /** @minimum 0 */
+  total: number;
+  hasMore: boolean;
+  items: HotelSummary[];
+}
+
+export interface HotelDetail {
+  hotel: HotelSummary;
+  description: string;
+  /** @nullable */
+  address: string | null;
+  /** @nullable */
+  checkInTime: string | null;
+  /** @nullable */
+  checkOutTime: string | null;
+  galleryImageKeys: string[];
+  sourceNotice: string;
+}
+
+export interface HotelRoom {
+  id: string;
+  name: string;
+  /** @minimum 1 */
+  capacity: number;
+  /** @minimum 0 */
+  nightlyRate: number;
+  currency: string;
+  status: string;
+}
+
+export interface HotelRoomList {
+  hotelId: string;
+  notice: string;
+  items: HotelRoom[];
+}
+
+export interface HotelNearbyPlace {
+  id: string;
+  name: string;
+  category: string;
+  location: string;
+  summary: string;
+  destinationId: string;
+  imageKey: string;
+  distanceLabel?: string;
+  ratingLabel?: string;
+  coordinates?: Coordinates;
+}
+
+export interface HotelNearbyList {
+  hotelId: string;
+  notice: string;
+  items: HotelNearbyPlace[];
+}
+
 export interface Property {
   id: string;
   slug: string;
@@ -824,6 +926,83 @@ export type ServiceUnavailableResponse = ErrorResponse;
  * Too many requests
  */
 export type RateLimitedResponse = ErrorResponse;
+
+export type SearchHotelsParams = {
+/**
+ * Search hotel name, city, destination, or location.
+ */
+q?: string;
+location?: string;
+destinationId?: string;
+/**
+ * Optional future check-in date carried for future availability; it does not check inventory.
+ */
+checkIn?: string;
+/**
+ * Optional future check-out date carried for future availability; it does not check inventory.
+ */
+checkOut?: string;
+/**
+ * @minimum 1
+ */
+adults?: number;
+/**
+ * @minimum 0
+ */
+children?: number;
+/**
+ * @minimum 1
+ */
+rooms?: number;
+/**
+ * @minimum 0
+ * @maximum 5
+ */
+minRating?: number;
+/**
+ * Sample nightly price ceiling; not a live price filter.
+ * @minimum 0
+ */
+maxPrice?: number;
+hotelType?: string;
+amenity?: string;
+/**
+ * @minimum -90
+ * @maximum 90
+ */
+latitude?: number;
+/**
+ * @minimum -180
+ * @maximum 180
+ */
+longitude?: number;
+/**
+ * @minimum 0
+ * @maximum 500
+ */
+radiusKm?: number;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+sort?: SearchHotelsSort;
+};
+
+export type SearchHotelsSort = typeof SearchHotelsSort[keyof typeof SearchHotelsSort];
+
+
+export const SearchHotelsSort = {
+  recommended: 'recommended',
+  rating: 'rating',
+  price_asc: 'price_asc',
+  price_desc: 'price_desc',
+  distance: 'distance',
+} as const;
 
 export type SearchExploreParams = {
 q?: string;
