@@ -3295,69 +3295,6 @@ export const ArchiveVendorListingResponse = zod.object({
 
 
 /**
- * @summary Get the authenticated admin dashboard status
- */
-export const getAdminDashboardResponseStatsHotelsMin = 0;
-
-export const getAdminDashboardResponseStatsPublishedHotelsMin = 0;
-
-export const getAdminDashboardResponseStatsActiveRoomsMin = 0;
-
-export const getAdminDashboardResponseStatsActiveBookingsMin = 0;
-
-
-
-export const GetAdminDashboardResponse = zod.object({
-  "role": zod.enum(['user', 'vendor', 'admin']),
-  "status": zod.enum(['active', 'inactive', 'suspended']),
-  "title": zod.string(),
-  "message": zod.string(),
-  "stats": zod.object({
-  "hotels": zod.number().int().min(getAdminDashboardResponseStatsHotelsMin),
-  "publishedHotels": zod.number().int().min(getAdminDashboardResponseStatsPublishedHotelsMin),
-  "activeRooms": zod.number().int().min(getAdminDashboardResponseStatsActiveRoomsMin),
-  "activeBookings": zod.number().int().min(getAdminDashboardResponseStatsActiveBookingsMin)
-}).optional()
-})
-
-
-/**
- * @summary List safe local user records for platform administration
- */
-export const ListAdminUsersResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string(),
-  "clerkUserId": zod.string(),
-  "email": zod.string(),
-  "displayName": zod.string().nullable(),
-  "phone": zod.string().nullable(),
-  "avatarUrl": zod.string().nullable(),
-  "role": zod.enum(['user', 'vendor', 'admin']),
-  "status": zod.enum(['active', 'inactive', 'suspended']),
-  "vendorProfile": zod.union([zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
-  "businessName": zod.string(),
-  "businessType": zod.string(),
-  "contactName": zod.string(),
-  "phone": zod.string(),
-  "email": zod.string(),
-  "description": zod.string(),
-  "address": zod.string(),
-  "city": zod.string(),
-  "state": zod.string(),
-  "country": zod.string(),
-  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-}),zod.null()]),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-}))
-})
-
-
-/**
  * @summary List pending vendor applications
  */
 export const listAdminVendorApplicationsResponseItemsItemOneBusinessNameMax = 200;
@@ -3670,6 +3607,1190 @@ export const SuspendVendorResponse = zod.object({
   "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get database-backed platform operations metrics
+ */
+export const getAdminOperationsDashboardResponseUsersTotalMin = 0;
+
+export const getAdminOperationsDashboardResponseUsersActiveMin = 0;
+
+export const getAdminOperationsDashboardResponseUsersPendingMin = 0;
+
+export const getAdminOperationsDashboardResponseUsersApprovedMin = 0;
+
+export const getAdminOperationsDashboardResponseUsersRejectedMin = 0;
+
+export const getAdminOperationsDashboardResponseUsersInactiveMin = 0;
+
+export const getAdminOperationsDashboardResponseVendorsTotalMin = 0;
+
+export const getAdminOperationsDashboardResponseVendorsActiveMin = 0;
+
+export const getAdminOperationsDashboardResponseVendorsPendingMin = 0;
+
+export const getAdminOperationsDashboardResponseVendorsApprovedMin = 0;
+
+export const getAdminOperationsDashboardResponseVendorsRejectedMin = 0;
+
+export const getAdminOperationsDashboardResponseVendorsInactiveMin = 0;
+
+export const getAdminOperationsDashboardResponseHotelsTotalMin = 0;
+
+export const getAdminOperationsDashboardResponseHotelsActiveMin = 0;
+
+export const getAdminOperationsDashboardResponseHotelsPendingMin = 0;
+
+export const getAdminOperationsDashboardResponseHotelsApprovedMin = 0;
+
+export const getAdminOperationsDashboardResponseHotelsRejectedMin = 0;
+
+export const getAdminOperationsDashboardResponseHotelsInactiveMin = 0;
+
+export const getAdminOperationsDashboardResponseBookingsTotalMin = 0;
+
+export const getAdminOperationsDashboardResponseBookingsActiveMin = 0;
+
+export const getAdminOperationsDashboardResponseBookingsPendingMin = 0;
+
+export const getAdminOperationsDashboardResponseBookingsApprovedMin = 0;
+
+export const getAdminOperationsDashboardResponseBookingsRejectedMin = 0;
+
+export const getAdminOperationsDashboardResponseBookingsInactiveMin = 0;
+
+export const getAdminOperationsDashboardResponseRevenueSuccessfulPaymentsMin = 0;
+
+export const getAdminOperationsDashboardResponseRevenuePaymentVolumeMin = 0;
+
+export const getAdminOperationsDashboardResponseRevenueRefundVolumeMin = 0;
+
+
+
+export const GetAdminOperationsDashboardResponse = zod.object({
+  "role": zod.enum(['admin']),
+  "title": zod.string(),
+  "generatedAt": zod.coerce.date(),
+  "users": zod.object({
+  "total": zod.number().int().min(getAdminOperationsDashboardResponseUsersTotalMin),
+  "active": zod.number().int().min(getAdminOperationsDashboardResponseUsersActiveMin),
+  "pending": zod.number().int().min(getAdminOperationsDashboardResponseUsersPendingMin),
+  "approved": zod.number().int().min(getAdminOperationsDashboardResponseUsersApprovedMin),
+  "rejected": zod.number().int().min(getAdminOperationsDashboardResponseUsersRejectedMin),
+  "inactive": zod.number().int().min(getAdminOperationsDashboardResponseUsersInactiveMin)
+}),
+  "vendors": zod.object({
+  "total": zod.number().int().min(getAdminOperationsDashboardResponseVendorsTotalMin),
+  "active": zod.number().int().min(getAdminOperationsDashboardResponseVendorsActiveMin),
+  "pending": zod.number().int().min(getAdminOperationsDashboardResponseVendorsPendingMin),
+  "approved": zod.number().int().min(getAdminOperationsDashboardResponseVendorsApprovedMin),
+  "rejected": zod.number().int().min(getAdminOperationsDashboardResponseVendorsRejectedMin),
+  "inactive": zod.number().int().min(getAdminOperationsDashboardResponseVendorsInactiveMin)
+}),
+  "hotels": zod.object({
+  "total": zod.number().int().min(getAdminOperationsDashboardResponseHotelsTotalMin),
+  "active": zod.number().int().min(getAdminOperationsDashboardResponseHotelsActiveMin),
+  "pending": zod.number().int().min(getAdminOperationsDashboardResponseHotelsPendingMin),
+  "approved": zod.number().int().min(getAdminOperationsDashboardResponseHotelsApprovedMin),
+  "rejected": zod.number().int().min(getAdminOperationsDashboardResponseHotelsRejectedMin),
+  "inactive": zod.number().int().min(getAdminOperationsDashboardResponseHotelsInactiveMin)
+}),
+  "bookings": zod.object({
+  "total": zod.number().int().min(getAdminOperationsDashboardResponseBookingsTotalMin),
+  "active": zod.number().int().min(getAdminOperationsDashboardResponseBookingsActiveMin),
+  "pending": zod.number().int().min(getAdminOperationsDashboardResponseBookingsPendingMin),
+  "approved": zod.number().int().min(getAdminOperationsDashboardResponseBookingsApprovedMin),
+  "rejected": zod.number().int().min(getAdminOperationsDashboardResponseBookingsRejectedMin),
+  "inactive": zod.number().int().min(getAdminOperationsDashboardResponseBookingsInactiveMin)
+}),
+  "revenue": zod.object({
+  "status": zod.enum(['available', 'unavailable']),
+  "successfulPayments": zod.number().int().min(getAdminOperationsDashboardResponseRevenueSuccessfulPaymentsMin),
+  "paymentVolume": zod.number().min(getAdminOperationsDashboardResponseRevenuePaymentVolumeMin),
+  "refundVolume": zod.number().min(getAdminOperationsDashboardResponseRevenueRefundVolumeMin),
+  "currency": zod.string().nullable()
+})
+})
+
+
+export const listAdminUsersPageQueryQMax = 160;
+
+export const listAdminUsersPageQueryPageDefault = 1;
+
+export const listAdminUsersPageQueryLimitDefault = 20;
+export const listAdminUsersPageQueryLimitMax = 50;
+
+
+
+export const ListAdminUsersPageQueryParams = zod.object({
+  "q": zod.coerce.string().max(listAdminUsersPageQueryQMax).optional(),
+  "role": zod.enum(['user', 'vendor', 'admin']).optional(),
+  "status": zod.enum(['active', 'inactive', 'suspended']).optional(),
+  "page": zod.coerce.number().int().min(1).default(listAdminUsersPageQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listAdminUsersPageQueryLimitMax).default(listAdminUsersPageQueryLimitDefault)
+})
+
+
+
+export const listAdminUsersPageResponseMetaTotalMin = 0;
+
+
+
+export const ListAdminUsersPageResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "clerkUserId": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable(),
+  "role": zod.enum(['user', 'vendor', 'admin']),
+  "status": zod.enum(['active', 'inactive', 'suspended']),
+  "vendorProfile": zod.union([zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),zod.null()]),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1),
+  "total": zod.number().int().min(listAdminUsersPageResponseMetaTotalMin),
+  "hasMore": zod.boolean()
+})
+})
+
+
+export const GetAdminUserDetailParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const getAdminUserDetailResponseBookingCountMin = 0;
+
+export const getAdminUserDetailResponseFavoriteCountMin = 0;
+
+export const getAdminUserDetailResponseReviewCountMin = 0;
+
+
+
+export const GetAdminUserDetailResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "clerkUserId": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable(),
+  "role": zod.enum(['user', 'vendor', 'admin']),
+  "status": zod.enum(['active', 'inactive', 'suspended']),
+  "vendorProfile": zod.union([zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),zod.null()]),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),
+  "bookingCount": zod.number().int().min(getAdminUserDetailResponseBookingCountMin),
+  "favoriteCount": zod.number().int().min(getAdminUserDetailResponseFavoriteCountMin),
+  "reviewCount": zod.number().int().min(getAdminUserDetailResponseReviewCountMin)
+})
+
+
+export const UpdateAdminUserStatusParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateAdminUserStatusBodyReasonMax = 1000;
+
+
+
+export const UpdateAdminUserStatusBody = zod.object({
+  "status": zod.enum(['active', 'inactive', 'suspended', 'approved', 'rejected', 'published', 'archived', 'pending', 'pending_payment', 'confirmed', 'cancelled']),
+  "reason": zod.string().max(updateAdminUserStatusBodyReasonMax).nullish()
+})
+
+export const UpdateAdminUserStatusResponse = zod.object({
+  "id": zod.string(),
+  "clerkUserId": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable(),
+  "role": zod.enum(['user', 'vendor', 'admin']),
+  "status": zod.enum(['active', 'inactive', 'suspended']),
+  "vendorProfile": zod.union([zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),zod.null()]),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const listAdminVendorsQueryQMax = 160;
+
+export const listAdminVendorsQueryPageDefault = 1;
+
+export const listAdminVendorsQueryLimitDefault = 20;
+export const listAdminVendorsQueryLimitMax = 50;
+
+
+
+export const ListAdminVendorsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listAdminVendorsQueryQMax).optional(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']).optional(),
+  "page": zod.coerce.number().int().min(1).default(listAdminVendorsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listAdminVendorsQueryLimitMax).default(listAdminVendorsQueryLimitDefault)
+})
+
+export const listAdminVendorsResponseItemsItemHotelCountMin = 0;
+
+
+
+export const listAdminVendorsResponseMetaTotalMin = 0;
+
+
+
+export const ListAdminVendorsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "userId": zod.string(),
+  "user": zod.object({
+  "id": zod.string(),
+  "clerkUserId": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable(),
+  "role": zod.enum(['user', 'vendor', 'admin']),
+  "status": zod.enum(['active', 'inactive', 'suspended']),
+  "vendorProfile": zod.union([zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),zod.null()]),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),
+  "profile": zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),
+  "hotelCount": zod.number().int().min(listAdminVendorsResponseItemsItemHotelCountMin)
+})),
+  "meta": zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1),
+  "total": zod.number().int().min(listAdminVendorsResponseMetaTotalMin),
+  "hasMore": zod.boolean()
+})
+})
+
+
+export const UpdateAdminVendorStatusParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const updateAdminVendorStatusBodyReasonMax = 1000;
+
+
+
+export const UpdateAdminVendorStatusBody = zod.object({
+  "status": zod.enum(['active', 'inactive', 'suspended', 'approved', 'rejected', 'published', 'archived', 'pending', 'pending_payment', 'confirmed', 'cancelled']),
+  "reason": zod.string().max(updateAdminVendorStatusBodyReasonMax).nullish()
+})
+
+export const UpdateAdminVendorStatusResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const listAdminHotelsQueryQMax = 160;
+
+export const listAdminHotelsQueryPageDefault = 1;
+
+export const listAdminHotelsQueryLimitDefault = 20;
+export const listAdminHotelsQueryLimitMax = 50;
+
+
+
+export const ListAdminHotelsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listAdminHotelsQueryQMax).optional(),
+  "status": zod.enum(['draft', 'published', 'archived']).optional(),
+  "approvalStatus": zod.enum(['pending', 'approved', 'rejected']).optional(),
+  "page": zod.coerce.number().int().min(1).default(listAdminHotelsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listAdminHotelsQueryLimitMax).default(listAdminHotelsQueryLimitDefault)
+})
+
+export const listAdminHotelsResponseItemsItemRoomCountMin = 0;
+
+
+
+export const listAdminHotelsResponseMetaTotalMin = 0;
+
+
+
+export const ListAdminHotelsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "address": zod.string(),
+  "city": zod.string().nullable(),
+  "country": zod.string().nullable(),
+  "status": zod.string(),
+  "approvalStatus": zod.string(),
+  "ownerId": zod.string().nullable(),
+  "ownerName": zod.string().nullable(),
+  "ownerEmail": zod.string().nullable(),
+  "roomCount": zod.number().int().min(listAdminHotelsResponseItemsItemRoomCountMin),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1),
+  "total": zod.number().int().min(listAdminHotelsResponseMetaTotalMin),
+  "hasMore": zod.boolean()
+})
+})
+
+
+export const GetAdminHotelDetailParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const getAdminHotelDetailResponseHotelRoomCountMin = 0;
+
+export const getAdminHotelDetailResponseRoomsItemReservedUnitsMin = 0;
+
+export const getAdminHotelDetailResponseRoomsItemAvailableUnitsMin = 0;
+
+export const getAdminHotelDetailResponseAvailabilityItemAvailableUnitsMin = 0;
+
+export const getAdminHotelDetailResponseAvailabilityItemReservedUnitsMin = 0;
+
+
+
+export const GetAdminHotelDetailResponse = zod.object({
+  "hotel": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "address": zod.string(),
+  "city": zod.string().nullable(),
+  "country": zod.string().nullable(),
+  "status": zod.string(),
+  "approvalStatus": zod.string(),
+  "ownerId": zod.string().nullable(),
+  "ownerName": zod.string().nullable(),
+  "ownerEmail": zod.string().nullable(),
+  "roomCount": zod.number().int().min(getAdminHotelDetailResponseHotelRoomCountMin),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),
+  "rooms": zod.array(zod.object({
+  "id": zod.string(),
+  "hotelId": zod.string(),
+  "hotelName": zod.string(),
+  "name": zod.string(),
+  "capacity": zod.number().int(),
+  "totalUnits": zod.number().int(),
+  "nightlyRate": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "reservedUnits": zod.number().int().min(getAdminHotelDetailResponseRoomsItemReservedUnitsMin),
+  "availableUnits": zod.number().int().min(getAdminHotelDetailResponseRoomsItemAvailableUnitsMin)
+})),
+  "availability": zod.array(zod.object({
+  "id": zod.string(),
+  "roomId": zod.string(),
+  "roomName": zod.string(),
+  "hotelName": zod.string(),
+  "date": zod.coerce.date(),
+  "availableUnits": zod.number().int().min(getAdminHotelDetailResponseAvailabilityItemAvailableUnitsMin),
+  "reservedUnits": zod.number().int().min(getAdminHotelDetailResponseAvailabilityItemReservedUnitsMin),
+  "status": zod.string(),
+  "blackoutReason": zod.string().nullable()
+}))
+})
+
+
+export const UpdateAdminHotelStatusParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateAdminHotelStatusBodyReasonMax = 1000;
+
+
+
+export const UpdateAdminHotelStatusBody = zod.object({
+  "status": zod.union([zod.literal('draft'),zod.literal('published'),zod.literal('archived'),zod.literal(null)]).nullable(),
+  "approvalStatus": zod.union([zod.literal('pending'),zod.literal('approved'),zod.literal('rejected'),zod.literal(null)]).nullable(),
+  "reason": zod.string().max(updateAdminHotelStatusBodyReasonMax).nullish()
+})
+
+export const updateAdminHotelStatusResponseRoomCountMin = 0;
+
+
+
+export const UpdateAdminHotelStatusResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "address": zod.string(),
+  "city": zod.string().nullable(),
+  "country": zod.string().nullable(),
+  "status": zod.string(),
+  "approvalStatus": zod.string(),
+  "ownerId": zod.string().nullable(),
+  "ownerName": zod.string().nullable(),
+  "ownerEmail": zod.string().nullable(),
+  "roomCount": zod.number().int().min(updateAdminHotelStatusResponseRoomCountMin),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const listAdminRoomsQueryQMax = 160;
+
+export const listAdminRoomsQueryPageDefault = 1;
+
+export const listAdminRoomsQueryLimitDefault = 20;
+export const listAdminRoomsQueryLimitMax = 50;
+
+
+
+export const ListAdminRoomsQueryParams = zod.object({
+  "hotelId": zod.coerce.string().optional(),
+  "status": zod.enum(['active', 'inactive']).optional(),
+  "q": zod.coerce.string().max(listAdminRoomsQueryQMax).optional(),
+  "page": zod.coerce.number().int().min(1).default(listAdminRoomsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listAdminRoomsQueryLimitMax).default(listAdminRoomsQueryLimitDefault)
+})
+
+export const listAdminRoomsResponseItemsItemReservedUnitsMin = 0;
+
+export const listAdminRoomsResponseItemsItemAvailableUnitsMin = 0;
+
+
+
+export const listAdminRoomsResponseMetaTotalMin = 0;
+
+
+
+export const ListAdminRoomsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "hotelId": zod.string(),
+  "hotelName": zod.string(),
+  "name": zod.string(),
+  "capacity": zod.number().int(),
+  "totalUnits": zod.number().int(),
+  "nightlyRate": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "reservedUnits": zod.number().int().min(listAdminRoomsResponseItemsItemReservedUnitsMin),
+  "availableUnits": zod.number().int().min(listAdminRoomsResponseItemsItemAvailableUnitsMin)
+})),
+  "meta": zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1),
+  "total": zod.number().int().min(listAdminRoomsResponseMetaTotalMin),
+  "hasMore": zod.boolean()
+})
+})
+
+
+export const listAdminAvailabilityQueryQMax = 160;
+
+export const listAdminAvailabilityQueryPageDefault = 1;
+
+export const listAdminAvailabilityQueryLimitDefault = 20;
+export const listAdminAvailabilityQueryLimitMax = 50;
+
+
+
+export const ListAdminAvailabilityQueryParams = zod.object({
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "q": zod.coerce.string().max(listAdminAvailabilityQueryQMax).optional(),
+  "page": zod.coerce.number().int().min(1).default(listAdminAvailabilityQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listAdminAvailabilityQueryLimitMax).default(listAdminAvailabilityQueryLimitDefault)
+})
+
+export const listAdminAvailabilityResponseItemsItemAvailableUnitsMin = 0;
+
+export const listAdminAvailabilityResponseItemsItemReservedUnitsMin = 0;
+
+
+
+export const listAdminAvailabilityResponseMetaTotalMin = 0;
+
+
+
+export const ListAdminAvailabilityResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "roomId": zod.string(),
+  "roomName": zod.string(),
+  "hotelName": zod.string(),
+  "date": zod.coerce.date(),
+  "availableUnits": zod.number().int().min(listAdminAvailabilityResponseItemsItemAvailableUnitsMin),
+  "reservedUnits": zod.number().int().min(listAdminAvailabilityResponseItemsItemReservedUnitsMin),
+  "status": zod.string(),
+  "blackoutReason": zod.string().nullable()
+})),
+  "meta": zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1),
+  "total": zod.number().int().min(listAdminAvailabilityResponseMetaTotalMin),
+  "hasMore": zod.boolean()
+})
+})
+
+
+export const listAdminDestinationsQueryQMax = 160;
+
+export const listAdminDestinationsQueryPageDefault = 1;
+
+export const listAdminDestinationsQueryLimitDefault = 20;
+export const listAdminDestinationsQueryLimitMax = 50;
+
+
+
+export const ListAdminDestinationsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listAdminDestinationsQueryQMax).optional(),
+  "status": zod.coerce.string().optional(),
+  "page": zod.coerce.number().int().min(1).default(listAdminDestinationsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listAdminDestinationsQueryLimitMax).default(listAdminDestinationsQueryLimitDefault)
+})
+
+
+
+export const listAdminDestinationsResponseMetaTotalMin = 0;
+
+
+
+export const ListAdminDestinationsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "country": zod.string(),
+  "region": zod.string().nullable(),
+  "summary": zod.string().nullable(),
+  "latitude": zod.number().nullable(),
+  "longitude": zod.number().nullable(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1),
+  "total": zod.number().int().min(listAdminDestinationsResponseMetaTotalMin),
+  "hasMore": zod.boolean()
+})
+})
+
+
+export const createAdminDestinationBodySlugMax = 160;
+
+export const createAdminDestinationBodyNameMax = 160;
+
+export const createAdminDestinationBodyCountryMax = 120;
+
+export const createAdminDestinationBodyRegionMax = 120;
+
+export const createAdminDestinationBodySummaryMax = 4000;
+
+export const createAdminDestinationBodyLatitudeMin = -90;
+export const createAdminDestinationBodyLatitudeMax = 90;
+
+export const createAdminDestinationBodyLongitudeMin = -180;
+export const createAdminDestinationBodyLongitudeMax = 180;
+
+export const createAdminDestinationBodyStatusMax = 40;
+
+
+
+export const CreateAdminDestinationBody = zod.object({
+  "slug": zod.string().min(1).max(createAdminDestinationBodySlugMax),
+  "name": zod.string().min(1).max(createAdminDestinationBodyNameMax),
+  "country": zod.string().min(1).max(createAdminDestinationBodyCountryMax),
+  "region": zod.string().max(createAdminDestinationBodyRegionMax).nullish(),
+  "summary": zod.string().max(createAdminDestinationBodySummaryMax).nullish(),
+  "latitude": zod.number().min(createAdminDestinationBodyLatitudeMin).max(createAdminDestinationBodyLatitudeMax).nullish(),
+  "longitude": zod.number().min(createAdminDestinationBodyLongitudeMin).max(createAdminDestinationBodyLongitudeMax).nullish(),
+  "status": zod.string().max(createAdminDestinationBodyStatusMax).optional()
+})
+
+export const CreateAdminDestinationResponse = zod.object({
+  "id": zod.string(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "country": zod.string(),
+  "region": zod.string().nullable(),
+  "summary": zod.string().nullable(),
+  "latitude": zod.number().nullable(),
+  "longitude": zod.number().nullable(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const UpdateAdminDestinationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateAdminDestinationBodyOneSlugMax = 160;
+
+export const updateAdminDestinationBodyOneNameMax = 160;
+
+export const updateAdminDestinationBodyOneCountryMax = 120;
+
+export const updateAdminDestinationBodyOneRegionMax = 120;
+
+export const updateAdminDestinationBodyOneSummaryMax = 4000;
+
+export const updateAdminDestinationBodyOneLatitudeMin = -90;
+export const updateAdminDestinationBodyOneLatitudeMax = 90;
+
+export const updateAdminDestinationBodyOneLongitudeMin = -180;
+export const updateAdminDestinationBodyOneLongitudeMax = 180;
+
+export const updateAdminDestinationBodyOneStatusMax = 40;
+
+
+
+export const UpdateAdminDestinationBody = zod.object({
+  "slug": zod.string().min(1).max(updateAdminDestinationBodyOneSlugMax),
+  "name": zod.string().min(1).max(updateAdminDestinationBodyOneNameMax),
+  "country": zod.string().min(1).max(updateAdminDestinationBodyOneCountryMax),
+  "region": zod.string().max(updateAdminDestinationBodyOneRegionMax).nullish(),
+  "summary": zod.string().max(updateAdminDestinationBodyOneSummaryMax).nullish(),
+  "latitude": zod.number().min(updateAdminDestinationBodyOneLatitudeMin).max(updateAdminDestinationBodyOneLatitudeMax).nullish(),
+  "longitude": zod.number().min(updateAdminDestinationBodyOneLongitudeMin).max(updateAdminDestinationBodyOneLongitudeMax).nullish(),
+  "status": zod.string().max(updateAdminDestinationBodyOneStatusMax).optional()
+})
+
+export const UpdateAdminDestinationResponse = zod.object({
+  "id": zod.string(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "country": zod.string(),
+  "region": zod.string().nullable(),
+  "summary": zod.string().nullable(),
+  "latitude": zod.number().nullable(),
+  "longitude": zod.number().nullable(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const listAdminPlacesQueryQMax = 160;
+
+export const listAdminPlacesQueryPageDefault = 1;
+
+export const listAdminPlacesQueryLimitDefault = 20;
+export const listAdminPlacesQueryLimitMax = 50;
+
+
+
+export const ListAdminPlacesQueryParams = zod.object({
+  "q": zod.coerce.string().max(listAdminPlacesQueryQMax).optional(),
+  "type": zod.enum(['attraction', 'food']).optional(),
+  "page": zod.coerce.number().int().min(1).default(listAdminPlacesQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listAdminPlacesQueryLimitMax).default(listAdminPlacesQueryLimitDefault)
+})
+
+
+
+export const listAdminPlacesResponseMetaTotalMin = 0;
+
+
+
+export const ListAdminPlacesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['attraction', 'food']),
+  "destinationId": zod.string().nullable(),
+  "destinationName": zod.string().nullable(),
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "address": zod.string().nullable(),
+  "status": zod.string()
+})),
+  "meta": zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1),
+  "total": zod.number().int().min(listAdminPlacesResponseMetaTotalMin),
+  "hasMore": zod.boolean()
+})
+})
+
+
+export const listAdminEventsQueryQMax = 160;
+
+export const listAdminEventsQueryPageDefault = 1;
+
+export const listAdminEventsQueryLimitDefault = 20;
+export const listAdminEventsQueryLimitMax = 50;
+
+
+
+export const ListAdminEventsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listAdminEventsQueryQMax).optional(),
+  "status": zod.coerce.string().optional(),
+  "page": zod.coerce.number().int().min(1).default(listAdminEventsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listAdminEventsQueryLimitMax).default(listAdminEventsQueryLimitDefault)
+})
+
+
+
+export const listAdminEventsResponseMetaTotalMin = 0;
+
+
+
+export const ListAdminEventsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "destinationId": zod.string().nullable(),
+  "destinationName": zod.string().nullable(),
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "startsAt": zod.coerce.date(),
+  "endsAt": zod.coerce.date().nullable(),
+  "status": zod.string()
+})),
+  "meta": zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1),
+  "total": zod.number().int().min(listAdminEventsResponseMetaTotalMin),
+  "hasMore": zod.boolean()
+})
+})
+
+
+export const listAdminPropertiesQueryQMax = 160;
+
+export const listAdminPropertiesQueryPageDefault = 1;
+
+export const listAdminPropertiesQueryLimitDefault = 20;
+export const listAdminPropertiesQueryLimitMax = 50;
+
+
+
+export const ListAdminPropertiesQueryParams = zod.object({
+  "q": zod.coerce.string().max(listAdminPropertiesQueryQMax).optional(),
+  "status": zod.coerce.string().optional(),
+  "verification": zod.enum(['verified', 'unverified']).optional(),
+  "page": zod.coerce.number().int().min(1).default(listAdminPropertiesQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listAdminPropertiesQueryLimitMax).default(listAdminPropertiesQueryLimitDefault)
+})
+
+export const listAdminPropertiesResponseItemsItemEnquiryCountMin = 0;
+
+
+
+export const listAdminPropertiesResponseMetaTotalMin = 0;
+
+
+
+export const ListAdminPropertiesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "propertyType": zod.string(),
+  "address": zod.string(),
+  "areaValue": zod.number(),
+  "areaUnit": zod.string(),
+  "askingPrice": zod.number().nullable(),
+  "currency": zod.string(),
+  "isVerified": zod.boolean(),
+  "status": zod.string(),
+  "ownerId": zod.string(),
+  "ownerName": zod.string().nullable(),
+  "ownerEmail": zod.string().nullable(),
+  "enquiryCount": zod.number().int().min(listAdminPropertiesResponseItemsItemEnquiryCountMin),
+  "createdAt": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1),
+  "total": zod.number().int().min(listAdminPropertiesResponseMetaTotalMin),
+  "hasMore": zod.boolean()
+})
+})
+
+
+export const UpdateAdminPropertyStatusParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateAdminPropertyStatusBodyReasonMax = 1000;
+
+
+
+export const UpdateAdminPropertyStatusBody = zod.object({
+  "status": zod.enum(['active', 'inactive', 'suspended', 'approved', 'rejected', 'published', 'archived', 'pending', 'pending_payment', 'confirmed', 'cancelled']),
+  "reason": zod.string().max(updateAdminPropertyStatusBodyReasonMax).nullish()
+})
+
+export const updateAdminPropertyStatusResponseEnquiryCountMin = 0;
+
+
+
+export const UpdateAdminPropertyStatusResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "propertyType": zod.string(),
+  "address": zod.string(),
+  "areaValue": zod.number(),
+  "areaUnit": zod.string(),
+  "askingPrice": zod.number().nullable(),
+  "currency": zod.string(),
+  "isVerified": zod.boolean(),
+  "status": zod.string(),
+  "ownerId": zod.string(),
+  "ownerName": zod.string().nullable(),
+  "ownerEmail": zod.string().nullable(),
+  "enquiryCount": zod.number().int().min(updateAdminPropertyStatusResponseEnquiryCountMin),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const listAdminBookingsQueryQMax = 160;
+
+export const listAdminBookingsQueryPageDefault = 1;
+
+export const listAdminBookingsQueryLimitDefault = 20;
+export const listAdminBookingsQueryLimitMax = 50;
+
+
+
+export const ListAdminBookingsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listAdminBookingsQueryQMax).optional(),
+  "status": zod.enum(['pending_payment', 'confirmed', 'cancelled']).optional(),
+  "paymentStatus": zod.coerce.string().optional(),
+  "page": zod.coerce.number().int().min(1).default(listAdminBookingsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listAdminBookingsQueryLimitMax).default(listAdminBookingsQueryLimitDefault)
+})
+
+
+
+export const listAdminBookingsResponseMetaTotalMin = 0;
+
+
+
+export const ListAdminBookingsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "reference": zod.string(),
+  "userId": zod.string(),
+  "userName": zod.string().nullable(),
+  "userEmail": zod.string(),
+  "hotelName": zod.string().nullable(),
+  "vendorName": zod.string().nullable(),
+  "roomName": zod.string().nullable(),
+  "startsOn": zod.coerce.date(),
+  "endsOn": zod.coerce.date(),
+  "guestName": zod.string(),
+  "guestEmail": zod.string(),
+  "totalAmount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "paymentStatus": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1),
+  "total": zod.number().int().min(listAdminBookingsResponseMetaTotalMin),
+  "hasMore": zod.boolean()
+})
+})
+
+
+export const GetAdminBookingDetailParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetAdminBookingDetailResponse = zod.object({
+  "id": zod.string(),
+  "reference": zod.string(),
+  "userId": zod.string(),
+  "userName": zod.string().nullable(),
+  "userEmail": zod.string(),
+  "hotelName": zod.string().nullable(),
+  "vendorName": zod.string().nullable(),
+  "roomName": zod.string().nullable(),
+  "startsOn": zod.coerce.date(),
+  "endsOn": zod.coerce.date(),
+  "guestName": zod.string(),
+  "guestEmail": zod.string(),
+  "totalAmount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "paymentStatus": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const listAdminPaymentsQueryQMax = 160;
+
+export const listAdminPaymentsQueryPageDefault = 1;
+
+export const listAdminPaymentsQueryLimitDefault = 20;
+export const listAdminPaymentsQueryLimitMax = 50;
+
+
+
+export const ListAdminPaymentsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listAdminPaymentsQueryQMax).optional(),
+  "status": zod.coerce.string().optional(),
+  "page": zod.coerce.number().int().min(1).default(listAdminPaymentsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listAdminPaymentsQueryLimitMax).default(listAdminPaymentsQueryLimitDefault)
+})
+
+
+
+export const listAdminPaymentsResponseMetaTotalMin = 0;
+
+
+
+export const ListAdminPaymentsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "bookingReference": zod.string().nullable(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "provider": zod.string(),
+  "providerReference": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1),
+  "total": zod.number().int().min(listAdminPaymentsResponseMetaTotalMin),
+  "hasMore": zod.boolean()
+})
+})
+
+
+export const listAdminReviewsQueryRatingMax = 5;
+
+export const listAdminReviewsQueryQMax = 160;
+
+export const listAdminReviewsQueryPageDefault = 1;
+
+export const listAdminReviewsQueryLimitDefault = 20;
+export const listAdminReviewsQueryLimitMax = 50;
+
+
+
+export const ListAdminReviewsQueryParams = zod.object({
+  "status": zod.enum(['pending', 'published', 'rejected']).optional(),
+  "rating": zod.coerce.number().int().min(1).max(listAdminReviewsQueryRatingMax).optional(),
+  "q": zod.coerce.string().max(listAdminReviewsQueryQMax).optional(),
+  "page": zod.coerce.number().int().min(1).default(listAdminReviewsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listAdminReviewsQueryLimitMax).default(listAdminReviewsQueryLimitDefault)
+})
+
+
+
+export const listAdminReviewsResponseMetaTotalMin = 0;
+
+
+
+export const ListAdminReviewsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "userName": zod.string().nullable(),
+  "entityType": zod.string(),
+  "entityId": zod.string(),
+  "rating": zod.number().int(),
+  "title": zod.string().nullable(),
+  "body": zod.string().nullable(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1),
+  "total": zod.number().int().min(listAdminReviewsResponseMetaTotalMin),
+  "hasMore": zod.boolean()
+})
+})
+
+
+export const UpdateAdminReviewStatusParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateAdminReviewStatusBodyReasonMax = 1000;
+
+
+
+export const UpdateAdminReviewStatusBody = zod.object({
+  "status": zod.enum(['active', 'inactive', 'suspended', 'approved', 'rejected', 'published', 'archived', 'pending', 'pending_payment', 'confirmed', 'cancelled']),
+  "reason": zod.string().max(updateAdminReviewStatusBodyReasonMax).nullish()
+})
+
+export const UpdateAdminReviewStatusResponse = zod.object({
+  "id": zod.string(),
+  "userName": zod.string().nullable(),
+  "entityType": zod.string(),
+  "entityId": zod.string(),
+  "rating": zod.number().int(),
+  "title": zod.string().nullable(),
+  "body": zod.string().nullable(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const createAdminNotificationBodyTitleMax = 160;
+
+export const createAdminNotificationBodyBodyMax = 4000;
+
+
+
+export const CreateAdminNotificationBody = zod.object({
+  "type": zod.enum(['announcement', 'travel_update', 'offer', 'service_notification']),
+  "title": zod.string().min(1).max(createAdminNotificationBodyTitleMax),
+  "body": zod.string().min(1).max(createAdminNotificationBodyBodyMax)
+})
+
+export const createAdminNotificationResponseCreatedMin = 0;
+
+
+
+export const CreateAdminNotificationResponse = zod.object({
+  "created": zod.number().int().min(createAdminNotificationResponseCreatedMin),
+  "message": zod.string()
+})
+
+
+export const listAdminAuditLogsQueryQMax = 160;
+
+export const listAdminAuditLogsQueryPageDefault = 1;
+
+export const listAdminAuditLogsQueryLimitDefault = 20;
+export const listAdminAuditLogsQueryLimitMax = 50;
+
+
+
+export const ListAdminAuditLogsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listAdminAuditLogsQueryQMax).optional(),
+  "page": zod.coerce.number().int().min(1).default(listAdminAuditLogsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listAdminAuditLogsQueryLimitMax).default(listAdminAuditLogsQueryLimitDefault)
+})
+
+
+
+export const listAdminAuditLogsResponseMetaTotalMin = 0;
+
+
+
+export const ListAdminAuditLogsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "adminUserId": zod.string(),
+  "adminName": zod.string().nullable(),
+  "action": zod.string(),
+  "entityType": zod.string(),
+  "entityId": zod.string(),
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1),
+  "total": zod.number().int().min(listAdminAuditLogsResponseMetaTotalMin),
+  "hasMore": zod.boolean()
+})
 })
 
 

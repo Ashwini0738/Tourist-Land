@@ -20,8 +20,35 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminAuditLogPage,
+  AdminAvailabilityPage,
+  AdminBooking,
+  AdminBookingPage,
+  AdminDashboard,
+  AdminDestination,
+  AdminDestinationInput,
+  AdminDestinationPage,
+  AdminDestinationUpdate,
+  AdminEventPage,
+  AdminHotel,
+  AdminHotelDetail,
+  AdminHotelPage,
+  AdminHotelStatusUpdate,
   AdminInvitation,
   AdminListingList,
+  AdminNotificationInput,
+  AdminNotificationReceipt,
+  AdminPaymentPage,
+  AdminPlacePage,
+  AdminProperty,
+  AdminPropertyPage,
+  AdminReview,
+  AdminReviewPage,
+  AdminRoomPage,
+  AdminStatusUpdate,
+  AdminUserDetail,
+  AdminUserPage,
+  AdminVendorPage,
   AuthSessionStatus,
   BannerList,
   BookingCheckoutResponse,
@@ -55,10 +82,22 @@ import type {
   HotelRoomList,
   HotelSearchResponse,
   InvalidInputResponse,
+  ListAdminAuditLogsParams,
+  ListAdminAvailabilityParams,
+  ListAdminBookingsParams,
+  ListAdminDestinationsParams,
+  ListAdminEventsParams,
+  ListAdminHotelsParams,
   ListAdminInvitations200,
-  ListAdminUsers200,
+  ListAdminPaymentsParams,
+  ListAdminPlacesParams,
+  ListAdminPropertiesParams,
+  ListAdminReviewsParams,
+  ListAdminRoomsParams,
+  ListAdminUsersPageParams,
   ListAdminVendorApplications200,
   ListAdminVendorApprovalHistory200,
+  ListAdminVendorsParams,
   ListDestinations200,
   ListHotelReviewsForHotelParams,
   ListNotificationsParams,
@@ -5370,160 +5409,6 @@ export const useArchiveVendorListing = <TError = ErrorType<UnauthenticatedRespon
       return useMutation(getArchiveVendorListingMutationOptions(options));
     }
 
-export const getGetAdminDashboardUrl = () => {
-
-
-
-
-  return `/api/v1/admin/dashboard`
-}
-
-/**
- * @summary Get the authenticated admin dashboard status
- */
-export const getAdminDashboard = async ( options?: Parameters<typeof customFetch>[1]): Promise<RoleDashboard> => {
-
-  return customFetch<RoleDashboard>(getGetAdminDashboardUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetAdminDashboardQueryKey = () => {
-    return [
-    `/api/v1/admin/dashboard`
-    ] as const;
-    }
-
-
-export const getGetAdminDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getAdminDashboard>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetAdminDashboardQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminDashboard>>> = ({ signal }) => getAdminDashboard({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminDashboard>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetAdminDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminDashboard>>>
-export type GetAdminDashboardQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
-
-
-/**
- * @summary Get the authenticated admin dashboard status
- */
-
-export function useGetAdminDashboard<TData = Awaited<ReturnType<typeof getAdminDashboard>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetAdminDashboardQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
-export const getListAdminUsersUrl = () => {
-
-
-
-
-  return `/api/v1/admin/users`
-}
-
-/**
- * @summary List safe local user records for platform administration
- */
-export const listAdminUsers = async ( options?: Parameters<typeof customFetch>[1]): Promise<ListAdminUsers200> => {
-
-  return customFetch<ListAdminUsers200>(getListAdminUsersUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getListAdminUsersQueryKey = () => {
-    return [
-    `/api/v1/admin/users`
-    ] as const;
-    }
-
-
-export const getListAdminUsersQueryOptions = <TData = Awaited<ReturnType<typeof listAdminUsers>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListAdminUsersQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminUsers>>> = ({ signal }) => listAdminUsers({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListAdminUsersQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminUsers>>>
-export type ListAdminUsersQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
-
-
-/**
- * @summary List safe local user records for platform administration
- */
-
-export function useListAdminUsers<TData = Awaited<ReturnType<typeof listAdminUsers>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListAdminUsersQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export const getListAdminVendorApplicationsUrl = () => {
 
 
@@ -6187,4 +6072,1834 @@ export const useSuspendVendor = <TError = ErrorType<UnauthenticatedResponse | Fo
       > => {
       return useMutation(getSuspendVendorMutationOptions(options));
     }
+
+export const getGetAdminOperationsDashboardUrl = () => {
+
+
+
+
+  return `/api/v1/admin/dashboard`
+}
+
+/**
+ * @summary Get database-backed platform operations metrics
+ */
+export const getAdminOperationsDashboard = async ( options?: Parameters<typeof customFetch>[1]): Promise<AdminDashboard> => {
+
+  return customFetch<AdminDashboard>(getGetAdminOperationsDashboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminOperationsDashboardQueryKey = () => {
+    return [
+    `/api/v1/admin/dashboard`
+    ] as const;
+    }
+
+
+export const getGetAdminOperationsDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getAdminOperationsDashboard>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminOperationsDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminOperationsDashboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminOperationsDashboard>>> = ({ signal }) => getAdminOperationsDashboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminOperationsDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminOperationsDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminOperationsDashboard>>>
+export type GetAdminOperationsDashboardQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+/**
+ * @summary Get database-backed platform operations metrics
+ */
+
+export function useGetAdminOperationsDashboard<TData = Awaited<ReturnType<typeof getAdminOperationsDashboard>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminOperationsDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminOperationsDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAdminUsersPageUrl = (params?: ListAdminUsersPageParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/users?${stringifiedParams}` : `/api/v1/admin/users`
+}
+
+export const listAdminUsersPage = async (params?: ListAdminUsersPageParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminUserPage> => {
+
+  return customFetch<AdminUserPage>(getListAdminUsersPageUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminUsersPageQueryKey = (params?: ListAdminUsersPageParams,) => {
+    return [
+    `/api/v1/admin/users`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminUsersPageQueryOptions = <TData = Awaited<ReturnType<typeof listAdminUsersPage>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListAdminUsersPageParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminUsersPage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminUsersPageQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminUsersPage>>> = ({ signal }) => listAdminUsersPage(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminUsersPage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminUsersPageQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminUsersPage>>>
+export type ListAdminUsersPageQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListAdminUsersPage<TData = Awaited<ReturnType<typeof listAdminUsersPage>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListAdminUsersPageParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminUsersPage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminUsersPageQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAdminUserDetailUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/users/${id}`
+}
+
+export const getAdminUserDetail = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<AdminUserDetail> => {
+
+  return customFetch<AdminUserDetail>(getGetAdminUserDetailUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminUserDetailQueryKey = (id: string,) => {
+    return [
+    `/api/v1/admin/users/${id}`
+    ] as const;
+    }
+
+
+export const getGetAdminUserDetailQueryOptions = <TData = Awaited<ReturnType<typeof getAdminUserDetail>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminUserDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminUserDetailQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminUserDetail>>> = ({ signal }) => getAdminUserDetail(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminUserDetail>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminUserDetailQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminUserDetail>>>
+export type GetAdminUserDetailQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+
+
+export function useGetAdminUserDetail<TData = Awaited<ReturnType<typeof getAdminUserDetail>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminUserDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminUserDetailQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAdminUserStatusUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/users/${id}/status`
+}
+
+export const updateAdminUserStatus = async (id: string,
+    adminStatusUpdate: AdminStatusUpdate, options?: Parameters<typeof customFetch>[1]): Promise<CurrentUser> => {
+
+  return customFetch<CurrentUser>(getUpdateAdminUserStatusUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminStatusUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminUserStatusMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminUserStatus>>, TError,{id: string;data: BodyType<AdminStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminUserStatus>>, TError,{id: string;data: BodyType<AdminStatusUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminUserStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminUserStatus>>, {id: string;data: BodyType<AdminStatusUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAdminUserStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminUserStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminUserStatus>>>
+    export type UpdateAdminUserStatusMutationBody = BodyType<AdminStatusUpdate>
+    export type UpdateAdminUserStatusMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>
+
+    export const useUpdateAdminUserStatus = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminUserStatus>>, TError,{id: string;data: BodyType<AdminStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminUserStatus>>,
+        TError,
+        {id: string;data: BodyType<AdminStatusUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminUserStatusMutationOptions(options));
+    }
+
+export const getListAdminVendorsUrl = (params?: ListAdminVendorsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/vendors?${stringifiedParams}` : `/api/v1/admin/vendors`
+}
+
+export const listAdminVendors = async (params?: ListAdminVendorsParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminVendorPage> => {
+
+  return customFetch<AdminVendorPage>(getListAdminVendorsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminVendorsQueryKey = (params?: ListAdminVendorsParams,) => {
+    return [
+    `/api/v1/admin/vendors`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminVendorsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminVendors>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListAdminVendorsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminVendors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminVendorsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminVendors>>> = ({ signal }) => listAdminVendors(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminVendors>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminVendorsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminVendors>>>
+export type ListAdminVendorsQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListAdminVendors<TData = Awaited<ReturnType<typeof listAdminVendors>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListAdminVendorsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminVendors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminVendorsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAdminVendorStatusUrl = (userId: string,) => {
+
+
+
+
+  return `/api/v1/admin/vendors/${userId}/status`
+}
+
+export const updateAdminVendorStatus = async (userId: string,
+    adminStatusUpdate: AdminStatusUpdate, options?: Parameters<typeof customFetch>[1]): Promise<VendorProfile> => {
+
+  return customFetch<VendorProfile>(getUpdateAdminVendorStatusUrl(userId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminStatusUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminVendorStatusMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminVendorStatus>>, TError,{userId: string;data: BodyType<AdminStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminVendorStatus>>, TError,{userId: string;data: BodyType<AdminStatusUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminVendorStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminVendorStatus>>, {userId: string;data: BodyType<AdminStatusUpdate>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  updateAdminVendorStatus(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminVendorStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminVendorStatus>>>
+    export type UpdateAdminVendorStatusMutationBody = BodyType<AdminStatusUpdate>
+    export type UpdateAdminVendorStatusMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+    export const useUpdateAdminVendorStatus = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminVendorStatus>>, TError,{userId: string;data: BodyType<AdminStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminVendorStatus>>,
+        TError,
+        {userId: string;data: BodyType<AdminStatusUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminVendorStatusMutationOptions(options));
+    }
+
+export const getListAdminHotelsUrl = (params?: ListAdminHotelsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/hotels?${stringifiedParams}` : `/api/v1/admin/hotels`
+}
+
+export const listAdminHotels = async (params?: ListAdminHotelsParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminHotelPage> => {
+
+  return customFetch<AdminHotelPage>(getListAdminHotelsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminHotelsQueryKey = (params?: ListAdminHotelsParams,) => {
+    return [
+    `/api/v1/admin/hotels`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminHotelsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminHotels>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListAdminHotelsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminHotels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminHotelsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminHotels>>> = ({ signal }) => listAdminHotels(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminHotels>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminHotelsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminHotels>>>
+export type ListAdminHotelsQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListAdminHotels<TData = Awaited<ReturnType<typeof listAdminHotels>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListAdminHotelsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminHotels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminHotelsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAdminHotelDetailUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/hotels/${id}`
+}
+
+export const getAdminHotelDetail = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<AdminHotelDetail> => {
+
+  return customFetch<AdminHotelDetail>(getGetAdminHotelDetailUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminHotelDetailQueryKey = (id: string,) => {
+    return [
+    `/api/v1/admin/hotels/${id}`
+    ] as const;
+    }
+
+
+export const getGetAdminHotelDetailQueryOptions = <TData = Awaited<ReturnType<typeof getAdminHotelDetail>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminHotelDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminHotelDetailQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminHotelDetail>>> = ({ signal }) => getAdminHotelDetail(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminHotelDetail>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminHotelDetailQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminHotelDetail>>>
+export type GetAdminHotelDetailQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+
+
+export function useGetAdminHotelDetail<TData = Awaited<ReturnType<typeof getAdminHotelDetail>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminHotelDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminHotelDetailQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAdminHotelStatusUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/hotels/${id}/status`
+}
+
+export const updateAdminHotelStatus = async (id: string,
+    adminHotelStatusUpdate: AdminHotelStatusUpdate, options?: Parameters<typeof customFetch>[1]): Promise<AdminHotel> => {
+
+  return customFetch<AdminHotel>(getUpdateAdminHotelStatusUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminHotelStatusUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminHotelStatusMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminHotelStatus>>, TError,{id: string;data: BodyType<AdminHotelStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminHotelStatus>>, TError,{id: string;data: BodyType<AdminHotelStatusUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminHotelStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminHotelStatus>>, {id: string;data: BodyType<AdminHotelStatusUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAdminHotelStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminHotelStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminHotelStatus>>>
+    export type UpdateAdminHotelStatusMutationBody = BodyType<AdminHotelStatusUpdate>
+    export type UpdateAdminHotelStatusMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>
+
+    export const useUpdateAdminHotelStatus = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminHotelStatus>>, TError,{id: string;data: BodyType<AdminHotelStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminHotelStatus>>,
+        TError,
+        {id: string;data: BodyType<AdminHotelStatusUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminHotelStatusMutationOptions(options));
+    }
+
+export const getListAdminRoomsUrl = (params?: ListAdminRoomsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/rooms?${stringifiedParams}` : `/api/v1/admin/rooms`
+}
+
+export const listAdminRooms = async (params?: ListAdminRoomsParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminRoomPage> => {
+
+  return customFetch<AdminRoomPage>(getListAdminRoomsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminRoomsQueryKey = (params?: ListAdminRoomsParams,) => {
+    return [
+    `/api/v1/admin/rooms`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminRoomsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminRooms>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListAdminRoomsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminRooms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminRoomsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminRooms>>> = ({ signal }) => listAdminRooms(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminRooms>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminRoomsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminRooms>>>
+export type ListAdminRoomsQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListAdminRooms<TData = Awaited<ReturnType<typeof listAdminRooms>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListAdminRoomsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminRooms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminRoomsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAdminAvailabilityUrl = (params?: ListAdminAvailabilityParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/availability?${stringifiedParams}` : `/api/v1/admin/availability`
+}
+
+export const listAdminAvailability = async (params?: ListAdminAvailabilityParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminAvailabilityPage> => {
+
+  return customFetch<AdminAvailabilityPage>(getListAdminAvailabilityUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminAvailabilityQueryKey = (params?: ListAdminAvailabilityParams,) => {
+    return [
+    `/api/v1/admin/availability`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminAvailabilityQueryOptions = <TData = Awaited<ReturnType<typeof listAdminAvailability>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListAdminAvailabilityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminAvailabilityQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminAvailability>>> = ({ signal }) => listAdminAvailability(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminAvailability>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminAvailabilityQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminAvailability>>>
+export type ListAdminAvailabilityQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListAdminAvailability<TData = Awaited<ReturnType<typeof listAdminAvailability>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListAdminAvailabilityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminAvailabilityQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAdminDestinationsUrl = (params?: ListAdminDestinationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/destinations?${stringifiedParams}` : `/api/v1/admin/destinations`
+}
+
+export const listAdminDestinations = async (params?: ListAdminDestinationsParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminDestinationPage> => {
+
+  return customFetch<AdminDestinationPage>(getListAdminDestinationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminDestinationsQueryKey = (params?: ListAdminDestinationsParams,) => {
+    return [
+    `/api/v1/admin/destinations`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminDestinationsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminDestinations>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListAdminDestinationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminDestinations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminDestinationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminDestinations>>> = ({ signal }) => listAdminDestinations(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminDestinations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminDestinationsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminDestinations>>>
+export type ListAdminDestinationsQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListAdminDestinations<TData = Awaited<ReturnType<typeof listAdminDestinations>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListAdminDestinationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminDestinations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminDestinationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateAdminDestinationUrl = () => {
+
+
+
+
+  return `/api/v1/admin/destinations`
+}
+
+export const createAdminDestination = async (adminDestinationInput: AdminDestinationInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminDestination> => {
+
+  return customFetch<AdminDestination>(getCreateAdminDestinationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminDestinationInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAdminDestinationMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminDestination>>, TError,{data: BodyType<AdminDestinationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdminDestination>>, TError,{data: BodyType<AdminDestinationInput>}, TContext> => {
+
+const mutationKey = ['createAdminDestination'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdminDestination>>, {data: BodyType<AdminDestinationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdminDestination(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdminDestinationMutationResult = NonNullable<Awaited<ReturnType<typeof createAdminDestination>>>
+    export type CreateAdminDestinationMutationBody = BodyType<AdminDestinationInput>
+    export type CreateAdminDestinationMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ConflictResponse>
+
+    export const useCreateAdminDestination = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminDestination>>, TError,{data: BodyType<AdminDestinationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAdminDestination>>,
+        TError,
+        {data: BodyType<AdminDestinationInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAdminDestinationMutationOptions(options));
+    }
+
+export const getUpdateAdminDestinationUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/destinations/${id}`
+}
+
+export const updateAdminDestination = async (id: string,
+    adminDestinationUpdate: AdminDestinationUpdate, options?: Parameters<typeof customFetch>[1]): Promise<AdminDestination> => {
+
+  return customFetch<AdminDestination>(getUpdateAdminDestinationUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminDestinationUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminDestinationMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminDestination>>, TError,{id: string;data: BodyType<AdminDestinationUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminDestination>>, TError,{id: string;data: BodyType<AdminDestinationUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminDestination'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminDestination>>, {id: string;data: BodyType<AdminDestinationUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAdminDestination(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminDestinationMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminDestination>>>
+    export type UpdateAdminDestinationMutationBody = BodyType<AdminDestinationUpdate>
+    export type UpdateAdminDestinationMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+    export const useUpdateAdminDestination = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminDestination>>, TError,{id: string;data: BodyType<AdminDestinationUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminDestination>>,
+        TError,
+        {id: string;data: BodyType<AdminDestinationUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminDestinationMutationOptions(options));
+    }
+
+export const getListAdminPlacesUrl = (params?: ListAdminPlacesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/places?${stringifiedParams}` : `/api/v1/admin/places`
+}
+
+export const listAdminPlaces = async (params?: ListAdminPlacesParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminPlacePage> => {
+
+  return customFetch<AdminPlacePage>(getListAdminPlacesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminPlacesQueryKey = (params?: ListAdminPlacesParams,) => {
+    return [
+    `/api/v1/admin/places`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminPlacesQueryOptions = <TData = Awaited<ReturnType<typeof listAdminPlaces>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListAdminPlacesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminPlaces>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminPlacesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminPlaces>>> = ({ signal }) => listAdminPlaces(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminPlaces>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminPlacesQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminPlaces>>>
+export type ListAdminPlacesQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListAdminPlaces<TData = Awaited<ReturnType<typeof listAdminPlaces>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListAdminPlacesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminPlaces>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminPlacesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAdminEventsUrl = (params?: ListAdminEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/events?${stringifiedParams}` : `/api/v1/admin/events`
+}
+
+export const listAdminEvents = async (params?: ListAdminEventsParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminEventPage> => {
+
+  return customFetch<AdminEventPage>(getListAdminEventsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminEventsQueryKey = (params?: ListAdminEventsParams,) => {
+    return [
+    `/api/v1/admin/events`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminEventsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminEvents>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListAdminEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminEventsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminEvents>>> = ({ signal }) => listAdminEvents(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminEvents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminEventsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminEvents>>>
+export type ListAdminEventsQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListAdminEvents<TData = Awaited<ReturnType<typeof listAdminEvents>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListAdminEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminEventsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAdminPropertiesUrl = (params?: ListAdminPropertiesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/properties?${stringifiedParams}` : `/api/v1/admin/properties`
+}
+
+export const listAdminProperties = async (params?: ListAdminPropertiesParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminPropertyPage> => {
+
+  return customFetch<AdminPropertyPage>(getListAdminPropertiesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminPropertiesQueryKey = (params?: ListAdminPropertiesParams,) => {
+    return [
+    `/api/v1/admin/properties`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminPropertiesQueryOptions = <TData = Awaited<ReturnType<typeof listAdminProperties>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListAdminPropertiesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminProperties>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminPropertiesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminProperties>>> = ({ signal }) => listAdminProperties(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminProperties>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminPropertiesQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminProperties>>>
+export type ListAdminPropertiesQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListAdminProperties<TData = Awaited<ReturnType<typeof listAdminProperties>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListAdminPropertiesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminProperties>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminPropertiesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAdminPropertyStatusUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/properties/${id}/status`
+}
+
+export const updateAdminPropertyStatus = async (id: string,
+    adminStatusUpdate: AdminStatusUpdate, options?: Parameters<typeof customFetch>[1]): Promise<AdminProperty> => {
+
+  return customFetch<AdminProperty>(getUpdateAdminPropertyStatusUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminStatusUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminPropertyStatusMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminPropertyStatus>>, TError,{id: string;data: BodyType<AdminStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminPropertyStatus>>, TError,{id: string;data: BodyType<AdminStatusUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminPropertyStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminPropertyStatus>>, {id: string;data: BodyType<AdminStatusUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAdminPropertyStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminPropertyStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminPropertyStatus>>>
+    export type UpdateAdminPropertyStatusMutationBody = BodyType<AdminStatusUpdate>
+    export type UpdateAdminPropertyStatusMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+    export const useUpdateAdminPropertyStatus = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminPropertyStatus>>, TError,{id: string;data: BodyType<AdminStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminPropertyStatus>>,
+        TError,
+        {id: string;data: BodyType<AdminStatusUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminPropertyStatusMutationOptions(options));
+    }
+
+export const getListAdminBookingsUrl = (params?: ListAdminBookingsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/bookings?${stringifiedParams}` : `/api/v1/admin/bookings`
+}
+
+export const listAdminBookings = async (params?: ListAdminBookingsParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminBookingPage> => {
+
+  return customFetch<AdminBookingPage>(getListAdminBookingsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminBookingsQueryKey = (params?: ListAdminBookingsParams,) => {
+    return [
+    `/api/v1/admin/bookings`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminBookingsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminBookings>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListAdminBookingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminBookings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminBookingsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminBookings>>> = ({ signal }) => listAdminBookings(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminBookings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminBookingsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminBookings>>>
+export type ListAdminBookingsQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListAdminBookings<TData = Awaited<ReturnType<typeof listAdminBookings>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListAdminBookingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminBookings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminBookingsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAdminBookingDetailUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/bookings/${id}`
+}
+
+export const getAdminBookingDetail = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<AdminBooking> => {
+
+  return customFetch<AdminBooking>(getGetAdminBookingDetailUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminBookingDetailQueryKey = (id: string,) => {
+    return [
+    `/api/v1/admin/bookings/${id}`
+    ] as const;
+    }
+
+
+export const getGetAdminBookingDetailQueryOptions = <TData = Awaited<ReturnType<typeof getAdminBookingDetail>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminBookingDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminBookingDetailQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminBookingDetail>>> = ({ signal }) => getAdminBookingDetail(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminBookingDetail>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminBookingDetailQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminBookingDetail>>>
+export type GetAdminBookingDetailQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+
+
+export function useGetAdminBookingDetail<TData = Awaited<ReturnType<typeof getAdminBookingDetail>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminBookingDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminBookingDetailQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAdminPaymentsUrl = (params?: ListAdminPaymentsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/payments?${stringifiedParams}` : `/api/v1/admin/payments`
+}
+
+export const listAdminPayments = async (params?: ListAdminPaymentsParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminPaymentPage> => {
+
+  return customFetch<AdminPaymentPage>(getListAdminPaymentsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminPaymentsQueryKey = (params?: ListAdminPaymentsParams,) => {
+    return [
+    `/api/v1/admin/payments`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminPaymentsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminPayments>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListAdminPaymentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminPayments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminPaymentsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminPayments>>> = ({ signal }) => listAdminPayments(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminPayments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminPaymentsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminPayments>>>
+export type ListAdminPaymentsQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListAdminPayments<TData = Awaited<ReturnType<typeof listAdminPayments>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListAdminPaymentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminPayments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminPaymentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAdminReviewsUrl = (params?: ListAdminReviewsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/reviews?${stringifiedParams}` : `/api/v1/admin/reviews`
+}
+
+export const listAdminReviews = async (params?: ListAdminReviewsParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminReviewPage> => {
+
+  return customFetch<AdminReviewPage>(getListAdminReviewsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminReviewsQueryKey = (params?: ListAdminReviewsParams,) => {
+    return [
+    `/api/v1/admin/reviews`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminReviewsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminReviews>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListAdminReviewsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminReviewsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminReviews>>> = ({ signal }) => listAdminReviews(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminReviews>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminReviews>>>
+export type ListAdminReviewsQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListAdminReviews<TData = Awaited<ReturnType<typeof listAdminReviews>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListAdminReviewsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminReviewsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAdminReviewStatusUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/reviews/${id}/status`
+}
+
+export const updateAdminReviewStatus = async (id: string,
+    adminStatusUpdate: AdminStatusUpdate, options?: Parameters<typeof customFetch>[1]): Promise<AdminReview> => {
+
+  return customFetch<AdminReview>(getUpdateAdminReviewStatusUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminStatusUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminReviewStatusMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminReviewStatus>>, TError,{id: string;data: BodyType<AdminStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminReviewStatus>>, TError,{id: string;data: BodyType<AdminStatusUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminReviewStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminReviewStatus>>, {id: string;data: BodyType<AdminStatusUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAdminReviewStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminReviewStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminReviewStatus>>>
+    export type UpdateAdminReviewStatusMutationBody = BodyType<AdminStatusUpdate>
+    export type UpdateAdminReviewStatusMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>
+
+    export const useUpdateAdminReviewStatus = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminReviewStatus>>, TError,{id: string;data: BodyType<AdminStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminReviewStatus>>,
+        TError,
+        {id: string;data: BodyType<AdminStatusUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminReviewStatusMutationOptions(options));
+    }
+
+export const getCreateAdminNotificationUrl = () => {
+
+
+
+
+  return `/api/v1/admin/notifications`
+}
+
+export const createAdminNotification = async (adminNotificationInput: AdminNotificationInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminNotificationReceipt> => {
+
+  return customFetch<AdminNotificationReceipt>(getCreateAdminNotificationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminNotificationInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAdminNotificationMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminNotification>>, TError,{data: BodyType<AdminNotificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdminNotification>>, TError,{data: BodyType<AdminNotificationInput>}, TContext> => {
+
+const mutationKey = ['createAdminNotification'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdminNotification>>, {data: BodyType<AdminNotificationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdminNotification(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdminNotificationMutationResult = NonNullable<Awaited<ReturnType<typeof createAdminNotification>>>
+    export type CreateAdminNotificationMutationBody = BodyType<AdminNotificationInput>
+    export type CreateAdminNotificationMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse>
+
+    export const useCreateAdminNotification = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminNotification>>, TError,{data: BodyType<AdminNotificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAdminNotification>>,
+        TError,
+        {data: BodyType<AdminNotificationInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAdminNotificationMutationOptions(options));
+    }
+
+export const getListAdminAuditLogsUrl = (params?: ListAdminAuditLogsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/audit-logs?${stringifiedParams}` : `/api/v1/admin/audit-logs`
+}
+
+export const listAdminAuditLogs = async (params?: ListAdminAuditLogsParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminAuditLogPage> => {
+
+  return customFetch<AdminAuditLogPage>(getListAdminAuditLogsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminAuditLogsQueryKey = (params?: ListAdminAuditLogsParams,) => {
+    return [
+    `/api/v1/admin/audit-logs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminAuditLogsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminAuditLogs>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(params?: ListAdminAuditLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAuditLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminAuditLogsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminAuditLogs>>> = ({ signal }) => listAdminAuditLogs(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminAuditLogs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminAuditLogsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminAuditLogs>>>
+export type ListAdminAuditLogsQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+
+export function useListAdminAuditLogs<TData = Awaited<ReturnType<typeof listAdminAuditLogs>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+ params?: ListAdminAuditLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAuditLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminAuditLogsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

@@ -5,8 +5,6 @@
  * Travel and land sourcing REST API
  * OpenAPI spec version: 0.1.0
  */
-import type { CurrentUser } from './currentUser';
+import type { AdminDestinationInput } from './adminDestinationInput';
 
-export type ListAdminUsers200 = {
-  items: CurrentUser[];
-};
+export type AdminDestinationUpdate = AdminDestinationInput;

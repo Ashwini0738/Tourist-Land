@@ -1688,6 +1688,494 @@ export interface LogoutStatus {
   message: string;
 }
 
+export interface AdminPageMeta {
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  limit: number;
+  /** @minimum 0 */
+  total: number;
+  hasMore: boolean;
+}
+
+export interface AdminDashboardMetric {
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 0 */
+  active: number;
+  /** @minimum 0 */
+  pending: number;
+  /** @minimum 0 */
+  approved: number;
+  /** @minimum 0 */
+  rejected: number;
+  /** @minimum 0 */
+  inactive: number;
+}
+
+export type AdminDashboardRole = typeof AdminDashboardRole[keyof typeof AdminDashboardRole];
+
+
+export const AdminDashboardRole = {
+  admin: 'admin',
+} as const;
+
+export type AdminDashboardRevenueStatus = typeof AdminDashboardRevenueStatus[keyof typeof AdminDashboardRevenueStatus];
+
+
+export const AdminDashboardRevenueStatus = {
+  available: 'available',
+  unavailable: 'unavailable',
+} as const;
+
+export type AdminDashboardRevenue = {
+  status: AdminDashboardRevenueStatus;
+  /** @minimum 0 */
+  successfulPayments: number;
+  /** @minimum 0 */
+  paymentVolume: number;
+  /** @minimum 0 */
+  refundVolume: number;
+  /** @nullable */
+  currency: string | null;
+};
+
+export interface AdminDashboard {
+  role: AdminDashboardRole;
+  title: string;
+  generatedAt: string;
+  users: AdminDashboardMetric;
+  vendors: AdminDashboardMetric;
+  hotels: AdminDashboardMetric;
+  bookings: AdminDashboardMetric;
+  revenue: AdminDashboardRevenue;
+}
+
+export type AdminUser = CurrentUser;
+
+export interface AdminUserPage {
+  items: AdminUser[];
+  meta: AdminPageMeta;
+}
+
+export interface AdminUserDetail {
+  user: AdminUser;
+  /** @minimum 0 */
+  bookingCount: number;
+  /** @minimum 0 */
+  favoriteCount: number;
+  /** @minimum 0 */
+  reviewCount: number;
+}
+
+export type AdminStatusUpdateStatus = typeof AdminStatusUpdateStatus[keyof typeof AdminStatusUpdateStatus];
+
+
+export const AdminStatusUpdateStatus = {
+  active: 'active',
+  inactive: 'inactive',
+  suspended: 'suspended',
+  approved: 'approved',
+  rejected: 'rejected',
+  published: 'published',
+  archived: 'archived',
+  pending: 'pending',
+  pending_payment: 'pending_payment',
+  confirmed: 'confirmed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface AdminStatusUpdate {
+  status: AdminStatusUpdateStatus;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  reason?: string | null;
+}
+
+export interface AdminVendor {
+  userId: string;
+  user: AdminUser;
+  profile: VendorProfile;
+  /** @minimum 0 */
+  hotelCount: number;
+}
+
+export interface AdminVendorPage {
+  items: AdminVendor[];
+  meta: AdminPageMeta;
+}
+
+export interface AdminHotel {
+  id: string;
+  name: string;
+  address: string;
+  /** @nullable */
+  city: string | null;
+  /** @nullable */
+  country: string | null;
+  status: string;
+  approvalStatus: string;
+  /** @nullable */
+  ownerId: string | null;
+  /** @nullable */
+  ownerName: string | null;
+  /** @nullable */
+  ownerEmail: string | null;
+  /** @minimum 0 */
+  roomCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminHotelPage {
+  items: AdminHotel[];
+  meta: AdminPageMeta;
+}
+
+export interface AdminRoom {
+  id: string;
+  hotelId: string;
+  hotelName: string;
+  name: string;
+  capacity: number;
+  totalUnits: number;
+  nightlyRate: number;
+  currency: string;
+  status: string;
+  /** @minimum 0 */
+  reservedUnits: number;
+  /** @minimum 0 */
+  availableUnits: number;
+}
+
+export interface AdminAvailability {
+  id: string;
+  roomId: string;
+  roomName: string;
+  hotelName: string;
+  date: string;
+  /** @minimum 0 */
+  availableUnits: number;
+  /** @minimum 0 */
+  reservedUnits: number;
+  status: string;
+  /** @nullable */
+  blackoutReason: string | null;
+}
+
+export interface AdminHotelDetail {
+  hotel: AdminHotel;
+  rooms: AdminRoom[];
+  availability: AdminAvailability[];
+}
+
+/**
+ * @nullable
+ */
+export type AdminHotelStatusUpdateStatus = typeof AdminHotelStatusUpdateStatus[keyof typeof AdminHotelStatusUpdateStatus] | null;
+
+
+export const AdminHotelStatusUpdateStatus = {
+  draft: 'draft',
+  published: 'published',
+  archived: 'archived',
+} as const;
+
+/**
+ * @nullable
+ */
+export type AdminHotelStatusUpdateApprovalStatus = typeof AdminHotelStatusUpdateApprovalStatus[keyof typeof AdminHotelStatusUpdateApprovalStatus] | null;
+
+
+export const AdminHotelStatusUpdateApprovalStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface AdminHotelStatusUpdate {
+  /** @nullable */
+  status: AdminHotelStatusUpdateStatus;
+  /** @nullable */
+  approvalStatus: AdminHotelStatusUpdateApprovalStatus;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  reason?: string | null;
+}
+
+export interface AdminRoomPage {
+  items: AdminRoom[];
+  meta: AdminPageMeta;
+}
+
+export interface AdminAvailabilityPage {
+  items: AdminAvailability[];
+  meta: AdminPageMeta;
+}
+
+export interface AdminDestination {
+  id: string;
+  slug: string;
+  name: string;
+  country: string;
+  /** @nullable */
+  region: string | null;
+  /** @nullable */
+  summary: string | null;
+  /** @nullable */
+  latitude: number | null;
+  /** @nullable */
+  longitude: number | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminDestinationInput {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  slug: string;
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  country: string;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  region?: string | null;
+  /**
+     * @maxLength 4000
+     * @nullable
+     */
+  summary?: string | null;
+  /**
+     * @minimum -90
+     * @maximum 90
+     * @nullable
+     */
+  latitude?: number | null;
+  /**
+     * @minimum -180
+     * @maximum 180
+     * @nullable
+     */
+  longitude?: number | null;
+  /** @maxLength 40 */
+  status?: string;
+}
+
+export type AdminDestinationUpdate = AdminDestinationInput;
+
+export interface AdminDestinationPage {
+  items: AdminDestination[];
+  meta: AdminPageMeta;
+}
+
+export type AdminPlaceType = typeof AdminPlaceType[keyof typeof AdminPlaceType];
+
+
+export const AdminPlaceType = {
+  attraction: 'attraction',
+  food: 'food',
+} as const;
+
+export interface AdminPlace {
+  id: string;
+  type: AdminPlaceType;
+  /** @nullable */
+  destinationId: string | null;
+  /** @nullable */
+  destinationName: string | null;
+  name: string;
+  /** @nullable */
+  description: string | null;
+  /** @nullable */
+  address: string | null;
+  status: string;
+}
+
+export interface AdminPlacePage {
+  items: AdminPlace[];
+  meta: AdminPageMeta;
+}
+
+export interface AdminEvent {
+  id: string;
+  /** @nullable */
+  destinationId: string | null;
+  /** @nullable */
+  destinationName: string | null;
+  name: string;
+  /** @nullable */
+  description: string | null;
+  startsAt: string;
+  /** @nullable */
+  endsAt: string | null;
+  status: string;
+}
+
+export interface AdminEventPage {
+  items: AdminEvent[];
+  meta: AdminPageMeta;
+}
+
+export interface AdminProperty {
+  id: string;
+  title: string;
+  propertyType: string;
+  address: string;
+  areaValue: number;
+  areaUnit: string;
+  /** @nullable */
+  askingPrice: number | null;
+  currency: string;
+  isVerified: boolean;
+  status: string;
+  ownerId: string;
+  /** @nullable */
+  ownerName: string | null;
+  /** @nullable */
+  ownerEmail: string | null;
+  /** @minimum 0 */
+  enquiryCount: number;
+  createdAt: string;
+}
+
+export interface AdminPropertyPage {
+  items: AdminProperty[];
+  meta: AdminPageMeta;
+}
+
+export interface AdminBooking {
+  id: string;
+  reference: string;
+  userId: string;
+  /** @nullable */
+  userName: string | null;
+  userEmail: string;
+  /** @nullable */
+  hotelName: string | null;
+  /** @nullable */
+  vendorName: string | null;
+  /** @nullable */
+  roomName: string | null;
+  startsOn: string;
+  endsOn: string;
+  guestName: string;
+  guestEmail: string;
+  totalAmount: number;
+  currency: string;
+  status: string;
+  /** @nullable */
+  paymentStatus: string | null;
+  createdAt: string;
+}
+
+export interface AdminBookingPage {
+  items: AdminBooking[];
+  meta: AdminPageMeta;
+}
+
+export interface AdminPayment {
+  id: string;
+  /** @nullable */
+  bookingReference: string | null;
+  amount: number;
+  currency: string;
+  status: string;
+  provider: string;
+  /** @nullable */
+  providerReference: string | null;
+  createdAt: string;
+}
+
+export interface AdminPaymentPage {
+  items: AdminPayment[];
+  meta: AdminPageMeta;
+}
+
+export interface AdminReview {
+  id: string;
+  /** @nullable */
+  userName: string | null;
+  entityType: string;
+  entityId: string;
+  rating: number;
+  /** @nullable */
+  title: string | null;
+  /** @nullable */
+  body: string | null;
+  status: string;
+  createdAt: string;
+}
+
+export interface AdminReviewPage {
+  items: AdminReview[];
+  meta: AdminPageMeta;
+}
+
+export type AdminNotificationInputType = typeof AdminNotificationInputType[keyof typeof AdminNotificationInputType];
+
+
+export const AdminNotificationInputType = {
+  announcement: 'announcement',
+  travel_update: 'travel_update',
+  offer: 'offer',
+  service_notification: 'service_notification',
+} as const;
+
+export interface AdminNotificationInput {
+  type: AdminNotificationInputType;
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 4000
+     */
+  body: string;
+}
+
+export interface AdminNotificationReceipt {
+  /** @minimum 0 */
+  created: number;
+  message: string;
+}
+
+export type AdminAuditLogMetadata = { [key: string]: unknown };
+
+export interface AdminAuditLog {
+  id: string;
+  adminUserId: string;
+  /** @nullable */
+  adminName: string | null;
+  action: string;
+  entityType: string;
+  entityId: string;
+  metadata: AdminAuditLogMetadata;
+  createdAt: string;
+}
+
+export interface AdminAuditLogPage {
+  items: AdminAuditLog[];
+  meta: AdminPageMeta;
+}
+
 /**
  * Resource not found
  */
@@ -2002,10 +2490,6 @@ export const ListVendorBookingsStatus = {
   cancelled: 'cancelled',
 } as const;
 
-export type ListAdminUsers200 = {
-  items: CurrentUser[];
-};
-
 export type ListAdminVendorApplications200 = {
   items: VendorApplication[];
 };
@@ -2016,5 +2500,296 @@ export type ListAdminVendorApprovalHistory200 = {
 
 export type ListAdminInvitations200 = {
   items: AdminInvitation[];
+};
+
+export type ListAdminUsersPageParams = {
+/**
+ * @maxLength 160
+ */
+q?: string;
+role?: PrimaryRole;
+status?: AccountStatus;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListAdminVendorsParams = {
+/**
+ * @maxLength 160
+ */
+q?: string;
+status?: VendorStatus;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListAdminHotelsParams = {
+/**
+ * @maxLength 160
+ */
+q?: string;
+status?: ListAdminHotelsStatus;
+approvalStatus?: ListAdminHotelsApprovalStatus;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListAdminHotelsStatus = typeof ListAdminHotelsStatus[keyof typeof ListAdminHotelsStatus];
+
+
+export const ListAdminHotelsStatus = {
+  draft: 'draft',
+  published: 'published',
+  archived: 'archived',
+} as const;
+
+export type ListAdminHotelsApprovalStatus = typeof ListAdminHotelsApprovalStatus[keyof typeof ListAdminHotelsApprovalStatus];
+
+
+export const ListAdminHotelsApprovalStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export type ListAdminRoomsParams = {
+hotelId?: string;
+status?: ListAdminRoomsStatus;
+/**
+ * @maxLength 160
+ */
+q?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListAdminRoomsStatus = typeof ListAdminRoomsStatus[keyof typeof ListAdminRoomsStatus];
+
+
+export const ListAdminRoomsStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export type ListAdminAvailabilityParams = {
+from?: string;
+to?: string;
+/**
+ * @maxLength 160
+ */
+q?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListAdminDestinationsParams = {
+/**
+ * @maxLength 160
+ */
+q?: string;
+status?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListAdminPlacesParams = {
+/**
+ * @maxLength 160
+ */
+q?: string;
+type?: ListAdminPlacesType;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListAdminPlacesType = typeof ListAdminPlacesType[keyof typeof ListAdminPlacesType];
+
+
+export const ListAdminPlacesType = {
+  attraction: 'attraction',
+  food: 'food',
+} as const;
+
+export type ListAdminEventsParams = {
+/**
+ * @maxLength 160
+ */
+q?: string;
+status?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListAdminPropertiesParams = {
+/**
+ * @maxLength 160
+ */
+q?: string;
+status?: string;
+verification?: ListAdminPropertiesVerification;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListAdminPropertiesVerification = typeof ListAdminPropertiesVerification[keyof typeof ListAdminPropertiesVerification];
+
+
+export const ListAdminPropertiesVerification = {
+  verified: 'verified',
+  unverified: 'unverified',
+} as const;
+
+export type ListAdminBookingsParams = {
+/**
+ * @maxLength 160
+ */
+q?: string;
+status?: ListAdminBookingsStatus;
+paymentStatus?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListAdminBookingsStatus = typeof ListAdminBookingsStatus[keyof typeof ListAdminBookingsStatus];
+
+
+export const ListAdminBookingsStatus = {
+  pending_payment: 'pending_payment',
+  confirmed: 'confirmed',
+  cancelled: 'cancelled',
+} as const;
+
+export type ListAdminPaymentsParams = {
+/**
+ * @maxLength 160
+ */
+q?: string;
+status?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListAdminReviewsParams = {
+status?: ListAdminReviewsStatus;
+/**
+ * @minimum 1
+ * @maximum 5
+ */
+rating?: number;
+/**
+ * @maxLength 160
+ */
+q?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
+
+export type ListAdminReviewsStatus = typeof ListAdminReviewsStatus[keyof typeof ListAdminReviewsStatus];
+
+
+export const ListAdminReviewsStatus = {
+  pending: 'pending',
+  published: 'published',
+  rejected: 'rejected',
+} as const;
+
+export type ListAdminAuditLogsParams = {
+/**
+ * @maxLength 160
+ */
+q?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
 };
 

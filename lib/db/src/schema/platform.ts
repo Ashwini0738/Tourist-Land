@@ -285,6 +285,24 @@ export const vendorAuditLogs = pgTable(
   ],
 );
 
+export const adminAuditLogs = pgTable(
+  "admin_audit_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    adminUserId: uuid("admin_user_id").references(() => users.id, { onDelete: "restrict" }).notNull(),
+    action: text("action").notNull(),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id").notNull(),
+    metadata: jsonb("metadata"),
+    ...timestamps,
+  },
+  (table) => [
+    index("admin_audit_created_idx").on(table.createdAt),
+    index("admin_audit_entity_idx").on(table.entityType, table.entityId),
+    index("admin_audit_admin_idx").on(table.adminUserId, table.createdAt),
+  ],
+);
+
 export const bookings = pgTable(
   "bookings",
   {

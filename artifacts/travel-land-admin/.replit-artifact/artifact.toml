@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/admin-portal/"
+title = "Travel & Land Admin"
+description = "A secure, web-first operations console for Travel & Land administrators to manage users, vendors, stays, catalog content, properties, bookings, reviews, notifications, and platform health."
+version = "1.0.0"
+id = "artifacts/travel-land-admin"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/admin-portal/" ]
+localPort = 22972
+
+[services.development]
+run = "pnpm --filter @workspace/travel-land-admin run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/travel-land-admin", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/travel-land-admin/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22972"
+BASE_PATH = "/admin-portal/"

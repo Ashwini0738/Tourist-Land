@@ -1319,40 +1319,6 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
-  /v1/admin/dashboard:
-    get:
-      operationId: getAdminDashboard
-      tags: [admin]
-      security: [{ bearerAuth: [] }]
-      summary: Get the authenticated admin dashboard status
-      responses:
-        "200":
-          description: Admin dashboard status
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/RoleDashboard" }
-        "401": { $ref: "#/components/responses/Unauthenticated" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-  /v1/admin/users:
-    get:
-      operationId: listAdminUsers
-      tags: [admin]
-      security: [{ bearerAuth: [] }]
-      summary: List safe local user records for platform administration
-      responses:
-        "200":
-          description: Safe user records
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items: { $ref: "#/components/schemas/CurrentUser" }
-                required: [items]
-        "401": { $ref: "#/components/responses/Unauthenticated" }
-        "403": { $ref: "#/components/responses/Forbidden" }
   /v1/admin/vendor-applications:
     get:
       operationId: listAdminVendorApplications
@@ -1529,6 +1495,475 @@ paths:
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /v1/admin/dashboard:
+    get:
+      operationId: getAdminOperationsDashboard
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Get database-backed platform operations metrics
+      responses:
+        "200":
+          description: Platform operations metrics with honest payment availability
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminDashboard" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/users:
+    get:
+      operationId: listAdminUsersPage
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: role, in: query, schema: { $ref: "#/components/schemas/PrimaryRole" } }
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/AccountStatus" } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Paginated safe user records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminUserPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/users/{id}:
+    get:
+      operationId: getAdminUserDetail
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: Safe user detail and aggregate counts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminUserDetail" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/admin/users/{id}/status:
+    post:
+      operationId: updateAdminUserStatus
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminStatusUpdate" }
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentUser" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/admin/vendors:
+    get:
+      operationId: listAdminVendors
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/VendorStatus" } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Paginated vendor records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminVendorPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/vendors/{userId}/status:
+    post:
+      operationId: updateAdminVendorStatus
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminStatusUpdate" }
+      responses:
+        "200":
+          description: Updated vendor profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorProfile" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/admin/hotels:
+    get:
+      operationId: listAdminHotels
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: status, in: query, schema: { type: string, enum: [draft, published, archived] } }
+        - { name: approvalStatus, in: query, schema: { type: string, enum: [pending, approved, rejected] } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Paginated hotels with vendor and room summaries
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminHotelPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/hotels/{id}:
+    get:
+      operationId: getAdminHotelDetail
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: Safe hotel detail with rooms and inventory summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminHotelDetail" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/admin/hotels/{id}/status:
+    post:
+      operationId: updateAdminHotelStatus
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminHotelStatusUpdate" }
+      responses:
+        "200":
+          description: Updated hotel status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminHotel" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/admin/rooms:
+    get:
+      operationId: listAdminRooms
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: hotelId, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string, enum: [active, inactive] } }
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Paginated room oversight records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminRoomPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/availability:
+    get:
+      operationId: listAdminAvailability
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Paginated inventory oversight records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminAvailabilityPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/destinations:
+    get:
+      operationId: listAdminDestinations
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Paginated destinations
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminDestinationPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createAdminDestination
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminDestinationInput" }
+      responses:
+        "201":
+          description: Created destination
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminDestination" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/admin/destinations/{id}:
+    patch:
+      operationId: updateAdminDestination
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminDestinationUpdate" }
+      responses:
+        "200":
+          description: Updated destination
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminDestination" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/admin/places:
+    get:
+      operationId: listAdminPlaces
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: type, in: query, schema: { type: string, enum: [attraction, food] } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Paginated place records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminPlacePage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/events:
+    get:
+      operationId: listAdminEvents
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Paginated events
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminEventPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/properties:
+    get:
+      operationId: listAdminProperties
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: verification, in: query, schema: { type: string, enum: [verified, unverified] } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Paginated property records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminPropertyPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/properties/{id}/status:
+    post:
+      operationId: updateAdminPropertyStatus
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminStatusUpdate" }
+      responses:
+        "200":
+          description: Updated property moderation status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminProperty" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/admin/bookings:
+    get:
+      operationId: listAdminBookings
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: status, in: query, schema: { type: string, enum: [pending_payment, confirmed, cancelled] } }
+        - { name: paymentStatus, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Paginated booking operations records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminBookingPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/bookings/{id}:
+    get:
+      operationId: getAdminBookingDetail
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: Safe booking detail and payment status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminBooking" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/admin/payments:
+    get:
+      operationId: listAdminPayments
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Read-only payment oversight records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminPaymentPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/reviews:
+    get:
+      operationId: listAdminReviews
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [pending, published, rejected] } }
+        - { name: rating, in: query, schema: { type: integer, minimum: 1, maximum: 5 } }
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Paginated review moderation records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminReviewPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/reviews/{id}/status:
+    post:
+      operationId: updateAdminReviewStatus
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminStatusUpdate" }
+      responses:
+        "200":
+          description: Updated review moderation status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminReview" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/admin/notifications:
+    post:
+      operationId: createAdminNotification
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminNotificationInput" }
+      responses:
+        "201":
+          description: Platform announcement delivery summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminNotificationReceipt" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/audit-logs:
+    get:
+      operationId: listAdminAuditLogs
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Immutable admin audit records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminAuditLogPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 components:
   securitySchemes:
     bearerAuth:
@@ -2785,3 +3220,347 @@ components:
         sessionAuthority: { type: string, enum: [clerk] }
         message: { type: string }
       required: [authenticated, sessionAuthority, message]
+    AdminPageMeta:
+      type: object
+      properties:
+        page: { type: integer, minimum: 1 }
+        limit: { type: integer, minimum: 1 }
+        total: { type: integer, minimum: 0 }
+        hasMore: { type: boolean }
+      required: [page, limit, total, hasMore]
+    AdminDashboardMetric:
+      type: object
+      properties:
+        total: { type: integer, minimum: 0 }
+        active: { type: integer, minimum: 0 }
+        pending: { type: integer, minimum: 0 }
+        approved: { type: integer, minimum: 0 }
+        rejected: { type: integer, minimum: 0 }
+        inactive: { type: integer, minimum: 0 }
+      required: [total, active, pending, approved, rejected, inactive]
+    AdminDashboard:
+      type: object
+      properties:
+        role: { type: string, enum: [admin] }
+        title: { type: string }
+        generatedAt: { type: string, format: date-time }
+        users: { $ref: "#/components/schemas/AdminDashboardMetric" }
+        vendors: { $ref: "#/components/schemas/AdminDashboardMetric" }
+        hotels: { $ref: "#/components/schemas/AdminDashboardMetric" }
+        bookings: { $ref: "#/components/schemas/AdminDashboardMetric" }
+        revenue:
+          type: object
+          properties:
+            status: { type: string, enum: [available, unavailable] }
+            successfulPayments: { type: integer, minimum: 0 }
+            paymentVolume: { type: number, minimum: 0 }
+            refundVolume: { type: number, minimum: 0 }
+            currency: { type: [string, "null"] }
+          required: [status, successfulPayments, paymentVolume, refundVolume, currency]
+      required: [role, title, generatedAt, users, vendors, hotels, bookings, revenue]
+    AdminUser:
+      allOf:
+        - $ref: "#/components/schemas/CurrentUser"
+    AdminUserPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminUser" } }
+        meta: { $ref: "#/components/schemas/AdminPageMeta" }
+      required: [items, meta]
+    AdminUserDetail:
+      type: object
+      properties:
+        user: { $ref: "#/components/schemas/AdminUser" }
+        bookingCount: { type: integer, minimum: 0 }
+        favoriteCount: { type: integer, minimum: 0 }
+        reviewCount: { type: integer, minimum: 0 }
+      required: [user, bookingCount, favoriteCount, reviewCount]
+    AdminStatusUpdate:
+      type: object
+      properties:
+        status: { type: string, enum: [active, inactive, suspended, approved, rejected, published, archived, pending, pending_payment, confirmed, cancelled] }
+        reason: { type: [string, "null"], maxLength: 1000 }
+      required: [status]
+    AdminVendor:
+      type: object
+      properties:
+        userId: { type: string }
+        user: { $ref: "#/components/schemas/AdminUser" }
+        profile: { $ref: "#/components/schemas/VendorProfile" }
+        hotelCount: { type: integer, minimum: 0 }
+      required: [userId, user, profile, hotelCount]
+    AdminVendorPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminVendor" } }
+        meta: { $ref: "#/components/schemas/AdminPageMeta" }
+      required: [items, meta]
+    AdminHotel:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        address: { type: string }
+        city: { type: [string, "null"] }
+        country: { type: [string, "null"] }
+        status: { type: string }
+        approvalStatus: { type: string }
+        ownerId: { type: [string, "null"] }
+        ownerName: { type: [string, "null"] }
+        ownerEmail: { type: [string, "null"] }
+        roomCount: { type: integer, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, name, address, city, country, status, approvalStatus, ownerId, ownerName, ownerEmail, roomCount, createdAt, updatedAt]
+    AdminHotelPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminHotel" } }
+        meta: { $ref: "#/components/schemas/AdminPageMeta" }
+      required: [items, meta]
+    AdminHotelDetail:
+      type: object
+      properties:
+        hotel: { $ref: "#/components/schemas/AdminHotel" }
+        rooms: { type: array, items: { $ref: "#/components/schemas/AdminRoom" } }
+        availability: { type: array, items: { $ref: "#/components/schemas/AdminAvailability" } }
+      required: [hotel, rooms, availability]
+    AdminHotelStatusUpdate:
+      type: object
+      properties:
+        status: { type: [string, "null"], enum: [draft, published, archived, null] }
+        approvalStatus: { type: [string, "null"], enum: [pending, approved, rejected, null] }
+        reason: { type: [string, "null"], maxLength: 1000 }
+      required: [status, approvalStatus]
+    AdminRoom:
+      type: object
+      properties:
+        id: { type: string }
+        hotelId: { type: string }
+        hotelName: { type: string }
+        name: { type: string }
+        capacity: { type: integer }
+        totalUnits: { type: integer }
+        nightlyRate: { type: number }
+        currency: { type: string }
+        status: { type: string }
+        reservedUnits: { type: [integer, "null"], minimum: 0 }
+        availableUnits: { type: [integer, "null"], minimum: 0 }
+      required: [id, hotelId, hotelName, name, capacity, totalUnits, nightlyRate, currency, status, reservedUnits, availableUnits]
+    AdminRoomPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminRoom" } }
+        meta: { $ref: "#/components/schemas/AdminPageMeta" }
+      required: [items, meta]
+    AdminAvailability:
+      type: object
+      properties:
+        id: { type: string }
+        roomId: { type: string }
+        roomName: { type: string }
+        hotelName: { type: string }
+        date: { type: string, format: date }
+        availableUnits: { type: integer, minimum: 0 }
+        reservedUnits: { type: [integer, "null"], minimum: 0 }
+        status: { type: string }
+        blackoutReason: { type: [string, "null"] }
+      required: [id, roomId, roomName, hotelName, date, availableUnits, reservedUnits, status, blackoutReason]
+    AdminAvailabilityPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminAvailability" } }
+        meta: { $ref: "#/components/schemas/AdminPageMeta" }
+      required: [items, meta]
+    AdminDestination:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        name: { type: string }
+        country: { type: string }
+        region: { type: [string, "null"] }
+        summary: { type: [string, "null"] }
+        latitude: { type: [number, "null"] }
+        longitude: { type: [number, "null"] }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, slug, name, country, region, summary, latitude, longitude, status, createdAt, updatedAt]
+    AdminDestinationInput:
+      type: object
+      properties:
+        slug: { type: string, minLength: 1, maxLength: 160 }
+        name: { type: string, minLength: 1, maxLength: 160 }
+        country: { type: string, minLength: 1, maxLength: 120 }
+        region: { type: [string, "null"], maxLength: 120 }
+        summary: { type: [string, "null"], maxLength: 4000 }
+        latitude: { type: [number, "null"], minimum: -90, maximum: 90 }
+        longitude: { type: [number, "null"], minimum: -180, maximum: 180 }
+        status: { type: string, maxLength: 40 }
+      required: [slug, name, country]
+    AdminDestinationUpdate:
+      allOf:
+        - $ref: "#/components/schemas/AdminDestinationInput"
+    AdminDestinationPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminDestination" } }
+        meta: { $ref: "#/components/schemas/AdminPageMeta" }
+      required: [items, meta]
+    AdminPlace:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [attraction, food] }
+        destinationId: { type: [string, "null"] }
+        destinationName: { type: [string, "null"] }
+        name: { type: string }
+        description: { type: [string, "null"] }
+        address: { type: [string, "null"] }
+        status: { type: string }
+      required: [id, type, destinationId, destinationName, name, description, address, status]
+    AdminPlacePage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminPlace" } }
+        meta: { $ref: "#/components/schemas/AdminPageMeta" }
+      required: [items, meta]
+    AdminEvent:
+      type: object
+      properties:
+        id: { type: string }
+        destinationId: { type: [string, "null"] }
+        destinationName: { type: [string, "null"] }
+        name: { type: string }
+        description: { type: [string, "null"] }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: [string, "null"], format: date-time }
+        status: { type: string }
+      required: [id, destinationId, destinationName, name, description, startsAt, endsAt, status]
+    AdminEventPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminEvent" } }
+        meta: { $ref: "#/components/schemas/AdminPageMeta" }
+      required: [items, meta]
+    AdminProperty:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        propertyType: { type: string }
+        address: { type: string }
+        areaValue: { type: number }
+        areaUnit: { type: string }
+        askingPrice: { type: [number, "null"] }
+        currency: { type: string }
+        isVerified: { type: boolean }
+        status: { type: string }
+        ownerId: { type: string }
+        ownerName: { type: [string, "null"] }
+        ownerEmail: { type: [string, "null"] }
+        enquiryCount: { type: integer, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+      required: [id, title, propertyType, address, areaValue, areaUnit, askingPrice, currency, isVerified, status, ownerId, ownerName, ownerEmail, enquiryCount, createdAt]
+    AdminPropertyPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminProperty" } }
+        meta: { $ref: "#/components/schemas/AdminPageMeta" }
+      required: [items, meta]
+    AdminBooking:
+      type: object
+      properties:
+        id: { type: string }
+        reference: { type: string }
+        userId: { type: string }
+        userName: { type: [string, "null"] }
+        userEmail: { type: string }
+        hotelName: { type: [string, "null"] }
+        vendorName: { type: [string, "null"] }
+        roomName: { type: [string, "null"] }
+        startsOn: { type: string, format: date }
+        endsOn: { type: string, format: date }
+        guestName: { type: string }
+        guestEmail: { type: string }
+        totalAmount: { type: number }
+        currency: { type: string }
+        status: { type: string }
+        paymentStatus: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, reference, userId, userName, userEmail, hotelName, vendorName, roomName, startsOn, endsOn, guestName, guestEmail, totalAmount, currency, status, paymentStatus, createdAt]
+    AdminBookingPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminBooking" } }
+        meta: { $ref: "#/components/schemas/AdminPageMeta" }
+      required: [items, meta]
+    AdminPayment:
+      type: object
+      properties:
+        id: { type: string }
+        bookingReference: { type: [string, "null"] }
+        amount: { type: number }
+        currency: { type: string }
+        status: { type: string }
+        provider: { type: string }
+        providerReference: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, bookingReference, amount, currency, status, provider, providerReference, createdAt]
+    AdminPaymentPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminPayment" } }
+        meta: { $ref: "#/components/schemas/AdminPageMeta" }
+      required: [items, meta]
+    AdminReview:
+      type: object
+      properties:
+        id: { type: string }
+        userName: { type: [string, "null"] }
+        entityType: { type: string }
+        entityId: { type: string }
+        rating: { type: integer }
+        title: { type: [string, "null"] }
+        body: { type: [string, "null"] }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, userName, entityType, entityId, rating, title, body, status, createdAt]
+    AdminReviewPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminReview" } }
+        meta: { $ref: "#/components/schemas/AdminPageMeta" }
+      required: [items, meta]
+    AdminNotificationInput:
+      type: object
+      properties:
+        type: { type: string, enum: [announcement, travel_update, offer, service_notification] }
+        title: { type: string, minLength: 1, maxLength: 160 }
+        body: { type: string, minLength: 1, maxLength: 4000 }
+      required: [type, title, body]
+    AdminNotificationReceipt:
+      type: object
+      properties:
+        created: { type: integer, minimum: 0 }
+        message: { type: string }
+      required: [created, message]
+    AdminAuditLog:
+      type: object
+      properties:
+        id: { type: string }
+        adminUserId: { type: string }
+        adminName: { type: [string, "null"] }
+        action: { type: string }
+        entityType: { type: string }
+        entityId: { type: string }
+        metadata: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+      required: [id, adminUserId, adminName, action, entityType, entityId, metadata, createdAt]
+    AdminAuditLogPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminAuditLog" } }
+        meta: { $ref: "#/components/schemas/AdminPageMeta" }
+      required: [items, meta]

@@ -11,6 +11,7 @@ import bookingsRouter from "./bookings";
 import notificationsRouter from "./notifications";
 import reviewsRouter from "./reviews";
 import vendorPortalRouter from "./vendor-portal";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -25,6 +26,7 @@ router.use(reviewsRouter);
 router.use(onboardingRouter);
 router.use(authRouter);
 router.use(vendorPortalRouter);
+router.use(adminRouter);
 router.use(roleAccessRouter);
 
 export default router;
