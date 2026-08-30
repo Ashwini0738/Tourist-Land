@@ -1,0 +1,806 @@
+# DEVELOPMENT TASK — HOTELS & HOTEL DETAILS MODULE
+
+Continue development of the existing **Travel & Land** application.
+
+## IMPORTANT — COMPLETED MODULES
+
+Treat these modules as stable:
+
+* User authentication
+* Vendor authentication
+* Admin authentication
+* Clerk authentication
+* Email verification / OTP / MFA
+* Fingerprint / Face ID / native device authentication
+* Role-based authorization
+* Home
+* Explore
+* Search
+* Explore categories
+* Explore filters and sorting
+* Destination Details
+* Maps & Location
+* Current location handling
+* Map markers
+* Nearby discovery
+* Existing API architecture
+* OpenAPI specification
+* Generated TypeScript API client
+* Generated React Query hooks
+* Generated Zod schemas
+
+**Do NOT rebuild authentication, roles, Home, Explore, Destination, or Maps.**
+
+Do not change the existing biometric/device authentication flow.
+
+---
+
+# OBJECTIVE
+
+Build the **Hotels & Hotel Details module**.
+
+Users should be able to:
+
+Home
+→ Hotels
+
+Explore
+→ Hotels
+
+Destination
+→ Hotels
+
+Maps
+→ Hotel
+
+and then:
+
+Hotel Listing
+→ Hotel Details
+→ Select dates
+→ Check availability
+
+The actual booking flow will be implemented in the next workstream.
+
+The module must support:
+
+* Android
+* iOS
+* Expo Go
+* Mobile web
+
+---
+
+# 1. HOTELS SCREEN
+
+Create a polished hotel discovery screen.
+
+Include:
+
+### Header
+
+"Hotels & Stays"
+
+### Search
+
+Search by:
+
+* Hotel name
+* City
+* Destination
+* Location
+
+Placeholder:
+
+"Search hotels or destinations"
+
+### Date selection
+
+Provide:
+
+* Check-in
+* Check-out
+
+The dates should be optional at initial browsing stage.
+
+### Guests
+
+Support:
+
+* Adults
+* Children
+* Rooms
+
+Use sensible defaults.
+
+### Filters
+
+* Price range
+* Rating
+* Hotel type
+* Amenities
+* Distance
+
+### Sorting
+
+* Recommended
+* Rating
+* Price low to high
+* Price high to low
+* Distance
+
+---
+
+# 2. HOTEL LISTING
+
+Create reusable HotelCard.
+
+Card should show:
+
+* Hotel image
+* Hotel name
+* Location
+* Rating
+* Review count if available
+* Starting price
+* Short amenity summary
+* Favorite button
+
+Do not show fake live availability.
+
+If pricing is development/sample data, clearly treat it as such.
+
+---
+
+# 3. HOTEL DETAILS
+
+Create a complete Hotel Details screen.
+
+Include:
+
+### Hero
+
+* Large image
+* Image gallery
+* Hotel name
+* Location
+* Rating
+* Favorite
+* Share
+* Back
+
+### About
+
+* Description
+* Hotel type
+* Address
+* Location
+
+### Amenities
+
+Examples:
+
+* Wi-Fi
+* Parking
+* Restaurant
+* Pool
+* Room service
+* Air conditioning
+
+Only show amenities present in the data.
+
+### Rooms
+
+Display available room types when data exists.
+
+Each room should show:
+
+* Room name
+* Images
+* Occupancy
+* Bed type
+* Amenities
+* Price
+* Availability status
+
+Do NOT claim availability unless returned by a real availability system.
+
+---
+
+# 4. HOTEL LOCATION
+
+Include:
+
+* Address
+* City
+* State
+* Country
+* Coordinates when available
+
+Add:
+
+"View on Map"
+
+Navigation:
+
+Hotel Details
+→ Maps
+
+Center the map on the hotel.
+
+Reuse the existing Maps module.
+
+Do not create another map implementation.
+
+---
+
+# 5. NEARBY PLACES
+
+Show nearby tourism locations when coordinates are available.
+
+Examples:
+
+* Attractions
+* Temples
+* Restaurants
+* Events
+* Tourist places
+
+Use the existing Maps/location APIs where possible.
+
+Do not calculate fake distances.
+
+---
+
+# 6. HOTEL SEARCH
+
+Implement API-backed search.
+
+Potential endpoint:
+
+GET /api/v1/hotels/search
+
+Parameters may include:
+
+* q
+* destination
+* city
+* latitude
+* longitude
+* checkIn
+* checkOut
+* adults
+* children
+* rooms
+* page
+* limit
+* sort
+
+Reuse existing APIs if equivalent functionality already exists.
+
+Do not create duplicate hotel search systems.
+
+---
+
+# 7. HOTEL FILTERS
+
+Implement a reusable filter interface.
+
+### Price
+
+* Minimum
+* Maximum
+
+### Rating
+
+* 3+
+* 4+
+* 4.5+
+
+### Hotel type
+
+Examples:
+
+* Hotel
+* Resort
+* Homestay
+* Villa
+* Guest house
+
+### Amenities
+
+Use dynamic amenities from the catalog where possible.
+
+### Distance
+
+If coordinates are available.
+
+---
+
+# 8. SORTING
+
+Support:
+
+* Recommended
+* Rating
+* Price low to high
+* Price high to low
+* Distance
+
+Only show distance when location coordinates are available.
+
+---
+
+# 9. DATE SELECTION
+
+Create reusable date selection UI.
+
+Users should be able to select:
+
+Check-in date
+Check-out date
+
+Rules:
+
+* Check-out cannot be before check-in.
+* Past dates cannot be selected for future bookings.
+* Clear dates option.
+* Good mobile UX.
+
+Do not create a booking until the Booking module is implemented.
+
+---
+
+# 10. GUEST SELECTION
+
+Create a guest selector.
+
+Support:
+
+* Adults
+* Children
+* Rooms
+
+Rules:
+
+* At least 1 adult
+* At least 1 room
+* Prevent invalid negative values
+* Clear summary
+
+Example:
+
+"2 Guests · 1 Room"
+
+---
+
+# 11. AVAILABILITY PREPARATION
+
+Prepare the UI for the next Availability module.
+
+Hotel Details should have:
+
+"Check Availability"
+
+action.
+
+For now:
+
+* Pass selected hotel
+* Check-in
+* Check-out
+* Guest information
+
+to the future availability flow.
+
+Do NOT implement fake availability.
+
+Do NOT display:
+
+"Room available"
+
+unless backed by actual availability data.
+
+If real inventory is not connected yet, show an honest development state.
+
+---
+
+# 12. HOTEL FAVORITES
+
+Reuse the existing favorites architecture.
+
+Users can:
+
+* Favorite hotel
+* Remove favorite
+
+Do not create a new favorites system.
+
+Current local favorite behavior can remain until server synchronization is implemented later.
+
+---
+
+# 13. HOTEL SHARING
+
+Add Share functionality where supported.
+
+Share:
+
+* Hotel name
+* Location
+* Public hotel detail link/deep link if available
+
+Never share:
+
+* User information
+* Booking information
+* Payment information
+
+---
+
+# 14. DATABASE
+
+Inspect the current database before making changes.
+
+Reuse existing models.
+
+Hotel structure should support where appropriate:
+
+### Hotel
+
+* id
+* vendor_id
+* name
+* description
+* address
+* city
+* state
+* country
+* latitude
+* longitude
+* hotel_type
+* rating
+* review_count
+* images
+* amenities
+* status
+* created_at
+* updated_at
+
+### Room
+
+* id
+* hotel_id
+* name
+* description
+* occupancy
+* bed_type
+* amenities
+* images
+* base_price
+* status
+
+Do not add unnecessary fields.
+
+---
+
+# 15. VENDOR OWNERSHIP
+
+Hotels are vendor-managed resources.
+
+If a hotel belongs to a vendor:
+
+hotel.vendor_id must identify its owner.
+
+Normal users can:
+
+* View public hotel information
+* Search
+* Favorite
+* Check availability when implemented
+
+Users cannot:
+
+* Edit hotels
+* Edit rooms
+* Change prices
+* Change availability
+
+Vendor management will be developed separately.
+
+---
+
+# 16. ADMIN
+
+Admin can eventually manage hotel content.
+
+Do not build the full Admin hotel management system in this task.
+
+Only ensure the data model/API architecture is compatible with the existing admin role.
+
+Do not weaken authorization.
+
+---
+
+# 17. DEVELOPMENT DATA
+
+The existing Home currently contains sample stays such as development/sample hotels.
+
+Continue using existing development data where appropriate.
+
+Do NOT present sample data as:
+
+* Live inventory
+* Confirmed availability
+* Guaranteed pricing
+* Real-time hotel rates
+
+The UI must be ready to replace sample catalog data with production inventory later.
+
+---
+
+# 18. LOADING STATES
+
+Implement:
+
+* Hotel list loading
+* Search loading
+* Filter loading
+* Hotel details loading
+* Room loading
+* Image loading
+
+Use skeletons where appropriate.
+
+Avoid screen blinking or unnecessary remounting.
+
+---
+
+# 19. EMPTY STATES
+
+Examples:
+
+"No hotels found"
+
+"No hotels match your filters"
+
+"No rooms available for the selected dates"
+
+IMPORTANT:
+
+The last message should only be displayed when a real availability API returns no rooms.
+
+Do not fake availability.
+
+---
+
+# 20. ERROR HANDLING
+
+Handle:
+
+* Hotel search API failure
+* Hotel details API failure
+* Room API failure
+* Image failure
+* Availability preparation failure
+
+Show:
+
+* Friendly message
+* Retry
+* Preserve existing content where possible
+
+Do not expose technical errors.
+
+---
+
+# 21. PERFORMANCE
+
+Use:
+
+* React Query caching
+* Pagination/infinite scrolling
+* Optimized images
+* Virtualized hotel lists
+* Debounced search
+* Avoid unnecessary API calls
+
+Do not load all hotels at once.
+
+---
+
+# 22. API CONTRACTS
+
+Inspect existing APIs first.
+
+Create/reuse APIs such as:
+
+GET /api/v1/hotels
+
+GET /api/v1/hotels/search
+
+GET /api/v1/hotels/:id
+
+GET /api/v1/hotels/:id/rooms
+
+GET /api/v1/hotels/:id/nearby
+
+Do not duplicate existing endpoints.
+
+Update OpenAPI when required.
+
+Regenerate:
+
+* TypeScript client
+* React Query hooks
+* Zod schemas
+
+Do not manually duplicate generated types.
+
+---
+
+# 23. NAVIGATION
+
+Verify:
+
+Home
+→ Hotels
+
+Explore
+→ Hotels
+
+Destination
+→ Hotels
+
+Maps
+→ Hotel Details
+
+Hotel List
+→ Hotel Details
+
+Hotel Details
+→ Maps
+
+Hotel Details
+→ Check Availability
+
+Do not create dead-end buttons.
+
+---
+
+# 24. SECURITY
+
+Public hotel discovery data can be viewed by authenticated users.
+
+Vendor-only data must remain protected.
+
+Never expose:
+
+* Vendor private information
+* Internal vendor notes
+* Private booking information
+* Admin-only information
+
+Use existing server-side authorization.
+
+---
+
+# 25. TESTING
+
+Add automated tests for:
+
+1. Hotels screen loads
+2. Hotel search
+3. Search debounce
+4. Hotel filters
+5. Hotel sorting
+6. Pagination
+7. Hotel card
+8. Hotel details
+9. Hotel images
+10. Amenities
+11. Rooms
+12. Favorite
+13. Hotel → Map
+14. Map → Hotel
+15. Date selection
+16. Guest selection
+17. Check Availability navigation
+18. Loading state
+19. Empty state
+20. Error state
+21. Retry
+
+Regression:
+
+22. User login
+23. Vendor login
+24. Admin login
+25. Role authorization
+26. Home
+27. Explore
+28. Destination Details
+29. Maps
+30. Biometric/device authentication
+
+---
+
+# 26. PLATFORM VALIDATION
+
+Verify:
+
+### Android
+
+* Expo Go
+* Android build/export
+
+### iOS
+
+* iOS build/export
+
+### Web
+
+* Mobile web export
+
+Check:
+
+* Hotel list
+* Search
+* Filters
+* Hotel details
+* Image gallery
+* Date selector
+* Guest selector
+* Map navigation
+* Favorites
+* Responsive layout
+
+---
+
+# 27. IMPORTANT — DO NOT BUILD YET
+
+Do NOT implement:
+
+* Real hotel availability
+* Booking creation
+* Payment
+* Cancellation
+* Refund
+* Wallet transactions
+* Vendor hotel management
+* Admin hotel management
+
+Those are separate upcoming modules.
+
+This task is:
+
+**Hotel Discovery + Hotel Details + Availability UI preparation**
+
+---
+
+# 28. FINAL REPORT
+
+When complete, provide:
+
+1. Hotel features implemented
+2. Hotel listing screens
+3. Hotel detail screens
+4. Components created/reused
+5. APIs created/reused
+6. Database changes
+7. OpenAPI changes
+8. Generated client/hooks changes
+9. Vendor ownership considerations
+10. Tests added
+11. Total tests passing
+12. Android validation
+13. iOS validation
+14. Web validation
+15. Known limitations
+16. Recommended next development task
+
+Do not proceed to Booking.
+
+The next module after this should be:
+
+**AVAILABILITY**
