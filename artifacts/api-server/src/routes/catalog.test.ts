@@ -14,7 +14,11 @@ import {
   users,
 } from "@workspace/db";
 import { getDestinationDetail } from "./catalog-detail.ts";
-import { createFeaturedContentRouter, getFeaturedContent } from "./catalog.ts";
+import {
+  createFeaturedContentRouter,
+  getFeaturedContent,
+  type FeaturedContentList,
+} from "./catalog.ts";
 
 test("destination details compose only related catalog content", () => {
   const result = getDestinationDetail("coorg");
@@ -64,6 +68,68 @@ test("featured endpoint returns a safe 503 when the resolver fails", async (t) =
       message: "Featured content is temporarily unavailable.",
     },
   });
+});
+
+test("featured endpoint returns the resolver notice and ordered items over HTTP", async (t) => {
+  const fixture: FeaturedContentList = {
+    notice: "Featured content is curated for your next journey.",
+    items: [
+      {
+        id: "featured-selection-early",
+        entityType: "destination",
+        entityId: "destination-early",
+        sortOrder: 10,
+        title: "Early Destination",
+        subtitle: "Early Region",
+        location: "Early Region, India",
+        summary: "The first featured destination.",
+        imageKey: null,
+        destinationId: "destination-early",
+        dateLabel: null,
+        ratingLabel: null,
+        priceLabel: null,
+      },
+      {
+        id: "featured-selection-late",
+        entityType: "hotel",
+        entityId: "hotel-late",
+        sortOrder: 20,
+        title: "Late Hotel",
+        subtitle: "Boutique hotel",
+        location: "Late City, India",
+        summary: "The second featured stay.",
+        imageKey: null,
+        destinationId: "destination-early",
+        dateLabel: null,
+        ratingLabel: null,
+        priceLabel: null,
+      },
+    ],
+  };
+  let resolverCalled = false;
+  const app = express();
+  app.use(createFeaturedContentRouter(async () => {
+    resolverCalled = true;
+    return fixture;
+  }));
+
+  const server = http.createServer(app);
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+  t.after(() => new Promise<void>((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  }));
+
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Test server did not expose a TCP address.");
+  const response = await fetch(`http://127.0.0.1:${address.port}/v1/home/featured`);
+  const body = await response.json();
+
+  assert.equal(resolverCalled, true);
+  assert.equal(response.status, 200);
+  assert.deepEqual(body, fixture);
 });
 
 type FeaturedFixture = {
