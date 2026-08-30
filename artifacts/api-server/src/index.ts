@@ -1,6 +1,6 @@
 import app from "./app";
 import { runMigrations } from "stripe-replit-sync";
-import { getStripeSync } from "./lib/stripeClient";
+import { assertStripeStorageReady, getStripeSync } from "./lib/stripeClient";
 import { logger } from "./lib/logger";
 
 const rawPort = process.env["PORT"];
@@ -20,7 +20,8 @@ if (Number.isNaN(port) || port <= 0) {
 async function initializeStripe() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) throw new Error("DATABASE_URL is required for Stripe.");
-  await runMigrations({ databaseUrl });
+  await runMigrations({ databaseUrl, logger });
+  await assertStripeStorageReady();
   const stripeSync = await getStripeSync();
   const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
   if (!domain) throw new Error("REPLIT_DOMAINS is required to configure Stripe webhooks.");

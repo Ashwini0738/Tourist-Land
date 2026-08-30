@@ -3,6 +3,8 @@ import { StripeSync } from "stripe-replit-sync";
 import { sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 
+const REQUIRED_STRIPE_SYNC_TABLES = ["_migrations", "accounts", "_managed_webhooks"] as const;
+
 export async function getStripeCredentials(): Promise<{ secretKey: string; webhookSecret?: string }> {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
@@ -45,6 +47,28 @@ export async function getStripeSync(): Promise<StripeSync> {
     stripeSecretKey: secretKey,
     stripeWebhookSecret: webhookSecret ?? "",
   });
+}
+
+export async function assertStripeStorageReady(): Promise<void> {
+  const result = await db.execute(sql`
+    select table_name
+    from information_schema.tables
+    where table_schema = 'stripe'
+      and table_name in ('_migrations', 'accounts', '_managed_webhooks')
+  `);
+  const existingTables = new Set(
+    result.rows
+      .map((row) => row.table_name)
+      .filter((tableName): tableName is string => typeof tableName === "string"),
+  );
+  const missingTables = REQUIRED_STRIPE_SYNC_TABLES.filter((tableName) => !existingTables.has(tableName));
+
+  if (missingTables.length > 0) {
+    throw new Error(
+      `Stripe Sync storage is not ready. Missing ${missingTables.map((tableName) => `stripe.${tableName}`).join(", ")}. ` +
+      "Ensure stripe-replit-sync migrations ran against this DATABASE_URL, then restart or redeploy the API.",
+    );
+  }
 }
 
 export async function verifyStripeEvent(payload: Buffer, signature: string): Promise<Stripe.Event> {
