@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ClerkProvider, SignIn, SignUp, useAuth, useClerk } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
@@ -30,6 +30,7 @@ const clerkPubKey = publishableKeyFromHost(
 );
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+const signInPath = `${basePath}/sign-in`;
 
 if (!clerkPubKey) {
   throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in .env file');
@@ -223,17 +224,25 @@ function AdminArea() {
   );
 }
 
-function ClerkQueryClientCacheInvalidator() {
+function ClerkQueryClientCacheInvalidator({
+  onSessionRecovery,
+  onSessionRecoveryComplete,
+}: {
+  onSessionRecovery: () => void;
+  onSessionRecoveryComplete: () => void;
+}) {
   const { addListener, signOut } = useClerk();
   const previousUserId = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
     setUnauthorizedHandler(async () => {
+      onSessionRecovery();
       queryClient.clear();
-      await signOut({ redirectUrl: basePath || '/' });
+      await signOut({ redirectUrl: signInPath });
+      onSessionRecoveryComplete();
     });
     return () => setUnauthorizedHandler(null);
-  }, [signOut]);
+  }, [onSessionRecovery, signOut]);
 
   useEffect(() => {
     const unsubscribe = addListener(({ user }) => {
@@ -270,6 +279,7 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 
 function ClerkProviderWithRoutes() {
   const [, setLocation] = useLocation();
+  const [isSessionRecovery, setIsSessionRecovery] = useState(false);
 
   function stripBase(path: string) {
     return basePath && path.startsWith(basePath)
@@ -301,8 +311,11 @@ function ClerkProviderWithRoutes() {
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
-      <ClerkQueryClientCacheInvalidator />
-      <Router />
+      <ClerkQueryClientCacheInvalidator
+        onSessionRecovery={() => setIsSessionRecovery(true)}
+        onSessionRecoveryComplete={() => setIsSessionRecovery(false)}
+      />
+      {isSessionRecovery ? <LoadingScreen message="Securing your session…" /> : <Router />}
     </ClerkProvider>
   );
 }
