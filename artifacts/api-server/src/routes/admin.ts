@@ -1,4 +1,4 @@
-import { Router, type IRouter, type Request, type Response } from "express";
+import { Router, type IRouter, type Request, type RequestHandler, type Response } from "express";
 import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import {
   adminAuditLogs,
@@ -20,13 +20,14 @@ import {
   users,
   vendorProfiles,
 } from "@workspace/db";
-import { requireAuth } from "../middlewares/requireAuth";
-import { requireRole } from "../middlewares/authorization";
-import { resolvePrimaryRole } from "../lib/roles";
+import { requireAuth } from "../middlewares/requireAuth.ts";
+import { requireRole } from "../middlewares/authorization.ts";
+import { resolvePrimaryRole } from "../lib/roles.ts";
 import { db } from "@workspace/db";
 
+export function createAdminRouter(authMiddleware: RequestHandler = requireAuth): IRouter {
 const router: IRouter = Router();
-router.use(requireAuth, requireRole("admin"));
+router.use(authMiddleware, requireRole("admin"));
 
 type QueryValue = string | undefined;
 type Page = { page: number; limit: number; offset: number };
@@ -452,4 +453,7 @@ router.get("/v1/admin/audit-logs", async (req, res) => {
   res.json({ items: rows.map(({ log, admin }) => ({ id: log.id, adminUserId: log.adminUserId, adminName: admin.displayName, action: log.action, entityType: log.entityType, entityId: log.entityId, metadata: log.metadata ?? {}, createdAt: log.createdAt })), meta: pageMeta(page, Number(totalRows[0]?.value ?? 0)) });
 });
 
-export default router;
+return router;
+}
+
+export default createAdminRouter();
