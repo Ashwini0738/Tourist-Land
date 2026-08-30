@@ -86,6 +86,7 @@ export * from './searchExploreSort';
 export * from './serviceUnavailableResponse';
 export * from './unauthenticatedResponse';
 export * from './vendorApplication';
+export * from './vendorApplicationApprovalEmailStatus';
 export * from './vendorApplicationInput';
 export * from './vendorApplicationReceipt';
 export * from './vendorApplicationReceiptStatus';

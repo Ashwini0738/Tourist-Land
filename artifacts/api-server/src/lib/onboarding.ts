@@ -24,7 +24,12 @@ type LocalUserForClaim = {
 
 export type VendorApplicationRecord = typeof vendorApplications.$inferSelect;
 
-export function serializeVendorApplication(application: VendorApplicationRecord) {
+export type ApprovalEmailStatus = "sent" | "failed";
+
+export function serializeVendorApplication(
+  application: VendorApplicationRecord,
+  approvalEmailStatus?: ApprovalEmailStatus,
+) {
   return {
     id: application.id,
     userId: application.userId,
@@ -43,6 +48,7 @@ export function serializeVendorApplication(application: VendorApplicationRecord)
     updatedAt: application.updatedAt.toISOString(),
     reviewedAt: application.reviewedAt?.toISOString() ?? null,
     invitedAt: application.invitedAt?.toISOString() ?? null,
+    ...(approvalEmailStatus ? { approvalEmailStatus } : {}),
   };
 }
 

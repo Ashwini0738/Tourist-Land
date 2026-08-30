@@ -5,6 +5,7 @@
  * Travel and land sourcing REST API
  * OpenAPI spec version: 0.1.0
  */
+import type { VendorApplicationApprovalEmailStatus } from './vendorApplicationApprovalEmailStatus';
 import type { VendorApplicationInput } from './vendorApplicationInput';
 import type { VendorApplicationStatus } from './vendorApplicationStatus';
 
@@ -19,4 +20,5 @@ export type VendorApplication = VendorApplicationInput & ({
   reviewedAt: Date | null;
   /** @nullable */
   invitedAt: Date | null;
+  approvalEmailStatus?: VendorApplicationApprovalEmailStatus;
 });

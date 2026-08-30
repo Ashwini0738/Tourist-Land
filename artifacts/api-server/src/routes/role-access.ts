@@ -35,6 +35,7 @@ import {
   sendClerkInvitation,
   summarizeClerkError,
 } from "../lib/invitations";
+import { sendVendorApprovalEmail } from "../lib/email";
 import { logger } from "../lib/logger";
 
 const roleAccessRouter: IRouter = Router();
@@ -271,7 +272,7 @@ roleAccessRouter.get("/v1/admin/vendor-applications", requireRole("admin"), asyn
     .select()
     .from(vendorApplications)
     .where(eq(vendorApplications.status, "pending"));
-  res.json({ items: applications.map(serializeVendorApplication) });
+  res.json({ items: applications.map((application) => serializeVendorApplication(application)) });
 });
 
 function parseEmailBody(value: unknown): string | null {
@@ -433,6 +434,24 @@ async function completeExistingVendorApproval(
   });
 }
 
+async function notifyVendorApproval(
+  application: typeof vendorApplications.$inferSelect,
+  hasClerkInvitation: boolean,
+): Promise<"sent" | "failed"> {
+  try {
+    await sendVendorApprovalEmail({
+      to: application.email,
+      businessName: application.businessName,
+      hasClerkInvitation,
+    });
+    logger.info({ applicationId: application.id }, "Vendor approval email sent");
+    return "sent";
+  } catch (emailError) {
+    logger.error({ applicationId: application.id, emailError }, "Vendor approval completed but email delivery failed");
+    return "failed";
+  }
+}
+
 roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("admin"), async (req, res) => {
   const applicationId = pathValue(req.params.id);
   const application = await db.query.vendorApplications.findFirst({ where: eq(vendorApplications.id, applicationId) });
@@ -458,7 +477,8 @@ roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("
         clerkUserId: existingLocalUser.clerkUserId,
         localUserId: existingLocalUser.id,
       }, req.localUser!.id);
-      res.json(serializeVendorApplication(accepted));
+      const approvalEmailStatus = await notifyVendorApproval(accepted, false);
+      res.json(serializeVendorApplication(accepted, approvalEmailStatus));
     } catch (approvalError) {
       logger.error(
         { applicationId, localUserId: existingLocalUser.id, approvalError },
@@ -487,7 +507,8 @@ roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("
         lastName: existingClerkUser.lastName,
         imageUrl: existingClerkUser.imageUrl,
       }, req.localUser!.id);
-      res.json(serializeVendorApplication(accepted));
+      const approvalEmailStatus = await notifyVendorApproval(accepted, false);
+      res.json(serializeVendorApplication(accepted, approvalEmailStatus));
     } catch (approvalError) {
       logger.error(
         { applicationId, clerkUserId: existingClerkUser.id, approvalError },
@@ -523,7 +544,8 @@ roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("
             lastName: existingUser.lastName,
             imageUrl: existingUser.imageUrl,
           }, req.localUser!.id);
-          res.json(serializeVendorApplication(accepted));
+          const approvalEmailStatus = await notifyVendorApproval(accepted, false);
+          res.json(serializeVendorApplication(accepted, approvalEmailStatus));
           return;
         }
       } catch (lookupError) {
@@ -548,7 +570,8 @@ roleAccessRouter.post("/v1/admin/vendor-applications/:id/approve", requireRole("
     .set({ status: "invited", clerkInvitationId, invitedAt: new Date(), updatedAt: new Date() })
     .where(and(eq(vendorApplications.id, approved.id), eq(vendorApplications.status, "approved")))
     .returning())[0];
-  res.json(serializeVendorApplication(invited));
+  const approvalEmailStatus = await notifyVendorApproval(invited, true);
+  res.json(serializeVendorApplication(invited, approvalEmailStatus));
 });
 
 roleAccessRouter.post("/v1/admin/vendor-applications/:id/reject", requireRole("admin"), async (req, res) => {

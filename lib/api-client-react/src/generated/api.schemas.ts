@@ -625,6 +625,14 @@ export const VendorApplicationStatus = {
   revoked: 'revoked',
 } as const;
 
+export type VendorApplicationApprovalEmailStatus = typeof VendorApplicationApprovalEmailStatus[keyof typeof VendorApplicationApprovalEmailStatus];
+
+
+export const VendorApplicationApprovalEmailStatus = {
+  sent: 'sent',
+  failed: 'failed',
+} as const;
+
 export type VendorApplication = VendorApplicationInput & ({
   id: string;
   /** @nullable */
@@ -636,6 +644,7 @@ export type VendorApplication = VendorApplicationInput & ({
   reviewedAt: string | null;
   /** @nullable */
   invitedAt: string | null;
+  approvalEmailStatus?: VendorApplicationApprovalEmailStatus;
 });
 
 export type VendorApplicationReceiptStatus = typeof VendorApplicationReceiptStatus[keyof typeof VendorApplicationReceiptStatus];

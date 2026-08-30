@@ -1220,7 +1220,8 @@ export const ListAdminVendorApplicationsResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date(),
   "reviewedAt": zod.coerce.date().nullable(),
-  "invitedAt": zod.coerce.date().nullable()
+  "invitedAt": zod.coerce.date().nullable(),
+  "approvalEmailStatus": zod.enum(['sent', 'failed']).optional()
 })))
 })
 
@@ -1294,7 +1295,8 @@ export const ApproveVendorApplicationResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date(),
   "reviewedAt": zod.coerce.date().nullable(),
-  "invitedAt": zod.coerce.date().nullable()
+  "invitedAt": zod.coerce.date().nullable(),
+  "approvalEmailStatus": zod.enum(['sent', 'failed']).optional()
 }))
 
 
@@ -1346,7 +1348,8 @@ export const RejectVendorApplicationResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date(),
   "reviewedAt": zod.coerce.date().nullable(),
-  "invitedAt": zod.coerce.date().nullable()
+  "invitedAt": zod.coerce.date().nullable(),
+  "approvalEmailStatus": zod.enum(['sent', 'failed']).optional()
 }))
 
 

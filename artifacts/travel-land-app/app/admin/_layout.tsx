@@ -17,6 +17,7 @@ export default function AdminLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
+      <Stack.Screen name="profile" />
       <Stack.Screen name="listings" />
       <Stack.Screen name="users" />
       <Stack.Screen name="vendors" />

@@ -1291,6 +1291,7 @@ components:
             updatedAt: { type: string, format: date-time }
             reviewedAt: { type: [string, "null"], format: date-time }
             invitedAt: { type: [string, "null"], format: date-time }
+            approvalEmailStatus: { type: string, enum: [sent, failed] }
           required: [id, userId, status, createdAt, updatedAt, reviewedAt, invitedAt]
     VendorApplicationReceipt:
       type: object

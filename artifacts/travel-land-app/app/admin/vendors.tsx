@@ -16,12 +16,26 @@ export default function AdminVendorsScreen() {
   const applications = useListAdminVendorApplications();
   const approve = useApproveVendorApplication();
   const reject = useRejectVendorApplication();
+  const [message, setMessage] = React.useState('');
   const busy = approve.isPending || reject.isPending;
 
   const run = async (id: string, action: 'approve' | 'reject') => {
-    if (action === 'approve') await approve.mutateAsync({ id });
-    else await reject.mutateAsync({ id });
-    await applications.refetch();
+    setMessage('');
+    try {
+      if (action === 'approve') {
+        const result = await approve.mutateAsync({ id });
+        setMessage(result.approvalEmailStatus === 'sent'
+          ? 'Vendor approved and email sent.'
+          : 'Vendor approved, but the approval email could not be delivered.');
+      } else {
+        await reject.mutateAsync({ id });
+        setMessage('Vendor application rejected.');
+      }
+      await applications.refetch();
+    } catch (error) {
+      const value = error as { message?: string; error?: { message?: string } } | null;
+      setMessage(value?.error?.message || value?.message || 'The application could not be updated.');
+    }
   };
 
   return (
@@ -39,6 +53,7 @@ export default function AdminVendorsScreen() {
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
         New applicants receive one Clerk invitation. Applicants who already have a Clerk account are activated immediately after approval.
       </Text>
+      {!!message && <Text style={[styles.message, { color: message.includes('could not') ? colors.destructive : colors.primary }]}>{message}</Text>}
       {applications.isLoading && <ActivityIndicator color={colors.primary} style={styles.loader} />}
       {!applications.isLoading && (applications.data?.items.length ?? 0) === 0 && (
         <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -82,6 +97,7 @@ const styles = StyleSheet.create({
   kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 8 },
   title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { fontSize: 15, lineHeight: 22, marginTop: 12, marginBottom: 24 },
+  message: { fontSize: 13, lineHeight: 19, marginBottom: 18 },
   loader: { marginTop: 30 },
   empty: { borderWidth: 1, borderRadius: 20, padding: 24, alignItems: 'center' },
   emptyTitle: { fontSize: 16, fontWeight: '700', marginTop: 12 },
