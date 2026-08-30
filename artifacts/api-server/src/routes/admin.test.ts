@@ -3,47 +3,195 @@ import { randomUUID } from "node:crypto";
 import http from "node:http";
 import test from "node:test";
 import express, { type RequestHandler } from "express";
-import { and, eq, sql } from "drizzle-orm";
-import { adminAuditLogs, db, pool, userRoles, users } from "@workspace/db";
+import { asc, eq, inArray, sql } from "drizzle-orm";
+import {
+  adminAuditLogs,
+  db,
+  hotels,
+  properties,
+  reviews,
+  userRoles,
+  users,
+  vendorProfiles,
+} from "@workspace/db";
 import { createAdminRouter } from "./admin.ts";
 
-const ADMIN_ID = randomUUID();
-const TARGET_ID = randomUUID();
+type JsonObject = Record<string, unknown>;
 
-function fixtureUser(id: string, role: "admin" | "user") {
+type AdminFixture = {
+  adminId: string;
+  targetUserId: string;
+  vendorId: string;
+  hotelAId: string;
+  hotelBId: string;
+  propertyId: string;
+  reviewId: string;
+};
+
+type TestServer = {
+  baseUrl: string;
+  close: () => Promise<void>;
+};
+
+function fixtureUser(id: string, displayName: string, email: string) {
   return {
     id,
-    clerkUserId: `admin-test-${id}`,
-    email: `${role}-${id}@example.test`,
-    displayName: role === "admin" ? "Fixture admin" : "Fixture user",
+    clerkUserId: `admin-test-clerk-${id}`,
+    email,
+    displayName,
     status: "active" as const,
-    role,
-    phone: null,
-    avatarUrl: null,
-    createdAt: new Date("2026-01-01T00:00:00Z"),
-    updatedAt: new Date("2026-01-01T00:00:00Z"),
   };
 }
 
-const authenticateFixtureUser: RequestHandler = (req, _res, next) => {
-  const role = req.header("x-test-role");
-  if (role !== "admin" && role !== "user") {
-    next();
-    return;
-  }
-  const identity = role === "admin" ? fixtureUser(ADMIN_ID, "admin") : fixtureUser(TARGET_ID, "user");
-  req.localUser = identity;
-  next();
-};
+async function createFixture(): Promise<AdminFixture> {
+  const fixture: AdminFixture = {
+    adminId: randomUUID(),
+    targetUserId: randomUUID(),
+    vendorId: randomUUID(),
+    hotelAId: randomUUID(),
+    hotelBId: randomUUID(),
+    propertyId: randomUUID(),
+    reviewId: randomUUID(),
+  };
 
-function buildTestApp(): express.Express {
+  await db.insert(users).values([
+    fixtureUser(fixture.adminId, "Admin Fixture Operator", `admin-${fixture.adminId}@example.test`),
+    fixtureUser(fixture.targetUserId, "Admin Fixture Target", `target-${fixture.targetUserId}@example.test`),
+    fixtureUser(fixture.vendorId, "Admin Fixture Vendor", `vendor-${fixture.vendorId}@example.test`),
+  ]);
+  await db.insert(userRoles).values([
+    { userId: fixture.adminId, role: "admin" },
+    { userId: fixture.targetUserId, role: "user" },
+    { userId: fixture.vendorId, role: "vendor" },
+  ]);
+  await db.insert(vendorProfiles).values({
+    userId: fixture.vendorId,
+    businessName: "Admin Fixture Stays",
+    businessType: "hotel",
+    contactName: "Admin Fixture Vendor",
+    phone: "1111111111",
+    email: `vendor-profile-${fixture.vendorId}@example.test`,
+    description: "Admin route test vendor",
+    address: "Fixture Vendor Street",
+    city: "Fixture City",
+    state: "Fixture State",
+    country: "India",
+    status: "pending",
+  });
+  await db.insert(hotels).values([
+    {
+      id: fixture.hotelAId,
+      catalogId: `admin-test-hotel-a-${fixture.hotelAId}`,
+      ownerId: fixture.vendorId,
+      name: "Admin Fixture Hotel A",
+      address: "Fixture Hotel Street A",
+      city: "Fixture City",
+      country: "India",
+      status: "draft",
+      approvalStatus: "pending",
+    },
+    {
+      id: fixture.hotelBId,
+      catalogId: `admin-test-hotel-b-${fixture.hotelBId}`,
+      ownerId: fixture.vendorId,
+      name: "Admin Fixture Hotel B",
+      address: "Fixture Hotel Street B",
+      city: "Fixture City",
+      country: "India",
+      status: "draft",
+      approvalStatus: "pending",
+    },
+  ]);
+  await db.insert(properties).values({
+    id: fixture.propertyId,
+    ownerId: fixture.targetUserId,
+    slug: `admin-fixture-property-${fixture.propertyId}`,
+    title: "Admin Fixture Property",
+    description: "This field must not leak through the admin list serializer.",
+    propertyType: "farm",
+    address: "Fixture Property Street",
+    areaValue: "10",
+    areaUnit: "acre",
+    askingPrice: "50000",
+    status: "pending",
+  });
+  await db.insert(reviews).values({
+    id: fixture.reviewId,
+    userId: fixture.targetUserId,
+    entityType: "hotel",
+    entityId: fixture.hotelAId,
+    rating: 5,
+    title: "Admin fixture review",
+    body: "A review used to verify moderation status writes.",
+    status: "pending",
+  });
+
+  return fixture;
+}
+
+async function deleteFixture(fixture: AdminFixture): Promise<void> {
+  await db.delete(adminAuditLogs).where(eq(adminAuditLogs.adminUserId, fixture.adminId));
+  await db.delete(reviews).where(eq(reviews.id, fixture.reviewId));
+  await db.delete(properties).where(eq(properties.id, fixture.propertyId));
+  await db.delete(hotels).where(inArray(hotels.id, [fixture.hotelAId, fixture.hotelBId]));
+  await db.delete(vendorProfiles).where(eq(vendorProfiles.userId, fixture.vendorId));
+  await db.delete(userRoles).where(inArray(userRoles.userId, [fixture.adminId, fixture.targetUserId, fixture.vendorId]));
+  await db.delete(users).where(inArray(users.id, [fixture.adminId, fixture.targetUserId, fixture.vendorId]));
+}
+
+async function adminSchemaReady(): Promise<boolean> {
+  const requiredColumns = [
+    "users.status",
+    "user_roles.role",
+    "vendor_profiles.status",
+    "hotels.catalog_id",
+    "hotels.approval_status",
+    "properties.status",
+    "reviews.status",
+    "admin_audit_logs.admin_user_id",
+    "admin_audit_logs.action",
+    "admin_audit_logs.entity_type",
+    "admin_audit_logs.entity_id",
+    "admin_audit_logs.metadata",
+  ];
+  const schemaRows = await db.execute(sql`
+    select table_name, column_name
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name in ('users', 'user_roles', 'vendor_profiles', 'hotels', 'properties', 'reviews', 'admin_audit_logs')
+  `);
+  const availableColumns = new Set(schemaRows.rows.map((row) => `${row.table_name}.${row.column_name}`));
+  return requiredColumns.every((column) => availableColumns.has(column));
+}
+
+function buildTestApp(adminId: string, userId: string): express.Express {
+  const authenticateFixtureUser: RequestHandler = (req, res, next) => {
+    const role = req.header("x-test-role");
+    if (!role) {
+      res.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Test identity is required." } });
+      return;
+    }
+    req.localUser = {
+      id: role === "admin" ? adminId : userId,
+      clerkUserId: `test-${role}`,
+      email: `${role}@example.test`,
+      displayName: role === "admin" ? "Fixture admin" : "Fixture user",
+      phone: null,
+      avatarUrl: null,
+      status: "active",
+      role: role === "admin" ? "admin" : "user",
+      createdAt: new Date("2026-01-01T00:00:00Z"),
+      updatedAt: new Date("2026-01-01T00:00:00Z"),
+    };
+    next();
+  };
   const app = express();
   app.use(express.json());
   app.use(createAdminRouter(authenticateFixtureUser));
   return app;
 }
 
-async function startTestServer(app: express.Express): Promise<{ baseUrl: string; close: () => Promise<void> }> {
+async function startTestServer(app: express.Express): Promise<TestServer> {
   const server = http.createServer(app);
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject);
@@ -57,109 +205,206 @@ async function startTestServer(app: express.Express): Promise<{ baseUrl: string;
   };
 }
 
-async function request(
+async function adminRequest(
   baseUrl: string,
   path: string,
   role?: "admin" | "user",
   init: RequestInit = {},
-): Promise<{ status: number; body: Record<string, any> }> {
+): Promise<{ status: number; body: JsonObject }> {
   const headers = new Headers(init.headers);
   if (role) headers.set("x-test-role", role);
   if (init.body !== undefined) headers.set("content-type", "application/json");
   const response = await fetch(`${baseUrl}${path}`, { ...init, headers });
-  return { status: response.status, body: await response.json() as Record<string, any> };
+  return { status: response.status, body: await response.json() as JsonObject };
 }
 
-async function adminSchemaIsReady(): Promise<boolean> {
-  const result = await db.execute(sql`
-    select to_regclass('public.admin_audit_logs') as audit_table,
-           to_regclass('public.users') as users_table
-  `);
-  const row = result.rows[0] as { audit_table: string | null; users_table: string | null } | undefined;
-  return Boolean(row?.audit_table && row?.users_table);
-}
+const protectedAdminRoutes: Array<{ method: string; path: string; body?: JsonObject }> = [
+  { method: "GET", path: "/v1/admin/dashboard" },
+  { method: "GET", path: "/v1/admin/users" },
+  { method: "GET", path: `/v1/admin/users/${randomUUID()}` },
+  { method: "POST", path: `/v1/admin/users/${randomUUID()}/status`, body: { status: "active" } },
+  { method: "GET", path: "/v1/admin/vendors" },
+  { method: "POST", path: `/v1/admin/vendors/${randomUUID()}/status`, body: { status: "approved" } },
+  { method: "GET", path: "/v1/admin/hotels" },
+  { method: "GET", path: `/v1/admin/hotels/${randomUUID()}` },
+  { method: "POST", path: `/v1/admin/hotels/${randomUUID()}/status`, body: { status: "published" } },
+  { method: "GET", path: "/v1/admin/rooms" },
+  { method: "GET", path: "/v1/admin/availability" },
+  { method: "GET", path: "/v1/admin/destinations" },
+  { method: "POST", path: "/v1/admin/destinations", body: { slug: "fixture", name: "Fixture", country: "India" } },
+  { method: "PATCH", path: `/v1/admin/destinations/${randomUUID()}`, body: { name: "Fixture" } },
+  { method: "GET", path: "/v1/admin/places" },
+  { method: "GET", path: "/v1/admin/events" },
+  { method: "GET", path: "/v1/admin/properties" },
+  { method: "POST", path: `/v1/admin/properties/${randomUUID()}/status`, body: { status: "published" } },
+  { method: "GET", path: "/v1/admin/bookings" },
+  { method: "GET", path: `/v1/admin/bookings/${randomUUID()}` },
+  { method: "GET", path: "/v1/admin/payments" },
+  { method: "GET", path: "/v1/admin/reviews" },
+  { method: "POST", path: `/v1/admin/reviews/${randomUUID()}/status`, body: { status: "published" } },
+  { method: "POST", path: "/v1/admin/notifications", body: { type: "fixture", title: "Fixture", body: "Fixture" } },
+  { method: "GET", path: "/v1/admin/audit-logs" },
+];
 
-async function cleanupFixture(): Promise<void> {
-  await db.delete(adminAuditLogs).where(eq(adminAuditLogs.adminUserId, ADMIN_ID));
-  await db.delete(userRoles).where(eq(userRoles.userId, TARGET_ID));
-  await db.delete(userRoles).where(eq(userRoles.userId, ADMIN_ID));
-  await db.delete(users).where(eq(users.id, TARGET_ID));
-  await db.delete(users).where(eq(users.id, ADMIN_ID));
-}
+test("every admin route rejects unauthenticated and non-admin requests", async (t) => {
+  const server = await startTestServer(buildTestApp(randomUUID(), randomUUID()));
+  t.after(() => server.close());
 
-test("admin routes fail closed for unauthenticated and non-admin identities", async () => {
-  const server = await startTestServer(buildTestApp());
-  try {
-    const unauthenticated = await request(server.baseUrl, "/v1/admin/dashboard");
-    assert.equal(unauthenticated.status, 401);
-    assert.equal(unauthenticated.body.error.code, "UNAUTHENTICATED");
+  for (const route of protectedAdminRoutes) {
+    const unauthenticated = await adminRequest(server.baseUrl, route.path, undefined, {
+      method: route.method,
+      body: route.body ? JSON.stringify(route.body) : undefined,
+    });
+    assert.equal(unauthenticated.status, 401, `${route.method} ${route.path} should require authentication`);
+    assert.equal((unauthenticated.body.error as JsonObject).code, "UNAUTHENTICATED");
 
-    const user = await request(server.baseUrl, "/v1/admin/dashboard", "user");
-    assert.equal(user.status, 403);
-    assert.equal(user.body.error.code, "FORBIDDEN");
-  } finally {
-    await server.close();
+    const nonAdmin = await adminRequest(server.baseUrl, route.path, "user", {
+      method: route.method,
+      body: route.body ? JSON.stringify(route.body) : undefined,
+    });
+    assert.equal(nonAdmin.status, 403, `${route.method} ${route.path} should require admin role`);
+    assert.equal((nonAdmin.body.error as JsonObject).code, "FORBIDDEN");
   }
 });
 
-test("admin status controls validate transitions and protect the current administrator", async () => {
-  const server = await startTestServer(buildTestApp());
-  try {
-    const invalid = await request(server.baseUrl, `/v1/admin/users/${TARGET_ID}/status`, "admin", {
-      method: "POST",
-      body: JSON.stringify({ status: "deleted" }),
-    });
-    assert.equal(invalid.status, 400);
-    assert.equal(invalid.body.error.code, "INVALID_STATUS");
-
-    const selfLockout = await request(server.baseUrl, `/v1/admin/users/${ADMIN_ID}/status`, "admin", {
-      method: "POST",
-      body: JSON.stringify({ status: "suspended", reason: "test" }),
-    });
-    assert.equal(selfLockout.status, 409);
-    assert.equal(selfLockout.body.error.code, "SELF_LOCKOUT");
-  } finally {
-    await server.close();
-  }
-});
-
-test("admin status changes write an actor-bound audit record", async (t) => {
-  if (!(await adminSchemaIsReady())) {
-    t.skip("development database schema is pending post-merge application (missing admin audit table)");
+test("admin status transitions validate values, isolate entities, and write auditable metadata", async (t) => {
+  if (!(await adminSchemaReady())) {
+    t.skip("development database schema is pending post-merge application");
     return;
   }
+  const fixture = await createFixture();
+  t.after(() => deleteFixture(fixture));
+  const server = await startTestServer(buildTestApp(fixture.adminId, fixture.targetUserId));
+  t.after(() => server.close());
 
-  await cleanupFixture();
-  await db.insert(users).values([fixtureUser(ADMIN_ID, "admin"), fixtureUser(TARGET_ID, "user")]);
-  await db.insert(userRoles).values([{ userId: ADMIN_ID, role: "admin" }, { userId: TARGET_ID, role: "user" }]);
+  const selfLockout = await adminRequest(server.baseUrl, `/v1/admin/users/${fixture.adminId}/status`, "admin", {
+    method: "POST",
+    body: JSON.stringify({ status: "suspended", reason: "Should be rejected" }),
+  });
+  assert.equal(selfLockout.status, 409);
+  assert.equal((selfLockout.body.error as JsonObject).code, "SELF_LOCKOUT");
 
-  const server = await startTestServer(buildTestApp());
-  try {
-    const changed = await request(server.baseUrl, `/v1/admin/users/${TARGET_ID}/status`, "admin", {
+  const invalidCases: Array<{ path: string; body: JsonObject }> = [
+    { path: `/v1/admin/users/${fixture.targetUserId}/status`, body: { status: "deleted" } },
+    { path: `/v1/admin/vendors/${fixture.vendorId}/status`, body: { status: "deleted" } },
+    { path: `/v1/admin/hotels/${fixture.hotelAId}/status`, body: { status: "deleted" } },
+    { path: `/v1/admin/hotels/${fixture.hotelAId}/status`, body: { status: "published", approvalStatus: "deleted" } },
+    { path: `/v1/admin/properties/${fixture.propertyId}/status`, body: { status: "deleted" } },
+    { path: `/v1/admin/reviews/${fixture.reviewId}/status`, body: { status: "deleted" } },
+  ];
+  for (const invalidCase of invalidCases) {
+    const response = await adminRequest(server.baseUrl, invalidCase.path, "admin", {
       method: "POST",
-      body: JSON.stringify({ status: "suspended", reason: "policy review" }),
+      body: JSON.stringify(invalidCase.body),
     });
-    assert.equal(changed.status, 200);
-    assert.equal(changed.body.status, "suspended");
+    assert.equal(response.status, 400, invalidCase.path);
+    assert.equal((response.body.error as JsonObject).code, "INVALID_STATUS");
+  }
 
-    const [record] = await db.select().from(adminAuditLogs).where(and(
-      eq(adminAuditLogs.adminUserId, ADMIN_ID),
-      eq(adminAuditLogs.entityId, TARGET_ID),
-    ));
-    assert.ok(record);
-    assert.equal(record.action, "status_updated");
-    assert.equal(record.entityType, "user");
-    assert.deepEqual(record.metadata, { status: "suspended", reason: "policy review" });
+  const crossEntity = await adminRequest(server.baseUrl, `/v1/admin/vendors/${fixture.adminId}/status`, "admin", {
+    method: "POST",
+    body: JSON.stringify({ status: "approved" }),
+  });
+  assert.equal(crossEntity.status, 404);
+  assert.equal((crossEntity.body.error as JsonObject).code, "NOT_FOUND");
 
-    const visible = await request(server.baseUrl, `/v1/admin/audit-logs?q=${TARGET_ID}`, "admin");
-    assert.equal(visible.status, 200);
-    assert.equal((visible.body.items as Array<{ entityId: string }>).some((item) => item.entityId === TARGET_ID), true);
-  } finally {
-    await server.close();
-    await cleanupFixture();
+  const transitions: Array<{ path: string; body: JsonObject; entityType: string; entityId: string; status: string }> = [
+    { path: `/v1/admin/users/${fixture.targetUserId}/status`, body: { status: "inactive", reason: "Account requested deactivation" }, entityType: "user", entityId: fixture.targetUserId, status: "inactive" },
+    { path: `/v1/admin/vendors/${fixture.vendorId}/status`, body: { status: "approved", reason: "Vendor review completed" }, entityType: "vendor", entityId: fixture.vendorId, status: "approved" },
+    { path: `/v1/admin/hotels/${fixture.hotelAId}/status`, body: { status: "published", reason: "Hotel content verified" }, entityType: "hotel", entityId: fixture.hotelAId, status: "published" },
+    { path: `/v1/admin/properties/${fixture.propertyId}/status`, body: { status: "published", reason: "Property listing verified" }, entityType: "property", entityId: fixture.propertyId, status: "published" },
+    { path: `/v1/admin/reviews/${fixture.reviewId}/status`, body: { status: "published", reason: "Review moderation completed" }, entityType: "review", entityId: fixture.reviewId, status: "published" },
+  ];
+  for (const transition of transitions) {
+    const response = await adminRequest(server.baseUrl, transition.path, "admin", {
+      method: "POST",
+      body: JSON.stringify(transition.body),
+    });
+    assert.equal(response.status, 200, transition.path);
+    assert.equal(response.body.status, transition.status);
+  }
+
+  const [updatedUser] = await db.select().from(users).where(eq(users.id, fixture.targetUserId));
+  const [updatedVendor] = await db.select().from(vendorProfiles).where(eq(vendorProfiles.userId, fixture.vendorId));
+  const [updatedHotel] = await db.select().from(hotels).where(eq(hotels.id, fixture.hotelAId));
+  const [updatedProperty] = await db.select().from(properties).where(eq(properties.id, fixture.propertyId));
+  const [updatedReview] = await db.select().from(reviews).where(eq(reviews.id, fixture.reviewId));
+  assert.equal(updatedUser?.status, "inactive");
+  assert.equal(updatedVendor?.status, "approved");
+  assert.equal(updatedHotel?.status, "published");
+  assert.equal(updatedProperty?.status, "published");
+  assert.equal(updatedReview?.status, "published");
+
+  const logs = await db.select().from(adminAuditLogs)
+    .where(eq(adminAuditLogs.adminUserId, fixture.adminId))
+    .orderBy(asc(adminAuditLogs.createdAt));
+  assert.equal(logs.length, transitions.length);
+  for (const transition of transitions) {
+    const log = logs.find((entry) => entry.entityType === transition.entityType && entry.entityId === transition.entityId);
+    assert.ok(log, `missing audit log for ${transition.entityType}`);
+    assert.equal(log.adminUserId, fixture.adminId);
+    assert.equal(log.action, "status_updated");
+    assert.ok(log.createdAt instanceof Date);
+    assert.deepEqual(log.metadata, {
+      status: transition.status,
+      reason: transition.body.reason,
+    });
   }
 });
 
-test.after(async () => {
-  await pool.end();
+test("admin lists support search, pagination, and safe serialization", async (t) => {
+  if (!(await adminSchemaReady())) {
+    t.skip("development database schema is pending post-merge application");
+    return;
+  }
+  const fixture = await createFixture();
+  t.after(() => deleteFixture(fixture));
+  const server = await startTestServer(buildTestApp(fixture.adminId, fixture.targetUserId));
+  t.after(() => server.close());
+
+  const usersPage = await adminRequest(server.baseUrl, "/v1/admin/users?q=Admin%20Fixture%20Target&page=1&limit=1", "admin");
+  assert.equal(usersPage.status, 200);
+  assert.equal((usersPage.body.items as unknown[]).length, 1);
+  assert.deepEqual(usersPage.body.meta, { page: 1, limit: 1, total: 1, hasMore: false });
+  const userItem = (usersPage.body.items as JsonObject[])[0];
+  assert.equal(userItem.id, fixture.targetUserId);
+  assert.equal("password" in userItem, false);
+  assert.equal("createdAt" in userItem, true);
+  assert.equal("updatedAt" in userItem, true);
+
+  const hotelsPage = await adminRequest(server.baseUrl, "/v1/admin/hotels?q=Admin%20Fixture%20Hotel&page=2&limit=1", "admin");
+  assert.equal(hotelsPage.status, 200);
+  assert.deepEqual(hotelsPage.body.meta, { page: 2, limit: 1, total: 2, hasMore: false });
+  const hotelItem = (hotelsPage.body.items as JsonObject[])[0];
+  assert.equal(typeof hotelItem.id, "string");
+  assert.equal(typeof hotelItem.roomCount, "number");
+  assert.equal("description" in hotelItem, false);
+  assert.equal("latitude" in hotelItem, false);
+  assert.equal("longitude" in hotelItem, false);
+
+  const propertyPage = await adminRequest(server.baseUrl, "/v1/admin/properties?q=Admin%20Fixture%20Property&limit=1", "admin");
+  assert.equal(propertyPage.status, 200);
+  const propertyItem = (propertyPage.body.items as JsonObject[])[0];
+  assert.equal(propertyItem.id, fixture.propertyId);
+  assert.equal(propertyItem.areaValue, 10);
+  assert.equal(propertyItem.askingPrice, 50000);
+  assert.equal("description" in propertyItem, false);
+
+  const propertyStatus = await adminRequest(server.baseUrl, `/v1/admin/properties/${fixture.propertyId}/status`, "admin", {
+    method: "POST",
+    body: JSON.stringify({ status: "published", reason: "List serializer fixture" }),
+  });
+  assert.equal(propertyStatus.status, 200);
+
+  const auditPage = await adminRequest(server.baseUrl, "/v1/admin/audit-logs?q=property&page=1&limit=1", "admin");
+  assert.equal(auditPage.status, 200);
+  assert.deepEqual(auditPage.body.meta, { page: 1, limit: 1, total: 1, hasMore: false });
+  const auditItem = (auditPage.body.items as JsonObject[])[0];
+  assert.equal(auditItem.adminUserId, fixture.adminId);
+  assert.equal(auditItem.adminName, "Admin Fixture Operator");
+  assert.equal(auditItem.action, "status_updated");
+  assert.equal(auditItem.entityType, "property");
+  assert.equal(auditItem.entityId, fixture.propertyId);
+  assert.deepEqual(auditItem.metadata, { status: "published", reason: "List serializer fixture" });
+  assert.equal(typeof auditItem.createdAt, "string");
 });

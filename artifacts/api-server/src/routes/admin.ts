@@ -25,9 +25,9 @@ import { requireRole } from "../middlewares/authorization.ts";
 import { resolvePrimaryRole } from "../lib/roles.ts";
 import { db } from "@workspace/db";
 
-export function createAdminRouter(authMiddleware: RequestHandler = requireAuth): IRouter {
-const router: IRouter = Router();
-router.use(authMiddleware, requireRole("admin"));
+export function createAdminRouter(authenticate: RequestHandler = requireAuth): IRouter {
+  const router: IRouter = Router();
+  router.use(authenticate, requireRole("admin"));
 
 type QueryValue = string | undefined;
 type Page = { page: number; limit: number; offset: number };
@@ -271,7 +271,7 @@ router.post("/v1/admin/hotels/:id/status", async (req, res) => {
   const body = jsonBody(req);
   const status = typeof body?.status === "string" ? body.status : undefined;
   const approvalStatus = typeof body?.approvalStatus === "string" ? body.approvalStatus : undefined;
-  if ((!status || !["draft", "published", "archived"].includes(status)) && (!approvalStatus || !["pending", "approved", "rejected"].includes(approvalStatus))) return fail(res, 400, "INVALID_STATUS", "Provide a valid hotel or approval status.");
+  if ((status !== undefined && !["draft", "published", "archived"].includes(status)) || (approvalStatus !== undefined && !["pending", "approved", "rejected"].includes(approvalStatus)) || (status === undefined && approvalStatus === undefined)) return fail(res, 400, "INVALID_STATUS", "Provide a valid hotel or approval status.");
   const current = await db.query.hotels.findFirst({ where: eq(hotels.id, id(req)) });
   if (!current) return fail(res, 404, "NOT_FOUND", "Hotel not found.");
   const patch = { ...(status ? { status } : {}), ...(approvalStatus ? { approvalStatus } : {}), updatedAt: new Date() };
@@ -379,7 +379,7 @@ router.get("/v1/admin/properties", async (req, res) => {
 router.post("/v1/admin/properties/:id/status", async (req, res) => {
   const body = jsonBody(req);
   const status = typeof body?.status === "string" ? body.status : undefined;
-  if (!status) return fail(res, 400, "INVALID_STATUS", "A property status is required.");
+  if (!status || !["pending", "published", "archived"].includes(status)) return fail(res, 400, "INVALID_STATUS", "Provide a valid property status.");
   const updated = (await db.update(properties).set({ status, updatedAt: new Date() }).where(eq(properties.id, id(req))).returning())[0];
   if (!updated) return fail(res, 404, "NOT_FOUND", "Property not found.");
   await audit(req, "status_updated", "property", updated.id, { status, reason: body?.reason ?? null });
@@ -453,7 +453,7 @@ router.get("/v1/admin/audit-logs", async (req, res) => {
   res.json({ items: rows.map(({ log, admin }) => ({ id: log.id, adminUserId: log.adminUserId, adminName: admin.displayName, action: log.action, entityType: log.entityType, entityId: log.entityId, metadata: log.metadata ?? {}, createdAt: log.createdAt })), meta: pageMeta(page, Number(totalRows[0]?.value ?? 0)) });
 });
 
-return router;
+  return router;
 }
 
 export default createAdminRouter();
