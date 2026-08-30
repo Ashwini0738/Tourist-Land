@@ -136,7 +136,7 @@ export function AuditLogsPage() {
   const auditDetailTriggerRef = useRef<HTMLButtonElement | null>(null);
   const q = useListAdminAuditLogs({ entityType: 'destination', q: search || undefined, page, limit: 20 });
   const detail = useGetAdminAuditLog(selectedAuditId ?? '', { query: { enabled: Boolean(selectedAuditId) } });
-  const currentDetail = detail.data?.id === selectedAuditId ? detail.data : undefined;
+  const currentDetail = !detail.isError && detail.data?.id === selectedAuditId ? detail.data : undefined;
   useEffect(() => {
     if (selectedAuditId) {
       auditDetailDialogRef.current?.focus();

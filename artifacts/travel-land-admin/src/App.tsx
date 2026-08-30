@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ClerkProvider, SignIn, SignUp, useAuth, useClerk } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
-import { getGetCurrentUserQueryKey, useGetCurrentUser } from '@workspace/api-client-react';
+import { getGetCurrentUserQueryKey, setUnauthorizedHandler, useGetCurrentUser } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -224,8 +224,16 @@ function AdminArea() {
 }
 
 function ClerkQueryClientCacheInvalidator() {
-  const { addListener } = useClerk();
+  const { addListener, signOut } = useClerk();
   const previousUserId = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    setUnauthorizedHandler(async () => {
+      queryClient.clear();
+      await signOut({ redirectUrl: basePath || '/' });
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [signOut]);
 
   useEffect(() => {
     const unsubscribe = addListener(({ user }) => {

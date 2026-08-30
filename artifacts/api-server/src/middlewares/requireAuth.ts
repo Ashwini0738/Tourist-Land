@@ -10,6 +10,7 @@ import {
 import { claimInvitedAccess } from "../lib/onboarding.ts";
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  res.set("Cache-Control", "private, no-store");
   const { userId } = getAuth(req);
   if (!userId) {
     res.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Please sign in with Clerk to continue." } });

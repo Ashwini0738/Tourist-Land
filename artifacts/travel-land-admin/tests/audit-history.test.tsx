@@ -60,6 +60,8 @@ let auditHistoryRefetch: ReturnType<typeof vi.fn>;
 let auditDetailRefetch: ReturnType<typeof vi.fn>;
 let auditDetailShouldLoad = false;
 let auditDetailResolve: () => void = () => {};
+let setAuditHistoryError: ((value: boolean) => void) | undefined;
+let setAuditDetailError: ((value: boolean) => void) | undefined;
 
 function responseFor(params?: { q?: string; page?: number }) {
   if (emptyHistory && !params?.q) {
@@ -85,9 +87,12 @@ beforeEach(() => {
   auditHistoryRefetch = vi.fn();
   auditDetailRefetch = vi.fn();
   auditDetailResolve = () => {};
+  setAuditHistoryError = undefined;
+  setAuditDetailError = undefined;
   useListAdminAuditLogs.mockReset();
   useListAdminAuditLogs.mockImplementation((params) => {
     const [isError, setIsError] = useState(auditHistoryShouldFail);
+    setAuditHistoryError = setIsError;
     auditHistoryRefetch.mockImplementation(() => setIsError(false));
 
     return {
@@ -100,6 +105,7 @@ beforeEach(() => {
   });
   useGetAdminAuditLog.mockImplementation((id) => {
     const [isError, setIsError] = useState(auditDetailShouldFail);
+    setAuditDetailError = setIsError;
     const [resolvedId, setResolvedId] = useState<string | null>(() => auditDetailShouldLoad ? null : id);
     auditDetailRefetch.mockImplementation(() => {
       setIsError(false);
@@ -196,6 +202,18 @@ describe('AuditLogsPage', () => {
     expect(screen.queryByText('This view could not load')).not.toBeInTheDocument();
   });
 
+  it('clears the cached audit list when administrator access expires', async () => {
+    render(<AuditLogsPage />);
+    expect(screen.getByTestId('audit-destination-audit-updated')).toHaveTextContent('Kerala Backwaters');
+
+    act(() => setAuditHistoryError?.(true));
+
+    await waitFor(() => expect(screen.getByText('This view could not load')).toBeInTheDocument());
+    expect(screen.getByText('Check administrator access or try again.')).toBeInTheDocument();
+    expect(screen.queryByTestId('audit-destination-audit-updated')).not.toBeInTheDocument();
+    expect(screen.queryByText('Kerala Backwaters')).not.toBeInTheDocument();
+  });
+
   it('distinguishes no matches from an empty audit history', () => {
     const { unmount } = render(<AuditLogsPage />);
     fireEvent.change(screen.getByTestId('input-search'), { target: { value: 'missing' } });
@@ -270,6 +288,23 @@ describe('AuditLogsPage', () => {
       page: 1,
       limit: 20,
     });
+  });
+
+  it('clears cached revision values when administrator access expires with the dialog open', async () => {
+    render(<AuditLogsPage />);
+    fireEvent.click(screen.getByTestId('button-audit-details-audit-updated'));
+
+    expect(screen.getByText('Original summary')).toBeInTheDocument();
+    expect(screen.getByText('Updated summary')).toBeInTheDocument();
+
+    act(() => setAuditDetailError?.(true));
+
+    await waitFor(() => expect(screen.getByTestId('audit-detail-unavailable')).toHaveTextContent('Revision details unavailable'));
+    expect(screen.getByText('The audit record could not be loaded.')).toBeInTheDocument();
+    expect(screen.queryByText('Original summary')).not.toBeInTheDocument();
+    expect(screen.queryByText('Updated summary')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('audit-before-name')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('audit-after-name')).not.toBeInTheDocument();
   });
 
   it('does not render a previous revision while the newly selected detail is loading', async () => {
