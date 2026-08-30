@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { HotelAvailabilityRoomSource } from './hotelAvailabilityRoomSource';
+import type { InventoryProvenance } from './inventoryProvenance';
 
 /**
  * A room result from a clearly labeled development or live availability provider.
@@ -30,4 +31,5 @@ export interface HotelAvailabilityRoom {
   source: HotelAvailabilityRoomSource;
   sourceLabel: string;
   sourceNotice: string;
+  provenance: InventoryProvenance;
 }

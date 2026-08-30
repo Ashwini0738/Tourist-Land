@@ -661,7 +661,7 @@ export const getSearchHotelsUrl = (params?: SearchHotelsParams,) => {
 }
 
 /**
- * @summary Search the honest hotel discovery catalog, not live availability
+ * @summary Search hotel discovery records with explicit provider provenance
  */
 export const searchHotels = async (params?: SearchHotelsParams, options?: Parameters<typeof customFetch>[1]): Promise<HotelSearchResponse> => {
 
@@ -708,7 +708,7 @@ export type SearchHotelsQueryError = ErrorType<InvalidInputResponse>
 
 
 /**
- * @summary Search the honest hotel discovery catalog, not live availability
+ * @summary Search hotel discovery records with explicit provider provenance
  */
 
 export function useSearchHotels<TData = Awaited<ReturnType<typeof searchHotels>>, TError = ErrorType<InvalidInputResponse>>(
@@ -894,7 +894,7 @@ export const getGetHotelAvailabilityUrl = (id: string,
 }
 
 /**
- * @summary Check server-backed hotel availability for a future stay request
+ * @summary Check provider-backed hotel availability with freshness metadata
  */
 export const getHotelAvailability = async (id: string,
     params: GetHotelAvailabilityParams, options?: Parameters<typeof customFetch>[1]): Promise<HotelAvailabilityResponse> => {
@@ -944,7 +944,7 @@ export type GetHotelAvailabilityQueryError = ErrorType<InvalidInputResponse | No
 
 
 /**
- * @summary Check server-backed hotel availability for a future stay request
+ * @summary Check provider-backed hotel availability with freshness metadata
  */
 
 export function useGetHotelAvailability<TData = Awaited<ReturnType<typeof getHotelAvailability>>, TError = ErrorType<InvalidInputResponse | NotFoundResponse>>(
@@ -1129,7 +1129,7 @@ export const getCreateBookingUrl = () => {
 }
 
 /**
- * @summary Create an unpaid development booking after final server revalidation
+ * @summary Create an unpaid booking only after final provider inventory revalidation
  */
 export const createBooking = async (bookingCreateInput: BookingCreateInput, options?: Parameters<typeof customFetch>[1]): Promise<BookingResponse> => {
 
@@ -1178,7 +1178,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateBookingMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>
 
     /**
- * @summary Create an unpaid development booking after final server revalidation
+ * @summary Create an unpaid booking only after final provider inventory revalidation
  */
 export const useCreateBooking = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBooking>>, TError,{data: BodyType<BookingCreateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}

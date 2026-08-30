@@ -1,6 +1,12 @@
 import { getHotelCatalogRecord } from "./hotel-catalog.ts";
 import { and, eq, gt, inArray, lt, lte, sql } from "drizzle-orm";
 import { bookingItems, bookings, db, hotelRooms, hotels, roomAvailability } from "@workspace/db";
+import {
+  developmentInventoryProvenance,
+  inventoryOffersEnabled,
+  unavailableInventoryProvenance,
+  vendorInventoryProvenance,
+} from "./hotel-inventory-policy.ts";
 
 export type HotelAvailabilityInput = {
   checkIn: string;
@@ -102,17 +108,47 @@ function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;
 }
 
-export function getHotelAvailability(id: string, input: HotelAvailabilityInput) {
+export function getHotelAvailability(
+  id: string,
+  input: HotelAvailabilityInput,
+  env: NodeJS.ProcessEnv = process.env,
+  now = new Date(),
+) {
   const hotel = getHotelCatalogRecord(id);
   if (!hotel) return null;
 
   const nights = calculateNights(input.checkIn, input.checkOut);
+  if (!inventoryOffersEnabled(env)) {
+    return {
+      hotelId: id,
+      status: "unavailable" as const,
+      notice: "Live supplier availability is not configured. No rooms or prices are being offered.",
+      source: "unavailable" as const,
+      sourceLabel: "Live inventory unavailable",
+      sourceNotice: "A managed live inventory connection is required before production availability can be offered.",
+      provenance: unavailableInventoryProvenance(now),
+      checkIn: input.checkIn,
+      checkOut: input.checkOut,
+      nights,
+      adults: input.adults,
+      children: input.children,
+      rooms: input.rooms,
+      items: [],
+      roomSubtotal: 0,
+      total: 0,
+      currency: "INR",
+    };
+  }
+
   const inventory = developmentInventory[id];
   const source = inventory ? "development" as const : "unavailable" as const;
   const sourceLabel = inventory ? "Development inventory preview" : "No inventory provider";
   const sourceNotice = inventory
     ? availabilityDevelopmentNotice
     : "No availability provider is configured for this hotel. No room availability or price is being claimed.";
+  const provenance = inventory
+    ? developmentInventoryProvenance()
+    : unavailableInventoryProvenance(now);
 
   if (!inventory) {
     return {
@@ -122,6 +158,7 @@ export function getHotelAvailability(id: string, input: HotelAvailabilityInput) 
       source,
       sourceLabel,
       sourceNotice,
+      provenance,
       checkIn: input.checkIn,
       checkOut: input.checkOut,
       nights,
@@ -144,6 +181,7 @@ export function getHotelAvailability(id: string, input: HotelAvailabilityInput) 
       source,
       sourceLabel,
       sourceNotice,
+      provenance,
     }));
 
   if (!items.length) {
@@ -154,6 +192,7 @@ export function getHotelAvailability(id: string, input: HotelAvailabilityInput) 
       source,
       sourceLabel,
       sourceNotice,
+      provenance,
       checkIn: input.checkIn,
       checkOut: input.checkOut,
       nights,
@@ -176,6 +215,7 @@ export function getHotelAvailability(id: string, input: HotelAvailabilityInput) 
     source,
     sourceLabel,
     sourceNotice,
+    provenance,
     checkIn: input.checkIn,
     checkOut: input.checkOut,
     nights,
@@ -189,7 +229,14 @@ export function getHotelAvailability(id: string, input: HotelAvailabilityInput) 
   };
 }
 
-export async function getManagedHotelAvailability(id: string, input: HotelAvailabilityInput) {
+export async function getManagedHotelAvailability(
+  id: string,
+  input: HotelAvailabilityInput,
+  env: NodeJS.ProcessEnv = process.env,
+  now = new Date(),
+) {
+  if (!inventoryOffersEnabled(env)) return null;
+
   const hotel = await db.query.hotels.findFirst({
     where: and(
       eq(hotels.catalogId, id),
@@ -203,6 +250,7 @@ export async function getManagedHotelAvailability(id: string, input: HotelAvaila
   });
   if (!rooms.length) return null;
   const nights = calculateNights(input.checkIn, input.checkOut);
+  const provenance = vendorInventoryProvenance();
   const dates = Array.from({ length: nights }, (_, index) => {
     const date = new Date(`${input.checkIn}T12:00:00Z`);
     date.setUTCDate(date.getUTCDate() + index);
@@ -248,7 +296,8 @@ export async function getManagedHotelAvailability(id: string, input: HotelAvaila
       roomTotal: roundCurrency(nightlyRate * nights),
       source: "vendor" as const,
       sourceLabel: "Vendor-managed inventory",
-      sourceNotice: "Availability and prices are supplied by the approved hotel vendor and rechecked by the server.",
+      sourceNotice: "Availability and prices were entered by an approved vendor and rechecked against local reservations. This is not live supplier inventory.",
+      provenance,
     });
   }
   const base = {
@@ -256,7 +305,8 @@ export async function getManagedHotelAvailability(id: string, input: HotelAvaila
     notice: "Vendor-managed availability is shown for planning only. Select rooms below; no booking is created.",
     source: "vendor" as const,
     sourceLabel: "Vendor-managed inventory",
-    sourceNotice: "Availability and prices are supplied by the approved hotel vendor and rechecked by the server.",
+    sourceNotice: "Availability and prices were entered by an approved vendor and rechecked against local reservations. This is not live supplier inventory.",
+    provenance,
     checkIn: input.checkIn,
     checkOut: input.checkOut,
     nights,

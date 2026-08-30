@@ -97,7 +97,7 @@ paths:
     get:
       operationId: searchHotels
       tags: [discovery]
-      summary: Search the honest hotel discovery catalog, not live availability
+      summary: Search hotel discovery records with explicit provider provenance
       parameters:
         - name: q
           in: query
@@ -197,7 +197,7 @@ paths:
     get:
       operationId: getHotelAvailability
       tags: [discovery]
-      summary: Check server-backed hotel availability for a future stay request
+      summary: Check provider-backed hotel availability with freshness metadata
       parameters:
         - $ref: "#/components/parameters/Id"
         - name: checkIn
@@ -222,7 +222,7 @@ paths:
           schema: { type: integer, minimum: 1 }
       responses:
         "200":
-          description: Server-backed room availability and authoritative price calculations
+          description: Provider-backed availability and pricing, or an explicit unavailable result when no live production provider is connected
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HotelAvailabilityResponse" }
@@ -260,7 +260,7 @@ paths:
       operationId: createBooking
       tags: [bookings]
       security: [{ bearerAuth: [] }]
-      summary: Create an unpaid development booking after final server revalidation
+      summary: Create an unpaid booking only after final provider inventory revalidation
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1858,7 +1858,8 @@ components:
           enum: [development, live, unavailable]
         sourceLabel: { type: string }
         sourceNotice: { type: string }
-      required: [id, name, location, summary, destinationId, hotelType, rating, ratingLabel, priceValue, priceLabel, imageKey, amenities, source, sourceLabel, sourceNotice]
+        provenance: { $ref: "#/components/schemas/InventoryProvenance" }
+      required: [id, name, location, summary, destinationId, hotelType, rating, ratingLabel, priceValue, priceLabel, imageKey, amenities, source, sourceLabel, sourceNotice, provenance]
     HotelSearchResponse:
       type: object
       properties:
@@ -1925,7 +1926,19 @@ components:
           enum: [development, live, vendor, unavailable]
         sourceLabel: { type: string }
         sourceNotice: { type: string }
-      required: [id, name, capacity, amenities, availableUnits, nightlyRate, currency, nights, roomTotal, source, sourceLabel, sourceNotice]
+        provenance: { $ref: "#/components/schemas/InventoryProvenance" }
+      required: [id, name, capacity, amenities, availableUnits, nightlyRate, currency, nights, roomTotal, source, sourceLabel, sourceNotice, provenance]
+    InventoryProvenance:
+      type: object
+      description: Identifies the inventory authority and whether its data can be treated as fresh.
+      properties:
+        provider: { type: string }
+        freshness:
+          type: string
+          enum: [fresh, not_applicable, unavailable]
+        checkedAt: { type: ["string", "null"] }
+        freshUntil: { type: ["string", "null"] }
+      required: [provider, freshness, checkedAt, freshUntil]
     HotelAvailabilityResponse:
       type: object
       description: Availability results and server-calculated pricing for a future stay request. Never a booking confirmation.
@@ -1940,6 +1953,7 @@ components:
           enum: [development, live, vendor, unavailable]
         sourceLabel: { type: string }
         sourceNotice: { type: string }
+        provenance: { $ref: "#/components/schemas/InventoryProvenance" }
         checkIn: { type: string, format: date }
         checkOut: { type: string, format: date }
         nights: { type: number, minimum: 1 }
@@ -1955,7 +1969,7 @@ components:
         discounts: { type: number, minimum: 0 }
         total: { type: number, minimum: 0 }
         currency: { type: string }
-      required: [hotelId, status, notice, source, sourceLabel, sourceNotice, checkIn, checkOut, nights, adults, children, rooms, items, roomSubtotal, total, currency]
+      required: [hotelId, status, notice, source, sourceLabel, sourceNotice, provenance, checkIn, checkOut, nights, adults, children, rooms, items, roomSubtotal, total, currency]
     HotelNearbyPlace:
       type: object
       properties:

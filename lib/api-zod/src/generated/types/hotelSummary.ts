@@ -7,6 +7,7 @@
  */
 import type { Coordinates } from './coordinates';
 import type { HotelSummarySource } from './hotelSummarySource';
+import type { InventoryProvenance } from './inventoryProvenance';
 
 /**
  * A hotel discovery record with development or live provenance; never a booking offer.
@@ -35,4 +36,5 @@ export interface HotelSummary {
   source: HotelSummarySource;
   sourceLabel: string;
   sourceNotice: string;
+  provenance: InventoryProvenance;
 }

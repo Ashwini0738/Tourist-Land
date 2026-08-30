@@ -345,6 +345,27 @@ export const HotelSummarySource = {
   unavailable: 'unavailable',
 } as const;
 
+export type InventoryProvenanceFreshness = typeof InventoryProvenanceFreshness[keyof typeof InventoryProvenanceFreshness];
+
+
+export const InventoryProvenanceFreshness = {
+  fresh: 'fresh',
+  not_applicable: 'not_applicable',
+  unavailable: 'unavailable',
+} as const;
+
+/**
+ * Identifies the inventory authority and whether its data can be treated as fresh.
+ */
+export interface InventoryProvenance {
+  provider: string;
+  freshness: InventoryProvenanceFreshness;
+  /** @nullable */
+  checkedAt: string | null;
+  /** @nullable */
+  freshUntil: string | null;
+}
+
 /**
  * A hotel discovery record with development or live provenance; never a booking offer.
  */
@@ -372,6 +393,7 @@ export interface HotelSummary {
   source: HotelSummarySource;
   sourceLabel: string;
   sourceNotice: string;
+  provenance: InventoryProvenance;
 }
 
 export interface HotelSearchResponse {
@@ -452,6 +474,7 @@ export interface HotelAvailabilityRoom {
   source: HotelAvailabilityRoomSource;
   sourceLabel: string;
   sourceNotice: string;
+  provenance: InventoryProvenance;
 }
 
 export type HotelAvailabilityResponseStatus = typeof HotelAvailabilityResponseStatus[keyof typeof HotelAvailabilityResponseStatus];
@@ -483,6 +506,7 @@ export interface HotelAvailabilityResponse {
   source: HotelAvailabilityResponseSource;
   sourceLabel: string;
   sourceNotice: string;
+  provenance: InventoryProvenance;
   checkIn: string;
   checkOut: string;
   /** @minimum 1 */

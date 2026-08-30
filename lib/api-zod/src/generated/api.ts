@@ -341,7 +341,7 @@ export const ListHomeHotelsResponse = zod.object({
 
 
 /**
- * @summary Search the honest hotel discovery catalog, not live availability
+ * @summary Search hotel discovery records with explicit provider provenance
  */
 export const searchHotelsQueryAdultsDefault = 1;
 
@@ -440,7 +440,13 @@ export const SearchHotelsResponse = zod.object({
   "distanceKm": zod.number().min(searchHotelsResponseItemsItemDistanceKmMin).optional(),
   "source": zod.enum(['development', 'live', 'unavailable']),
   "sourceLabel": zod.string(),
-  "sourceNotice": zod.string()
+  "sourceNotice": zod.string(),
+  "provenance": zod.object({
+  "provider": zod.string(),
+  "freshness": zod.enum(['fresh', 'not_applicable', 'unavailable']),
+  "checkedAt": zod.string().nullable(),
+  "freshUntil": zod.string().nullable()
+}).describe('Identifies the inventory authority and whether its data can be treated as fresh.')
 }).describe('A hotel discovery record with development or live provenance; never a booking offer.'))
 })
 
@@ -487,7 +493,13 @@ export const GetHotelResponse = zod.object({
   "distanceKm": zod.number().min(getHotelResponseHotelDistanceKmMin).optional(),
   "source": zod.enum(['development', 'live', 'unavailable']),
   "sourceLabel": zod.string(),
-  "sourceNotice": zod.string()
+  "sourceNotice": zod.string(),
+  "provenance": zod.object({
+  "provider": zod.string(),
+  "freshness": zod.enum(['fresh', 'not_applicable', 'unavailable']),
+  "checkedAt": zod.string().nullable(),
+  "freshUntil": zod.string().nullable()
+}).describe('Identifies the inventory authority and whether its data can be treated as fresh.')
 }).describe('A hotel discovery record with development or live provenance; never a booking offer.'),
   "description": zod.string(),
   "address": zod.string().nullable(),
@@ -525,7 +537,7 @@ export const ListHotelRoomsResponse = zod.object({
 
 
 /**
- * @summary Check server-backed hotel availability for a future stay request
+ * @summary Check provider-backed hotel availability with freshness metadata
  */
 export const GetHotelAvailabilityParams = zod.object({
   "id": zod.coerce.string()
@@ -577,6 +589,12 @@ export const GetHotelAvailabilityResponse = zod.object({
   "source": zod.enum(['development', 'live', 'vendor', 'unavailable']),
   "sourceLabel": zod.string(),
   "sourceNotice": zod.string(),
+  "provenance": zod.object({
+  "provider": zod.string(),
+  "freshness": zod.enum(['fresh', 'not_applicable', 'unavailable']),
+  "checkedAt": zod.string().nullable(),
+  "freshUntil": zod.string().nullable()
+}).describe('Identifies the inventory authority and whether its data can be treated as fresh.'),
   "checkIn": zod.coerce.date(),
   "checkOut": zod.coerce.date(),
   "nights": zod.number().min(1),
@@ -597,7 +615,13 @@ export const GetHotelAvailabilityResponse = zod.object({
   "roomTotal": zod.number().min(getHotelAvailabilityResponseItemsItemRoomTotalMin),
   "source": zod.enum(['development', 'live', 'vendor', 'unavailable']),
   "sourceLabel": zod.string(),
-  "sourceNotice": zod.string()
+  "sourceNotice": zod.string(),
+  "provenance": zod.object({
+  "provider": zod.string(),
+  "freshness": zod.enum(['fresh', 'not_applicable', 'unavailable']),
+  "checkedAt": zod.string().nullable(),
+  "freshUntil": zod.string().nullable()
+}).describe('Identifies the inventory authority and whether its data can be treated as fresh.')
 }).describe('A room result from a clearly labeled development or live availability provider.')),
   "roomSubtotal": zod.number().min(getHotelAvailabilityResponseRoomSubtotalMin),
   "taxes": zod.number().min(getHotelAvailabilityResponseTaxesMin).optional(),
@@ -707,7 +731,7 @@ export const ListBookingsResponse = zod.object({
 
 
 /**
- * @summary Create an unpaid development booking after final server revalidation
+ * @summary Create an unpaid booking only after final provider inventory revalidation
  */
 export const createBookingHeaderIdempotencyKeyMin = 8;
 export const createBookingHeaderIdempotencyKeyMax = 128;

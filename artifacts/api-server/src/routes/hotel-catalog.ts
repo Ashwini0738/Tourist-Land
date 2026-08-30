@@ -1,4 +1,5 @@
 import { destinations, hotels, nearby, homeNotice } from "./catalog-data.ts";
+import { developmentInventoryProvenance, type InventoryProvenance } from "./hotel-inventory-policy.ts";
 
 export type HotelCatalogRecord = (typeof hotels)[number];
 export type HotelSort = "recommended" | "rating" | "price_asc" | "price_desc" | "distance";
@@ -41,6 +42,7 @@ type HotelSummary = {
   source: "development";
   sourceLabel: string;
   sourceNotice: string;
+  provenance: InventoryProvenance;
 };
 
 type HotelWithDistance = HotelSummary & { distanceKm?: number };
@@ -92,6 +94,7 @@ export function toHotelSummary(hotel: HotelCatalogRecord): HotelSummary {
     source: "development",
     sourceLabel: "Development preview",
     sourceNotice: hotelDevelopmentNotice,
+    provenance: developmentInventoryProvenance(),
   };
 }
 

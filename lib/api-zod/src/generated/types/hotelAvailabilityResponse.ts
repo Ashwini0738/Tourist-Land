@@ -8,6 +8,7 @@
 import type { HotelAvailabilityResponseSource } from './hotelAvailabilityResponseSource';
 import type { HotelAvailabilityResponseStatus } from './hotelAvailabilityResponseStatus';
 import type { HotelAvailabilityRoom } from './hotelAvailabilityRoom';
+import type { InventoryProvenance } from './inventoryProvenance';
 
 /**
  * Availability results and server-calculated pricing for a future stay request. Never a booking confirmation.
@@ -19,6 +20,7 @@ export interface HotelAvailabilityResponse {
   source: HotelAvailabilityResponseSource;
   sourceLabel: string;
   sourceNotice: string;
+  provenance: InventoryProvenance;
   checkIn: Date;
   checkOut: Date;
   /** @minimum 1 */

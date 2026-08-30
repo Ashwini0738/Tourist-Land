@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import {
   BookingConflictError,
   BookingNotFoundError,
+  BookingProviderUnavailableError,
 } from "../routes/booking.ts";
 import { startBookingCheckout } from "./booking-payments.ts";
 
@@ -74,6 +75,7 @@ test("checkout ownership is enforced before any Stripe call", async () => {
     startBookingCheckout("another-traveller", booking.reference, "retry-key", {
       stripe,
       loadBookingPayment: ownerOnlyLookup,
+      inventoryEnv: { NODE_ENV: "development" },
     }),
     (error: unknown) => error instanceof BookingNotFoundError,
   );
@@ -90,6 +92,7 @@ test("retry reuses an open Checkout Session without creating another payment", a
     stripe,
     loadBookingPayment: async () => ({ booking, payment: payment() }),
     findBooking: async () => booking,
+    inventoryEnv: { NODE_ENV: "development" },
   });
   assert.equal(result.checkoutUrl, "https://checkout.stripe.test/cs_current");
   assert.equal(wasCreateCalled(), false);
@@ -105,8 +108,33 @@ test("retry does not create a second Checkout Session while the existing one is 
     startBookingCheckout(booking.userId, booking.reference, "retry-key", {
       stripe,
       loadBookingPayment: async () => ({ booking, payment: payment() }),
+      inventoryEnv: { NODE_ENV: "development" },
     }),
     (error: unknown) => error instanceof BookingConflictError,
   );
   assert.equal(wasCreateCalled(), false);
+});
+
+test("checkout fails explicitly before Stripe when live inventory is unavailable", async () => {
+  let stripeCalled = false;
+  const stripe = {
+    checkout: {
+      sessions: {
+        retrieve: async () => {
+          stripeCalled = true;
+          return {};
+        },
+      },
+    },
+  } as unknown as Stripe;
+
+  await assert.rejects(
+    startBookingCheckout(booking.userId, booking.reference, "retry-key", {
+      stripe,
+      loadBookingPayment: async () => ({ booking, payment: payment() }),
+      inventoryEnv: { NODE_ENV: "production" },
+    }),
+    (error: unknown) => error instanceof BookingProviderUnavailableError,
+  );
+  assert.equal(stripeCalled, false);
 });

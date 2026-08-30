@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gt, lt, or, sql } from "drizzle-orm";
 import { db, bookingItems, bookings, hotels, hotelRooms, payments } from "@workspace/db";
 import { getHotelCatalogRecord } from "./hotel-catalog.ts";
 import { getDevelopmentRoom, getManagedHotelAvailability, availabilityDevelopmentNotice } from "./hotel-availability.ts";
+import { inventoryOffersEnabled } from "./hotel-inventory-policy.ts";
 import {
   sendBookingEmailSafely,
   type BookingEmail,
@@ -22,6 +23,7 @@ export type { BookingRequest, BookingRoomPrice, BookingValidationResult } from "
 
 export class BookingNotFoundError extends Error {}
 export class BookingConflictError extends Error {}
+export class BookingProviderUnavailableError extends Error {}
 
 export const bookingDevelopmentNotice =
   "Development hotel inventory only. Stripe payment confirms this booking request, but not a live supplier reservation.";
@@ -167,6 +169,11 @@ export async function listUserBookings(userId: string) {
 export async function createUserBooking(userId: string, input: BookingRequest, idempotencyKey: string) {
   const hotel = getHotelCatalogRecord(input.hotelId);
   if (!hotel) throw new BookingNotFoundError("Hotel not found.");
+  if (!inventoryOffersEnabled()) {
+    throw new BookingProviderUnavailableError(
+      "A managed live inventory provider is not connected. No booking was created.",
+    );
+  }
   const managed = await getManagedHotelAvailability(input.hotelId, input);
   if (managed && managed.status !== "available") {
     throw new BookingConflictError("The selected vendor-managed rooms are no longer available for those dates.");

@@ -87,6 +87,8 @@ export * from './hotelSummary';
 export * from './hotelSummarySource';
 export * from './idempotencyKeyParameter';
 export * from './invalidInputResponse';
+export * from './inventoryProvenance';
+export * from './inventoryProvenanceFreshness';
 export * from './listAdminInvitations200';
 export * from './listAdminUsers200';
 export * from './listAdminVendorApplications200';

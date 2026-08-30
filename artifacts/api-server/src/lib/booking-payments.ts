@@ -9,8 +9,14 @@ import {
 } from "./email.ts";
 import { getUncachableStripeClient } from "./stripeClient.ts";
 import { createNotification } from "./notifications.ts";
-import { BookingConflictError, BookingNotFoundError, findBooking } from "../routes/booking.ts";
+import {
+  BookingConflictError,
+  BookingNotFoundError,
+  BookingProviderUnavailableError,
+  findBooking,
+} from "../routes/booking.ts";
 import { getHotelCatalogRecord } from "../routes/hotel-catalog.ts";
+import { inventoryOffersEnabled } from "../routes/hotel-inventory-policy.ts";
 import {
   isCurrentStripeCheckoutAttempt,
   nextStripePaymentStatus,
@@ -25,6 +31,7 @@ export type BookingCheckoutDependencies = {
   stripe?: Stripe;
   findBooking?: typeof findBooking;
   loadBookingPayment?: (userId: string, reference: string) => Promise<BookingPaymentRow | null>;
+  inventoryEnv?: NodeJS.ProcessEnv;
 };
 
 type BookingPaymentRow = {
@@ -82,6 +89,11 @@ export async function startBookingCheckout(
     throw new BookingConflictError("This booking has already been paid.");
   }
   if (!row.payment) throw new BookingNotFoundError("The booking payment could not be found.");
+  if (!inventoryOffersEnabled(dependencies.inventoryEnv)) {
+    throw new BookingProviderUnavailableError(
+      "A managed live inventory provider is not connected. Checkout was not started.",
+    );
+  }
 
   const stripe = dependencies.stripe ?? await getUncachableStripeClient();
   const lookupBooking = dependencies.findBooking ?? findBooking;
@@ -156,7 +168,10 @@ function paymentEmailInput(
   };
 }
 
-export async function applyStripePaymentEvent(event: Stripe.Event) {
+export async function applyStripePaymentEvent(
+  event: Stripe.Event,
+  dependencies: { inventoryEnv?: NodeJS.ProcessEnv } = {},
+) {
   const { object, metadata } = eventMetadata(event);
   const outcome = stripePaymentOutcome(event);
   if (!outcome) return;
@@ -212,6 +227,16 @@ export async function applyStripePaymentEvent(event: Stripe.Event) {
         .where(and(eq(payments.id, row.payment.id), eq(payments.status, row.payment.status)))
         .returning();
       if (!updatedPayment) return null;
+      if (!inventoryOffersEnabled(dependencies.inventoryEnv)) {
+        eventNotification = {
+          userId: row.booking.userId,
+          reference: row.booking.reference,
+          type: "payment_pending",
+          title: "Payment received — booking not confirmed",
+          body: `Payment for booking ${row.booking.reference} was received, but no live inventory provider is connected. The booking was not confirmed.`,
+        };
+        return null;
+      }
       await tx.update(bookings).set({ status: "confirmed", updatedAt: new Date() }).where(and(eq(bookings.id, row.booking.id), eq(bookings.status, "pending_payment")));
       eventNotification = {
         userId: row.booking.userId,
@@ -261,17 +286,17 @@ export async function applyStripePaymentEvent(event: Stripe.Event) {
     title: string;
     body: string;
   } | null;
+  if (completedEventNotification) {
+    await createNotification(completedEventNotification.userId, {
+      type: completedEventNotification.type,
+      title: completedEventNotification.title,
+      body: completedEventNotification.body,
+      relatedType: "booking",
+      relatedId: completedEventNotification.reference,
+      dedupeKey: `payment-event:${event.id}`,
+    });
+  }
   if (notification) {
-    if (completedEventNotification) {
-      await createNotification(completedEventNotification.userId, {
-        type: completedEventNotification.type,
-        title: completedEventNotification.title,
-        body: completedEventNotification.body,
-        relatedType: "booking",
-        relatedId: completedEventNotification.reference,
-        dedupeKey: `payment-event:${event.id}`,
-      });
-    }
     await sendBookingEmailSafely(notification);
   }
   return notification;

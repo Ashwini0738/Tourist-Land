@@ -51,7 +51,7 @@ test("availability filters room types by per-room capacity", () => {
     adults: 3,
     children: 0,
     rooms: 1,
-  });
+  }, { NODE_ENV: "development" });
   assert.ok(result);
   assert.equal(result.status, "available");
   assert.deepEqual(result.items.map((room) => room.id), ["01-family-suite"]);
@@ -64,7 +64,7 @@ test("availability honors available-unit limits for the requested room count", (
     adults: 2,
     children: 0,
     rooms: 3,
-  });
+  }, { NODE_ENV: "development" });
   assert.ok(result);
   assert.deepEqual(result.items.map((room) => room.id), ["01-garden-room"]);
   assert.equal(result.items[0]?.availableUnits, 3);
@@ -75,7 +75,7 @@ test("availability honors available-unit limits for the requested room count", (
     adults: 2,
     children: 0,
     rooms: 4,
-  });
+  }, { NODE_ENV: "development" });
   assert.ok(none);
   assert.equal(none.status, "no_availability");
   assert.equal(none.items.length, 0);
@@ -88,7 +88,7 @@ test("availability returns multiple room types with server-calculated totals", (
     adults: 2,
     children: 0,
     rooms: 1,
-  });
+  }, { NODE_ENV: "development" });
   assert.ok(result);
   assert.equal(result.status, "available");
   assert.equal(result.items.length, 2);
@@ -98,8 +98,30 @@ test("availability returns multiple room types with server-calculated totals", (
   assert.equal(result.total, 23400);
   assert.equal(result.source, "development");
   assert.match(result.sourceNotice, /not a live supplier offer/);
+  assert.equal(result.provenance.provider, "travel-land-development");
+  assert.equal(result.provenance.freshness, "not_applicable");
+  assert.equal(result.provenance.checkedAt, null);
   assert.equal("taxes" in result, false);
   assert.equal("fees" in result, false);
+});
+
+test("production never exposes development fallback as live availability", () => {
+  const result = getHotelAvailability("01", {
+    checkIn: "2026-09-10",
+    checkOut: "2026-09-13",
+    adults: 2,
+    children: 0,
+    rooms: 1,
+  }, { NODE_ENV: "production" }, now);
+
+  assert.ok(result);
+  assert.equal(result.status, "unavailable");
+  assert.equal(result.source, "unavailable");
+  assert.equal(result.items.length, 0);
+  assert.equal(result.provenance.provider, "none");
+  assert.equal(result.provenance.freshness, "unavailable");
+  assert.equal(result.provenance.checkedAt, now.toISOString());
+  assert.match(result.sourceNotice, /managed live inventory connection/);
 });
 
 test("availability distinguishes a catalog hotel with no configured inventory", () => {
@@ -109,7 +131,7 @@ test("availability distinguishes a catalog hotel with no configured inventory", 
     adults: 2,
     children: 0,
     rooms: 1,
-  });
+  }, { NODE_ENV: "development" });
   assert.ok(result);
   assert.equal(result.status, "no_availability");
   assert.equal(result.items.length, 0);
@@ -124,5 +146,19 @@ test("availability returns null for an unknown hotel", () => {
     adults: 2,
     children: 0,
     rooms: 1,
-  }), null);
+  }, { NODE_ENV: "development" }), null);
+});
+
+test("inventory offers fail closed when the runtime mode is missing", () => {
+  const result = getHotelAvailability("01", {
+    checkIn: "2026-09-10",
+    checkOut: "2026-09-13",
+    adults: 2,
+    children: 0,
+    rooms: 1,
+  }, {}, now);
+
+  assert.ok(result);
+  assert.equal(result.status, "unavailable");
+  assert.equal(result.items.length, 0);
 });

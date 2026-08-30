@@ -15,6 +15,8 @@ test("hotel search matches names, locations, and destination names", () => {
   const response = searchHotelCatalog(result);
   assert.deepEqual(response.items.map((item) => item.id), ["02"]);
   assert.equal(response.notice.includes("not live availability"), true);
+  assert.equal(response.items[0]?.provenance.provider, "travel-land-development");
+  assert.equal(response.items[0]?.provenance.freshness, "not_applicable");
 });
 
 test("hotel search filters, sorts, and paginates catalog records", () => {

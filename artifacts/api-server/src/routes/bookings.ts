@@ -14,6 +14,7 @@ import { requireAuth } from "../middlewares/requireAuth.ts";
 import {
   BookingConflictError,
   BookingNotFoundError,
+  BookingProviderUnavailableError,
   cancelUserBooking,
   createUserBooking,
   findBooking,
@@ -40,6 +41,10 @@ function handleError(res: Parameters<Parameters<IRouter["get"]>[1]>[1], error: u
   }
   if (error instanceof BookingConflictError) {
     res.status(409).json({ error: { code: "BOOKING_CONFLICT", message: error.message } });
+    return;
+  }
+  if (error instanceof BookingProviderUnavailableError) {
+    res.status(503).json({ error: { code: "INVENTORY_PROVIDER_UNAVAILABLE", message: error.message } });
     return;
   }
   res.status(503).json({ error: { code: "BOOKING_UNAVAILABLE", message: "Bookings are temporarily unavailable. Please try again." } });
