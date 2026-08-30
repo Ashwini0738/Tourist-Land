@@ -67,9 +67,11 @@ function id(req: Request): string {
   return Array.isArray(req.params.id) ? req.params.id[0] ?? "" : req.params.id;
 }
 
-async function audit(req: Request, action: string, entityType: string, entityId: string, metadata?: Record<string, unknown>): Promise<void> {
+type AuditExecutor = Pick<typeof db, "insert">;
+
+async function audit(req: Request, action: string, entityType: string, entityId: string, metadata?: Record<string, unknown>, executor: AuditExecutor = db): Promise<void> {
   if (!req.localUser) return;
-  await db.insert(adminAuditLogs).values({
+  await executor.insert(adminAuditLogs).values({
     adminUserId: req.localUser.id,
     action,
     entityType,
@@ -345,9 +347,17 @@ router.post("/v1/admin/users/:id/status", async (req, res) => {
   const status = typeof body?.status === "string" ? body.status : undefined;
   if (!status || !["active", "inactive", "suspended"].includes(status)) return fail(res, 400, "INVALID_STATUS", "Provide an active, inactive, or suspended status.");
   if (id(req) === req.localUser?.id && status !== "active") return fail(res, 409, "SELF_LOCKOUT", "You cannot deactivate or suspend your own administrator account.");
-  const updated = (await db.update(users).set({ status, updatedAt: new Date() }).where(eq(users.id, id(req))).returning())[0];
+  let updated: typeof users.$inferSelect | undefined;
+  try {
+    updated = await db.transaction(async (tx) => {
+      const changed = (await tx.update(users).set({ status, updatedAt: new Date() }).where(eq(users.id, id(req))).returning())[0];
+      if (changed) await audit(req, "status_updated", "user", changed.id, { status, reason: body?.reason ?? null }, tx);
+      return changed;
+    });
+  } catch {
+    return fail(res, 500, "STATUS_UPDATE_FAILED", "The status change and audit record could not be saved.");
+  }
   if (!updated) return fail(res, 404, "NOT_FOUND", "User not found.");
-  await audit(req, "status_updated", "user", updated.id, { status, reason: body?.reason ?? null });
   const roles = await roleByUserIds([updated.id]);
   res.json(serializeUser(updated, roles.get(updated.id) ?? "user"));
 });
@@ -373,9 +383,17 @@ router.post("/v1/admin/vendors/:userId/status", async (req, res) => {
   const body = jsonBody(req);
   const status = typeof body?.status === "string" ? body.status : undefined;
   if (!status || !["pending", "approved", "rejected", "suspended"].includes(status)) return fail(res, 400, "INVALID_STATUS", "Provide a valid vendor status.");
-  const updated = (await db.update(vendorProfiles).set({ status, updatedAt: new Date() }).where(eq(vendorProfiles.userId, Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId)).returning())[0];
+  let updated: typeof vendorProfiles.$inferSelect | undefined;
+  try {
+    updated = await db.transaction(async (tx) => {
+      const changed = (await tx.update(vendorProfiles).set({ status, updatedAt: new Date() }).where(eq(vendorProfiles.userId, Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId)).returning())[0];
+      if (changed) await audit(req, "status_updated", "vendor", changed.userId, { status, reason: body?.reason ?? null }, tx);
+      return changed;
+    });
+  } catch {
+    return fail(res, 500, "STATUS_UPDATE_FAILED", "The status change and audit record could not be saved.");
+  }
   if (!updated) return fail(res, 404, "NOT_FOUND", "Vendor profile not found.");
-  await audit(req, "status_updated", "vendor", updated.userId, { status, reason: body?.reason ?? null });
   res.json(updated);
 });
 
@@ -420,8 +438,17 @@ router.post("/v1/admin/hotels/:id/status", async (req, res) => {
   const current = await db.query.hotels.findFirst({ where: eq(hotels.id, id(req)) });
   if (!current) return fail(res, 404, "NOT_FOUND", "Hotel not found.");
   const patch = { ...(status ? { status } : {}), ...(approvalStatus ? { approvalStatus } : {}), updatedAt: new Date() };
-  const updated = (await db.update(hotels).set(patch).where(eq(hotels.id, current.id)).returning())[0];
-  await audit(req, "status_updated", "hotel", current.id, { status: status ?? null, approvalStatus: approvalStatus ?? null, reason: body?.reason ?? null });
+  let updated: typeof hotels.$inferSelect | undefined;
+  try {
+    updated = await db.transaction(async (tx) => {
+      const changed = (await tx.update(hotels).set(patch).where(eq(hotels.id, current.id)).returning())[0];
+      if (changed) await audit(req, "status_updated", "hotel", current.id, { status: status ?? null, approvalStatus: approvalStatus ?? null, reason: body?.reason ?? null }, tx);
+      return changed;
+    });
+  } catch {
+    return fail(res, 500, "STATUS_UPDATE_FAILED", "The status change and audit record could not be saved.");
+  }
+  if (!updated) return fail(res, 404, "NOT_FOUND", "Hotel not found.");
   res.json(serializeHotel(updated, updated.ownerId ? await db.query.users.findFirst({ where: eq(users.id, updated.ownerId) }) : null, await count(hotelRooms, eq(hotelRooms.hotelId, updated.id))));
 });
 
@@ -525,9 +552,17 @@ router.post("/v1/admin/properties/:id/status", async (req, res) => {
   const body = jsonBody(req);
   const status = typeof body?.status === "string" ? body.status : undefined;
   if (!status || !["pending", "published", "archived"].includes(status)) return fail(res, 400, "INVALID_STATUS", "Provide a valid property status.");
-  const updated = (await db.update(properties).set({ status, updatedAt: new Date() }).where(eq(properties.id, id(req))).returning())[0];
+  let updated: typeof properties.$inferSelect | undefined;
+  try {
+    updated = await db.transaction(async (tx) => {
+      const changed = (await tx.update(properties).set({ status, updatedAt: new Date() }).where(eq(properties.id, id(req))).returning())[0];
+      if (changed) await audit(req, "status_updated", "property", changed.id, { status, reason: body?.reason ?? null }, tx);
+      return changed;
+    });
+  } catch {
+    return fail(res, 500, "STATUS_UPDATE_FAILED", "The status change and audit record could not be saved.");
+  }
   if (!updated) return fail(res, 404, "NOT_FOUND", "Property not found.");
-  await audit(req, "status_updated", "property", updated.id, { status, reason: body?.reason ?? null });
   res.json({ id: updated.id, title: updated.title, propertyType: updated.propertyType, address: updated.address, areaValue: numberValue(updated.areaValue) ?? 0, areaUnit: updated.areaUnit, askingPrice: numberValue(updated.askingPrice), currency: updated.currency, isVerified: updated.isVerified, status: updated.status, ownerId: updated.ownerId, ownerName: null, ownerEmail: null, enquiryCount: 0, createdAt: updated.createdAt });
 });
 
@@ -573,9 +608,17 @@ router.post("/v1/admin/reviews/:id/status", async (req, res) => {
   const body = jsonBody(req);
   const status = typeof body?.status === "string" ? body.status : undefined;
   if (!status || !["pending", "published", "rejected"].includes(status)) return fail(res, 400, "INVALID_STATUS", "Provide a valid review status.");
-  const updated = (await db.update(reviews).set({ status, updatedAt: new Date() }).where(eq(reviews.id, id(req))).returning())[0];
+  let updated: typeof reviews.$inferSelect | undefined;
+  try {
+    updated = await db.transaction(async (tx) => {
+      const changed = (await tx.update(reviews).set({ status, updatedAt: new Date() }).where(eq(reviews.id, id(req))).returning())[0];
+      if (changed) await audit(req, "status_updated", "review", changed.id, { status, reason: body?.reason ?? null }, tx);
+      return changed;
+    });
+  } catch {
+    return fail(res, 500, "STATUS_UPDATE_FAILED", "The status change and audit record could not be saved.");
+  }
   if (!updated) return fail(res, 404, "NOT_FOUND", "Review not found.");
-  await audit(req, "status_updated", "review", updated.id, { status, reason: body?.reason ?? null });
   const user = await db.query.users.findFirst({ where: eq(users.id, updated.userId) });
   res.json({ id: updated.id, userName: user?.displayName ?? null, entityType: updated.entityType, entityId: updated.entityId, rating: updated.rating, title: updated.title, body: updated.body, status: updated.status, createdAt: updated.createdAt });
 });

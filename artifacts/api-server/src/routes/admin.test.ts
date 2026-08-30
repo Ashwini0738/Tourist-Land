@@ -182,7 +182,7 @@ async function adminSchemaReady(): Promise<boolean> {
   return requiredColumns.every((column) => availableColumns.has(column));
 }
 
-function buildTestApp(adminId: string, userId: string): express.Express {
+function buildTestApp(adminId: string, userId: string, authenticatedAdminId = adminId): express.Express {
   const authenticateFixtureUser: RequestHandler = (req, res, next) => {
     const role = req.header("x-test-role");
     if (!role) {
@@ -190,7 +190,7 @@ function buildTestApp(adminId: string, userId: string): express.Express {
       return;
     }
     req.localUser = {
-      id: role === "admin" ? adminId : userId,
+      id: role === "admin" ? authenticatedAdminId : userId,
       clerkUserId: `test-${role}`,
       email: `${role}@example.test`,
       displayName: role === "admin" ? "Fixture admin" : "Fixture user",
@@ -372,6 +372,51 @@ test("admin status transitions validate values, isolate entities, and write audi
       reason: transition.body.reason,
     });
   }
+});
+
+test("admin status transitions roll back when the audit record cannot be inserted", async (t) => {
+  if (!(await adminSchemaReady())) {
+    t.skip("development database schema is pending post-merge application");
+    return;
+  }
+  const fixture = await createFixture();
+  t.after(() => deleteFixture(fixture));
+  const server = await startTestServer(buildTestApp(fixture.adminId, fixture.targetUserId, randomUUID()));
+  t.after(() => server.close());
+
+  const transitions: Array<{ path: string; body: JsonObject }> = [
+    { path: `/v1/admin/users/${fixture.targetUserId}/status`, body: { status: "inactive", reason: "Rollback user status" } },
+    { path: `/v1/admin/vendors/${fixture.vendorId}/status`, body: { status: "approved", reason: "Rollback vendor status" } },
+    { path: `/v1/admin/hotels/${fixture.hotelAId}/status`, body: { status: "published", reason: "Rollback hotel status" } },
+    { path: `/v1/admin/properties/${fixture.propertyId}/status`, body: { status: "published", reason: "Rollback property status" } },
+    { path: `/v1/admin/reviews/${fixture.reviewId}/status`, body: { status: "published", reason: "Rollback review status" } },
+  ];
+  for (const transition of transitions) {
+    const response = await adminRequest(server.baseUrl, transition.path, "admin", {
+      method: "POST",
+      body: JSON.stringify(transition.body),
+    });
+    assert.equal(response.status, 500, transition.path);
+    assert.deepEqual(response.body.error, {
+      code: "STATUS_UPDATE_FAILED",
+      message: "The status change and audit record could not be saved.",
+    });
+  }
+
+  const [user, vendor, hotel, property, review] = await Promise.all([
+    db.query.users.findFirst({ where: eq(users.id, fixture.targetUserId) }),
+    db.query.vendorProfiles.findFirst({ where: eq(vendorProfiles.userId, fixture.vendorId) }),
+    db.query.hotels.findFirst({ where: eq(hotels.id, fixture.hotelAId) }),
+    db.query.properties.findFirst({ where: eq(properties.id, fixture.propertyId) }),
+    db.query.reviews.findFirst({ where: eq(reviews.id, fixture.reviewId) }),
+  ]);
+  assert.equal(user?.status, "active");
+  assert.equal(vendor?.status, "pending");
+  assert.equal(hotel?.status, "draft");
+  assert.equal(hotel?.approvalStatus, "pending");
+  assert.equal(property?.status, "pending");
+  assert.equal(review?.status, "pending");
+  assert.equal((await db.select().from(adminAuditLogs).where(eq(adminAuditLogs.adminUserId, fixture.adminId))).length, 0);
 });
 
 test("admin lists support search, pagination, and safe serialization", async (t) => {
