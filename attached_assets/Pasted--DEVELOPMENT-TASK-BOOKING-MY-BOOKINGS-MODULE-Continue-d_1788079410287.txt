@@ -1,0 +1,1010 @@
+# DEVELOPMENT TASK — BOOKING + MY BOOKINGS MODULE
+
+Continue development of the existing **Travel & Land** application.
+
+## IMPORTANT — COMPLETED MODULES
+
+Treat the following as stable:
+
+* User authentication
+* Vendor authentication
+* Admin authentication
+* Clerk authentication
+* Email verification / OTP / MFA
+* Fingerprint / Face ID / native device authentication
+* Role-based authorization
+* Home
+* Explore
+* Destination Details
+* Maps & Location
+* Hotels
+* Hotel Details
+* Hotel search
+* Hotel filters and sorting
+* Hotel date selection
+* Hotel guest selection
+* Hotel Availability
+* Room selection
+* Availability validation
+* Existing API architecture
+* OpenAPI specification
+* Generated TypeScript API client
+* Generated React Query hooks
+* Generated Zod schemas
+
+Do NOT rebuild or redesign these modules.
+
+Do NOT modify authentication, biometric authentication, or role architecture.
+
+---
+
+# OBJECTIVE
+
+Build the complete **Booking + My Bookings** module.
+
+The user journey should become:
+
+Hotels
+→ Hotel Details
+→ Select Dates
+→ Check Availability
+→ Select Room
+→ Booking Details
+→ Guest Details
+→ Price Summary
+→ Confirm Booking
+→ Booking Created
+→ Booking Details
+→ My Bookings
+
+The Payment module will be implemented separately after this.
+
+IMPORTANT:
+
+If payment is not yet integrated, do NOT pretend the booking is paid.
+
+Support an honest booking/payment-pending state.
+
+---
+
+# 1. BOOKING DETAILS SCREEN
+
+Create a mobile-first Booking Details screen.
+
+Display:
+
+### Hotel
+
+* Hotel image
+* Hotel name
+* Location
+* Rating where available
+
+### Stay
+
+* Check-in
+* Check-out
+* Number of nights
+* Guests
+* Number of rooms
+
+### Selected room
+
+* Room type
+* Bed type
+* Occupancy
+* Number of rooms
+* Room price
+
+Allow the user to review the selection before continuing.
+
+---
+
+# 2. GUEST DETAILS
+
+Collect required guest information.
+
+Minimum:
+
+* First name
+* Last name
+* Email
+* Phone number
+
+Optional where appropriate:
+
+* Special requests
+* Arrival time
+* Guest notes
+
+Use the authenticated Clerk account information to prefill:
+
+* Name
+* Email
+
+Allow the user to edit booking-specific information.
+
+Do not overwrite the user's Clerk profile just because they edit booking details.
+
+---
+
+# 3. VALIDATION
+
+Validate all booking information.
+
+### Name
+
+* Required
+* Reasonable length
+* No invalid characters where inappropriate
+
+### Email
+
+* Required
+* Valid email format
+
+### Phone
+
+* Required
+* Valid phone format
+
+### Stay
+
+* Valid check-in
+* Valid check-out
+* Check-out after check-in
+
+### Guests
+
+* At least one adult
+* Valid guest count
+
+### Rooms
+
+* At least one room
+* Cannot exceed available inventory
+
+Show clear inline validation messages.
+
+Do not allow submission with invalid information.
+
+---
+
+# 4. PRICE SUMMARY
+
+Display a complete booking price breakdown.
+
+Example:
+
+Room price
+₹X
+
+Number of nights
+X
+
+Number of rooms
+X
+
+Taxes
+₹X
+
+Fees
+₹X
+
+Discount
+-₹X
+
+Total
+₹X
+
+IMPORTANT:
+
+Only show taxes, fees, or discounts when actual values exist.
+
+Do not invent charges.
+
+The server must calculate the authoritative booking total.
+
+Never trust a total price sent by the mobile application.
+
+---
+
+# 5. FINAL AVAILABILITY CHECK
+
+Before creating a booking, the server MUST revalidate:
+
+* Hotel
+* Room
+* Dates
+* Guest count
+* Room count
+* Current availability
+* Current price
+
+Do not rely on the availability result previously displayed to the user.
+
+Availability can change between:
+
+Check Availability
+
+and:
+
+Confirm Booking.
+
+If the room is no longer available:
+
+Show:
+
+"Room is no longer available."
+
+Allow the user to return to Availability and select another room/date.
+
+---
+
+# 6. BOOKING CREATION
+
+Create a secure server-side booking endpoint.
+
+Potential endpoint:
+
+POST /api/v1/bookings
+
+The server should receive only necessary booking information.
+
+Example:
+
+* hotelId
+* roomId
+* checkIn
+* checkOut
+* adults
+* children
+* rooms
+* guest details
+* special requests
+
+The server must derive/verify:
+
+* User identity
+* Vendor ownership
+* Room ownership
+* Availability
+* Pricing
+* Taxes
+* Fees
+* Total
+
+Do not accept:
+
+* clerk user ID from client as trusted identity
+* vendor ID from client as trusted ownership
+* final price as trusted
+* payment status as trusted
+* booking status as trusted
+
+Use the authenticated server session.
+
+---
+
+# 7. BOOKING STATUS
+
+Create a clear booking lifecycle.
+
+Suggested statuses:
+
+* pending_payment
+* confirmed
+* cancelled
+* completed
+* failed
+
+If payment is not yet implemented:
+
+New bookings should use:
+
+pending_payment
+
+Do NOT mark them:
+
+confirmed
+
+until the actual confirmation rules are satisfied.
+
+---
+
+# 8. PAYMENT STATUS
+
+Keep payment status separate from booking status.
+
+Suggested:
+
+* unpaid
+* pending
+* paid
+* failed
+* refunded
+
+Do NOT fake payment success.
+
+The Payment module will later update this securely.
+
+---
+
+# 9. BOOKING ID
+
+Generate a unique booking reference on the server.
+
+Example:
+
+TL-2026-XXXXXX
+
+Do not generate trusted booking IDs solely on the client.
+
+The booking reference should be safe to display to the user.
+
+---
+
+# 10. BOOKING CONFIRMATION SCREEN
+
+After successful booking creation, show:
+
+### Booking confirmed / Payment pending
+
+Depending on the current payment state.
+
+Display:
+
+* Booking reference
+* Hotel
+* Room
+* Dates
+* Guests
+* Total
+* Booking status
+* Payment status
+
+Provide actions:
+
+* View Booking
+* My Bookings
+* Back to Home
+
+Do not show a fake QR code, barcode, payment receipt, or confirmation document.
+
+---
+
+# 11. MY BOOKINGS
+
+Build the My Bookings screen.
+
+Show the authenticated user's bookings only.
+
+Do not show another user's bookings.
+
+Organize bookings by:
+
+* Upcoming
+* Past
+* Cancelled
+
+Each booking card should show:
+
+* Hotel image
+* Hotel name
+* Location
+* Booking reference
+* Dates
+* Room
+* Guest count
+* Total
+* Booking status
+* Payment status
+
+Tap:
+
+My Booking
+→ Booking Details
+
+---
+
+# 12. BOOKING DETAILS
+
+Create a dedicated Booking Details screen.
+
+Display:
+
+### Hotel
+
+* Name
+* Image
+* Location
+
+### Booking
+
+* Booking reference
+* Booking date
+* Check-in
+* Check-out
+* Nights
+* Guests
+* Room
+
+### Guest
+
+* Guest name
+* Email
+* Phone
+
+### Price
+
+* Room amount
+* Taxes
+* Fees
+* Discount
+* Total
+
+### Status
+
+* Booking status
+* Payment status
+
+Do not expose internal vendor/admin information.
+
+---
+
+# 13. CANCEL BOOKING
+
+Implement cancellation basics.
+
+Provide:
+
+"Cancel Booking"
+
+only when the booking is cancellable.
+
+Before cancellation:
+
+Show a confirmation dialog.
+
+Example:
+
+"Are you sure you want to cancel this booking?"
+
+The server must verify:
+
+* Booking belongs to current user
+* Booking is cancellable
+* Current booking status allows cancellation
+
+Do not allow a client to directly change booking status.
+
+---
+
+# 14. CANCELLATION POLICY
+
+If the hotel/room has a cancellation policy:
+
+Display it before confirmation.
+
+Examples:
+
+* Free cancellation until X date
+* Cancellation fee applies
+* Non-refundable
+
+Do not invent policies.
+
+If cancellation policy is not available:
+
+Show:
+
+"Cancellation policy unavailable"
+
+or hide the section.
+
+---
+
+# 15. BOOKING API
+
+Inspect existing APIs first.
+
+Potential endpoints:
+
+POST /api/v1/bookings
+
+GET /api/v1/bookings
+
+GET /api/v1/bookings/:id
+
+POST /api/v1/bookings/:id/cancel
+
+Do not create duplicate endpoints.
+
+GET /api/v1/bookings must return only the authenticated user's bookings.
+
+GET /api/v1/bookings/:id must verify ownership.
+
+---
+
+# 16. DATABASE
+
+Inspect the existing schema first.
+
+Reuse existing models if available.
+
+If required, establish:
+
+### Booking
+
+* id
+* booking_reference
+* user_id
+* hotel_id
+* vendor_id
+* room_id
+* check_in
+* check_out
+* adults
+* children
+* rooms
+* guest_name
+* guest_email
+* guest_phone
+* special_requests
+* subtotal
+* taxes
+* fees
+* discount
+* total
+* booking_status
+* payment_status
+* created_at
+* updated_at
+
+Do not duplicate existing tables.
+
+---
+
+# 17. BOOKING ITEMS
+
+If the architecture supports multiple room types or multiple rooms, use a booking-item structure where appropriate.
+
+Example:
+
+Booking
+→ Booking Items
+→ Room type
+→ Quantity
+→ Rate
+→ Nights
+→ Amount
+
+Choose the cleanest existing architecture rather than unnecessarily redesigning the database.
+
+---
+
+# 18. INVENTORY SAFETY
+
+Prevent overselling.
+
+When a booking is created:
+
+1. Recheck availability.
+2. Lock/reserve inventory safely.
+3. Create booking.
+4. Update inventory consistently.
+
+Use a database transaction where appropriate.
+
+The booking operation should be atomic.
+
+Do not:
+
+Check availability
+
+then separately create booking
+
+without protecting against concurrent bookings.
+
+---
+
+# 19. IDEMPOTENCY
+
+Prevent duplicate bookings caused by:
+
+* Double tapping Confirm
+* Network retries
+* App retry
+* Request duplication
+
+Implement an idempotency mechanism for booking creation where appropriate.
+
+A repeated request should not create two bookings.
+
+---
+
+# 20. AUTHORIZATION
+
+USER:
+
+Can:
+
+* Create booking
+* View own bookings
+* Cancel own eligible bookings
+
+Cannot:
+
+* View another user's booking
+* Modify hotel inventory
+* Change hotel price
+* Change availability
+* Change payment status
+
+VENDOR:
+
+Can eventually:
+
+* View bookings for their own listings
+
+Cannot:
+
+* View unrelated vendor bookings
+* Modify customer bookings outside allowed vendor actions
+
+ADMIN:
+
+Can eventually:
+
+* View/manage platform bookings
+
+Do not build the complete Vendor/Admin booking management screens yet.
+
+---
+
+# 21. SECURITY
+
+Never trust client-supplied:
+
+* user ID
+* vendor ID
+* booking status
+* payment status
+* price
+* inventory
+* authorization
+
+Derive identity from the authenticated server session.
+
+Validate all input server-side.
+
+Use parameterized database queries.
+
+Do not expose secrets.
+
+---
+
+# 22. PAYMENT HANDOFF
+
+At this stage, the booking should be ready for Payment.
+
+Flow:
+
+Booking Details
+→ Confirm Booking
+→ Booking Created / Pending Payment
+→ Payment
+
+Do not implement the payment gateway yet.
+
+If payment is required before confirmation, make that state explicit.
+
+Do not falsely say:
+
+"Payment successful"
+
+without real payment processing.
+
+---
+
+# 23. NOTIFICATIONS PREPARATION
+
+Prepare the booking system so the future Notifications module can send:
+
+* Booking created
+* Payment successful
+* Booking confirmed
+* Booking cancelled
+* Booking reminder
+
+Do not build push notifications yet.
+
+---
+
+# 24. EMAIL PREPARATION
+
+Prepare the architecture for future transactional emails:
+
+* Booking confirmation
+* Payment receipt
+* Cancellation confirmation
+
+Do not send fake emails.
+
+Do not hardcode email credentials.
+
+---
+
+# 25. LOADING STATES
+
+Implement:
+
+* Booking details loading
+* Guest form loading where needed
+* Price calculation loading
+* Final availability validation loading
+* Booking creation loading
+
+The Confirm button must prevent accidental multiple submissions.
+
+Do not allow the screen to blink.
+
+---
+
+# 26. ERROR HANDLING
+
+Handle:
+
+### Availability changed
+
+"Room is no longer available."
+
+### Price changed
+
+"Price has changed. Please review the updated price."
+
+### Network error
+
+"Unable to create booking. Please try again."
+
+### Unauthorized
+
+"Your session has expired. Please sign in again."
+
+### Server error
+
+Show a friendly message.
+
+Never expose stack traces.
+
+---
+
+# 27. EMPTY STATES
+
+My Bookings should show:
+
+### No upcoming bookings
+
+"No upcoming bookings"
+
+with:
+
+"Explore Hotels"
+
+### No past bookings
+
+"No past bookings"
+
+### No cancelled bookings
+
+"No cancelled bookings"
+
+Do not create fake bookings.
+
+---
+
+# 28. PERFORMANCE
+
+Use:
+
+* React Query
+* Query caching
+* Optimistic UI only where safe
+* Pagination for large booking history
+* Avoid unnecessary API requests
+
+After booking creation:
+
+Invalidate the user's bookings query.
+
+---
+
+# 29. NAVIGATION
+
+Verify:
+
+Hotel Details
+→ Availability
+→ Room Selection
+→ Booking Details
+→ Guest Details
+→ Confirm Booking
+→ Booking Created
+→ Booking Details
+
+Also:
+
+Bookings tab
+→ My Bookings
+
+My Bookings
+→ Booking Details
+
+Booking Details
+→ Cancel Booking
+
+Booking Details
+→ Hotel Details
+
+Do not create dead-end routes.
+
+---
+
+# 30. USER EXPERIENCE
+
+The confirmation button should be clear:
+
+"Continue to Payment"
+
+if payment is the next required step.
+
+Or:
+
+"Confirm Booking"
+
+if the current architecture genuinely allows booking creation before payment.
+
+Do not make the user believe payment has happened when it has not.
+
+---
+
+# 31. TESTING
+
+Add automated tests for:
+
+### Booking creation
+
+1. Valid booking
+2. Invalid dates
+3. Invalid guest details
+4. Invalid room count
+5. Availability recheck
+6. Price recheck
+7. Booking creation
+8. Unique booking reference
+9. Duplicate request prevention
+10. Transaction rollback
+
+### Booking retrieval
+
+11. My bookings
+12. Booking details
+13. User can only see own bookings
+14. Unauthorized booking access rejected
+
+### Cancellation
+
+15. Eligible booking cancellation
+16. Ineligible cancellation rejected
+17. Ownership validation
+18. Cancellation status update
+
+### Price
+
+19. Server price calculation
+20. Taxes
+21. Fees
+22. Discounts
+23. Total
+
+### States
+
+24. Pending payment
+25. Confirmed
+26. Cancelled
+27. Failed
+
+### Regression
+
+28. User login
+29. Vendor login
+30. Admin login
+31. Role authorization
+32. Home
+33. Explore
+34. Destination Details
+35. Maps
+36. Hotels
+37. Hotel Details
+38. Availability
+39. Biometric/device authentication
+
+---
+
+# 32. PLATFORM VALIDATION
+
+Verify:
+
+### Android
+
+* Expo Go
+* Android build/export
+
+### iOS
+
+* iOS build/export
+
+### Web
+
+* Mobile web export
+
+Test:
+
+* Booking form
+* Guest details
+* Price summary
+* Confirm button
+* Booking creation
+* My Bookings
+* Booking Details
+* Cancellation
+* Responsive layout
+
+---
+
+# 33. IMPORTANT — DO NOT BUILD YET
+
+Do NOT implement:
+
+* Payment gateway
+* Wallet transactions
+* Refund processing
+* Vendor booking management UI
+* Admin booking management UI
+* Push notifications
+* Transactional email system
+
+Those are separate modules.
+
+---
+
+# 34. FINAL REPORT
+
+When complete, report:
+
+1. Booking flow implemented
+2. My Bookings implemented
+3. Booking Details implemented
+4. Cancellation implemented
+5. Database changes
+6. APIs created/reused
+7. OpenAPI changes
+8. Generated client/hooks changes
+9. Inventory protection approach
+10. Price calculation approach
+11. Idempotency approach
+12. Authorization approach
+13. Tests added
+14. Total tests passing
+15. Android validation
+16. iOS validation
+17. Web validation
+18. Known limitations
+19. Payment integration requirements
+20. Recommended next development task
+
+IMPORTANT:
+
+The next development task after this should be:
+
+**PAYMENT + PAYMENT STATUS**
