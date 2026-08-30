@@ -10,8 +10,26 @@ import {
 import { getUncachableStripeClient } from "./stripeClient.ts";
 import { BookingConflictError, BookingNotFoundError, findBooking } from "../routes/booking.ts";
 import { getHotelCatalogRecord } from "../routes/hotel-catalog.ts";
+import {
+  isCurrentStripeCheckoutAttempt,
+  nextStripePaymentStatus,
+  stripePaymentAmountMatches,
+  stripePaymentDetails,
+  stripePaymentOutcome,
+  type PaymentStatus,
+} from "./stripe-payment-state.ts";
 
 const MINOR_UNIT_CURRENCIES = new Set(["bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "mga", "pyg", "rwf", "ugx", "vnd", "vuv", "xaf", "xof", "xpf"]);
+export type BookingCheckoutDependencies = {
+  stripe?: Stripe;
+  findBooking?: typeof findBooking;
+  loadBookingPayment?: (userId: string, reference: string) => Promise<BookingPaymentRow | null>;
+};
+
+type BookingPaymentRow = {
+  booking: typeof bookings.$inferSelect;
+  payment: typeof payments.$inferSelect | null;
+};
 
 function toMinorUnits(amount: string, currency: string) {
   const value = Number(amount);
@@ -42,12 +60,21 @@ async function createBookingPrice(stripe: Stripe, booking: typeof bookings.$infe
   );
 }
 
-export async function startBookingCheckout(userId: string, reference: string, idempotencyKey: string) {
-  const [row] = await db
-    .select({ booking: bookings, payment: payments })
-    .from(bookings)
-    .leftJoin(payments, eq(payments.bookingId, bookings.id))
-    .where(and(eq(bookings.userId, userId), eq(bookings.reference, reference)));
+export async function startBookingCheckout(
+  userId: string,
+  reference: string,
+  idempotencyKey: string,
+  dependencies: BookingCheckoutDependencies = {},
+) {
+  const loadBookingPayment = dependencies.loadBookingPayment ?? (async (requestedUserId: string, requestedReference: string) => {
+    const [row] = await db
+      .select({ booking: bookings, payment: payments })
+      .from(bookings)
+      .leftJoin(payments, eq(payments.bookingId, bookings.id))
+      .where(and(eq(bookings.userId, requestedUserId), eq(bookings.reference, requestedReference)));
+    return row ?? null;
+  });
+  const row = await loadBookingPayment(userId, reference);
   if (!row) throw new BookingNotFoundError("Booking not found.");
   if (row.booking.status === "cancelled") throw new BookingConflictError("This booking has been cancelled.");
   if (row.payment?.status === "paid" || row.booking.status === "confirmed") {
@@ -55,20 +82,23 @@ export async function startBookingCheckout(userId: string, reference: string, id
   }
   if (!row.payment) throw new BookingNotFoundError("The booking payment could not be found.");
 
-  const stripe = await getUncachableStripeClient();
+  const stripe = dependencies.stripe ?? await getUncachableStripeClient();
+  const lookupBooking = dependencies.findBooking ?? findBooking;
   if (row.payment.status === "processing" && row.payment.providerReference) {
+    let existing: Stripe.Checkout.Session | undefined;
     try {
-      const existing = await stripe.checkout.sessions.retrieve(row.payment.providerReference);
+      existing = await stripe.checkout.sessions.retrieve(row.payment.providerReference);
       if (existing.status === "open" && existing.url) {
-        const booking = await findBooking(userId, reference);
+        const booking = await lookupBooking(userId, reference);
         if (!booking) throw new BookingNotFoundError("Booking not found.");
         return { checkoutUrl: existing.url, booking };
       }
-      if (existing.status === "complete") {
-        throw new BookingConflictError("This payment is still being confirmed. Refresh the booking before trying again.");
-      }
     } catch (error) {
+      if (error instanceof BookingConflictError) throw error;
       logger.warn({ err: error, bookingReference: reference }, "Existing Stripe checkout session could not be reused");
+    }
+    if (existing?.status === "complete") {
+      throw new BookingConflictError("This payment is still being confirmed. Refresh the booking before trying again.");
     }
   }
 
@@ -95,7 +125,7 @@ export async function startBookingCheckout(userId: string, reference: string, id
     .set({ provider: "stripe", providerReference: session.id, status: "processing", updatedAt: new Date() })
     .where(and(eq(payments.id, row.payment.id), eq(payments.userId, userId)));
 
-  const booking = await findBooking(userId, reference);
+  const booking = await lookupBooking(userId, reference);
   if (!booking) throw new BookingNotFoundError("Booking not found.");
   return { checkoutUrl: session.url, booking };
 }
@@ -106,13 +136,6 @@ function eventMetadata(event: Stripe.Event) {
     object,
     metadata: object.metadata ?? {},
   };
-}
-
-function paidDetails(event: Stripe.Event, object: Stripe.Checkout.Session | Stripe.PaymentIntent) {
-  if (object.object === "checkout.session") {
-    return { amount: object.amount_total, currency: object.currency };
-  }
-  return { amount: object.amount_received || object.amount, currency: object.currency };
 }
 
 function paymentEmailInput(
@@ -133,28 +156,12 @@ function paymentEmailInput(
 }
 
 export async function applyStripePaymentEvent(event: Stripe.Event) {
-  const supported = new Set([
-    "checkout.session.completed",
-    "checkout.session.async_payment_succeeded",
-    "checkout.session.async_payment_failed",
-    "checkout.session.expired",
-    "payment_intent.succeeded",
-    "payment_intent.payment_failed",
-  ]);
-  if (!supported.has(event.type)) return;
-
   const { object, metadata } = eventMetadata(event);
+  const outcome = stripePaymentOutcome(event);
+  if (!outcome) return;
   const reference = metadata.bookingReference;
   const bookingId = metadata.bookingId;
   if (!reference && !bookingId) return;
-
-  const outcome = event.type.endsWith("succeeded") || (event.type === "checkout.session.completed" && (object as Stripe.Checkout.Session).payment_status === "paid")
-    ? "paid"
-    : event.type.endsWith("failed")
-      ? "failed"
-      : event.type === "checkout.session.expired"
-        ? "cancelled"
-        : "processing";
 
   const notification = await db.transaction(async (tx) => {
     const [row] = await tx
@@ -163,33 +170,58 @@ export async function applyStripePaymentEvent(event: Stripe.Event) {
       .leftJoin(payments, eq(payments.bookingId, bookings.id))
       .where(bookingId ? eq(bookings.id, bookingId) : eq(bookings.reference, reference!));
     if (!row?.payment) return null;
+    if (
+      (metadata.bookingId && metadata.bookingId !== row.booking.id) ||
+      (metadata.bookingReference && metadata.bookingReference !== row.booking.reference) ||
+      (metadata.userId && metadata.userId !== row.booking.userId)
+    ) {
+      logger.warn({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring Stripe event with mismatched booking metadata");
+      return null;
+    }
+    if (
+      !isCurrentStripeCheckoutAttempt(
+        event,
+        row.payment.providerReference,
+        row.payment.status as PaymentStatus,
+        row.payment.updatedAt,
+      )
+    ) {
+      logger.info({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring an event for an older Stripe checkout attempt");
+      return null;
+    }
 
     if (outcome === "paid") {
-      const details = paidDetails(event, object);
+      const details = stripePaymentDetails(event);
       const expectedAmount = toMinorUnits(String(row.booking.totalAmount), row.booking.currency);
-      if (details.amount !== expectedAmount || details.currency?.toLowerCase() !== row.booking.currency.toLowerCase()) {
+      if (!stripePaymentAmountMatches(details, expectedAmount, row.booking.currency)) {
         logger.warn({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring Stripe payment with mismatched amount or currency");
         return null;
       }
-      if (object.object === "checkout.session" && row.payment.providerReference && row.payment.providerReference !== object.id) {
-        logger.info({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring an event for an older Stripe checkout session");
-        return null;
-      }
-      if (row.payment.status === "paid") return null;
       if (row.booking.status === "cancelled") {
         logger.warn({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring payment for a cancelled booking");
         return null;
       }
-      await tx.update(payments).set({ status: "paid", provider: "stripe", updatedAt: new Date() }).where(eq(payments.id, row.payment.id));
+      const [updatedPayment] = await tx
+        .update(payments)
+        // Keep updatedAt as the checkout-attempt start marker. A webhook can
+        // arrive out of order, so refreshing it here would make a delayed
+        // event from the same attempt look newer than it really is.
+        .set({ status: "paid", provider: "stripe" })
+        .where(and(eq(payments.id, row.payment.id), eq(payments.status, row.payment.status)))
+        .returning();
+      if (!updatedPayment) return null;
       await tx.update(bookings).set({ status: "confirmed", updatedAt: new Date() }).where(and(eq(bookings.id, row.booking.id), eq(bookings.status, "pending_payment")));
       return paymentEmailInput(row.booking, "payment_confirmed");
     }
 
-    if (row.payment.status === "paid") return null;
-    if (outcome === "processing" && row.payment.status !== "unpaid" && row.payment.status !== "processing") return null;
-    const nextStatus = outcome === "failed" ? "failed" : outcome === "cancelled" ? "cancelled" : "processing";
-    if (row.payment.status === nextStatus) return null;
-    await tx.update(payments).set({ status: nextStatus, provider: "stripe", updatedAt: new Date() }).where(eq(payments.id, row.payment.id));
+    const nextStatus = nextStripePaymentStatus(row.payment.status as PaymentStatus, outcome);
+    if (!nextStatus) return null;
+    const [updatedPayment] = await tx
+      .update(payments)
+      .set({ status: nextStatus, provider: "stripe" })
+      .where(and(eq(payments.id, row.payment.id), eq(payments.status, row.payment.status)))
+      .returning();
+    if (!updatedPayment) return null;
     const notificationKind: BookingNotificationKind =
       outcome === "failed"
         ? "payment_failed"
