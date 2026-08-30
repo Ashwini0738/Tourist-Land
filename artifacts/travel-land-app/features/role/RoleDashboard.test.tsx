@@ -94,3 +94,31 @@ it('renders role profile details and logs out from the profile action', async ()
   fireEvent.press(screen.getByTestId('vendor-profile-logout'));
   await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
 });
+
+it('renders administrator profile details and logs out from the admin profile action', async () => {
+  const screen = render(
+    <RoleProfileScreen
+      role="admin"
+      currentUser={{
+        id: 'admin-local-user',
+        clerkUserId: 'admin-clerk-user',
+        email: 'admin@example.com',
+        displayName: 'Platform Admin',
+        phone: null,
+        avatarUrl: null,
+        role: 'admin',
+        status: 'active',
+        vendorProfile: null,
+        createdAt: '2026-08-30T00:00:00.000Z',
+        updatedAt: '2026-08-30T00:00:00.000Z',
+      }}
+    />,
+  );
+
+  expect(screen.getByText('Your administrator profile.')).toBeTruthy();
+  expect(screen.getByText('Platform Admin')).toBeTruthy();
+  expect(screen.getByText('Administrator')).toBeTruthy();
+  expect(screen.getByTestId('admin-profile-logout')).toBeTruthy();
+  fireEvent.press(screen.getByTestId('admin-profile-logout'));
+  await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
+});
