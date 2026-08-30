@@ -182,7 +182,7 @@ export function AuditLogsPage() {
           <button type="button" aria-label="Close revision details" data-testid="button-close-audit-details" onClick={() => setSelectedAuditId(null)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"><X size={17} /></button>
         </div>
         {detail.isLoading ? <div data-testid="audit-detail-loading" className="rounded-lg border border-border p-8 text-center text-sm text-muted-foreground">Loading revision details…</div>
-          : detail.isError ? <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-8 text-center"><CircleAlert className="mx-auto mb-3 text-destructive" size={22} /><p className="font-semibold">Revision details unavailable</p><p className="mt-1 text-sm text-muted-foreground">The audit record could not be loaded.</p></div>
+          : detail.isError ? <div data-testid="audit-detail-unavailable" className="rounded-lg border border-destructive/25 bg-destructive/5 p-8 text-center"><CircleAlert className="mx-auto mb-3 text-destructive" size={22} /><p className="font-semibold">Revision details unavailable</p><p className="mt-1 mb-4 text-sm text-muted-foreground">The audit record could not be loaded.</p><Button testId="button-retry-audit-detail" variant="quiet" onClick={() => detail.refetch()}>Try again</Button></div>
           : <div className="space-y-5">
             <div className="grid gap-4 rounded-lg border border-border bg-muted/25 p-4 sm:grid-cols-2">
               <div><p className="eyebrow">Destination</p><p data-testid="text-audit-detail-destination" className="mt-1 font-semibold">{val(detail.data?.destinationName, 'Destination unavailable')}</p><p className="mono mt-1 text-[10px] text-muted-foreground">{detail.data?.entityId}</p></div>

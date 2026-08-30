@@ -54,7 +54,9 @@ const detailForCreatedItem = {
 
 let emptyHistory = false;
 let auditHistoryShouldFail = false;
+let auditDetailShouldFail = false;
 let auditHistoryRefetch: ReturnType<typeof vi.fn>;
+let auditDetailRefetch: ReturnType<typeof vi.fn>;
 
 function responseFor(params?: { q?: string; page?: number }) {
   if (emptyHistory && !params?.q) {
@@ -75,7 +77,9 @@ function responseFor(params?: { q?: string; page?: number }) {
 beforeEach(() => {
   emptyHistory = false;
   auditHistoryShouldFail = false;
+  auditDetailShouldFail = false;
   auditHistoryRefetch = vi.fn();
+  auditDetailRefetch = vi.fn();
   useListAdminAuditLogs.mockReset();
   useListAdminAuditLogs.mockImplementation((params) => {
     const [isError, setIsError] = useState(auditHistoryShouldFail);
@@ -89,13 +93,18 @@ beforeEach(() => {
       refetch: auditHistoryRefetch,
     };
   });
-  useGetAdminAuditLog.mockImplementation((id) => ({
-    data: id === 'audit-updated' ? detailForUpdatedItem : detailForCreatedItem,
-    isLoading: false,
-    isError: false,
-    isFetching: false,
-    refetch: vi.fn(),
-  }));
+  useGetAdminAuditLog.mockImplementation((id) => {
+    const [isError, setIsError] = useState(auditDetailShouldFail);
+    auditDetailRefetch.mockImplementation(() => setIsError(false));
+
+    return {
+      data: isError ? undefined : id === 'audit-updated' ? detailForUpdatedItem : detailForCreatedItem,
+      isLoading: false,
+      isError,
+      isFetching: false,
+      refetch: auditDetailRefetch,
+    };
+  });
 });
 
 afterEach(() => {
@@ -208,5 +217,27 @@ describe('AuditLogsPage', () => {
     fireEvent.click(screen.getByTestId('button-audit-details-audit-created'));
 
     expect(screen.getByTestId('audit-detail-unavailable')).toHaveTextContent('Unavailable');
+  });
+
+  it('recovers from a revision detail load error when retry is selected', async () => {
+    auditDetailShouldFail = true;
+    render(<AuditLogsPage />);
+
+    fireEvent.click(screen.getByTestId('button-audit-details-audit-updated'));
+
+    expect(screen.getByTestId('audit-detail-unavailable')).toHaveTextContent('Revision details unavailable');
+    expect(screen.getByTestId('button-retry-audit-detail')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('button-retry-audit-detail'));
+
+    await waitFor(() => expect(screen.getByTestId('audit-before-name')).toHaveTextContent('Kerala Backwaters'));
+    expect(screen.getByTestId('audit-after-summary')).toHaveTextContent('Updated summary');
+    expect(auditDetailRefetch).toHaveBeenCalledTimes(1);
+    expect(useListAdminAuditLogs).toHaveBeenCalledWith({
+      entityType: 'destination',
+      q: undefined,
+      page: 1,
+      limit: 20,
+    });
   });
 });
