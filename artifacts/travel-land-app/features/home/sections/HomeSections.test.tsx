@@ -35,6 +35,7 @@ jest.mock('../components/SectionContainer', () => ({
       isError,
       isEmpty,
       onRetry,
+      emptyMessage,
       children,
     }: {
       title: string;
@@ -42,11 +43,14 @@ jest.mock('../components/SectionContainer', () => ({
       isError: boolean;
       isEmpty: boolean;
       onRetry: () => void;
+      emptyMessage?: string;
       children: React.ReactNode;
     }) => (
       <NativeView>
         <NativeText>{title}</NativeText>
         <NativeText>{isLoading ? 'loading' : isError ? 'error' : isEmpty ? 'empty' : 'content'}</NativeText>
+        {isError && <NativeText>Failed to load {title.toLowerCase()}</NativeText>}
+        {!isLoading && !isError && isEmpty && <NativeText>{emptyMessage ?? `No ${title.toLowerCase()} found.`}</NativeText>}
         <NativeText testID={`retry-${title}`} onPress={onRetry}>
           retry
         </NativeText>
@@ -139,5 +143,53 @@ describe.each(sectionCases)('$name section', ({ Component, hook }) => {
     const { getByText } = render(<Component />);
 
     expect(getByText('content')).toBeTruthy();
+  });
+});
+
+describe('Featured for you section', () => {
+  const mockedFeaturedHook = useListHomeFeatured as unknown as QueryHook;
+
+  beforeEach(() => {
+    mockedFeaturedHook.mockReset();
+  });
+
+  it('renders persisted featured items in the API-provided order', () => {
+    mockedFeaturedHook.mockReturnValue(queryResult({
+      data: {
+        items: [
+          { id: 'featured-offer', entityType: 'offer', entityId: 'offer-1', title: 'Weekend escape offer', subtitle: 'Offer', location: 'Coorg', summary: 'Save on your next stay.', imageKey: null, destinationId: 'coorg', dateLabel: null, ratingLabel: null, priceLabel: '15% off' },
+          { id: 'featured-destination', entityType: 'destination', entityId: 'coorg', title: 'Coorg Highlands', subtitle: 'Karnataka', location: 'Karnataka, India', summary: 'Misty hills and coffee estates.', imageKey: null, destinationId: 'coorg', dateLabel: null, ratingLabel: null, priceLabel: null },
+          { id: 'featured-hotel', entityType: 'hotel', entityId: 'hotel-1', title: 'Rainforest Retreat', subtitle: 'Hotel', location: 'Coorg, Karnataka, India', summary: 'A quiet stay in the hills.', imageKey: null, destinationId: 'coorg', dateLabel: null, ratingLabel: null, priceLabel: null },
+        ],
+      },
+    }));
+
+    const { toJSON } = render(<BannerSection />);
+    const labels: string[] = [];
+    const collectLabels = (node: unknown): void => {
+      if (!node || typeof node !== 'object') return;
+      const candidate = node as { props?: { accessibilityLabel?: string }; children?: unknown[] };
+      if (candidate.props?.accessibilityLabel?.startsWith('View featured')) {
+        labels.push(candidate.props.accessibilityLabel);
+      }
+      candidate.children?.forEach(collectLabels);
+    };
+    collectLabels(toJSON());
+
+    expect(labels).toEqual([
+      'View featured Offer Weekend escape offer',
+      'View featured Destination Coorg Highlands',
+      'View featured Hotel Rainforest Retreat',
+    ]);
+  });
+
+  it('shows the explicit empty and unavailable states', () => {
+    mockedFeaturedHook.mockReturnValue(queryResult({ data: { items: [] } }));
+    const empty = render(<BannerSection />);
+    expect(empty.getByText('No featured content is available right now.')).toBeTruthy();
+
+    mockedFeaturedHook.mockReturnValue(queryResult({ data: undefined, isError: true }));
+    const unavailable = render(<BannerSection />);
+    expect(unavailable.getByText('Failed to load featured for you')).toBeTruthy();
   });
 });
