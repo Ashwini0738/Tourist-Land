@@ -155,6 +155,9 @@ import type {
   VendorHotelUpdate,
   VendorProfile,
   VendorProfileUpdate,
+  VendorPropertyEnquiry,
+  VendorPropertyEnquiryList,
+  VendorPropertyEnquiryUpdate,
   VendorRoom,
   VendorRoomInput,
   VendorRoomList,
@@ -5136,6 +5139,149 @@ export function useListVendorBookings<TData = Awaited<ReturnType<typeof listVend
 
 
 
+
+export const getListVendorEnquiriesUrl = () => {
+
+
+
+
+  return `/api/v1/vendor/enquiries`
+}
+
+/**
+ * @summary List property enquiries for the authenticated vendor's own properties
+ */
+export const listVendorEnquiries = async ( options?: Parameters<typeof customFetch>[1]): Promise<VendorPropertyEnquiryList> => {
+
+  return customFetch<VendorPropertyEnquiryList>(getListVendorEnquiriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVendorEnquiriesQueryKey = () => {
+    return [
+    `/api/v1/vendor/enquiries`
+    ] as const;
+    }
+
+
+export const getListVendorEnquiriesQueryOptions = <TData = Awaited<ReturnType<typeof listVendorEnquiries>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVendorEnquiries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVendorEnquiriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVendorEnquiries>>> = ({ signal }) => listVendorEnquiries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVendorEnquiries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListVendorEnquiriesQueryResult = NonNullable<Awaited<ReturnType<typeof listVendorEnquiries>>>
+export type ListVendorEnquiriesQueryError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>
+
+
+/**
+ * @summary List property enquiries for the authenticated vendor's own properties
+ */
+
+export function useListVendorEnquiries<TData = Awaited<ReturnType<typeof listVendorEnquiries>>, TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVendorEnquiries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListVendorEnquiriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateVendorEnquiryUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/vendor/enquiries/${id}`
+}
+
+export const updateVendorEnquiry = async (id: string,
+    vendorPropertyEnquiryUpdate: VendorPropertyEnquiryUpdate, options?: Parameters<typeof customFetch>[1]): Promise<VendorPropertyEnquiry> => {
+
+  return customFetch<VendorPropertyEnquiry>(getUpdateVendorEnquiryUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(vendorPropertyEnquiryUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateVendorEnquiryMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVendorEnquiry>>, TError,{id: string;data: BodyType<VendorPropertyEnquiryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateVendorEnquiry>>, TError,{id: string;data: BodyType<VendorPropertyEnquiryUpdate>}, TContext> => {
+
+const mutationKey = ['updateVendorEnquiry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateVendorEnquiry>>, {id: string;data: BodyType<VendorPropertyEnquiryUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateVendorEnquiry(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateVendorEnquiryMutationResult = NonNullable<Awaited<ReturnType<typeof updateVendorEnquiry>>>
+    export type UpdateVendorEnquiryMutationBody = BodyType<VendorPropertyEnquiryUpdate>
+    export type UpdateVendorEnquiryMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>
+
+    export const useUpdateVendorEnquiry = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVendorEnquiry>>, TError,{id: string;data: BodyType<VendorPropertyEnquiryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateVendorEnquiry>>,
+        TError,
+        {id: string;data: BodyType<VendorPropertyEnquiryUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateVendorEnquiryMutationOptions(options));
+    }
 
 export const getListVendorListingsUrl = () => {
 

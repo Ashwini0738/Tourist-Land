@@ -1366,6 +1366,70 @@ export interface PropertyEnquiryReceipt {
   message: string;
 }
 
+export type PropertyEnquiryStatus = typeof PropertyEnquiryStatus[keyof typeof PropertyEnquiryStatus];
+
+
+export const PropertyEnquiryStatus = {
+  new: 'new',
+  contacted: 'contacted',
+  closed: 'closed',
+} as const;
+
+export interface VendorPropertyEnquiryHistory {
+  id: string;
+  status: PropertyEnquiryStatus;
+  /** @nullable */
+  note: string | null;
+  createdAt: string;
+}
+
+export type VendorPropertyEnquiryProperty = {
+  id: string;
+  title: string;
+  address: string;
+};
+
+export type VendorPropertyEnquiryCustomer = {
+  id: string;
+  name: string;
+  email: string;
+  /** @nullable */
+  phone: string | null;
+};
+
+export type VendorPropertyEnquiryPreferredContactMethod = typeof VendorPropertyEnquiryPreferredContactMethod[keyof typeof VendorPropertyEnquiryPreferredContactMethod];
+
+
+export const VendorPropertyEnquiryPreferredContactMethod = {
+  email: 'email',
+  phone: 'phone',
+} as const;
+
+export interface VendorPropertyEnquiry {
+  id: string;
+  property: VendorPropertyEnquiryProperty;
+  customer: VendorPropertyEnquiryCustomer;
+  message: string;
+  preferredContactMethod: VendorPropertyEnquiryPreferredContactMethod;
+  status: PropertyEnquiryStatus;
+  createdAt: string;
+  updatedAt: string;
+  history: VendorPropertyEnquiryHistory[];
+}
+
+export interface VendorPropertyEnquiryList {
+  items: VendorPropertyEnquiry[];
+}
+
+export interface VendorPropertyEnquiryUpdate {
+  status: PropertyEnquiryStatus;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  note?: string | null;
+}
+
 export type ErrorResponseErrorFieldErrors = {[key: string]: string};
 
 export type ErrorResponseError = {

@@ -11,6 +11,9 @@ import {
   hotelRooms,
   hotels,
   pool,
+  properties,
+  propertyEnquiries,
+  propertyEnquiryHistory,
   roomAvailability,
   userRoles,
   users,
@@ -50,6 +53,10 @@ type VendorFixture = {
   roomB: string;
   bookingA: string;
   bookingB: string;
+  propertyA: string;
+  propertyB: string;
+  enquiryA: string;
+  enquiryB: string;
   date: string;
 };
 
@@ -63,6 +70,10 @@ async function createVendorFixture(): Promise<VendorFixture> {
     roomB: randomUUID(),
     bookingA: randomUUID(),
     bookingB: randomUUID(),
+    propertyA: randomUUID(),
+    propertyB: randomUUID(),
+    enquiryA: randomUUID(),
+    enquiryB: randomUUID(),
     date: "2026-09-15",
   };
 
@@ -208,12 +219,62 @@ async function createVendorFixture(): Promise<VendorFixture> {
       unitAmount: "200",
     },
   ]);
+  await db.insert(properties).values([
+    {
+      id: fixture.propertyA,
+      ownerId: fixture.vendorA,
+      slug: `fixture-property-a-${fixture.propertyA}`,
+      title: "Property A",
+      propertyType: "land",
+      address: "A Property Street",
+      areaValue: "2",
+      areaUnit: "acre",
+      status: "published",
+    },
+    {
+      id: fixture.propertyB,
+      ownerId: fixture.vendorB,
+      slug: `fixture-property-b-${fixture.propertyB}`,
+      title: "Property B",
+      propertyType: "villa",
+      address: "B Property Street",
+      areaValue: "3",
+      areaUnit: "acre",
+      status: "published",
+    },
+  ]);
+  await db.insert(propertyEnquiries).values([
+    {
+      id: fixture.enquiryA,
+      propertyId: fixture.propertyA,
+      userId: fixture.vendorB,
+      message: "Please share the site details.",
+      preferredContactMethod: "email",
+      status: "new",
+    },
+    {
+      id: fixture.enquiryB,
+      propertyId: fixture.propertyB,
+      userId: fixture.vendorA,
+      message: "Can I arrange a visit?",
+      preferredContactMethod: "phone",
+      status: "contacted",
+    },
+  ]);
+  await db.insert(propertyEnquiryHistory).values([
+    { enquiryId: fixture.enquiryA, status: "new", note: "Enquiry received.", changedBy: fixture.vendorB },
+    { enquiryId: fixture.enquiryB, status: "new", note: "Enquiry received.", changedBy: fixture.vendorA },
+    { enquiryId: fixture.enquiryB, status: "contacted", note: "Vendor contacted the traveller.", changedBy: fixture.vendorB },
+  ]);
 
   return fixture;
 }
 
 async function deleteVendorFixture(fixture: VendorFixture): Promise<void> {
   await db.delete(vendorAuditLogs).where(inArray(vendorAuditLogs.vendorId, [fixture.vendorA, fixture.vendorB]));
+  await db.delete(propertyEnquiryHistory).where(inArray(propertyEnquiryHistory.enquiryId, [fixture.enquiryA, fixture.enquiryB]));
+  await db.delete(propertyEnquiries).where(inArray(propertyEnquiries.id, [fixture.enquiryA, fixture.enquiryB]));
+  await db.delete(properties).where(inArray(properties.id, [fixture.propertyA, fixture.propertyB]));
   await db.delete(bookings).where(inArray(bookings.id, [fixture.bookingA, fixture.bookingB]));
   await db.delete(roomAvailability).where(inArray(roomAvailability.roomId, [fixture.roomA, fixture.roomB]));
   await db.delete(hotelRooms).where(inArray(hotelRooms.id, [fixture.roomA, fixture.roomB]));
@@ -239,7 +300,7 @@ function buildVendorTestApp(): express.Express {
       phone: null,
       avatarUrl: null,
       status: "active",
-      role: "vendor",
+      role: req.header("x-test-role") === "user" ? "user" : "vendor",
       createdAt: new Date("2026-01-01T00:00:00Z"),
       updatedAt: new Date("2026-01-01T00:00:00Z"),
     };
@@ -291,12 +352,18 @@ test("database-backed vendor requests stay isolated by hotel ownership", async (
     "bookings.guest_name",
     "bookings.guest_email",
     "vendor_audit_logs.vendor_id",
+      "properties.owner_id",
+      "property_enquiries.property_id",
+      "property_enquiries.user_id",
+      "property_enquiries.status",
+      "property_enquiry_history.enquiry_id",
+      "property_enquiry_history.status",
   ];
   const schemaRows = await db.execute(sql`
     select table_name, column_name
     from information_schema.columns
     where table_schema = 'public'
-      and table_name in ('hotels', 'hotel_rooms', 'bookings', 'vendor_audit_logs')
+       and table_name in ('hotels', 'hotel_rooms', 'bookings', 'vendor_audit_logs', 'properties', 'property_enquiries', 'property_enquiry_history')
   `);
   const availableColumns = new Set(schemaRows.rows.map((row) => `${row.table_name}.${row.column_name}`));
   const missingColumns = requiredColumns.filter((column) => !availableColumns.has(column));
@@ -420,6 +487,47 @@ test("database-backed vendor requests stay isolated by hotel ownership", async (
       (vendorBBook.body.items as Array<{ reference: string }>).map((booking) => booking.reference),
       [`FIXTURE-B-${fixture.bookingB}`],
     );
+
+    const vendorAEnquiries = await vendorRequest(server.baseUrl, fixture.vendorA, "/v1/vendor/enquiries");
+    assert.equal(vendorAEnquiries.status, 200);
+    assert.deepEqual(
+      (vendorAEnquiries.body.items as Array<{ id: string; property: { id: string }; history: Array<{ status: string }> }>).map((enquiry) => enquiry.id),
+      [fixture.enquiryA],
+    );
+    assert.equal((vendorAEnquiries.body.items as Array<{ property: { id: string } }>)[0]?.property.id, fixture.propertyA);
+    assert.deepEqual(
+      (vendorAEnquiries.body.items as Array<{ history: Array<{ status: string }> }>)[0]?.history.map((entry) => entry.status),
+      ["new"],
+    );
+
+    const contacted = await vendorRequest(server.baseUrl, fixture.vendorA, `/v1/vendor/enquiries/${fixture.enquiryA}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "contacted", note: "Called the customer." }),
+    });
+    assert.equal(contacted.status, 200);
+    assert.equal((contacted.body as { status: string }).status, "contacted");
+    assert.deepEqual((contacted.body as { history: Array<{ status: string }> }).history.map((entry) => entry.status), ["new", "contacted"]);
+
+    const closed = await vendorRequest(server.baseUrl, fixture.vendorA, `/v1/vendor/enquiries/${fixture.enquiryA}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "closed" }),
+    });
+    assert.equal(closed.status, 200);
+    assert.equal((closed.body as { status: string }).status, "closed");
+    assert.deepEqual((closed.body as { history: Array<{ status: string }> }).history.map((entry) => entry.status), ["new", "contacted", "closed"]);
+
+    const crossOwnerEnquiry = await vendorRequest(server.baseUrl, fixture.vendorA, `/v1/vendor/enquiries/${fixture.enquiryB}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "closed" }),
+    });
+    assert.equal(crossOwnerEnquiry.status, 404);
+    assert.equal((crossOwnerEnquiry.body.error as { code: string }).code, "ENQUIRY_NOT_FOUND");
+
+    const nonVendor = await vendorRequest(server.baseUrl, fixture.vendorA, "/v1/vendor/enquiries", {
+      headers: { "x-test-role": "user" },
+    });
+    assert.equal(nonVendor.status, 403);
+    assert.equal((nonVendor.body.error as { code: string }).code, "FORBIDDEN");
 
     const vendorBTargetingA = await vendorRequest(server.baseUrl, fixture.vendorB, `/v1/vendor/hotels/${fixture.hotelA}`);
     assert.equal(vendorBTargetingA.status, 404);

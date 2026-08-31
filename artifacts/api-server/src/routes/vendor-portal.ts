@@ -7,9 +7,13 @@ import {
   destinations,
   hotelRooms,
   hotels,
+  properties,
+  propertyEnquiries,
+  propertyEnquiryHistory,
   roomAvailability,
   vendorAuditLogs,
   vendorProfiles,
+  users,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth.ts";
 import { requireApprovedVendor, requireRole } from "../middlewares/authorization.ts";
@@ -644,6 +648,145 @@ vendorPortalRoutes.get("/v1/vendor/bookings", async (req, res): Promise<void> =>
     };
   });
   res.json({ items, page, limit, total: items.length });
+});
+
+type PropertyEnquiryStatus = "new" | "contacted" | "closed";
+
+const ENQUIRY_STATUSES: PropertyEnquiryStatus[] = ["new", "contacted", "closed"];
+const ENQUIRY_NEXT_STATUS: Record<PropertyEnquiryStatus, PropertyEnquiryStatus | null> = {
+  new: "contacted",
+  contacted: "closed",
+  closed: null,
+};
+
+function serializeEnquiryHistory(history: typeof propertyEnquiryHistory.$inferSelect) {
+  return {
+    id: history.id,
+    status: history.status,
+    note: history.note,
+    createdAt: history.createdAt.toISOString(),
+  };
+}
+
+function serializeVendorEnquiry(
+  enquiry: typeof propertyEnquiries.$inferSelect,
+  property: typeof properties.$inferSelect,
+  customer: typeof users.$inferSelect,
+  history: Array<typeof propertyEnquiryHistory.$inferSelect>,
+) {
+  return {
+    id: enquiry.id,
+    property: {
+      id: property.id,
+      title: property.title,
+      address: property.address,
+    },
+    customer: {
+      id: customer.id,
+      name: customer.displayName ?? "Traveller",
+      email: customer.email,
+      phone: customer.phone,
+    },
+    message: enquiry.message ?? "",
+    preferredContactMethod: enquiry.preferredContactMethod ?? "email",
+    status: enquiry.status,
+    createdAt: enquiry.createdAt.toISOString(),
+    updatedAt: enquiry.updatedAt.toISOString(),
+    history: history.map(serializeEnquiryHistory),
+  };
+}
+
+async function ownedEnquiry(req: Request, id: string) {
+  const rows = await db
+    .select({ enquiry: propertyEnquiries, property: properties, customer: users })
+    .from(propertyEnquiries)
+    .innerJoin(properties, eq(properties.id, propertyEnquiries.propertyId))
+    .innerJoin(users, eq(users.id, propertyEnquiries.userId))
+    .where(and(eq(propertyEnquiries.id, id), eq(properties.ownerId, req.localUser!.id)));
+  return rows[0] ?? null;
+}
+
+async function enquiryHistory(enquiryIds: string[]) {
+  if (!enquiryIds.length) return new Map<string, Array<typeof propertyEnquiryHistory.$inferSelect>>();
+  const rows = await db
+    .select()
+    .from(propertyEnquiryHistory)
+    .where(inArray(propertyEnquiryHistory.enquiryId, enquiryIds))
+    .orderBy(asc(propertyEnquiryHistory.createdAt));
+  const grouped = new Map<string, Array<typeof propertyEnquiryHistory.$inferSelect>>();
+  for (const row of rows) grouped.set(row.enquiryId, [...(grouped.get(row.enquiryId) ?? []), row]);
+  return grouped;
+}
+
+vendorPortalRoutes.get("/v1/vendor/enquiries", async (req, res): Promise<void> => {
+  if (!(await requireApprovedVendor(req, res))) return;
+  const rows = await db
+    .select({ enquiry: propertyEnquiries, property: properties, customer: users })
+    .from(propertyEnquiries)
+    .innerJoin(properties, eq(properties.id, propertyEnquiries.propertyId))
+    .innerJoin(users, eq(users.id, propertyEnquiries.userId))
+    .where(eq(properties.ownerId, req.localUser!.id))
+    .orderBy(desc(propertyEnquiries.createdAt));
+  const history = await enquiryHistory(rows.map(({ enquiry }) => enquiry.id));
+  res.json({
+    items: rows.map(({ enquiry, property, customer }) =>
+      serializeVendorEnquiry(enquiry, property, customer, history.get(enquiry.id) ?? []),
+    ),
+  });
+});
+
+vendorPortalRoutes.patch("/v1/vendor/enquiries/:id", async (req, res): Promise<void> => {
+  if (!(await requireApprovedVendor(req, res))) return;
+  const id = value(req.params.id);
+  const owned = await ownedEnquiry(req, id);
+  if (!owned) {
+    sendError(res, 404, "ENQUIRY_NOT_FOUND", "Enquiry not found.");
+    return;
+  }
+
+  const body = bodyRecord(req.body);
+  const status = typeof body?.status === "string" ? body.status : "";
+  if (!ENQUIRY_STATUSES.includes(status as PropertyEnquiryStatus)) {
+    sendError(res, 400, "INVALID_ENQUIRY_STATUS", "Choose a supported enquiry status.");
+    return;
+  }
+  const targetStatus = status as PropertyEnquiryStatus;
+  const currentStatus = owned.enquiry.status as PropertyEnquiryStatus;
+  if (ENQUIRY_NEXT_STATUS[currentStatus] !== targetStatus) {
+    sendError(res, 409, "ENQUIRY_STATE_INVALID", `An enquiry in ${currentStatus} status can only move to ${ENQUIRY_NEXT_STATUS[currentStatus] ?? "no further status"}.`);
+    return;
+  }
+  const note = body?.note === undefined ? null : parseString(body.note, 500, true);
+  if (note === undefined) {
+    sendError(res, 400, "INVALID_ENQUIRY_NOTE", "The status note must be 500 characters or fewer.");
+    return;
+  }
+  const defaultNote: Record<PropertyEnquiryStatus, string> = {
+    new: "Enquiry received.",
+    contacted: "Vendor contacted the traveller.",
+    closed: "Vendor closed the enquiry.",
+  };
+  const saved = await db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(propertyEnquiries)
+      .set({ status: targetStatus, updatedAt: new Date() })
+      .where(and(eq(propertyEnquiries.id, id), eq(propertyEnquiries.status, currentStatus)))
+      .returning();
+    if (!updated) return null;
+    const [history] = await tx.insert(propertyEnquiryHistory).values({
+      enquiryId: id,
+      status: targetStatus,
+      note: note ?? defaultNote[targetStatus],
+      changedBy: req.localUser!.id,
+    }).returning();
+    return { updated, history };
+  });
+  if (!saved) {
+    sendError(res, 409, "ENQUIRY_STATE_INVALID", "The enquiry changed before this update could be saved.");
+    return;
+  }
+  const history = await enquiryHistory([id]);
+  res.json(serializeVendorEnquiry(saved.updated, owned.property, owned.customer, history.get(id) ?? [saved.history]));
 });
 
 export function createVendorPortalRouter(authMiddleware: RequestHandler = requireAuth): IRouter {

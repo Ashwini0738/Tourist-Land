@@ -24,6 +24,7 @@ const NAVIGATION: Record<DashboardRole, DashboardNavItem[]> = {
     { label: 'Availability', description: 'Set dated inventory and blackout dates', icon: 'calendar', route: '/vendor/availability' },
     { label: 'Listings', description: 'Legacy listing tools for existing records', icon: 'box', route: '/vendor/listings' },
     { label: 'Bookings', description: 'Bookings for your own hotels', icon: 'calendar', route: '/vendor/bookings' },
+    { label: 'Enquiries', description: 'Review and respond to property enquiries', icon: 'inbox', route: '/vendor/enquiries' },
     { label: 'Profile', description: 'Business information and status', icon: 'user', route: '/vendor/profile' },
   ],
   admin: [

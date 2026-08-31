@@ -3223,6 +3223,78 @@ export const ListVendorBookingsResponse = zod.object({
 
 
 /**
+ * @summary List property enquiries for the authenticated vendor's own properties
+ */
+export const ListVendorEnquiriesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "property": zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "address": zod.string()
+}),
+  "customer": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string().nullable()
+}),
+  "message": zod.string(),
+  "preferredContactMethod": zod.enum(['email', 'phone']),
+  "status": zod.enum(['new', 'contacted', 'closed']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['new', 'contacted', 'closed']),
+  "note": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+}))
+}))
+})
+
+
+export const UpdateVendorEnquiryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateVendorEnquiryBodyNoteMax = 500;
+
+
+
+export const UpdateVendorEnquiryBody = zod.object({
+  "status": zod.enum(['new', 'contacted', 'closed']),
+  "note": zod.string().max(updateVendorEnquiryBodyNoteMax).nullish()
+})
+
+export const UpdateVendorEnquiryResponse = zod.object({
+  "id": zod.string(),
+  "property": zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "address": zod.string()
+}),
+  "customer": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string().nullable()
+}),
+  "message": zod.string(),
+  "preferredContactMethod": zod.enum(['email', 'phone']),
+  "status": zod.enum(['new', 'contacted', 'closed']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['new', 'contacted', 'closed']),
+  "note": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
  * @summary List listings owned by the authenticated approved vendor, or all listings for an admin viewer
  */
 export const ListVendorListingsResponse = zod.object({

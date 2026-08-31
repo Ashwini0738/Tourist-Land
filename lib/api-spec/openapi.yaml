@@ -1242,6 +1242,43 @@ paths:
               schema: { $ref: "#/components/schemas/VendorBookingList" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/vendor/enquiries:
+    get:
+      operationId: listVendorEnquiries
+      tags: [vendor]
+      security: [{ bearerAuth: [] }]
+      summary: List property enquiries for the authenticated vendor's own properties
+      responses:
+        "200":
+          description: Vendor-owned property enquiries with status history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorPropertyEnquiryList" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/vendor/enquiries/{id}:
+    patch:
+      operationId: updateVendorEnquiry
+      tags: [vendor]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VendorPropertyEnquiryUpdate" }
+      responses:
+        "200":
+          description: Updated vendor-owned property enquiry with status history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorPropertyEnquiry" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /v1/vendor/listings:
     get:
       operationId: listVendorListings
@@ -3165,6 +3202,58 @@ components:
         status: { type: string }
         message: { type: string }
       required: [id, status, message]
+    PropertyEnquiryStatus:
+      type: string
+      enum: [new, contacted, closed]
+    VendorPropertyEnquiryHistory:
+      type: object
+      properties:
+        id: { type: string }
+        status: { $ref: "#/components/schemas/PropertyEnquiryStatus" }
+        note: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, status, note, createdAt]
+    VendorPropertyEnquiry:
+      type: object
+      properties:
+        id: { type: string }
+        property:
+          type: object
+          properties:
+            id: { type: string }
+            title: { type: string }
+            address: { type: string }
+          required: [id, title, address]
+        customer:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            email: { type: string }
+            phone: { type: [string, "null"] }
+          required: [id, name, email, phone]
+        message: { type: string }
+        preferredContactMethod: { type: string, enum: [email, phone] }
+        status: { $ref: "#/components/schemas/PropertyEnquiryStatus" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        history:
+          type: array
+          items: { $ref: "#/components/schemas/VendorPropertyEnquiryHistory" }
+      required: [id, property, customer, message, preferredContactMethod, status, createdAt, updatedAt, history]
+    VendorPropertyEnquiryList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/VendorPropertyEnquiry" }
+      required: [items]
+    VendorPropertyEnquiryUpdate:
+      type: object
+      properties:
+        status: { $ref: "#/components/schemas/PropertyEnquiryStatus" }
+        note: { type: [string, "null"], maxLength: 500 }
+      required: [status]
     ErrorResponse:
       type: object
       properties:

@@ -436,6 +436,7 @@ export const propertyEnquiries = pgTable("property_enquiries", {
   ...timestamps,
 }, (table) => [
   uniqueIndex("property_enquiry_user_idempotency_unique").on(table.userId, table.idempotencyKey),
+  check("property_enquiry_status_valid", sql`${table.status} in ('new', 'contacted', 'closed')`),
 ]);
 
 export const propertyEnquiryHistory = pgTable(
@@ -450,6 +451,7 @@ export const propertyEnquiryHistory = pgTable(
   },
   (table) => [
     index("property_enquiry_history_enquiry_idx").on(table.enquiryId, table.createdAt),
+    check("property_enquiry_history_status_valid", sql`${table.status} in ('new', 'contacted', 'closed')`),
   ],
 );
 
