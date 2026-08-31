@@ -5,7 +5,7 @@ import http from "node:http";
 import path from "node:path";
 import { promisify } from "node:util";
 import test from "node:test";
-import express, { type Express, type RequestHandler } from "express";
+import express from "express";
 import { assertSafeDemoEnvironment } from "@workspace/db/demo-config";
 import { demoIds, demoProperties } from "@workspace/db/seed-data";
 
@@ -50,25 +50,7 @@ async function startTestServer(): Promise<TestServer> {
   process.env.DEMO_MODE = "true";
   process.env.NODE_ENV = "test";
 
-  const [
-    { default: catalogRouter },
-    { default: hotelsRouter },
-    { default: favoritesRouter },
-    { default: bookingsRouter },
-    { default: notificationsRouter },
-    { default: vendorPortalRouter },
-    { default: adminRouter },
-    { default: authRouter },
-  ] = await Promise.all([
-    import("./catalog.ts"),
-    import("./hotels.ts"),
-    import("./favorites.ts"),
-    import("./bookings.ts"),
-    import("./notifications.ts"),
-    import("./vendor-portal.ts"),
-    import("./admin.ts"),
-    import("./auth.ts"),
-  ]);
+  const { default: router } = await import("./index.ts");
 
   const app = express();
   app.use(express.json());
@@ -89,14 +71,7 @@ async function startTestServer(): Promise<TestServer> {
     (req as typeof req & { auth: typeof auth }).auth = auth;
     next();
   });
-  app.use("/api", catalogRouter);
-  app.use("/api", hotelsRouter);
-  mountOnPaths(app, favoritesRouter, ["/v1/favorites"]);
-  mountOnPaths(app, bookingsRouter, ["/v1/bookings"]);
-  mountOnPaths(app, notificationsRouter, ["/v1/notifications"]);
-  mountOnPaths(app, authRouter, ["/v1/auth", "/v1/me"]);
-  mountOnPaths(app, vendorPortalRouter, ["/v1/vendor"]);
-  mountOnPaths(app, adminRouter, ["/v1/admin"]);
+  app.use("/api", router);
 
   const server = http.createServer(app);
   await new Promise<void>((resolve, reject) => {
@@ -111,17 +86,6 @@ async function startTestServer(): Promise<TestServer> {
       server.close((error) => error ? reject(error) : resolve());
     }),
   };
-}
-
-function mountOnPaths(app: Express, router: RequestHandler, prefixes: string[]) {
-  app.use("/api", (req, res, next) => {
-    const matches = prefixes.some((prefix) => req.path === prefix || req.path.startsWith(`${prefix}/`));
-    if (matches) {
-      router(req, res, next);
-      return;
-    }
-    next();
-  });
 }
 
 async function request(
@@ -171,6 +135,10 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: tes
   assert.equal(home.body.destinations.length, 8);
   assert.ok(home.body.destinations.some((item: any) => item.id === "demo-destination-1"));
 
+  const hotel = await request(server.baseUrl, "/v1/hotels/demo-hotel-1");
+  assert.equal(hotel.response.status, 200);
+  assert.equal(hotel.body.id, "demo-hotel-1");
+
   const availability = await request(
     server.baseUrl,
     "/v1/hotels/demo-hotel-1/availability?checkIn=2030-06-10&checkOut=2030-06-12&adults=2&children=0&rooms=1",
@@ -179,6 +147,17 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: tes
   assert.equal(availability.body.status, "available");
   assert.equal(availability.body.source, "vendor");
   assert.ok(availability.body.items.length >= 1);
+
+  const unauthorizedBookings = await request(server.baseUrl, "/v1/bookings");
+  assert.equal(unauthorizedBookings.response.status, 401);
+  const unauthorizedVendor = await request(server.baseUrl, "/v1/vendor/dashboard");
+  assert.equal(unauthorizedVendor.response.status, 401);
+  const unauthorizedAdmin = await request(server.baseUrl, "/v1/admin/dashboard");
+  assert.equal(unauthorizedAdmin.response.status, 401);
+  const travellerAdmin = await request(server.baseUrl, "/v1/admin/dashboard", "demo_traveller");
+  assert.equal(travellerAdmin.response.status, 403);
+  const travellerVendor = await request(server.baseUrl, "/v1/vendor/dashboard", "demo_traveller");
+  assert.equal(travellerVendor.response.status, 403);
 
   const bookings = await request(server.baseUrl, "/v1/bookings", "demo_traveller");
   assert.equal(bookings.response.status, 200);
@@ -231,6 +210,8 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: tes
   assert.equal(vendorMe.body.role, "vendor");
   assert.equal(vendorMe.body.vendorProfile.status, "approved");
   const vendorDashboard = await request(server.baseUrl, "/v1/vendor/dashboard", "demo_vendor");
+  const vendorAdmin = await request(server.baseUrl, "/v1/admin/dashboard", "demo_vendor");
+  assert.equal(vendorAdmin.response.status, 403);
   assert.deepEqual(vendorDashboard.body.stats, {
     hotels: 4,
     publishedHotels: 4,

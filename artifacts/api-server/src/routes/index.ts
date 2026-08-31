@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type RequestHandler } from "express";
 import healthRouter from "./health";
 import catalogRouter from "./catalog";
 import authRouter from "./auth";
@@ -15,18 +15,35 @@ import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
+function mountOnPaths(childRouter: RequestHandler, matches: (path: string) => boolean): void {
+  router.use((req, res, next) => {
+    if (matches(req.path)) {
+      childRouter(req, res, next);
+      return;
+    }
+    next();
+  });
+}
+
+function hasPrefix(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(`${prefix}/`);
+}
+
 router.use(healthRouter);
 router.use(catalogRouter);
 router.use(exploreRouter);
-router.use(favoritesRouter);
+mountOnPaths(favoritesRouter, (path) => hasPrefix(path, "/v1/favorites"));
 router.use(hotelsRouter);
-router.use(bookingsRouter);
-router.use(notificationsRouter);
-router.use(reviewsRouter);
+mountOnPaths(bookingsRouter, (path) => hasPrefix(path, "/v1/bookings"));
+mountOnPaths(notificationsRouter, (path) => hasPrefix(path, "/v1/notifications"));
+mountOnPaths(
+  reviewsRouter,
+  (path) => hasPrefix(path, "/v1/reviews") || /^\/v1\/hotels\/[^/]+\/reviews(?:\/|$)/.test(path),
+);
 router.use(onboardingRouter);
-router.use(authRouter);
-router.use(vendorPortalRouter);
-router.use(adminRouter);
-router.use(roleAccessRouter);
+mountOnPaths(authRouter, (path) => hasPrefix(path, "/v1/auth") || hasPrefix(path, "/v1/me"));
+mountOnPaths(vendorPortalRouter, (path) => hasPrefix(path, "/v1/vendor"));
+mountOnPaths(adminRouter, (path) => hasPrefix(path, "/v1/admin"));
+mountOnPaths(roleAccessRouter, (path) => hasPrefix(path, "/v1/vendor") || hasPrefix(path, "/v1/admin"));
 
 export default router;
