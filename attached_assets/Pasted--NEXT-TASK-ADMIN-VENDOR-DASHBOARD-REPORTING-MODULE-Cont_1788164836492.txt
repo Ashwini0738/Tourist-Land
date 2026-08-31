@@ -1,0 +1,1023 @@
+# NEXT TASK — ADMIN & VENDOR DASHBOARD REPORTING MODULE
+
+Continue development of the existing **Travel & Land** application.
+
+Add a professional, attractive, responsive **Reporting & Analytics module** for both:
+
+1. Admin Dashboard
+2. Vendor Dashboard
+
+The reporting system must use the existing API/database architecture and must work with the application's current roles and authorization.
+
+Do NOT use fake numbers in production-facing reports.
+
+For development/demo environments, use clearly identified seeded dummy data so all report features can be demonstrated end-to-end.
+
+---
+
+# 1. REPORTING PRINCIPLES
+
+Reports must be:
+
+* Attractive
+* Easy to understand
+* Mobile friendly
+* Responsive on desktop/tablet/mobile
+* Fast to load
+* Filterable
+* Role-specific
+* Based on actual database records
+* Consistent with dashboard data
+
+Use cards, charts, tables, trends, status summaries and useful visual indicators.
+
+Avoid overcrowding the dashboard.
+
+The reporting UI should match the existing Travel & Land design system.
+
+---
+
+# 2. ADMIN REPORTING DASHBOARD
+
+Create:
+
+Admin
+→ Dashboard
+→ Reports
+
+Provide the following sections.
+
+## A. Executive Summary
+
+Display:
+
+* Total Users
+* Active Users
+* Total Vendors
+* Active Vendors
+* Total Destinations
+* Total Hotels
+* Total Properties
+* Total Bookings
+* Completed Bookings
+* Cancelled Bookings
+* Total Booking Revenue
+* Total Land Enquiries
+* Open Enquiries
+* Closed Enquiries
+
+Use attractive KPI cards.
+
+Each KPI should support comparison with the previous selected period where meaningful.
+
+Example:
+
++18% vs previous period
+
+Do not fabricate comparison percentages.
+
+---
+
+# 3. BOOKING REPORT
+
+Provide:
+
+### Booking Summary
+
+* Total bookings
+* Confirmed
+* Pending
+* Cancelled
+* Completed
+
+### Booking Trend
+
+Line/bar chart showing bookings by:
+
+* Day
+* Week
+* Month
+
+based on selected date range.
+
+### Booking Sources
+
+Where data exists:
+
+* Hotel
+* Travel
+* Other supported booking types
+
+### Booking Details Table
+
+Columns:
+
+* Booking ID
+* Customer
+* Vendor
+* Hotel/property
+* Check-in
+* Check-out
+* Amount
+* Payment status
+* Booking status
+* Created date
+
+Support:
+
+* Search
+* Filter
+* Sort
+* Pagination
+
+---
+
+# 4. REVENUE REPORT
+
+Create revenue analytics.
+
+Display:
+
+* Gross booking amount
+* Successful payments
+* Pending payments
+* Refunded amount
+* Cancelled booking amount
+* Net revenue where the business rules support it
+
+Charts:
+
+* Revenue over time
+* Revenue by vendor
+* Revenue by hotel
+* Revenue by destination
+
+Do NOT calculate revenue from frontend display values.
+
+Use server/database data.
+
+Clearly distinguish:
+
+Revenue
+
+Payment amount
+
+Refund
+
+Wallet credit
+
+Vendor payout
+
+if these concepts exist separately.
+
+---
+
+# 5. USER REPORT
+
+Admin should be able to view:
+
+* Total users
+* New users
+* Active users
+* Returning users
+* Users by country
+* Users by region/city where location data is available
+* User registration trend
+
+Charts:
+
+* New users over time
+* Users by country
+* Active vs inactive
+
+Do not expose unnecessary personal information.
+
+---
+
+# 6. VENDOR REPORT
+
+Display:
+
+* Total vendors
+* Active vendors
+* Pending vendors
+* Approved vendors
+* Rejected vendors
+
+Vendor performance:
+
+* Bookings
+* Revenue
+* Properties
+* Hotels
+* Rooms
+* Enquiries
+* Reviews
+* Average rating where real review data exists
+
+Provide a vendor performance table.
+
+Columns:
+
+* Vendor
+* Bookings
+* Revenue
+* Properties
+* Enquiries
+* Reviews
+* Rating
+* Status
+
+---
+
+# 7. HOTEL REPORT
+
+Admin should see:
+
+* Total hotels
+* Active hotels
+* Pending approval
+* Rooms
+* Available inventory
+* Bookings
+* Revenue
+
+Provide:
+
+Hotel performance table
+
+with:
+
+* Hotel
+* Vendor
+* Destination
+* Rooms
+* Bookings
+* Revenue
+* Rating
+* Status
+
+---
+
+# 8. DESTINATION REPORT
+
+Display:
+
+* Total destinations
+* Published destinations
+* Draft destinations
+* Views where tracking exists
+* Favorites
+* Bookings associated with destination
+* Popular destinations
+
+Charts:
+
+* Most viewed
+* Most favorited
+* Most booked
+
+Do not create fake view counts.
+
+If analytics data does not exist yet, show:
+
+"Analytics data unavailable"
+
+rather than inventing values.
+
+---
+
+# 9. LAND SOURCING REPORT
+
+This is an important report.
+
+Display:
+
+* Total properties
+* Active properties
+* Pending approval
+* Sold/closed where supported
+* Total enquiries
+* New enquiries
+* Contacted
+* Site visits
+* Negotiations
+* Closed
+* Cancelled
+
+Charts:
+
+### Enquiry Funnel
+
+Submitted
+→ Received
+→ Contacted
+→ Site Visit
+→ Negotiation
+→ Closed
+
+### Enquiry Trend
+
+Daily/weekly/monthly.
+
+### Property Performance
+
+Show:
+
+* Property
+* Vendor/Owner
+* Enquiries
+* Site visits
+* Active status
+* Asking price
+
+---
+
+# 10. ENQUIRY REPORT
+
+Admin should be able to filter enquiries by:
+
+* Date
+* Property
+* Vendor
+* Status
+* Location
+
+Display:
+
+* Total enquiries
+* New
+* In progress
+* Site visits
+* Negotiation
+* Closed
+* Cancelled
+
+Provide enquiry table.
+
+---
+
+# 11. PAYMENT REPORT
+
+Display:
+
+* Successful payments
+* Failed payments
+* Pending payments
+* Refunded payments
+* Total payment amount
+
+Table:
+
+* Payment ID
+* Booking ID
+* User
+* Amount
+* Currency
+* Payment status
+* Provider/reference where appropriate
+* Date
+
+Never display:
+
+* Card number
+* CVV
+* Full payment credentials
+* Payment secrets
+* Authentication tokens
+
+---
+
+# 12. WALLET REPORT
+
+If wallet transactions exist in the database, display:
+
+* Total wallet transactions
+* Credits
+* Debits
+* Refunds
+* Current balances where authorized
+
+Provide:
+
+Wallet transaction table
+
+with:
+
+* Transaction ID
+* User
+* Type
+* Amount
+* Currency
+* Status
+* Date
+
+If wallet functionality is still not production-ready, clearly display:
+
+"Wallet reporting is not available until wallet transactions are enabled."
+
+Do not invent balances.
+
+---
+
+# 13. REVIEWS & RATINGS REPORT
+
+Display:
+
+* Total reviews
+* Average rating
+* Ratings distribution
+* Reviews by hotel
+* Reviews by destination
+* Reviews by vendor
+
+Provide:
+
+5-star
+4-star
+3-star
+2-star
+1-star
+
+distribution chart.
+
+Do not calculate ratings from sample/demo records as if they were production reviews.
+
+---
+
+# 14. NOTIFICATION REPORT
+
+Where notification records exist, display:
+
+* Total notifications
+* Read
+* Unread
+* Booking notifications
+* Enquiry notifications
+* System notifications
+
+Show notification activity over time.
+
+---
+
+# 15. DATE FILTER
+
+Reports must support:
+
+* Today
+* Yesterday
+* Last 7 days
+* Last 30 days
+* This month
+* Last month
+* This year
+* Custom date range
+
+All date filtering must happen correctly using backend/database timestamps.
+
+Handle timezone correctly.
+
+---
+
+# 16. REGION / COUNTRY FILTER
+
+Admin reports should support:
+
+* Country
+* State/region
+* City
+
+where the underlying data supports it.
+
+Test:
+
+India
+
+UAE
+
+UK
+
+USA
+
+Singapore
+
+Do not assume all records belong to India.
+
+---
+
+# 17. CURRENCY HANDLING
+
+Reports must display the correct currency.
+
+At minimum support the application's configured:
+
+* INR
+* AED
+* USD
+* GBP
+* SGD
+
+Do NOT silently combine different currencies into one total.
+
+If multi-currency aggregation is not yet supported:
+
+Show separate totals by currency.
+
+Example:
+
+INR Revenue
+
+AED Revenue
+
+USD Revenue
+
+Do not use fake exchange rates.
+
+---
+
+# 18. VENDOR DASHBOARD REPORTS
+
+Create:
+
+Vendor
+→ Dashboard
+→ Reports
+
+Vendor reports must contain ONLY that vendor's data.
+
+Never return another vendor's:
+
+* Bookings
+* Revenue
+* Customers
+* Properties
+* Hotels
+* Enquiries
+* Reviews
+
+---
+
+# 19. VENDOR SUMMARY
+
+Display:
+
+* Total bookings
+* Confirmed bookings
+* Cancelled bookings
+* Completed bookings
+* Revenue
+* Active hotels
+* Rooms
+* Properties
+* Open enquiries
+* Reviews
+* Average rating
+
+---
+
+# 20. VENDOR BOOKING REPORT
+
+Display:
+
+* Booking trend
+* Booking status
+* Revenue trend
+* Upcoming bookings
+* Completed bookings
+* Cancelled bookings
+
+Table:
+
+* Booking ID
+* Customer
+* Hotel
+* Dates
+* Amount
+* Payment status
+* Booking status
+
+---
+
+# 21. VENDOR HOTEL REPORT
+
+Display:
+
+* Hotels
+* Rooms
+* Availability
+* Bookings
+* Revenue
+* Ratings
+
+Allow vendor to select an individual hotel and view performance.
+
+---
+
+# 22. VENDOR PROPERTY REPORT
+
+Display:
+
+* Total properties
+* Active properties
+* Pending approval
+* Total enquiries
+* Open enquiries
+* Site visits
+* Negotiations
+* Closed enquiries
+
+Property performance table:
+
+* Property
+* Location
+* Enquiries
+* Site visits
+* Current status
+* Asking price
+
+---
+
+# 23. VENDOR ENQUIRY REPORT
+
+Vendor should see:
+
+* New enquiries
+* Contacted
+* Site visits
+* Negotiations
+* Closed
+
+Provide:
+
+* Status chart
+* Enquiry trend
+* Enquiry table
+* Property filter
+* Date filter
+
+---
+
+# 24. REPORT EXPORT
+
+Where practical, provide:
+
+### CSV export
+
+for:
+
+* Bookings
+* Payments
+* Enquiries
+* Properties
+* Vendor performance
+
+For future PDF export, structure the reporting API so it can be added without redesigning the system.
+
+Export must respect the user's role and filters.
+
+A vendor export must NEVER contain another vendor's data.
+
+---
+
+# 25. REPORT API DESIGN
+
+Create typed APIs such as:
+
+/api/v1/admin/reports/summary
+
+/api/v1/admin/reports/bookings
+
+/api/v1/admin/reports/revenue
+
+/api/v1/admin/reports/users
+
+/api/v1/admin/reports/vendors
+
+/api/v1/admin/reports/hotels
+
+/api/v1/admin/reports/properties
+
+/api/v1/admin/reports/enquiries
+
+/api/v1/admin/reports/payments
+
+/api/v1/admin/reports/wallet
+
+/api/v1/admin/reports/reviews
+
+/api/v1/vendor/reports/summary
+
+/api/v1/vendor/reports/bookings
+
+/api/v1/vendor/reports/revenue
+
+/api/v1/vendor/reports/properties
+
+/api/v1/vendor/reports/enquiries
+
+Use the project's existing API conventions rather than blindly creating these exact routes if an equivalent structure already exists.
+
+---
+
+# 26. PERFORMANCE
+
+Do not load every booking/payment/user record into the frontend just to calculate reports.
+
+Use backend aggregation:
+
+COUNT
+
+SUM
+
+GROUP BY
+
+date aggregation
+
+status aggregation
+
+pagination
+
+Only return the data required by each report.
+
+Add appropriate database indexes for frequently filtered reporting fields where necessary.
+
+---
+
+# 27. REPORT LOADING STATES
+
+Every report needs:
+
+Loading
+
+Empty
+
+Error
+
+Retry
+
+Success
+
+Example empty state:
+
+"No booking data available for the selected period."
+
+Do not show:
+
+0
+
+when the query actually failed.
+
+---
+
+# 28. REPORT ERROR HANDLING
+
+Use friendly messages.
+
+Example:
+
+"Unable to load booking report. Please try again."
+
+"Report data is temporarily unavailable."
+
+Do not expose:
+
+SQL errors
+
+stack traces
+
+raw API errors
+
+database connection strings
+
+---
+
+# 29. AUTHORIZATION TESTING
+
+Create tests proving:
+
+### Admin
+
+Can access admin reports.
+
+### Vendor
+
+Can access vendor reports.
+
+### User
+
+Cannot access admin reports.
+
+### Vendor
+
+Cannot access admin reports.
+
+### Vendor A
+
+Cannot access Vendor B's reports.
+
+### Direct API request
+
+Must still enforce authorization.
+
+Do not rely on frontend hiding the menu.
+
+---
+
+# 30. DUMMY DATA
+
+Because the application is currently using development/sample data, create a proper development seed dataset sufficient to demonstrate reports end-to-end.
+
+Include realistic but clearly fake data for:
+
+* Users
+* Vendors
+* Hotels
+* Rooms
+* Destinations
+* Bookings
+* Payments
+* Properties
+* Enquiries
+* Reviews
+* Notifications
+
+Use multiple:
+
+* Dates
+* Booking statuses
+* Payment statuses
+* Vendors
+* Properties
+* Destinations
+* Countries
+* Currencies where supported
+
+Make sure dummy data has valid relationships.
+
+Example:
+
+User
+→ Booking
+→ Hotel
+→ Vendor
+
+User
+→ Property Enquiry
+→ Property
+→ Vendor
+
+Do not mix unrelated records.
+
+Clearly keep seed/demo data separate from production data.
+
+---
+
+# 31. ATTRACTIVE UI
+
+The reports should feel like a modern travel/real-estate analytics dashboard.
+
+Use:
+
+* KPI cards
+* Charts
+* Status badges
+* Trend indicators
+* Clean tables
+* Filter controls
+* Search
+* Date range picker
+* Responsive cards
+* Empty states
+* Consistent icons
+* Existing Travel & Land design language
+
+Do not overload mobile screens.
+
+On mobile, stack charts and convert wide tables into responsive cards where appropriate.
+
+---
+
+# 32. AUTOMATED TESTS
+
+Add tests for:
+
+* Admin report authorization
+* Vendor report authorization
+* Vendor isolation
+* Date filtering
+* Country filtering
+* Currency handling
+* Booking aggregation
+* Revenue aggregation
+* Enquiry aggregation
+* Property aggregation
+* Payment aggregation
+* Empty reports
+* Report API failures
+* CSV export authorization
+* Seed data integrity
+
+---
+
+# 33. FINAL VALIDATION
+
+Run:
+
+* TypeScript
+* API tests
+* Database tests
+* Existing regression tests
+* Report tests
+* Admin build
+* Vendor build
+* Expo/mobile build where available
+
+Verify no existing functionality breaks.
+
+---
+
+# 34. FINAL REPORT
+
+At completion provide:
+
+### Admin Reports
+
+PASS / FAIL
+
+### Vendor Reports
+
+PASS / FAIL
+
+### Database
+
+PASS / FAIL / BLOCKED
+
+### APIs
+
+Total:
+
+Passed:
+
+Failed:
+
+### Authorization
+
+PASS / FAIL
+
+### Dummy data
+
+Records created by entity:
+
+Users:
+
+Vendors:
+
+Hotels:
+
+Rooms:
+
+Bookings:
+
+Payments:
+
+Properties:
+
+Enquiries:
+
+Reviews:
+
+Notifications:
+
+### Export
+
+CSV:
+
+PASS / FAIL
+
+### Responsive
+
+Desktop:
+
+PASS / FAIL
+
+Tablet:
+
+PASS / FAIL
+
+Mobile:
+
+PASS / FAIL
+
+### Remaining limitations
+
+Clearly list anything requiring:
+
+* Real payment provider
+* Real hotel inventory
+* Real maps
+* Production database
+* External analytics
+* Physical device testing
+* Other external services
+
+Do not claim production analytics if the application only has seeded development data.
