@@ -111,9 +111,36 @@ describe('VendorEnquiriesScreen', () => {
     expect(screen.queryByText('A different vendor property')).toBeNull();
   });
 
-  it('advances an enquiry, refreshes the list, and shows the success notice', async () => {
+  it('renders refreshed enquiry status and history after advancing while keeping the success notice', async () => {
     const mutateAsync = jest.fn().mockResolvedValue(undefined);
     mockUseUpdateVendorEnquiry.mockReturnValue({ isPending: false, mutateAsync });
+    const refreshedEnquiry = {
+      ...enquiry,
+      status: 'contacted' as const,
+      updatedAt: '2026-08-31T08:00:00.000Z',
+      history: [
+        ...enquiry.history,
+        {
+          id: 'history-2',
+          status: 'contacted' as const,
+          note: 'Vendor contacted the customer',
+          createdAt: '2026-08-31T08:00:00.000Z',
+        },
+      ],
+    };
+    mockUseListVendorEnquiries.mockImplementation(() => {
+      const [data, setData] = React.useState<{ items: Array<typeof enquiry | typeof refreshedEnquiry> }>({
+        items: [enquiry],
+      });
+      return {
+        data,
+        isLoading: false,
+        isError: false,
+        refetch: jest.fn().mockImplementation(async () => {
+          setData({ items: [refreshedEnquiry] });
+        }),
+      };
+    });
     const screen = render(<VendorEnquiriesScreen />);
 
     fireEvent.press(screen.getByRole('button', { name: 'Mark contacted' }));
@@ -122,7 +149,12 @@ describe('VendorEnquiriesScreen', () => {
       id: 'enquiry-1',
       data: { status: 'contacted' },
     }));
-    await waitFor(() => expect(refetch).toHaveBeenCalledTimes(1));
+    await waitFor(() => {
+      expect(screen.getAllByText('Contacted')).toHaveLength(2);
+      expect(screen.getByText(/Vendor contacted the customer/)).toBeTruthy();
+    });
+    expect(screen.queryByRole('button', { name: 'Mark contacted' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Mark closed' })).toBeTruthy();
     expect(screen.getByText('Enquiry for Misty Valley Stay is now contacted.')).toBeTruthy();
   });
 
