@@ -1817,6 +1817,213 @@ export interface LogoutStatus {
   message: string;
 }
 
+export interface ReportRange {
+  from: string;
+  to: string;
+}
+
+export interface ReportUnavailableMetric {
+  key: string;
+  label: string;
+  reason: string;
+}
+
+export interface ReportStatusCount {
+  status: string;
+  /** @minimum 0 */
+  count: number;
+}
+
+export interface ReportRatingCount {
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  rating: number;
+  /** @minimum 0 */
+  count: number;
+}
+
+export interface ReportCurrencyTotal {
+  currency: string;
+  amount: number;
+  /** @minimum 0 */
+  records: number;
+}
+
+export interface ReportTrend {
+  date: string;
+  /** @minimum 0 */
+  bookings: number;
+  /** @minimum 0 */
+  payments: number;
+  /** @minimum 0 */
+  enquiries: number;
+  /** @minimum 0 */
+  reviews: number;
+}
+
+export interface ReportKpis {[key: string]: number}
+
+export interface ReportBookingRow {
+  id: string;
+  reference: string;
+  hotelCatalogId: string;
+  startsOn: string;
+  endsOn: string;
+  totalAmount: number;
+  currency: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface ReportPaymentRow {
+  id: string;
+  /** @nullable */
+  bookingReference: string | null;
+  amount: number;
+  currency: string;
+  status: string;
+  provider: string;
+  createdAt: string;
+}
+
+export interface ReportPropertyRow {
+  id: string;
+  title: string;
+  propertyType: string;
+  status: string;
+  /** @nullable */
+  askingPrice: number | null;
+  currency: string;
+  createdAt: string;
+}
+
+export interface ReportEnquiryRow {
+  id: string;
+  propertyTitle: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface ReportVendorRow {
+  id: string;
+  businessName: string;
+  country: string;
+  city: string;
+  status: string;
+  email: string;
+  createdAt: string;
+}
+
+export interface ReportPagination {
+  /** @minimum 1 */
+  page: number;
+  /**
+     * @minimum 1
+     * @maximum 100
+     */
+  limit: number;
+  /** @minimum 0 */
+  total: number;
+  hasMore: boolean;
+}
+
+export interface ReportTables {
+  bookings: ReportBookingRow[];
+  payments: ReportPaymentRow[];
+  properties: ReportPropertyRow[];
+  enquiries: ReportEnquiryRow[];
+  vendors?: ReportVendorRow[];
+}
+
+export interface ReportBreakdowns {
+  bookings: ReportStatusCount[];
+  payments: ReportStatusCount[];
+  enquiries: ReportStatusCount[];
+  reviewRatings: ReportRatingCount[];
+  roles?: ReportStatusCount[];
+  hotelsByCountry?: ReportStatusCount[];
+}
+
+export interface ReportMeta {[key: string]: ReportPagination}
+
+export type ReportBaseSource = typeof ReportBaseSource[keyof typeof ReportBaseSource];
+
+
+export const ReportBaseSource = {
+  database: 'database',
+} as const;
+
+export type ReportBaseProvenance = typeof ReportBaseProvenance[keyof typeof ReportBaseProvenance];
+
+
+export const ReportBaseProvenance = {
+  demo: 'demo',
+  live: 'live',
+} as const;
+
+export type ReportBaseTimezone = typeof ReportBaseTimezone[keyof typeof ReportBaseTimezone];
+
+
+export const ReportBaseTimezone = {
+  UTC: 'UTC',
+} as const;
+
+export type ReportBaseFilters = {
+  /** @nullable */
+  country: string | null;
+};
+
+export type ReportBaseCurrencies = {
+  bookings: ReportCurrencyTotal[];
+  payments: ReportCurrencyTotal[];
+};
+
+export type ReportBaseSupportedFilters = {
+  countries: string[];
+  statuses: string[];
+};
+
+export interface ReportBase {
+  source: ReportBaseSource;
+  provenance: ReportBaseProvenance;
+  timezone: ReportBaseTimezone;
+  generatedAt: string;
+  range: ReportRange;
+  filters: ReportBaseFilters;
+  unavailable: ReportUnavailableMetric[];
+  kpis: ReportKpis;
+  breakdowns: ReportBreakdowns;
+  currencies: ReportBaseCurrencies;
+  trends: ReportTrend[];
+  tables: ReportTables;
+  meta: ReportMeta;
+  supportedFilters: ReportBaseSupportedFilters;
+}
+
+export type AdminReportRole = typeof AdminReportRole[keyof typeof AdminReportRole];
+
+
+export const AdminReportRole = {
+  admin: 'admin',
+} as const;
+
+export type AdminReport = ReportBase & {
+  role: AdminReportRole;
+};
+
+export type VendorReportRole = typeof VendorReportRole[keyof typeof VendorReportRole];
+
+
+export const VendorReportRole = {
+  vendor: 'vendor',
+} as const;
+
+export type VendorReport = ReportBase & {
+  role: VendorReportRole;
+};
+
 export interface AdminPageMeta {
   /** @minimum 1 */
   page: number;
@@ -2652,6 +2859,28 @@ id: string;
 email: string;
 };
 
+export type GetVendorReportsParams = {
+from?: string;
+to?: string;
+/**
+ * @maxLength 120
+ */
+country?: string;
+/**
+ * @maxLength 40
+ */
+status?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
+
 export type ListVendorHotelsParams = {
 status?: ListVendorHotelsStatus;
 /**
@@ -2726,6 +2955,28 @@ export type ListAdminVendorApprovalHistory200 = {
 
 export type ListAdminInvitations200 = {
   items: AdminInvitation[];
+};
+
+export type GetAdminReportsParams = {
+from?: string;
+to?: string;
+/**
+ * @maxLength 120
+ */
+country?: string;
+/**
+ * @maxLength 40
+ */
+status?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
 };
 
 export type DeleteAdminFeaturedContent200 = {

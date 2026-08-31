@@ -936,6 +936,29 @@ paths:
               schema: { $ref: "#/components/schemas/RoleDashboard" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/vendor/reports:
+    get:
+      operationId: getVendorReports
+      tags: [vendor]
+      security: [{ bearerAuth: [] }]
+      summary: Get database-backed reporting for the authenticated approved vendor
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: country, in: query, schema: { type: string, maxLength: 120 } }
+        - { name: status, in: query, schema: { type: string, maxLength: 40 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 24 } }
+      responses:
+        "200":
+          description: Vendor report data
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorReport" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /v1/vendor/profile:
     get:
       operationId: getVendorProfile
@@ -1593,6 +1616,29 @@ paths:
               schema: { $ref: "#/components/schemas/AdminDashboard" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/admin/reports:
+    get:
+      operationId: getAdminReports
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Get database-backed platform reporting
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: country, in: query, schema: { type: string, maxLength: 120 } }
+        - { name: status, in: query, schema: { type: string, maxLength: 40 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 24 } }
+      responses:
+        "200":
+          description: Platform report data
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminReport" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /v1/admin/featured-content:
     get:
       operationId: listAdminFeaturedContent
@@ -3514,6 +3560,180 @@ components:
         sessionAuthority: { type: string, enum: [clerk] }
         message: { type: string }
       required: [authenticated, sessionAuthority, message]
+    ReportRange:
+      type: object
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+      required: [from, to]
+    ReportUnavailableMetric:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        reason: { type: string }
+      required: [key, label, reason]
+    ReportStatusCount:
+      type: object
+      properties:
+        status: { type: string }
+        count: { type: integer, minimum: 0 }
+      required: [status, count]
+    ReportRatingCount:
+      type: object
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        count: { type: integer, minimum: 0 }
+      required: [rating, count]
+    ReportCurrencyTotal:
+      type: object
+      properties:
+        currency: { type: string }
+        amount: { type: number }
+        records: { type: integer, minimum: 0 }
+      required: [currency, amount, records]
+    ReportTrend:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        bookings: { type: number, minimum: 0 }
+        payments: { type: number, minimum: 0 }
+        enquiries: { type: number, minimum: 0 }
+        reviews: { type: number, minimum: 0 }
+      required: [date, bookings, payments, enquiries, reviews]
+    ReportKpis:
+      type: object
+      additionalProperties: { type: number, minimum: 0 }
+    ReportBookingRow:
+      type: object
+      properties:
+        id: { type: string }
+        reference: { type: string }
+        hotelCatalogId: { type: string }
+        startsOn: { type: string, format: date }
+        endsOn: { type: string, format: date }
+        totalAmount: { type: number }
+        currency: { type: string }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, reference, hotelCatalogId, startsOn, endsOn, totalAmount, currency, status, createdAt]
+    ReportPaymentRow:
+      type: object
+      properties:
+        id: { type: string }
+        bookingReference: { type: [string, "null"] }
+        amount: { type: number }
+        currency: { type: string }
+        status: { type: string }
+        provider: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, bookingReference, amount, currency, status, provider, createdAt]
+    ReportPropertyRow:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        propertyType: { type: string }
+        status: { type: string }
+        askingPrice: { type: [number, "null"] }
+        currency: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, title, propertyType, status, askingPrice, currency, createdAt]
+    ReportEnquiryRow:
+      type: object
+      properties:
+        id: { type: string }
+        propertyTitle: { type: string }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, propertyTitle, status, createdAt]
+    ReportVendorRow:
+      type: object
+      properties:
+        id: { type: string }
+        businessName: { type: string }
+        country: { type: string }
+        city: { type: string }
+        status: { type: string }
+        email: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, businessName, country, city, status, email, createdAt]
+    ReportPagination:
+      type: object
+      properties:
+        page: { type: integer, minimum: 1 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        total: { type: integer, minimum: 0 }
+        hasMore: { type: boolean }
+      required: [page, limit, total, hasMore]
+    ReportTables:
+      type: object
+      properties:
+        bookings: { type: array, items: { $ref: "#/components/schemas/ReportBookingRow" } }
+        payments: { type: array, items: { $ref: "#/components/schemas/ReportPaymentRow" } }
+        properties: { type: array, items: { $ref: "#/components/schemas/ReportPropertyRow" } }
+        enquiries: { type: array, items: { $ref: "#/components/schemas/ReportEnquiryRow" } }
+        vendors: { type: array, items: { $ref: "#/components/schemas/ReportVendorRow" } }
+      required: [bookings, payments, properties, enquiries]
+    ReportBreakdowns:
+      type: object
+      properties:
+        bookings: { type: array, items: { $ref: "#/components/schemas/ReportStatusCount" } }
+        payments: { type: array, items: { $ref: "#/components/schemas/ReportStatusCount" } }
+        enquiries: { type: array, items: { $ref: "#/components/schemas/ReportStatusCount" } }
+        reviewRatings: { type: array, items: { $ref: "#/components/schemas/ReportRatingCount" } }
+        roles: { type: array, items: { $ref: "#/components/schemas/ReportStatusCount" } }
+        hotelsByCountry: { type: array, items: { $ref: "#/components/schemas/ReportStatusCount" } }
+      required: [bookings, payments, enquiries, reviewRatings]
+    ReportMeta:
+      type: object
+      additionalProperties: { $ref: "#/components/schemas/ReportPagination" }
+    ReportBase:
+      type: object
+      properties:
+        source: { type: string, enum: [database] }
+        provenance: { type: string, enum: [demo, live] }
+        timezone: { type: string, enum: [UTC] }
+        generatedAt: { type: string, format: date-time }
+        range: { $ref: "#/components/schemas/ReportRange" }
+        filters:
+          type: object
+          properties:
+            country: { type: [string, "null"] }
+          required: [country]
+        unavailable: { type: array, items: { $ref: "#/components/schemas/ReportUnavailableMetric" } }
+        kpis: { $ref: "#/components/schemas/ReportKpis" }
+        breakdowns: { $ref: "#/components/schemas/ReportBreakdowns" }
+        currencies:
+          type: object
+          properties:
+            bookings: { type: array, items: { $ref: "#/components/schemas/ReportCurrencyTotal" } }
+            payments: { type: array, items: { $ref: "#/components/schemas/ReportCurrencyTotal" } }
+          required: [bookings, payments]
+        trends: { type: array, items: { $ref: "#/components/schemas/ReportTrend" } }
+        tables: { $ref: "#/components/schemas/ReportTables" }
+        meta: { $ref: "#/components/schemas/ReportMeta" }
+        supportedFilters:
+          type: object
+          properties:
+            countries: { type: array, items: { type: string } }
+            statuses: { type: array, items: { type: string } }
+          required: [countries, statuses]
+      required: [source, provenance, timezone, generatedAt, range, filters, unavailable, kpis, breakdowns, currencies, trends, tables, meta, supportedFilters]
+    AdminReport:
+      allOf:
+        - $ref: "#/components/schemas/ReportBase"
+        - type: object
+          properties:
+            role: { type: string, enum: [admin] }
+          required: [role]
+    VendorReport:
+      allOf:
+        - $ref: "#/components/schemas/ReportBase"
+        - type: object
+          properties:
+            role: { type: string, enum: [vendor] }
+          required: [role]
     AdminPageMeta:
       type: object
       properties:

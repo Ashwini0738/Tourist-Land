@@ -2132,6 +2132,188 @@ export const GetVendorDashboardResponse = zod.object({
 
 
 /**
+ * @summary Get database-backed reporting for the authenticated approved vendor
+ */
+export const getVendorReportsQueryCountryMax = 120;
+
+export const getVendorReportsQueryStatusMax = 40;
+
+export const getVendorReportsQueryPageDefault = 1;
+
+export const getVendorReportsQueryLimitDefault = 24;
+export const getVendorReportsQueryLimitMax = 100;
+
+
+
+export const GetVendorReportsQueryParams = zod.object({
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "country": zod.coerce.string().max(getVendorReportsQueryCountryMax).optional(),
+  "status": zod.coerce.string().max(getVendorReportsQueryStatusMax).optional(),
+  "page": zod.coerce.number().int().min(1).default(getVendorReportsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(getVendorReportsQueryLimitMax).default(getVendorReportsQueryLimitDefault)
+})
+
+export const getVendorReportsResponseOneKpisMinOne = 0;
+
+export const getVendorReportsResponseOneBreakdownsBookingsItemCountMin = 0;
+
+export const getVendorReportsResponseOneBreakdownsPaymentsItemCountMin = 0;
+
+export const getVendorReportsResponseOneBreakdownsEnquiriesItemCountMin = 0;
+
+export const getVendorReportsResponseOneBreakdownsReviewRatingsItemRatingMax = 5;
+
+export const getVendorReportsResponseOneBreakdownsReviewRatingsItemCountMin = 0;
+
+export const getVendorReportsResponseOneBreakdownsRolesItemCountMin = 0;
+
+export const getVendorReportsResponseOneBreakdownsHotelsByCountryItemCountMin = 0;
+
+export const getVendorReportsResponseOneCurrenciesBookingsItemRecordsMin = 0;
+
+export const getVendorReportsResponseOneCurrenciesPaymentsItemRecordsMin = 0;
+
+export const getVendorReportsResponseOneTrendsItemBookingsMin = 0;
+
+export const getVendorReportsResponseOneTrendsItemPaymentsMin = 0;
+
+export const getVendorReportsResponseOneTrendsItemEnquiriesMin = 0;
+
+export const getVendorReportsResponseOneTrendsItemReviewsMin = 0;
+
+
+export const getVendorReportsResponseOneMetaLimitMax = 100;
+
+export const getVendorReportsResponseOneMetaTotalMin = 0;
+
+
+
+export const GetVendorReportsResponse = zod.object({
+  "source": zod.enum(['database']),
+  "provenance": zod.enum(['demo', 'live']),
+  "timezone": zod.enum(['UTC']),
+  "generatedAt": zod.coerce.date(),
+  "range": zod.object({
+  "from": zod.coerce.date(),
+  "to": zod.coerce.date()
+}),
+  "filters": zod.object({
+  "country": zod.string().nullable()
+}),
+  "unavailable": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "reason": zod.string()
+})),
+  "kpis": zod.record(zod.string(), zod.number().min(getVendorReportsResponseOneKpisMinOne)),
+  "breakdowns": zod.object({
+  "bookings": zod.array(zod.object({
+  "status": zod.string(),
+  "count": zod.number().int().min(getVendorReportsResponseOneBreakdownsBookingsItemCountMin)
+})),
+  "payments": zod.array(zod.object({
+  "status": zod.string(),
+  "count": zod.number().int().min(getVendorReportsResponseOneBreakdownsPaymentsItemCountMin)
+})),
+  "enquiries": zod.array(zod.object({
+  "status": zod.string(),
+  "count": zod.number().int().min(getVendorReportsResponseOneBreakdownsEnquiriesItemCountMin)
+})),
+  "reviewRatings": zod.array(zod.object({
+  "rating": zod.number().int().min(1).max(getVendorReportsResponseOneBreakdownsReviewRatingsItemRatingMax),
+  "count": zod.number().int().min(getVendorReportsResponseOneBreakdownsReviewRatingsItemCountMin)
+})),
+  "roles": zod.array(zod.object({
+  "status": zod.string(),
+  "count": zod.number().int().min(getVendorReportsResponseOneBreakdownsRolesItemCountMin)
+})).optional(),
+  "hotelsByCountry": zod.array(zod.object({
+  "status": zod.string(),
+  "count": zod.number().int().min(getVendorReportsResponseOneBreakdownsHotelsByCountryItemCountMin)
+})).optional()
+}),
+  "currencies": zod.object({
+  "bookings": zod.array(zod.object({
+  "currency": zod.string(),
+  "amount": zod.number(),
+  "records": zod.number().int().min(getVendorReportsResponseOneCurrenciesBookingsItemRecordsMin)
+})),
+  "payments": zod.array(zod.object({
+  "currency": zod.string(),
+  "amount": zod.number(),
+  "records": zod.number().int().min(getVendorReportsResponseOneCurrenciesPaymentsItemRecordsMin)
+}))
+}),
+  "trends": zod.array(zod.object({
+  "date": zod.coerce.date(),
+  "bookings": zod.number().min(getVendorReportsResponseOneTrendsItemBookingsMin),
+  "payments": zod.number().min(getVendorReportsResponseOneTrendsItemPaymentsMin),
+  "enquiries": zod.number().min(getVendorReportsResponseOneTrendsItemEnquiriesMin),
+  "reviews": zod.number().min(getVendorReportsResponseOneTrendsItemReviewsMin)
+})),
+  "tables": zod.object({
+  "bookings": zod.array(zod.object({
+  "id": zod.string(),
+  "reference": zod.string(),
+  "hotelCatalogId": zod.string(),
+  "startsOn": zod.coerce.date(),
+  "endsOn": zod.coerce.date(),
+  "totalAmount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.string(),
+  "bookingReference": zod.string().nullable(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "provider": zod.string(),
+  "createdAt": zod.coerce.date()
+})),
+  "properties": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "propertyType": zod.string(),
+  "status": zod.string(),
+  "askingPrice": zod.number().nullable(),
+  "currency": zod.string(),
+  "createdAt": zod.coerce.date()
+})),
+  "enquiries": zod.array(zod.object({
+  "id": zod.string(),
+  "propertyTitle": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})),
+  "vendors": zod.array(zod.object({
+  "id": zod.string(),
+  "businessName": zod.string(),
+  "country": zod.string(),
+  "city": zod.string(),
+  "status": zod.string(),
+  "email": zod.string(),
+  "createdAt": zod.coerce.date()
+})).optional()
+}),
+  "meta": zod.record(zod.string(), zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1).max(getVendorReportsResponseOneMetaLimitMax),
+  "total": zod.number().int().min(getVendorReportsResponseOneMetaTotalMin),
+  "hasMore": zod.boolean()
+})),
+  "supportedFilters": zod.object({
+  "countries": zod.array(zod.string()),
+  "statuses": zod.array(zod.string())
+})
+}).and(zod.object({
+  "role": zod.enum(['vendor'])
+}))
+
+
+/**
  * @summary Get the authenticated vendor profile
  */
 export const GetVendorProfileResponse = zod.object({
@@ -3887,6 +4069,188 @@ export const GetAdminOperationsDashboardResponse = zod.object({
   "currency": zod.string().nullable()
 })
 })
+
+
+/**
+ * @summary Get database-backed platform reporting
+ */
+export const getAdminReportsQueryCountryMax = 120;
+
+export const getAdminReportsQueryStatusMax = 40;
+
+export const getAdminReportsQueryPageDefault = 1;
+
+export const getAdminReportsQueryLimitDefault = 24;
+export const getAdminReportsQueryLimitMax = 100;
+
+
+
+export const GetAdminReportsQueryParams = zod.object({
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "country": zod.coerce.string().max(getAdminReportsQueryCountryMax).optional(),
+  "status": zod.coerce.string().max(getAdminReportsQueryStatusMax).optional(),
+  "page": zod.coerce.number().int().min(1).default(getAdminReportsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(getAdminReportsQueryLimitMax).default(getAdminReportsQueryLimitDefault)
+})
+
+export const getAdminReportsResponseOneKpisMinOne = 0;
+
+export const getAdminReportsResponseOneBreakdownsBookingsItemCountMin = 0;
+
+export const getAdminReportsResponseOneBreakdownsPaymentsItemCountMin = 0;
+
+export const getAdminReportsResponseOneBreakdownsEnquiriesItemCountMin = 0;
+
+export const getAdminReportsResponseOneBreakdownsReviewRatingsItemRatingMax = 5;
+
+export const getAdminReportsResponseOneBreakdownsReviewRatingsItemCountMin = 0;
+
+export const getAdminReportsResponseOneBreakdownsRolesItemCountMin = 0;
+
+export const getAdminReportsResponseOneBreakdownsHotelsByCountryItemCountMin = 0;
+
+export const getAdminReportsResponseOneCurrenciesBookingsItemRecordsMin = 0;
+
+export const getAdminReportsResponseOneCurrenciesPaymentsItemRecordsMin = 0;
+
+export const getAdminReportsResponseOneTrendsItemBookingsMin = 0;
+
+export const getAdminReportsResponseOneTrendsItemPaymentsMin = 0;
+
+export const getAdminReportsResponseOneTrendsItemEnquiriesMin = 0;
+
+export const getAdminReportsResponseOneTrendsItemReviewsMin = 0;
+
+
+export const getAdminReportsResponseOneMetaLimitMax = 100;
+
+export const getAdminReportsResponseOneMetaTotalMin = 0;
+
+
+
+export const GetAdminReportsResponse = zod.object({
+  "source": zod.enum(['database']),
+  "provenance": zod.enum(['demo', 'live']),
+  "timezone": zod.enum(['UTC']),
+  "generatedAt": zod.coerce.date(),
+  "range": zod.object({
+  "from": zod.coerce.date(),
+  "to": zod.coerce.date()
+}),
+  "filters": zod.object({
+  "country": zod.string().nullable()
+}),
+  "unavailable": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "reason": zod.string()
+})),
+  "kpis": zod.record(zod.string(), zod.number().min(getAdminReportsResponseOneKpisMinOne)),
+  "breakdowns": zod.object({
+  "bookings": zod.array(zod.object({
+  "status": zod.string(),
+  "count": zod.number().int().min(getAdminReportsResponseOneBreakdownsBookingsItemCountMin)
+})),
+  "payments": zod.array(zod.object({
+  "status": zod.string(),
+  "count": zod.number().int().min(getAdminReportsResponseOneBreakdownsPaymentsItemCountMin)
+})),
+  "enquiries": zod.array(zod.object({
+  "status": zod.string(),
+  "count": zod.number().int().min(getAdminReportsResponseOneBreakdownsEnquiriesItemCountMin)
+})),
+  "reviewRatings": zod.array(zod.object({
+  "rating": zod.number().int().min(1).max(getAdminReportsResponseOneBreakdownsReviewRatingsItemRatingMax),
+  "count": zod.number().int().min(getAdminReportsResponseOneBreakdownsReviewRatingsItemCountMin)
+})),
+  "roles": zod.array(zod.object({
+  "status": zod.string(),
+  "count": zod.number().int().min(getAdminReportsResponseOneBreakdownsRolesItemCountMin)
+})).optional(),
+  "hotelsByCountry": zod.array(zod.object({
+  "status": zod.string(),
+  "count": zod.number().int().min(getAdminReportsResponseOneBreakdownsHotelsByCountryItemCountMin)
+})).optional()
+}),
+  "currencies": zod.object({
+  "bookings": zod.array(zod.object({
+  "currency": zod.string(),
+  "amount": zod.number(),
+  "records": zod.number().int().min(getAdminReportsResponseOneCurrenciesBookingsItemRecordsMin)
+})),
+  "payments": zod.array(zod.object({
+  "currency": zod.string(),
+  "amount": zod.number(),
+  "records": zod.number().int().min(getAdminReportsResponseOneCurrenciesPaymentsItemRecordsMin)
+}))
+}),
+  "trends": zod.array(zod.object({
+  "date": zod.coerce.date(),
+  "bookings": zod.number().min(getAdminReportsResponseOneTrendsItemBookingsMin),
+  "payments": zod.number().min(getAdminReportsResponseOneTrendsItemPaymentsMin),
+  "enquiries": zod.number().min(getAdminReportsResponseOneTrendsItemEnquiriesMin),
+  "reviews": zod.number().min(getAdminReportsResponseOneTrendsItemReviewsMin)
+})),
+  "tables": zod.object({
+  "bookings": zod.array(zod.object({
+  "id": zod.string(),
+  "reference": zod.string(),
+  "hotelCatalogId": zod.string(),
+  "startsOn": zod.coerce.date(),
+  "endsOn": zod.coerce.date(),
+  "totalAmount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.string(),
+  "bookingReference": zod.string().nullable(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "provider": zod.string(),
+  "createdAt": zod.coerce.date()
+})),
+  "properties": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "propertyType": zod.string(),
+  "status": zod.string(),
+  "askingPrice": zod.number().nullable(),
+  "currency": zod.string(),
+  "createdAt": zod.coerce.date()
+})),
+  "enquiries": zod.array(zod.object({
+  "id": zod.string(),
+  "propertyTitle": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})),
+  "vendors": zod.array(zod.object({
+  "id": zod.string(),
+  "businessName": zod.string(),
+  "country": zod.string(),
+  "city": zod.string(),
+  "status": zod.string(),
+  "email": zod.string(),
+  "createdAt": zod.coerce.date()
+})).optional()
+}),
+  "meta": zod.record(zod.string(), zod.object({
+  "page": zod.number().int().min(1),
+  "limit": zod.number().int().min(1).max(getAdminReportsResponseOneMetaLimitMax),
+  "total": zod.number().int().min(getAdminReportsResponseOneMetaTotalMin),
+  "hasMore": zod.boolean()
+})),
+  "supportedFilters": zod.object({
+  "countries": zod.array(zod.string()),
+  "statuses": zod.array(zod.string())
+})
+}).and(zod.object({
+  "role": zod.enum(['admin'])
+}))
 
 
 /**

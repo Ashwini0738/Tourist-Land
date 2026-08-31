@@ -23,6 +23,7 @@ export default function AdminLayout() {
       <Stack.Screen name="vendors" />
       <Stack.Screen name="content" />
       <Stack.Screen name="settings" />
+      <Stack.Screen name="reports" />
     </Stack>
   );
 }

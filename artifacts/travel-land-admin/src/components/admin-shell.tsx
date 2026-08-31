@@ -5,7 +5,7 @@ import {
   Activity, Archive, Bell, BookOpen, Building2, ChevronDown, CircleHelp,
   ClipboardList, Compass, CreditCard, Database, DoorOpen, FileClock,
   LayoutDashboard, LogOut, Map, Menu, MessageSquare, PanelLeftClose,
-  Settings, ShieldCheck, Store, Users, X
+  Settings, ShieldCheck, Store, Users, X, BarChart3
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -22,6 +22,7 @@ const primaryNav = [
   { href: '/bookings', label: 'Bookings', icon: ClipboardList },
   { href: '/payments', label: 'Payments', icon: CreditCard },
   { href: '/reviews', label: 'Reviews', icon: MessageSquare },
+  { href: '/reports', label: 'Reports', icon: BarChart3 },
 ];
 const secondaryNav = [
   { href: '/notifications', label: 'Announcements', icon: Bell },

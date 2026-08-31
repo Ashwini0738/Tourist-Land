@@ -12,6 +12,7 @@ import notificationsRouter from "./notifications";
 import reviewsRouter from "./reviews";
 import vendorPortalRouter from "./vendor-portal";
 import adminRouter from "./admin";
+import reportsRouter from "./reports";
 
 const router: IRouter = Router();
 
@@ -44,6 +45,7 @@ router.use(onboardingRouter);
 mountOnPaths(authRouter, (path) => hasPrefix(path, "/v1/auth") || hasPrefix(path, "/v1/me"));
 mountOnPaths(vendorPortalRouter, (path) => hasPrefix(path, "/v1/vendor"));
 mountOnPaths(adminRouter, (path) => hasPrefix(path, "/v1/admin"));
+mountOnPaths(reportsRouter, (path) => hasPrefix(path, "/v1/admin/reports") || hasPrefix(path, "/v1/vendor/reports"));
 mountOnPaths(roleAccessRouter, (path) => hasPrefix(path, "/v1/vendor") || hasPrefix(path, "/v1/admin"));
 
 export default router;

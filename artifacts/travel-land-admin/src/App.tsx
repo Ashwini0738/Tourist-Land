@@ -92,6 +92,11 @@ const ReviewsPage = lazy(() =>
     default: ReviewsPage,
   })),
 );
+const ReportsPage = lazy(() =>
+  import('@/pages/reports-page').then(({ ReportsPage }) => ({
+    default: ReportsPage,
+  })),
+);
 const RoomsPage = lazy(() =>
   import('@/pages/rooms-page').then(({ RoomsPage }) => ({
     default: RoomsPage,
@@ -296,6 +301,7 @@ function AdminArea() {
           <Route path="/bookings" component={BookingsPage} />
           <Route path="/payments" component={PaymentsPage} />
           <Route path="/reviews" component={ReviewsPage} />
+          <Route path="/reports" component={ReportsPage} />
           <Route path="/notifications" component={NotificationsPage} />
           <Route path="/content" component={ContentPage} />
           <Route path="/audit-logs" component={AuditLogsPage} />

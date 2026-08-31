@@ -11,6 +11,7 @@ type PlatformIconProps = {
 
 const paths: Record<string, string> = {
   'alert-circle': 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 5v4m0 4h.01',
+  'bar-chart': 'M4 19V5m5 14V9m5 10V3m5 16v-7',
   'arrow-left': 'M19 12H5m7-7-7 7 7 7',
   'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
   'arrow-up-right': 'M7 17 17 7m-8 0h8v8',

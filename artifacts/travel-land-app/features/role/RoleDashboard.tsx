@@ -26,6 +26,7 @@ const NAVIGATION: Record<DashboardRole, DashboardNavItem[]> = {
     { label: 'Bookings', description: 'Bookings for your own hotels', icon: 'calendar', route: '/vendor/bookings' },
     { label: 'Enquiries', description: 'Review and respond to property enquiries', icon: 'inbox', route: '/vendor/enquiries' },
     { label: 'Profile', description: 'Business information and status', icon: 'user', route: '/vendor/profile' },
+    { label: 'Reports', description: 'Review bookings, payments, and enquiries', icon: 'bar-chart', route: '/vendor/reports' },
   ],
   admin: [
     { label: 'Traveller app', description: 'Browse the guest-facing experience', icon: 'compass', route: '/' },
@@ -36,6 +37,7 @@ const NAVIGATION: Record<DashboardRole, DashboardNavItem[]> = {
     { label: 'Listings', description: 'Review vendor-owned places', icon: 'layers', route: '/admin/listings' },
     { label: 'Content', description: 'Destinations, places, and events', icon: 'layers', route: '/admin/content' },
     { label: 'Settings', description: 'Platform controls', icon: 'settings', route: '/admin/settings' },
+    { label: 'Reports', description: 'Review platform activity and revenue records', icon: 'bar-chart', route: '/admin/reports' },
   ],
 };
 

@@ -24,6 +24,7 @@ export default function VendorLayout() {
       <Stack.Screen name="bookings" />
       <Stack.Screen name="enquiries" />
       <Stack.Screen name="profile" />
+      <Stack.Screen name="reports" />
     </Stack>
   );
 }

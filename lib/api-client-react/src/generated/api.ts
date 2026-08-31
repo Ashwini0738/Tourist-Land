@@ -47,6 +47,7 @@ import type {
   AdminPlacePage,
   AdminProperty,
   AdminPropertyPage,
+  AdminReport,
   AdminReview,
   AdminReviewPage,
   AdminRoomPage,
@@ -76,9 +77,11 @@ import type {
   FavoriteList,
   FeaturedContentList,
   ForbiddenResponse,
+  GetAdminReportsParams,
   GetExploreFiltersParams,
   GetHotelAvailabilityParams,
   GetVendorApplicationStatusParams,
+  GetVendorReportsParams,
   HealthStatus,
   HomeData,
   HotelAvailabilityResponse,
@@ -160,6 +163,7 @@ import type {
   VendorPropertyEnquiry,
   VendorPropertyEnquiryList,
   VendorPropertyEnquiryUpdate,
+  VendorReport,
   VendorRoom,
   VendorRoomInput,
   VendorRoomList,
@@ -4094,6 +4098,90 @@ export function useGetVendorDashboard<TData = Awaited<ReturnType<typeof getVendo
 
 
 
+export const getGetVendorReportsUrl = (params?: GetVendorReportsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/vendor/reports?${stringifiedParams}` : `/api/v1/vendor/reports`
+}
+
+/**
+ * @summary Get database-backed reporting for the authenticated approved vendor
+ */
+export const getVendorReports = async (params?: GetVendorReportsParams, options?: Parameters<typeof customFetch>[1]): Promise<VendorReport> => {
+
+  return customFetch<VendorReport>(getGetVendorReportsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVendorReportsQueryKey = (params?: GetVendorReportsParams,) => {
+    return [
+    `/api/v1/vendor/reports`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetVendorReportsQueryOptions = <TData = Awaited<ReturnType<typeof getVendorReports>>, TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ServiceUnavailableResponse>>(params?: GetVendorReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVendorReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVendorReportsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVendorReports>>> = ({ signal }) => getVendorReports(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVendorReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetVendorReportsQueryResult = NonNullable<Awaited<ReturnType<typeof getVendorReports>>>
+export type GetVendorReportsQueryError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary Get database-backed reporting for the authenticated approved vendor
+ */
+
+export function useGetVendorReports<TData = Awaited<ReturnType<typeof getVendorReports>>, TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ServiceUnavailableResponse>>(
+ params?: GetVendorReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVendorReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetVendorReportsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetVendorProfileUrl = () => {
 
 
@@ -6530,6 +6618,90 @@ export function useGetAdminOperationsDashboard<TData = Awaited<ReturnType<typeof
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAdminOperationsDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAdminReportsUrl = (params?: GetAdminReportsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/reports?${stringifiedParams}` : `/api/v1/admin/reports`
+}
+
+/**
+ * @summary Get database-backed platform reporting
+ */
+export const getAdminReports = async (params?: GetAdminReportsParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminReport> => {
+
+  return customFetch<AdminReport>(getGetAdminReportsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminReportsQueryKey = (params?: GetAdminReportsParams,) => {
+    return [
+    `/api/v1/admin/reports`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAdminReportsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminReports>>, TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ServiceUnavailableResponse>>(params?: GetAdminReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminReportsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminReports>>> = ({ signal }) => getAdminReports(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminReportsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminReports>>>
+export type GetAdminReportsQueryError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary Get database-backed platform reporting
+ */
+
+export function useGetAdminReports<TData = Awaited<ReturnType<typeof getAdminReports>>, TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ServiceUnavailableResponse>>(
+ params?: GetAdminReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminReportsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
