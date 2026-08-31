@@ -46,6 +46,7 @@ import {
   parseExploreRating,
   resolveExploreCategory,
 } from '@/features/explore/exploreUtils';
+import { elevation, radii, spacing } from '@/constants/theme';
 
 const fallbackCategories: ExploreCategory[] = [
   { id: 'destination', label: 'Destinations', icon: 'map-pin', description: 'Regions worth taking the scenic way', count: 0 },
@@ -350,7 +351,7 @@ export default function ExploreScreen() {
 
   const header = (
     <View>
-      <View style={[styles.headerRow, { paddingTop: insets.top + 14 }]}>
+      <View style={[styles.headerRow, { paddingTop: insets.top + spacing.md }]}>
         <View>
           <Text style={[styles.kicker, { color: colors.primary }]}>EXPLORE</Text>
           <Text style={[styles.title, { color: colors.foreground }]}>Follow your{'\n'}curiosity.</Text>
@@ -408,7 +409,7 @@ export default function ExploreScreen() {
           {debouncedQuery.trim() ? `${searchQuery.data?.total ?? 0} results for “${debouncedQuery}”` : activeCategory === 'all' ? 'ALL DISCOVERY · CURATED' : `${categories.find((item) => item.id === activeCategory)?.label?.toUpperCase() ?? 'DISCOVERY'} · CURATED`}
         </Text>
         <View style={styles.toolbarActions}>
-          <Pressable accessibilityRole="button" onPress={() => setShowFilters((value) => !value)} style={styles.toolbarButton}>
+          <Pressable accessibilityRole="button" accessibilityState={{ expanded: showFilters }} onPress={() => setShowFilters((value) => !value)} style={[styles.toolbarButton, { backgroundColor: colors.secondary }]}>
             <Feather name="sliders" size={14} color={colors.primary} />
             <Text style={[styles.toolbarButtonText, { color: colors.primary }]}>Filters</Text>
           </Pressable>
@@ -474,28 +475,28 @@ export default function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 },
+  content: { paddingHorizontal: spacing.lg },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.lg },
   kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 8 },
-  title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
-  iconButton: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  title: { fontSize: 32, lineHeight: 37, fontWeight: '700', letterSpacing: -0.9 },
+  iconButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', position: 'relative', backgroundColor: '#fff', ...elevation.card },
   badge: { position: 'absolute', top: -3, right: -4, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   badgeText: { color: '#fff', fontSize: 8, fontWeight: '800' },
-  search: { height: 54, borderWidth: 1, borderRadius: 16, alignItems: 'center', flexDirection: 'row', paddingHorizontal: 15 },
+  search: { height: 58, borderWidth: 1, borderRadius: radii.md, alignItems: 'center', flexDirection: 'row', paddingHorizontal: spacing.md, ...elevation.card },
   input: { flex: 1, fontSize: 14, marginLeft: 10 },
   suggestions: { borderWidth: 1, borderRadius: 16, padding: 14, gap: 12, marginTop: 8 },
   suggestionLabel: { fontSize: 9, fontWeight: '800', letterSpacing: 1.2 },
   suggestionTitle: { fontSize: 14, fontWeight: '700' },
   suggestionSubtitle: { fontSize: 11, marginTop: 3 },
-  categories: { gap: 8, paddingVertical: 22 },
-  categoryChip: { borderWidth: 1, borderRadius: 100, paddingHorizontal: 13, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  categories: { gap: 8, paddingVertical: spacing.lg },
+  categoryChip: { borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: 14, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', gap: 6 },
   categoryText: { fontSize: 12, fontWeight: '700' },
   toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   resultLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.1, flex: 1 },
   toolbarActions: { flexDirection: 'row', gap: 12 },
-  toolbarButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  toolbarButton: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 8 },
   toolbarButtonText: { fontSize: 11, fontWeight: '800' },
-  filterPanel: { borderWidth: 1, borderRadius: 18, padding: 14, marginBottom: 10 },
+  filterPanel: { borderWidth: 1, borderRadius: radii.lg, padding: spacing.md, marginBottom: 10, ...elevation.card },
   filterPanelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   filterPanelTitle: { fontSize: 16, fontWeight: '700' },
   clearText: { fontSize: 11, fontWeight: '800' },
@@ -510,7 +511,7 @@ const styles = StyleSheet.create({
   section: { marginBottom: 2 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12 },
   sectionKicker: { fontSize: 9, fontWeight: '800', letterSpacing: 1.1, marginBottom: 4 },
-  sectionTitle: { fontSize: 19, fontWeight: '700', letterSpacing: -0.3 },
+  sectionTitle: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3 },
   viewAll: { fontSize: 11, fontWeight: '800' },
   horizontalList: { gap: 12 },
   skeletonCard: { width: 224, height: 250, borderRadius: 20, opacity: 0.5 },
@@ -521,7 +522,7 @@ const styles = StyleSheet.create({
   notice: { borderRadius: 15, padding: 12, flexDirection: 'row', gap: 9, alignItems: 'flex-start', marginTop: 28, marginBottom: 16 },
   noticeText: { flex: 1, fontSize: 11, lineHeight: 16 },
   resultItem: { marginBottom: 12 },
-  emptyState: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 22, borderWidth: 1, borderRadius: 18, marginTop: 4 },
+  emptyState: { alignItems: 'center', paddingVertical: 52, paddingHorizontal: 22, borderWidth: 1, borderRadius: radii.lg, marginTop: 4 },
   emptyTitle: { fontSize: 17, fontWeight: '700', marginTop: 12 },
   emptyText: { fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 7 },
   retryButton: { borderRadius: 12, paddingHorizontal: 18, paddingVertical: 11, marginTop: 16 },

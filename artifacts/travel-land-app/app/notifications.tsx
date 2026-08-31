@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import * as Notifications from 'expo-notifications';
 import { DemoBadge } from '@/components/DemoBadge';
+import { elevation, radii, spacing } from '@/constants/theme';
 
 function relativeTime(value: string) {
   const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
@@ -120,12 +121,12 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20, paddingBottom: 40 },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: 40 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 },
   headerTitle: { fontSize: 16, fontWeight: '700' },
   readAll: { fontSize: 12, fontWeight: '800' },
   kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 12 },
-  notification: { borderWidth: 1, borderRadius: 18, padding: 15, flexDirection: 'row', marginBottom: 10 },
+  notification: { borderWidth: 1, borderRadius: radii.md, padding: 15, flexDirection: 'row', marginBottom: 10, ...elevation.card },
   icon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   copy: { flex: 1, marginLeft: 12 },
   titleRow: { flexDirection: 'row', alignItems: 'center' },
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
   time: { fontSize: 11, marginTop: 9 },
   loading: { alignItems: 'center', padding: 30 },
   helper: { fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 9 },
-  empty: { borderWidth: 1, borderRadius: 20, alignItems: 'center', padding: 28, marginTop: 8 },
+  empty: { borderWidth: 1, borderRadius: radii.lg, alignItems: 'center', padding: 30, marginTop: 8, ...elevation.card },
   emptyIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontSize: 17, fontWeight: '700', marginTop: 15 },
   button: { borderRadius: 100, paddingHorizontal: 17, paddingVertical: 11, marginTop: 19 },

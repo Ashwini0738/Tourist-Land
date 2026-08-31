@@ -5,13 +5,14 @@ import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { useColors } from '@/hooks/useColors';
 import { getImageSource } from '../utils/images';
 import type { Event, Hotel, Property } from '@workspace/api-client-react';
+import { elevation, radii, spacing } from '@/constants/theme';
 
 export function EventCard({ item, isFavorite, toggleFavorite }: { item: Event, isFavorite: boolean, toggleFavorite: () => void }) {
   const colors = useColors();
   return (
     <Pressable
       onPress={() => router.push(`/destination/${item.destinationId}`)}
-      style={{ width: 260, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 12 }}
+      style={{ width: 270, borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: spacing.sm, ...elevation.card }}
     >
       <Image source={getImageSource(item.imageKey)} style={{ width: '100%', height: 140, borderRadius: 12 }} />
       <Pressable accessibilityRole="button" accessibilityLabel={`${isFavorite ? 'Remove' : 'Add'} ${item.title} ${isFavorite ? 'from' : 'to'} favorites`} onPress={(event) => { event.stopPropagation(); toggleFavorite(); }} style={{ position: 'absolute', top: 56, right: 20, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center' }}>
@@ -32,7 +33,7 @@ export function HotelCard({ item, isFavorite, toggleFavorite }: { item: Hotel, i
   return (
     <Pressable
       onPress={() => router.push(`/hotel/${item.id}`)}
-      style={{ width: 260, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 12 }}
+      style={{ width: 270, borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: spacing.sm, ...elevation.card }}
     >
       <Image source={getImageSource(item.imageKey)} style={{ width: '100%', height: 140, borderRadius: 12 }} />
       <Pressable accessibilityRole="button" accessibilityLabel={`${isFavorite ? 'Remove' : 'Add'} ${item.name} ${isFavorite ? 'from' : 'to'} favorites`} onPress={(event) => { event.stopPropagation(); toggleFavorite(); }} style={{ position: 'absolute', top: 20, right: 20, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center' }}>
@@ -61,7 +62,7 @@ export function PropertyCard({ item, isFavorite, toggleFavorite }: { item: Prope
   return (
     <Pressable
       onPress={() => router.push(`/property/${item.id}`)}
-      style={{ width: 280, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 12 }}
+      style={{ width: 286, borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: spacing.sm, ...elevation.card }}
     >
       <Image source={getImageSource(item.imageKey)} style={{ width: '100%', height: 160, borderRadius: 12 }} />
       <Pressable accessibilityRole="button" accessibilityLabel={`${isFavorite ? 'Remove' : 'Add'} property ${isFavorite ? 'from' : 'to'} favorites`} onPress={(event) => { event.stopPropagation(); toggleFavorite(); }} style={{ position: 'absolute', top: 20, right: 20, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center' }}>

@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { elevation, radii, spacing } from '@/constants/theme';
 
 function entityLabel(type: Favorite['entityType']) {
   return type === 'destination' ? 'Destination' : type === 'property' ? 'Land opportunity' : type.charAt(0).toUpperCase() + type.slice(1);
@@ -37,12 +38,12 @@ export default function SavedScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20 },
+  content: { paddingHorizontal: spacing.lg },
   kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 8 },
-  title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
+  title: { fontSize: 32, lineHeight: 37, fontWeight: '700', letterSpacing: -0.9 },
   subtitle: { fontSize: 13, marginTop: 8, marginBottom: 24 },
   loading: { alignItems: 'center', padding: 30 },
-  item: { borderWidth: 1, borderRadius: 18, padding: 10, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  item: { borderWidth: 1, borderRadius: radii.lg, padding: spacing.sm, flexDirection: 'row', alignItems: 'center', marginBottom: 12, ...elevation.card },
   itemPress: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   image: { width: 72, height: 72, borderRadius: 12 },
   copy: { flex: 1, marginLeft: 12, paddingRight: 8 },
@@ -50,7 +51,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '700', marginTop: 5 },
   place: { fontSize: 12, marginTop: 6 },
   remove: { padding: 5 },
-  empty: { borderWidth: 1, borderRadius: 22, alignItems: 'center', padding: 28, marginTop: 22 },
+  empty: { borderWidth: 1, borderRadius: radii.lg, alignItems: 'center', padding: 30, marginTop: 22, ...elevation.card },
   emptyIcon: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontSize: 18, fontWeight: '700', marginTop: 16 },
   emptyText: { fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 8 },

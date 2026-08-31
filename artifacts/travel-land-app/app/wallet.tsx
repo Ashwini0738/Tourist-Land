@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { elevation, radii, spacing } from '@/constants/theme';
 import { useColors } from '@/hooks/useColors';
 import { SecurityIcon } from '@/components/SecurityIcon';
 
@@ -23,7 +24,7 @@ export default function WalletScreen() {
 
       <View style={{ marginTop: 32, paddingHorizontal: 20 }}>
         {/* Dark Card */}
-        <View style={{ backgroundColor: '#0F172A', borderRadius: 24, padding: 24, height: 230, position: 'relative', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 10, zIndex: 2 }}>
+        <View style={{ backgroundColor: colors.navy, borderRadius: radii.xl, padding: spacing.lg, height: 230, position: 'relative', overflow: 'hidden', ...elevation.floating, zIndex: 2 }}>
           {/* Abstract decoration */}
           <View style={{ position: 'absolute', right: -30, top: -20, opacity: 0.6 }}>
              <SecurityIcon name="gift" size={160} color="#334155" />
@@ -34,7 +35,7 @@ export default function WalletScreen() {
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <SecurityIcon name="compass" size={32} color="#FACC15" />
-            <Text style={{ color: '#FACC15', fontSize: 18, fontWeight: '700', letterSpacing: 2 }}>TRAVEL & LAND</Text>
+            <Text style={{ color: colors.accent, fontSize: 18, fontWeight: '700', letterSpacing: 2 }}>TRAVEL & LAND</Text>
           </View>
 
           <View style={{ marginTop: 'auto' }}>

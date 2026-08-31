@@ -5,6 +5,7 @@ import type { ExploreItem, ExploreItemType } from '@workspace/api-client-react';
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { useColors } from '@/hooks/useColors';
 import { getImageSource } from '@/features/home/utils/images';
+import { elevation, radii, spacing } from '@/constants/theme';
 
 type ExploreCardProps = {
   item: ExploreItem;
@@ -77,7 +78,7 @@ function ExploreCard({ item, isFavorite, toggleFavorite, horizontal = false }: E
           event.stopPropagation();
           toggleFavorite();
         }}
-        style={[styles.favorite, { backgroundColor: 'rgba(0,0,0,0.38)' }]}
+        style={[styles.favorite, { backgroundColor: 'rgba(16,45,58,0.72)' }]}
       >
         <Feather name="heart" size={16} color={isFavorite ? colors.destructive : '#fff'} fill={isFavorite ? colors.destructive : 'transparent'} />
       </Pressable>
@@ -128,18 +129,19 @@ export function ExploreResultCard(props: ExploreCardProps) {
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: radii.lg,
     overflow: 'hidden',
     position: 'relative',
+    ...elevation.card,
   },
   horizontalCard: {
-    width: 224,
-    minHeight: 250,
+    width: 236,
+    minHeight: 272,
   },
   verticalCard: {
-    minHeight: 126,
+    minHeight: 132,
     flexDirection: 'row',
-    padding: 10,
+    padding: spacing.sm,
     alignItems: 'center',
   },
   image: {
@@ -147,7 +149,7 @@ const styles = StyleSheet.create({
   },
   horizontalImage: {
     width: '100%',
-    height: 132,
+    height: 142,
   },
   verticalImage: {
     width: 106,
@@ -155,18 +157,18 @@ const styles = StyleSheet.create({
     borderRadius: 13,
   },
   favorite: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'absolute',
-    top: 11,
-    right: 11,
+    top: 12,
+    right: 12,
   },
   copy: {
     flex: 1,
-    padding: 13,
+    padding: spacing.md,
   },
   type: {
     fontSize: 9,
@@ -175,8 +177,8 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   title: {
-    fontSize: 16,
-    lineHeight: 20,
+    fontSize: 17,
+    lineHeight: 21,
     fontWeight: '700',
   },
   location: {

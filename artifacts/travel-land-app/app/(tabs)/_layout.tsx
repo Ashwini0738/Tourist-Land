@@ -7,6 +7,7 @@ import { Tabs } from 'expo-router';
 import { Redirect } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
+import { radii, spacing } from '@/constants/theme';
 function ClassicTabLayout() {
   const colors = useColors();
   const colorScheme = useColorScheme();
@@ -23,11 +24,15 @@ function ClassicTabLayout() {
         tabBarStyle: {
           position: 'absolute',
           backgroundColor: isIOS ? 'transparent' : colors.background,
-          borderTopWidth: isWeb ? 1 : 0,
+          borderTopWidth: 1,
           borderTopColor: colors.border,
           elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
+          height: isWeb ? 84 : 78,
+          paddingTop: 8,
+          paddingBottom: isWeb ? 10 : 8,
         },
+        tabBarItemStyle: { minHeight: 58 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 2 },
         tabBarBackground: () =>
           isIOS ? (
             <BlurView
@@ -65,17 +70,17 @@ function ClassicTabLayout() {
           title: 'Bookings',
           tabBarIcon: ({ color, focused }) => (
             <View style={{
-               width: 48, height: 48, borderRadius: 24,
-               backgroundColor: focused ? '#BE123C' : colors.card,
+               width: 52, height: 52, borderRadius: radii.pill,
+               backgroundColor: focused ? colors.primary : colors.card,
                borderWidth: focused ? 0 : 1, borderColor: colors.border,
                alignItems: 'center', justifyContent: 'center',
-               marginBottom: 4,
-               shadowColor: focused ? '#BE123C' : '#000', shadowOpacity: focused ? 0.3 : 0.05, shadowRadius: 8, elevation: focused ? 6 : 0
+               marginTop: -8,
+               shadowColor: focused ? colors.primary : '#000', shadowOpacity: focused ? 0.24 : 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: focused ? 6 : 0
             }}>
-              <Feather name="calendar" size={20} color={focused ? '#fff' : color} />
+              <Feather name="calendar" size={20} color={focused ? colors.primaryForeground : color} />
             </View>
           ),
-          tabBarLabel: () => null,
+          tabBarLabel: 'Bookings',
         }}
       />
       <Tabs.Screen

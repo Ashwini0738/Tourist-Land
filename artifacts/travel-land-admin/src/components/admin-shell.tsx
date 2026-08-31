@@ -57,7 +57,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <ShieldCheck size={19} strokeWidth={2.4} />
               <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[hsl(151_30%_58%)] ring-2 ring-sidebar" />
             </span>
-            {!collapsed && <span><strong className="block font-semibold tracking-[-0.02em] text-sidebar-foreground">Northstar</strong><small className="block text-[10px] uppercase tracking-[.18em] text-sidebar-foreground/45">operations</small></span>}
+            {!collapsed && <span><strong className="block font-semibold tracking-[-0.02em] text-sidebar-foreground">Travel &amp; Land</strong><small className="block text-[10px] uppercase tracking-[.18em] text-sidebar-foreground/45">operations</small></span>}
           </Link>
           {!collapsed && <button aria-label="Close navigation" data-testid="button-close-nav" onClick={() => setOpen(false)} className="rounded-md p-1.5 text-sidebar-foreground/45 hover:bg-sidebar-accent hover:text-sidebar-foreground md:hidden"><X size={18} /></button>}
         </div>

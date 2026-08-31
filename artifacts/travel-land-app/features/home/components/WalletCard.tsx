@@ -1,27 +1,39 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
 import { SecurityIcon } from '@/components/SecurityIcon';
+import { elevation, radii, spacing } from '@/constants/theme';
 
 export function WalletCard() {
   const colors = useColors();
 
   return (
-    <View style={{ marginTop: -32, marginHorizontal: 20, flexDirection: 'row', height: 110, borderRadius: 20, overflow: 'visible', backgroundColor: colors.card, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }}>
-      <View style={{ flex: 1, padding: 20, justifyContent: 'center', borderTopLeftRadius: 20, borderBottomLeftRadius: 20, backgroundColor: colors.card }}>
-         <Text style={{ color: colors.mutedForeground, fontSize: 13, fontWeight: '600' }}>Trip inspiration</Text>
-         <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: '700', marginTop: 6 }}>Explore the World</Text>
-         <Text style={{ color: '#EAB308', fontSize: 13, fontWeight: '700', marginTop: 6 }}>Discover now</Text>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={styles.copy}>
+         <Text style={[styles.kicker, { color: colors.primary }]}>A LITTLE INSPIRATION</Text>
+         <Text style={[styles.title, { color: colors.foreground }]}>Make room for wonder.</Text>
+         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Find a stay, a story, or a place to begin.</Text>
       </View>
-      <Pressable onPress={() => router.push('/wallet')} style={{ flex: 0.8, backgroundColor: '#BE123C', padding: 20, justifyContent: 'center', alignItems: 'center', borderTopRightRadius: 20, borderBottomRightRadius: 20 }}>
-          <SecurityIcon name="wallet" size={32} color="#fff" />
-         <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700', marginTop: 8 }}>My Wallet</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="Open wallet" onPress={() => router.push('/wallet')} style={[styles.wallet, { backgroundColor: colors.primary }]}>
+          <SecurityIcon name="wallet" size={25} color={colors.primaryForeground} />
+         <Text style={[styles.walletText, { color: colors.primaryForeground }]}>My wallet</Text>
       </Pressable>
 
-      <Pressable accessibilityRole="button" accessibilityLabel="Open travel maps" onPress={() => router.push('/maps')} style={{ position: 'absolute', top: '50%', left: '55.5%', width: 68, height: 68, borderRadius: 34, backgroundColor: colors.card, transform: [{translateX: -34}, {translateY: -34}], alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 8, borderWidth: 4, borderColor: '#111827' }}>
-        <SecurityIcon name="map" size={28} color={colors.foreground} />
+      <Pressable accessibilityRole="button" accessibilityLabel="Open travel maps" onPress={() => router.push('/maps')} style={[styles.mapButton, { backgroundColor: colors.accent, borderColor: colors.card }]}>
+        <SecurityIcon name="map" size={24} color={colors.accentForeground} />
       </Pressable>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: { marginTop: 0, marginHorizontal: spacing.lg, minHeight: 142, borderRadius: radii.lg, overflow: 'visible', borderWidth: 1, flexDirection: 'row', ...elevation.floating },
+  copy: { flex: 1, padding: spacing.md, paddingRight: 52, justifyContent: 'center' },
+  kicker: { fontSize: 8, fontWeight: '800', letterSpacing: 1.1 },
+  title: { fontSize: 20, lineHeight: 24, fontWeight: '700', letterSpacing: -0.4, marginTop: 7 },
+  subtitle: { fontSize: 11, lineHeight: 16, marginTop: 7 },
+  wallet: { width: 92, borderTopRightRadius: radii.lg, borderBottomRightRadius: radii.lg, justifyContent: 'center', alignItems: 'center', padding: spacing.sm },
+  walletText: { fontSize: 11, fontWeight: '800', marginTop: 7 },
+  mapButton: { position: 'absolute', top: '50%', right: 70, width: 54, height: 54, borderRadius: 27, transform: [{ translateY: -27 }], alignItems: 'center', justifyContent: 'center', borderWidth: 4, ...elevation.card },
+});

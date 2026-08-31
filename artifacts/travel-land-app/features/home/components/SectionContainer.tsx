@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { useColors } from '@/hooks/useColors';
+import { radii, spacing } from '@/constants/theme';
 
 interface SectionContainerProps {
   title: string;
@@ -19,33 +20,32 @@ export function SectionContainer({ title, onViewAll, isLoading, isError, isEmpty
   const colors = useColors();
 
   return (
-    <View style={{ marginTop: 16, marginBottom: 16 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 20, marginBottom: 16 }}>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground }}>{title}</Text>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <View><Text style={[styles.kicker, { color: colors.primary }]}>CURATED DISCOVERY</Text><Text style={[styles.title, { color: colors.foreground }]}>{title}</Text></View>
         {onViewAll && (
-          <Pressable onPress={onViewAll} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.mutedForeground }}>VIEW ALL</Text>
-            <View style={{ backgroundColor: '#22C55E', borderRadius: 12, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}>
-              <Feather name="arrow-right" size={12} color="#fff" />
+          <Pressable accessibilityRole="button" accessibilityLabel={`View all ${title}`} onPress={onViewAll} style={styles.viewAll}>
+            <Text style={[styles.viewAllText, { color: colors.primary }]}>See all</Text>
+            <View style={[styles.arrow, { backgroundColor: colors.secondary }]}><Feather name="arrow-right" size={13} color={colors.primary} />
             </View>
           </Pressable>
         )}
       </View>
       
       {isLoading && (
-        <View accessibilityLabel={`Loading ${title.toLowerCase()}`} style={{ flexDirection: 'row', gap: 14, paddingHorizontal: 20 }}>
+        <View accessibilityLabel={`Loading ${title.toLowerCase()}`} style={styles.row}>
           {[0, 1].map((item) => (
-            <View key={item} style={{ width: 220, height: 180, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 12 }}>
-              <View style={{ height: 104, borderRadius: 12, backgroundColor: colors.muted }} />
-              <View style={{ width: '72%', height: 13, borderRadius: 7, backgroundColor: colors.muted, marginTop: 14 }} />
-              <View style={{ width: '48%', height: 10, borderRadius: 5, backgroundColor: colors.muted, marginTop: 9 }} />
+            <View key={item} style={[styles.skeletonCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.skeletonImage, { backgroundColor: colors.muted }]} />
+              <View style={[styles.skeletonLine, { backgroundColor: colors.muted, width: '72%' }]} />
+              <View style={[styles.skeletonLineSmall, { backgroundColor: colors.muted }]} />
             </View>
           ))}
         </View>
       )}
 
       {!isLoading && isError && (
-        <View style={{ marginHorizontal: 20, height: 180, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}>
+        <View style={[styles.state, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Feather name="alert-circle" size={24} color={colors.destructive} />
           <Text style={{ color: colors.foreground, marginTop: 8, fontWeight: '600', textAlign: 'center' }}>
             {errorMessage ?? `Failed to load ${title.toLowerCase()}`}
@@ -55,7 +55,7 @@ export function SectionContainer({ title, onViewAll, isLoading, isError, isEmpty
             accessibilityRole="button"
             accessibilityLabel={`Retry loading ${title.toLowerCase()}`}
             onPress={onRetry}
-            style={{ marginTop: 12, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.primary, borderRadius: 10 }}
+            style={[styles.retry, { backgroundColor: colors.primary }]}
           >
             <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 13 }}>Retry</Text>
           </Pressable>
@@ -63,7 +63,7 @@ export function SectionContainer({ title, onViewAll, isLoading, isError, isEmpty
       )}
 
       {!isLoading && !isError && isEmpty && (
-        <View style={{ marginHorizontal: 20, height: 180, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}>
+        <View style={[styles.state, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Feather name="box" size={24} color={colors.mutedForeground} />
           <Text style={{ color: colors.mutedForeground, marginTop: 8, fontWeight: '500' }}>{emptyMessage ?? `No ${title.toLowerCase()} found.`}</Text>
         </View>
@@ -73,3 +73,20 @@ export function SectionContainer({ title, onViewAll, isLoading, isError, isEmpty
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { marginTop: spacing.xl, marginBottom: spacing.md },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginHorizontal: spacing.lg, marginBottom: spacing.md },
+  kicker: { fontSize: 8, fontWeight: '800', letterSpacing: 1.25, marginBottom: 5 },
+  title: { fontSize: 20, lineHeight: 25, fontWeight: '700', letterSpacing: -0.3 },
+  viewAll: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  viewAllText: { fontSize: 11, fontWeight: '800' },
+  arrow: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  row: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg },
+  skeletonCard: { width: 222, height: 204, borderRadius: radii.lg, borderWidth: 1, padding: spacing.sm },
+  skeletonImage: { height: 124, borderRadius: radii.md },
+  skeletonLine: { height: 13, borderRadius: 7, marginTop: spacing.md },
+  skeletonLineSmall: { width: '48%', height: 10, borderRadius: 5, marginTop: spacing.sm },
+  state: { marginHorizontal: spacing.lg, minHeight: 180, justifyContent: 'center', alignItems: 'center', borderRadius: radii.lg, borderWidth: 1, padding: spacing.lg },
+  retry: { marginTop: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: 10, borderRadius: radii.sm },
+});

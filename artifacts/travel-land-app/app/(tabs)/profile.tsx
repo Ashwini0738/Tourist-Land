@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useClerk, useUser } from '@clerk/expo';
 import { useRole } from '@/context/RoleContext';
+import { elevation, radii, spacing } from '@/constants/theme';
 
 export default function ProfileTab() {
   const colors = useColors();
@@ -26,10 +27,10 @@ export default function ProfileTab() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20 },
+  content: { paddingHorizontal: spacing.lg },
   kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 8 },
-  title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8, marginBottom: 24 },
-  profileCard: { borderRadius: 22, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  title: { fontSize: 32, lineHeight: 37, fontWeight: '700', letterSpacing: -0.9, marginBottom: spacing.lg },
+  profileCard: { borderRadius: radii.lg, padding: spacing.md, flexDirection: 'row', alignItems: 'center', marginBottom: 14, ...elevation.card },
   avatar: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 22, fontWeight: '700' },
   profileName: { color: '#fff', fontSize: 15, fontWeight: '700', marginLeft: 12 },
@@ -39,12 +40,12 @@ const styles = StyleSheet.create({
   dashboardLabel: { fontSize: 13, fontWeight: '700' },
   dashboardText: { fontSize: 11, marginTop: 3 },
   edit: { marginLeft: 'auto', width: 30, height: 30, borderRadius: 15, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  row: { borderBottomWidth: 1, paddingVertical: 14, flexDirection: 'row', alignItems: 'center' },
+  row: { borderBottomWidth: 1, minHeight: 62, paddingVertical: 10, flexDirection: 'row', alignItems: 'center' },
   rowIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   rowText: { flex: 1, marginLeft: 13, fontSize: 14, fontWeight: '600' },
   preferences: { marginTop: 28 },
   preferencesTitle: { fontSize: 10, fontWeight: '700', letterSpacing: 1.3, marginBottom: 10 },
-  securityRow: { borderWidth: 1, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center' },
+  securityRow: { borderWidth: 1, borderRadius: radii.md, padding: 14, minHeight: 52, flexDirection: 'row', alignItems: 'center' },
   securityText: { flex: 1, marginLeft: 11, fontSize: 13, fontWeight: '600' },
   logout: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 7, padding: 20 },
   logoutText: { fontSize: 13, fontWeight: '700' },

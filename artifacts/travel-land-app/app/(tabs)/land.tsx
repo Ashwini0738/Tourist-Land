@@ -7,6 +7,7 @@ import { properties } from '@/lib/content';
 import { useColors } from '@/hooks/useColors';
 import { getFavoriteKey, useAppState } from '@/context/AppStateContext';
 import { DemoBadge } from '@/components/DemoBadge';
+import { elevation, radii, spacing } from '@/constants/theme';
 
 export default function LandScreen() {
   const colors = useColors();
@@ -27,23 +28,23 @@ export default function LandScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20 },
+  content: { paddingHorizontal: spacing.lg },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
   kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 8 },
-  title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
-  intro: { borderRadius: 23, padding: 20, marginBottom: 29 },
+  title: { fontSize: 32, lineHeight: 37, fontWeight: '700', letterSpacing: -0.9 },
+  intro: { borderRadius: radii.xl, padding: spacing.lg, marginBottom: 29, ...elevation.card },
   introIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
   introTitle: { color: '#fff', fontSize: 22, lineHeight: 27, fontWeight: '700', maxWidth: 240 },
   introText: { color: 'rgba(255,255,255,0.76)', fontSize: 13, lineHeight: 19, marginTop: 9, maxWidth: 280 },
   introButton: { alignSelf: 'flex-start', borderRadius: 100, paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 19 },
   introButtonText: { fontSize: 12, fontWeight: '700' },
   filters: { gap: 8, paddingBottom: 22 },
-  filter: { borderWidth: 1, borderRadius: 100, paddingHorizontal: 14, paddingVertical: 9 },
+  filter: { borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: 14, paddingVertical: 10 },
   filterText: { fontSize: 11, fontWeight: '700' },
   sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   sectionTitle: { fontSize: 19, fontWeight: '700' },
   link: { fontSize: 13, fontWeight: '700' },
-  property: { borderWidth: 1, borderRadius: 20, padding: 10, flexDirection: 'row', marginBottom: 12 },
+  property: { borderWidth: 1, borderRadius: radii.lg, padding: spacing.sm, flexDirection: 'row', marginBottom: 12, ...elevation.card },
   favorite: { position: 'absolute', top: 18, right: 18, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.38)' },
   propertyImage: { width: 105, height: 130, borderRadius: 14 },
   propertyCopy: { flex: 1, paddingLeft: 13, paddingVertical: 4 },
@@ -55,7 +56,7 @@ const styles = StyleSheet.create({
   size: { fontSize: 13, fontWeight: '600' },
   price: { fontSize: 15, fontWeight: '700' },
   propertyType: { fontSize: 11, marginTop: 6 },
-  note: { borderWidth: 1, borderRadius: 18, padding: 16, flexDirection: 'row', alignItems: 'center', marginTop: 10 },
+  note: { borderWidth: 1, borderRadius: radii.md, padding: spacing.md, flexDirection: 'row', alignItems: 'center', marginTop: 10 },
   noteTitle: { fontSize: 13, fontWeight: '700' },
   noteText: { fontSize: 12, lineHeight: 17, marginTop: 4 },
 });

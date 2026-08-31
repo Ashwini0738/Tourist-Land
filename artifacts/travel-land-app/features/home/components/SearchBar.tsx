@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
-import { View, TextInput, Pressable } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { router } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
+import { elevation, radii, spacing } from '@/constants/theme';
 
 export function SearchBar() {
   const colors = useColors();
   const [query, setQuery] = useState('');
 
   return (
-    <View style={{ marginTop: 24, marginHorizontal: 20 }}>
-      <View style={{ height: 56, borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 8 }}>
+    <View style={styles.wrapper}>
+      <Text style={[styles.label, { color: colors.mutedForeground }]}>START WITH A PLACE</Text>
+      <View style={[styles.search, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Feather name="search" size={20} color={colors.mutedForeground} />
         <TextInput
           value={query}
           onChangeText={setQuery}
           placeholder="Where do you want to go?"
           placeholderTextColor={colors.mutedForeground}
-          style={{ flex: 1, marginLeft: 12, fontSize: 15, color: colors.foreground }}
+          style={[styles.input, { color: colors.foreground }]}
           returnKeyType="search"
           onSubmitEditing={() => router.push({ pathname: '/(tabs)/explore', params: { query } })}
         />
@@ -25,7 +27,7 @@ export function SearchBar() {
           accessibilityRole="button"
           accessibilityLabel="Search destinations"
           onPress={() => router.push({ pathname: '/(tabs)/explore', params: { query } })}
-          style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary }}
+           style={[styles.submit, { backgroundColor: colors.primary }]}
         >
           <Feather name="arrow-right" size={18} color={colors.primaryForeground} />
         </Pressable>
@@ -33,3 +35,11 @@ export function SearchBar() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrapper: { marginTop: -28, marginHorizontal: spacing.lg, zIndex: 2 },
+  label: { fontSize: 9, fontWeight: '800', letterSpacing: 1.2, marginBottom: 8 },
+  search: { minHeight: 60, borderRadius: radii.md, borderWidth: 1, flexDirection: 'row', alignItems: 'center', paddingLeft: spacing.md, paddingRight: 8, ...elevation.floating },
+  input: { flex: 1, marginLeft: spacing.sm, fontSize: 14, minHeight: 52 },
+  submit: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+});

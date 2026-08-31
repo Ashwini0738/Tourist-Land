@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { elevation, radii, spacing } from '@/constants/theme';
 
 export function VendorPage({ title, eyebrow, children }: { title: string; eyebrow?: string; children: React.ReactNode }) {
   const colors = useColors();
@@ -87,15 +88,15 @@ export function errorText(error: unknown, fallback: string) {
 }
 
 const styles = StyleSheet.create({
-  page: { paddingHorizontal: 20, maxWidth: 960, width: '100%', alignSelf: 'center' },
+  page: { paddingHorizontal: spacing.lg, maxWidth: 960, width: '100%', alignSelf: 'center' },
   back: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 28 },
   backText: { fontSize: 14, fontWeight: '700' },
   eyebrow: { fontSize: 11, fontWeight: '700', letterSpacing: 1.4, marginBottom: 8 },
-  title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.6, marginBottom: 24 },
-  panel: { borderWidth: 1, borderRadius: 20, padding: 16, marginBottom: 16 },
+  title: { fontSize: 32, lineHeight: 37, fontWeight: '700', letterSpacing: -0.9, marginBottom: spacing.lg },
+  panel: { borderWidth: 1, borderRadius: radii.lg, padding: spacing.md, marginBottom: spacing.md, ...elevation.card },
   field: { marginBottom: 13 },
   label: { fontSize: 12, fontWeight: '700', marginBottom: 7 },
-  input: { minHeight: 46, borderWidth: 1, borderRadius: 12, paddingHorizontal: 13, fontSize: 14 },
+  input: { minHeight: 48, borderWidth: 1, borderRadius: radii.sm, paddingHorizontal: 13, fontSize: 14 },
   textarea: { minHeight: 90, paddingTop: 12 },
   button: { minHeight: 44, borderRadius: 12, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1 },
   buttonText: { fontSize: 13, fontWeight: '700' },

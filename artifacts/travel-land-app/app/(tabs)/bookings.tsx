@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { elevation, radii, spacing } from '@/constants/theme';
 
 const tabs = ['Upcoming', 'Past', 'Cancelled'] as const;
 type Tab = typeof tabs[number];
@@ -78,14 +79,14 @@ function EmptyBookings({ tab }: { tab: Tab }) {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20 },
+  content: { paddingHorizontal: spacing.lg },
   kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 8 },
-  title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
+  title: { fontSize: 32, lineHeight: 37, fontWeight: '700', letterSpacing: -0.9 },
   subtitle: { fontSize: 13, lineHeight: 19, marginTop: 8, marginBottom: 24 },
-  segment: { borderWidth: 1, borderRadius: 14, padding: 4, flexDirection: 'row', marginBottom: 16 },
+  segment: { borderWidth: 1, borderRadius: radii.md, padding: 4, flexDirection: 'row', marginBottom: 16 },
   segmentButton: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10 },
   segmentText: { fontSize: 11, fontWeight: '700' },
-  booking: { borderWidth: 1, borderRadius: 20, padding: 14, flexDirection: 'row', marginBottom: 11 },
+  booking: { borderWidth: 1, borderRadius: radii.lg, padding: 14, flexDirection: 'row', marginBottom: 11, ...elevation.card },
   date: { width: 58, height: 78, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   month: { fontSize: 10, fontWeight: '700', letterSpacing: 1 },
   day: { fontSize: 25, fontWeight: '700', marginTop: 3 },
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
   bookingPrice: { fontSize: 13, fontWeight: '700' },
   state: { borderWidth: 1, borderRadius: 20, alignItems: 'center', padding: 30 },
   stateText: { fontSize: 13, marginTop: 10 },
-  empty: { borderWidth: 1, borderRadius: 20, alignItems: 'center', padding: 30 },
+  empty: { borderWidth: 1, borderRadius: radii.lg, alignItems: 'center', padding: 30, ...elevation.card },
   emptyIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontSize: 17, fontWeight: '700', marginTop: 14 },
   emptyText: { fontSize: 13, lineHeight: 18, textAlign: 'center', marginTop: 6 },

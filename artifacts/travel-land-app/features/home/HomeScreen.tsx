@@ -58,7 +58,7 @@ export function HomeScreen() {
     <ScrollView
       testID="home-scroll-view"
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 102 : 118 }}
+      contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 108 : 126 }}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
