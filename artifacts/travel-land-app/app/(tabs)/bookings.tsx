@@ -41,7 +41,7 @@ export default function BookingsTab() {
   });
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 14, paddingBottom: Platform.OS === 'web' ? 102 : 118 }]}>
+    <ScrollView testID="bookings-scroll-view" style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 14, paddingBottom: Platform.OS === 'web' ? 102 : 118 }]}>
       <Text style={[styles.kicker, { color: colors.primary }]}>YOUR TRIPS</Text>
       <Text style={[styles.title, { color: colors.foreground }]}>My bookings.</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Only bookings on your authenticated Travel & Land account appear here.</Text>

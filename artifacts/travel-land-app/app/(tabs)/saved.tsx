@@ -21,7 +21,7 @@ export default function SavedScreen() {
   const items = (favoritesQuery.data?.items ?? []).filter((item) => favoriteIds.includes(getFavoriteKey(item.entityType, item.entityId)));
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 14, paddingBottom: Platform.OS === 'web' ? 102 : 118 }]} showsVerticalScrollIndicator={false}>
+    <ScrollView testID="saved-scroll-view" style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 14, paddingBottom: Platform.OS === 'web' ? 102 : 118 }]} showsVerticalScrollIndicator={false}>
       <Text style={[styles.kicker, { color: colors.primary }]}>YOUR COLLECTION</Text>
       <Text style={[styles.title, { color: colors.foreground }]}>Saved for later.</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{items.length ? `${items.length} saved item${items.length === 1 ? '' : 's'} across your discovery catalog` : 'Keep the good places close.'}</Text>

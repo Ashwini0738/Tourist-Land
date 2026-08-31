@@ -454,10 +454,10 @@ export default function ExploreScreen() {
         </View>
       )}
       ListHeaderComponent={header}
-      ListEmptyComponent={
-        searchQuery.isLoading ? <View style={styles.emptyState}><ActivityIndicator color={colors.primary} /><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Loading discovery…</Text></View>
-          : searchQuery.isError ? <View style={[styles.emptyState, { backgroundColor: colors.card, borderColor: colors.border }]}><Feather name="alert-circle" size={26} color={colors.destructive} /><Text style={[styles.emptyTitle, { color: colors.foreground }]}>Unable to load results</Text><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Check your connection and try again.</Text><Pressable accessibilityRole="button" onPress={retryAll} style={[styles.retryButton, { backgroundColor: colors.primary }]}><Text style={[styles.retryButtonText, { color: colors.primaryForeground }]}>Retry</Text></Pressable></View>
-          : <View style={styles.emptyState}><Feather name="compass" size={28} color={colors.primary} /><Text style={[styles.emptyTitle, { color: colors.foreground }]}>No results found</Text><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Try a different place, category, or filter.</Text></View>
+       ListEmptyComponent={
+         searchQuery.isLoading ? <View testID="explore-loading" style={styles.emptyState}><ActivityIndicator color={colors.primary} /><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Loading discovery…</Text></View>
+           : searchQuery.isError ? <View testID="explore-error" style={[styles.emptyState, { backgroundColor: colors.card, borderColor: colors.border }]}><Feather name="alert-circle" size={26} color={colors.destructive} /><Text style={[styles.emptyTitle, { color: colors.foreground }]}>Unable to load results</Text><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Check your connection and try again.</Text><Pressable accessibilityRole="button" onPress={retryAll} style={[styles.retryButton, { backgroundColor: colors.primary }]}><Text style={[styles.retryButtonText, { color: colors.primaryForeground }]}>Retry</Text></Pressable></View>
+           : <View testID="explore-empty" style={styles.emptyState}><Feather name="compass" size={28} color={colors.primary} /><Text style={[styles.emptyTitle, { color: colors.foreground }]}>No results found</Text><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Try a different place, category, or filter.</Text></View>
       }
       ListFooterComponent={
         dataItems.length > 0 ? (
