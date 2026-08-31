@@ -435,6 +435,21 @@ export const propertyEnquiries = pgTable("property_enquiries", {
   ...timestamps,
 });
 
+export const propertyEnquiryHistory = pgTable(
+  "property_enquiry_history",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    enquiryId: uuid("enquiry_id").references(() => propertyEnquiries.id, { onDelete: "cascade" }).notNull(),
+    status: text("status").notNull(),
+    note: text("note"),
+    changedBy: uuid("changed_by").references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (table) => [
+    index("property_enquiry_history_enquiry_idx").on(table.enquiryId, table.createdAt),
+  ],
+);
+
 export const favorites = pgTable(
   "favorites",
   {

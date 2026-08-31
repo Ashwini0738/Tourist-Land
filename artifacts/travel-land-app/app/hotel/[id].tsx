@@ -27,6 +27,7 @@ import {
   RoomRow,
   SourceBadge,
 } from '@/features/hotels/HotelUI';
+import { DemoBadge } from '@/components/DemoBadge';
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
@@ -102,6 +103,7 @@ export default function HotelDetailsScreen() {
         </View>
         {shareMessage ? <Pressable testID="hotel-share-message" accessibilityRole="button" accessibilityLabel="Dismiss share message" onPress={() => setShareMessage(null)} style={[styles.shareMessage, { backgroundColor: colors.secondary, borderColor: colors.border }]}><Feather name="check-circle" size={15} color={colors.primary} /><Text style={[styles.shareMessageText, { color: colors.foreground }]}>{shareMessage}</Text><Feather name="x" size={14} color={colors.mutedForeground} /></Pressable> : null}
         <NoticeBanner>{detail.sourceNotice || hotel.sourceNotice}</NoticeBanner>
+         <View style={styles.demoBadge}><DemoBadge label="Demo hotel record" /></View>
         <Text style={[styles.description, { color: colors.foreground }]}>{detail.description || hotel.summary}</Text>
         <View style={styles.factGrid}>
           <Fact label="GUEST RATING" value={reviewsQuery.data?.ratingAverage != null ? `${reviewsQuery.data.ratingAverage.toFixed(1)} · ${reviewsQuery.data.reviewCount} review${reviewsQuery.data.reviewCount === 1 ? '' : 's'}` : 'No guest ratings yet'} icon="star" />
@@ -178,6 +180,7 @@ const styles = StyleSheet.create({
   stars: { flexDirection: 'row', gap: 2 },
   reviewTitle: { fontSize: 13, fontWeight: '700', marginTop: 9 },
   reviewBody: { fontSize: 12, lineHeight: 18, marginTop: 5 },
+  demoBadge: { paddingHorizontal: 18, marginTop: 10 },
   loading: { flex: 1 },
   loadingHero: { height: 354 },
   loadingCopy: { padding: 20 },

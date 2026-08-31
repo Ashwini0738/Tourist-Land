@@ -13,6 +13,7 @@ import { NearbySection } from './sections/NearbySection';
 import { EventSection } from './sections/EventSection';
 import { HotelSection } from './sections/HotelSection';
 import { PropertySection } from './sections/PropertySection';
+import { DemoBadge } from '@/components/DemoBadge';
 import {
   getListHomeFeaturedQueryKey,
   getListHomeDestinationsQueryKey,
@@ -63,6 +64,7 @@ export function HomeScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
       }
     >
+      <DemoBadge />
       <Header />
       <WalletCard />
       <SearchBar />

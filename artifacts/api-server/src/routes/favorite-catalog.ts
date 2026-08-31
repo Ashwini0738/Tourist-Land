@@ -7,6 +7,8 @@ import {
   properties,
   temples,
 } from "./catalog-data.ts";
+import { demoModeEnabled } from "../lib/demo-mode.ts";
+import { demoDestinations, demoHotels, demoProperties } from "@workspace/db/seed-data";
 
 export const favoriteEntityTypes = [
   "destination",
@@ -41,8 +43,16 @@ const sources: Record<FavoriteEntityType, readonly CatalogItem[]> = {
   property: properties,
 };
 
+const demoSources: Partial<Record<FavoriteEntityType, readonly CatalogItem[]>> = demoModeEnabled()
+  ? {
+      destination: demoDestinations.map((item) => ({ id: item.slug, name: item.name, location: `${item.region}, ${item.country}`, imageKey: "coastline" })),
+      hotel: demoHotels.map((item) => ({ id: item.catalogId!, name: item.name, location: `${item.city}, ${item.state}`, imageKey: "coastline" })),
+      property: demoProperties.map((item) => ({ id: item.slug, title: item.title, location: item.address, imageKey: "highlands" })),
+    }
+  : {};
+
 export function getFavoriteCatalogItem(entityType: FavoriteEntityType, entityId: string) {
-  const item = sources[entityType].find((candidate) => candidate.id === entityId);
+  const item = [...sources[entityType], ...(demoSources[entityType] ?? [])].find((candidate) => candidate.id === entityId);
   if (!item) return null;
   return {
     name: item.name ?? item.title ?? null,

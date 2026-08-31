@@ -10,6 +10,7 @@ import {
   getHotelCatalogRecord,
   getHotelDetail,
   getHotelNearby,
+  getManagedHotelRooms,
   getHotelRooms,
   parseHotelSearchInput,
   searchHotelCatalog,
@@ -46,9 +47,10 @@ hotelsRouter.get("/v1/hotels/:id", (req, res) => {
   res.json(GetHotelResponse.parse(detail));
 });
 
-hotelsRouter.get("/v1/hotels/:id/rooms", (req, res) => {
+hotelsRouter.get("/v1/hotels/:id/rooms", async (req, res) => {
   const id = routeId(req.params.id);
-  const rooms = id ? getHotelRooms(id) : null;
+  const managed = id ? await getManagedHotelRooms(id) : null;
+  const rooms = managed ?? (id ? getHotelRooms(id) : null);
   if (!rooms) {
     res.status(404).json({ error: { code: "NOT_FOUND", message: "Hotel not found" } });
     return;
@@ -58,7 +60,7 @@ hotelsRouter.get("/v1/hotels/:id/rooms", (req, res) => {
 
 hotelsRouter.get("/v1/hotels/:id/availability", async (req, res) => {
   const id = routeId(req.params.id);
-  if (!id || !getHotelCatalogRecord(id)) {
+  if (!id) {
     res.status(404).json({ error: { code: "NOT_FOUND", message: "Hotel not found" } });
     return;
   }
@@ -68,6 +70,10 @@ hotelsRouter.get("/v1/hotels/:id/availability", async (req, res) => {
     return;
   }
   const managed = await getManagedHotelAvailability(id, parsed);
+  if (!getHotelCatalogRecord(id) && !managed) {
+    res.status(404).json({ error: { code: "NOT_FOUND", message: "Hotel not found" } });
+    return;
+  }
   res.json(GetHotelAvailabilityResponse.parse(managed ?? getHotelAvailability(id, parsed)));
 });
 

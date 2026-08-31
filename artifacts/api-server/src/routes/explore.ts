@@ -10,6 +10,8 @@ import {
   temples,
 } from "./catalog-data.ts";
 import { fetchLiveProviders, type FetchLike, type LiveEventRecord, type LiveHotelRecord, type ProviderResult } from "./live-data.ts";
+import { demoModeEnabled } from "../lib/demo-mode.ts";
+import { demoAttractions, demoDestinations, demoEvents, demoFoodPlaces, demoHotels, demoProperties } from "@workspace/db/seed-data";
 
 export type ExploreCategoryKey =
   | "all"
@@ -128,7 +130,7 @@ const categoryAliases: Record<string, ExploreCategoryKey> = {
   land: "property",
 };
 
-const itemIndex: ExploreItem[] = [
+const staticItemIndex: ExploreItem[] = [
   ...destinations.map((item, index): BaseExploreItem => ({
     id: item.id,
     type: "destination",
@@ -251,6 +253,97 @@ const itemIndex: ExploreItem[] = [
   sourceLabel: "Development preview",
   sourceNotice: developmentNotice,
 }));
+
+const seededDemoIndex: ExploreItem[] = [
+  ...demoDestinations.map((item, index) => ({
+    id: item.slug,
+    type: "destination" as const,
+    title: item.name,
+    location: `${item.region}, ${item.country}`,
+    summary: item.summary ?? "A destination in the local demo catalogue.",
+    category: "Destination",
+    imageKey: index % 2 ? "highlands" : "coastline",
+    popularity: 120 - index,
+    rating: 4.8 - index * 0.05,
+  })),
+  ...demoAttractions.map((item, index) => ({
+    id: item.id,
+    type: "attraction" as const,
+    title: item.name,
+    location: item.address ?? "Demo destination",
+    summary: item.description ?? "A demo attraction.",
+    category: "Attraction",
+    imageKey: index % 2 ? "highlands" : "coastline",
+    destinationId: demoDestinations[index].slug,
+    popularity: 90 - index,
+    rating: 4.6,
+  })),
+  ...demoFoodPlaces.map((item, index) => ({
+    id: item.id,
+    type: "food" as const,
+    title: item.name,
+    location: item.address ?? "Demo destination",
+    summary: `${item.cuisine ?? "Regional"} demo food place.`,
+    category: "Food",
+    imageKey: index % 2 ? "highlands" : "coastline",
+    destinationId: demoDestinations[index].slug,
+    popularity: 85 - index,
+    rating: 4.5,
+  })),
+  ...demoEvents.map((item, index) => ({
+    id: item.id,
+    type: "event" as const,
+    title: item.name,
+    location: demoDestinations[index].name,
+    summary: item.description ?? "A future demo event.",
+    category: "Event",
+    imageKey: index % 2 ? "highlands" : "coastline",
+    destinationId: demoDestinations[index].slug,
+    dateLabel: item.startsAt,
+    popularity: 80 - index,
+    rating: 4.5,
+  })),
+  ...demoHotels.map((item, index) => ({
+    id: item.catalogId!,
+    type: "hotel" as const,
+    title: item.name,
+    location: `${item.city}, ${item.state}`,
+    summary: item.description ?? "An approved demo accommodation.",
+    category: "Hotel",
+    imageKey: index % 2 ? "highlands" : "coastline",
+    destinationId: demoDestinations[index].slug,
+    popularity: 95 - index,
+    rating: 4.8,
+    priceLabel: `Demo nightly rate · ₹${Number(index % 2 ? 9800 : 6500).toLocaleString("en-IN")}`,
+    priceValue: index % 2 ? 9800 : 6500,
+    amenities: item.amenities as string[],
+  })),
+  ...demoProperties.map((item, index) => ({
+    id: item.slug,
+    type: "property" as const,
+    title: item.title,
+    location: item.address,
+    summary: item.description ?? "A published demo property listing.",
+    category: item.propertyType,
+    imageKey: index % 2 ? "highlands" : "coastline",
+    propertyType: item.propertyType,
+    priceLabel: `Demo asking price · ₹${Number(item.askingPrice).toLocaleString("en-IN")}`,
+    priceValue: Number(item.askingPrice),
+    area: `${item.areaValue} ${item.areaUnit}`,
+    areaValue: Number(item.areaValue),
+    popularity: 72 - index,
+    rating: 4.7,
+  })),
+].map((item) => ({
+  ...item,
+  source: "development" as const,
+  sourceLabel: "Demo data",
+  sourceNotice: "Demo catalogue data for local testing only. It is not live availability, ownership, pricing, or location data.",
+}));
+
+const itemIndex: ExploreItem[] = demoModeEnabled()
+  ? [...staticItemIndex, ...seededDemoIndex]
+  : staticItemIndex;
 
 function asText(value: unknown): string {
   if (typeof value === "string") return value.trim();

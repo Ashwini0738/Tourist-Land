@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { properties } from '@/lib/content';
 import { useColors } from '@/hooks/useColors';
 import { getFavoriteKey, useAppState } from '@/context/AppStateContext';
+import { DemoBadge } from '@/components/DemoBadge';
 
 export default function LandScreen() {
   const colors = useColors();
@@ -15,7 +16,7 @@ export default function LandScreen() {
   const filters = ['Location', 'Type', 'Price', 'Area', 'Purpose', 'Available'];
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 14, paddingBottom: Platform.OS === 'web' ? 102 : 118 }]} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}><View><Text style={[styles.kicker, { color: colors.primary }]}>LAND SOURCING</Text><Text style={[styles.title, { color: colors.foreground }]}>Find your{'\n'}next beginning.</Text></View><Pressable onPress={() => router.push('/profile')}><Feather name="user" size={21} color={colors.foreground} /></Pressable></View>
+       <View style={styles.header}><View><Text style={[styles.kicker, { color: colors.primary }]}>LAND SOURCING</Text><Text style={[styles.title, { color: colors.foreground }]}>Find your{'\n'}next beginning.</Text><DemoBadge label="Demo land catalogue" /></View><Pressable onPress={() => router.push('/profile')}><Feather name="user" size={21} color={colors.foreground} /></Pressable></View>
       <View style={[styles.intro, { backgroundColor: colors.primary }]}><View style={styles.introIcon}><Feather name="map-pin" size={20} color={colors.primary} /></View><Text style={styles.introTitle}>Land with a little more meaning.</Text><Text style={styles.introText}>Verified opportunities for stays, farms, and the places you’ve been imagining.</Text><Pressable style={[styles.introButton, { backgroundColor: colors.accent }]} onPress={() => router.push('/property/riverstone-estate')}><Text style={[styles.introButtonText, { color: colors.accentForeground }]}>How it works</Text><Feather name="arrow-up-right" size={15} color={colors.accentForeground} /></Pressable></View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>{filters.map((filter) => <Pressable key={filter} onPress={() => setActiveFilter(filter)} style={[styles.filter, { backgroundColor: activeFilter === filter ? colors.primary : colors.card, borderColor: activeFilter === filter ? colors.primary : colors.border }]}><Text style={[styles.filterText, { color: activeFilter === filter ? colors.primaryForeground : colors.mutedForeground }]}>{filter}</Text></Pressable>)}</ScrollView>
       <View style={styles.sectionHead}><Text style={[styles.sectionTitle, { color: colors.foreground }]}>Opportunities near you</Text><Pressable onPress={() => router.push('/maps')}><Text style={[styles.link, { color: colors.primary }]}>Map</Text></Pressable></View>

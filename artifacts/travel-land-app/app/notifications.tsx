@@ -15,6 +15,7 @@ import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, Sty
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import * as Notifications from 'expo-notifications';
+import { DemoBadge } from '@/components/DemoBadge';
 
 function relativeTime(value: string) {
   const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
@@ -106,6 +107,7 @@ export default function NotificationsScreen() {
         <Pressable accessibilityRole="button" disabled={readAllMutation.isPending || !items.some((item) => !item.readAt)} onPress={() => void markAll()}><Text style={[styles.readAll, { color: colors.primary, opacity: items.some((item) => !item.readAt) ? 1 : 0.4 }]}>Read all</Text></Pressable>
       </View>
       <Text style={[styles.kicker, { color: colors.primary }]}>ACCOUNT UPDATES</Text>
+      <DemoBadge label="Demo account data" />
       <View style={[styles.pushCard, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={styles.pushCopy}><Text style={[styles.pushTitle, { color: colors.foreground }]}>Stay close to real updates</Text><Text style={[styles.pushText, { color: colors.mutedForeground }]}>Enable native notifications when you are ready. Travel & Land does not send fake or sample pushes.</Text></View><Pressable disabled={pushMutation.isPending} onPress={() => void enablePush()} style={[styles.pushButton, { borderColor: colors.primary }]}><Text style={[styles.buttonText, { color: colors.primary }]}>{pushMutation.isPending ? 'Registering…' : 'Enable'}</Text></Pressable></View>
       {pushMessage ? <Text style={[styles.pushMessage, { color: colors.mutedForeground }]}>{pushMessage}</Text> : null}
       {listQuery.isLoading && !items.length ? <View style={styles.loading}><ActivityIndicator color={colors.primary} /><Text style={[styles.helper, { color: colors.mutedForeground }]}>Loading your updates…</Text></View> : null}

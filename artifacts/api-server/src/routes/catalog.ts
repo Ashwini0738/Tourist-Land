@@ -7,8 +7,15 @@ import {
   featuredContent,
   hotels as hotelRecords,
   offers as offerRecords,
+  properties as propertyRecords,
+  propertyEnquiries,
+  propertyEnquiryHistory,
 } from "@workspace/db";
+import { eq as dbEq } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth.ts";
+import { demoModeEnabled } from "../lib/demo-mode.ts";
+import { createNotification } from "../lib/notifications.ts";
+import { demoAttractions, demoDestinations, demoEvents, demoFoodPlaces, demoHotels, demoProperties } from "@workspace/db/seed-data";
 import { getDestinationDetail } from "./catalog-detail.ts";
 import {
   attractions,
@@ -60,6 +67,90 @@ export type FeaturedContentList = {
   notice: string;
   items: FeaturedContentItem[];
 };
+
+function demoPropertyPayload(property: typeof propertyRecords.$inferSelect) {
+  return {
+    id: property.id,
+    slug: property.slug,
+    title: property.title,
+    location: property.address,
+    area: `${property.areaValue} ${property.areaUnit}`,
+    propertyType: property.propertyType,
+    ...(property.latitude !== null && property.longitude !== null
+      ? { coordinates: { latitude: Number(property.latitude), longitude: Number(property.longitude), precision: "area" as const, source: "demo-seed" } }
+      : {}),
+    verified: property.isVerified,
+    description: property.description ?? "A published demo property listing.",
+    discoveryLabel: "Demo property record",
+    priceLabel: property.askingPrice ? `Demo asking price · ₹${Number(property.askingPrice).toLocaleString("en-IN")}` : "Price available on enquiry",
+    imageKey: "highlands",
+  };
+}
+
+function parseDemoEnquiryBody(value: unknown): { message: string; preferredContactMethod: "email" | "phone" } | null {
+  if (!value || typeof value !== "object") return null;
+  const body = value as Record<string, unknown>;
+  if (typeof body.message !== "string" || body.message.length > 2000) return null;
+  if (body.preferredContactMethod !== "email" && body.preferredContactMethod !== "phone") return null;
+  return { message: body.message, preferredContactMethod: body.preferredContactMethod };
+}
+
+const demoHomeData = {
+  destinations: demoDestinations.map((item) => ({
+    id: item.slug,
+    slug: item.slug,
+    name: item.name,
+    region: item.region,
+    country: item.country,
+    summary: item.summary,
+    imageKey: "coastline",
+  })),
+  nearby: demoAttractions.map((item, index) => ({
+    id: item.id,
+    name: item.name,
+    category: "Attraction",
+    location: item.address,
+    summary: item.description ?? "A demo attraction.",
+    destinationId: demoDestinations[index].slug,
+    imageKey: index % 2 ? "highlands" : "coastline",
+  })),
+  events: demoEvents.map((item, index) => ({
+    id: item.id,
+    title: item.name,
+    dateLabel: new Date(item.startsAt).toISOString(),
+    location: demoDestinations[index].name,
+    summary: item.description ?? "A future demo event.",
+    destinationId: demoDestinations[index].slug,
+    imageKey: index % 2 ? "highlands" : "coastline",
+  })),
+  hotels: demoHotels.map((item, index) => ({
+    id: item.catalogId!,
+    name: item.name,
+    location: `${item.city}, ${item.state}`,
+    summary: item.description ?? "An approved demo accommodation.",
+    destinationId: demoDestinations[index].slug,
+    ratingLabel: "Demo guest note · 4.8",
+    priceLabel: `Demo nightly rate · ₹${Number(index % 2 ? 9800 : 6500).toLocaleString("en-IN")}`,
+    imageKey: index % 2 ? "highlands" : "coastline",
+  })),
+  properties: demoProperties.map((item) => ({
+    id: item.id,
+    slug: item.slug,
+    title: item.title,
+    location: item.address,
+    area: `${item.areaValue} ${item.areaUnit}`,
+    propertyType: item.propertyType,
+    verified: item.isVerified,
+    description: item.description ?? "A published demo property listing.",
+    discoveryLabel: "Demo property record",
+    priceLabel: `Demo asking price · ₹${Number(item.askingPrice).toLocaleString("en-IN")}`,
+    imageKey: "highlands",
+  })),
+};
+
+function homeCatalog() {
+  return demoModeEnabled() ? demoHomeData : { destinations, nearby, events, hotels, properties };
+}
 
 type FeaturedContentResolver = () => Promise<FeaturedContentList>;
 
@@ -230,14 +321,11 @@ export function createCatalogRouter(
   router.get("/v1/home", async (_req, res) => {
     const featured = await featuredContentOrUnavailable(res, resolveFeaturedContent);
     if (!featured) return;
+    const catalog = homeCatalog();
     res.json({
       notice: featured.notice,
       banners: [],
-      destinations,
-      nearby,
-      events,
-      hotels,
-      properties,
+      ...catalog,
       featuredDestinations: [],
       featuredProperties: [],
       featured: featured.items,
@@ -251,27 +339,27 @@ export function createCatalogRouter(
   });
 
   router.get("/v1/home/destinations", (_req, res) => {
-    res.json({ items: destinations });
+    res.json({ items: homeCatalog().destinations });
   });
 
   router.get("/v1/home/nearby", (_req, res) => {
-    res.json({ items: nearby });
+    res.json({ items: homeCatalog().nearby });
   });
 
   router.get("/v1/home/events", (_req, res) => {
-    res.json({ items: events });
+    res.json({ items: homeCatalog().events });
   });
 
   router.get("/v1/home/hotels", (_req, res) => {
-    res.json({ items: hotels });
+    res.json({ items: homeCatalog().hotels });
   });
 
   router.get("/v1/home/properties", (_req, res) => {
-    res.json({ items: properties });
+    res.json({ items: homeCatalog().properties });
   });
 
   router.get("/v1/destinations", (_req, res) => {
-    res.json({ items: destinations });
+    res.json({ items: homeCatalog().destinations });
   });
 
   router.get("/v1/destinations/:id", (req, res) => {
@@ -283,11 +371,28 @@ export function createCatalogRouter(
     res.json(detail);
   });
 
-  router.get("/v1/properties", (_req, res) => {
+  router.get("/v1/properties", async (_req, res): Promise<void> => {
+    if (demoModeEnabled()) {
+      const rows = await db.select().from(propertyRecords).where(dbEq(propertyRecords.status, "published"));
+      res.json({ items: rows.map(demoPropertyPayload) });
+      return;
+    }
     res.json({ items: properties });
   });
 
-  router.get("/v1/properties/:id", (req, res) => {
+  router.get("/v1/properties/:id", async (req, res): Promise<void> => {
+    if (demoModeEnabled()) {
+      const propertyId = typeof req.params.id === "string" ? req.params.id : req.params.id[0];
+      const [record] = await db.select().from(propertyRecords).where(
+        propertyId.startsWith("demo-")
+          ? dbEq(propertyRecords.slug, propertyId)
+          : dbEq(propertyRecords.id, propertyId),
+      );
+      if (record) {
+        res.json(demoPropertyPayload(record));
+        return;
+      }
+    }
     const property = properties.find((item) => item.id === req.params.id);
     if (!property) {
       res.status(404).json({ error: { code: "NOT_FOUND", message: "Property not found" } });
@@ -296,7 +401,57 @@ export function createCatalogRouter(
     res.json(property);
   });
 
-  router.post("/v1/properties/:id/enquiries", requireAuth, (req, res) => {
+  router.post("/v1/properties/:id/enquiries", requireAuth, async (req, res): Promise<void> => {
+    if (demoModeEnabled()) {
+      const propertyId = typeof req.params.id === "string" ? req.params.id : req.params.id[0];
+      const body = parseDemoEnquiryBody(req.body);
+      if (!body) {
+        res.status(400).json({ error: { code: "INVALID_INPUT", message: "A message and preferred contact method are required." } });
+        return;
+      }
+      const [property] = await db.select().from(propertyRecords).where(
+        propertyId.startsWith("demo-")
+          ? dbEq(propertyRecords.slug, propertyId)
+          : dbEq(propertyRecords.id, propertyId),
+      );
+      if (!property) {
+        res.status(404).json({ error: { code: "NOT_FOUND", message: "Property not found" } });
+        return;
+      }
+      const [enquiry] = await db.insert(propertyEnquiries).values({
+        propertyId: property.id,
+        userId: req.localUser!.id,
+        message: body.message,
+        preferredContactMethod: body.preferredContactMethod,
+        status: "new",
+      }).returning();
+      if (!enquiry) {
+        res.status(500).json({ error: { code: "ENQUIRY_CREATE_FAILED", message: "The enquiry could not be recorded." } });
+        return;
+      }
+      await db.insert(propertyEnquiryHistory).values({
+        enquiryId: enquiry.id,
+        status: "new",
+        note: "Demo enquiry received.",
+        changedBy: req.localUser!.id,
+      });
+      if (property.ownerId) {
+        await createNotification(property.ownerId, {
+          type: "land_enquiry_updated",
+          title: "New property enquiry",
+          body: "A traveller sent an enquiry for a demo property.",
+          relatedType: "property",
+          relatedId: property.id,
+          dedupeKey: `demo-enquiry-${enquiry.id}`,
+        });
+      }
+      res.status(202).json({
+        id: enquiry.id,
+        status: enquiry.status,
+        message: "Your demo enquiry was recorded for local testing. No property transaction has been created.",
+      });
+      return;
+    }
     const property = properties.find((item) => item.id === req.params.id);
     if (!property) {
       res.status(404).json({ error: { code: "NOT_FOUND", message: "Property not found" } });

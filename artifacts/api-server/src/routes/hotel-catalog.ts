@@ -1,7 +1,12 @@
-import { destinations, hotels, nearby, homeNotice } from "./catalog-data.ts";
+import { destinations, hotels as catalogHotels, nearby, homeNotice } from "./catalog-data.ts";
 import { developmentInventoryProvenance, type InventoryProvenance } from "./hotel-inventory-policy.ts";
+import { demoModeEnabled } from "../lib/demo-mode.ts";
+import { db, hotelRooms as hotelRoomRecords, hotels as hotelRecords } from "@workspace/db";
+import { and, eq } from "drizzle-orm";
+import { demoHotels } from "@workspace/db/seed-data";
 
-export type HotelCatalogRecord = (typeof hotels)[number];
+type HotelCoordinates = { latitude: number; longitude: number; precision: "place" | "area" | "region"; source: string };
+export type HotelCatalogRecord = Omit<(typeof catalogHotels)[number], "coordinates"> & { coordinates?: HotelCoordinates };
 export type HotelSort = "recommended" | "rating" | "price_asc" | "price_desc" | "distance";
 
 export type HotelSearchInput = {
@@ -48,6 +53,28 @@ type HotelSummary = {
 type HotelWithDistance = HotelSummary & { distanceKm?: number };
 
 export const hotelDevelopmentNotice = homeNotice;
+
+const hotels = demoModeEnabled()
+  ? [
+      ...catalogHotels,
+      ...demoHotels.map((hotel, index) => ({
+        id: hotel.catalogId!,
+        name: hotel.name,
+        location: `${hotel.city}, ${hotel.state}`,
+        summary: hotel.description ?? "Approved accommodation for the local demo environment.",
+        destinationId: `demo-destination-${index + 1}`,
+        hotelType: hotel.propertyType ?? "Hotel",
+        amenities: hotel.amenities as string[],
+        galleryImageKeys: ["coastline", "highlands"],
+        address: `${hotel.address}, ${hotel.city}, ${hotel.country}`,
+        checkInTime: hotel.checkInTime ?? "14:00",
+        checkOutTime: hotel.checkOutTime ?? "11:00",
+        ratingLabel: "Demo guest note · 4.8",
+        priceLabel: `Demo nightly rate · ₹${Number(index % 2 ? 9800 : 6500).toLocaleString("en-IN")}`,
+        imageKey: index % 2 ? "highlands" : "coastline",
+      })),
+    ]
+  : catalogHotels;
 
 function parseRating(label: string) {
   return Number(label.match(/4\.\d/)?.[0] ?? 0);
@@ -175,7 +202,8 @@ export function searchHotelCatalog(input: HotelSearchInput) {
   const filtered = hotels
     .map((hotel): HotelWithDistance => {
       const summary = toHotelSummary(hotel);
-      const distanceKm = origin ? calculateDistanceKm(origin, hotel.coordinates) : undefined;
+      const coordinates = (hotel as unknown as HotelCatalogRecord).coordinates;
+      const distanceKm = origin && coordinates ? calculateDistanceKm(origin, coordinates) : undefined;
       return distanceKm === undefined ? summary : { ...summary, distanceKm };
     })
     .filter((hotel) => {
@@ -238,6 +266,33 @@ export function getHotelRooms(id: string) {
     hotelId: id,
     notice: "Room details are not available in this development catalog. This is not a statement about live availability.",
     items: [],
+  };
+}
+
+export async function getManagedHotelRooms(id: string) {
+  if (!demoModeEnabled()) return null;
+  const hotel = await db.query.hotels.findFirst({
+    where: and(
+      eq(hotelRecords.catalogId, id),
+      eq(hotelRecords.status, "published"),
+      eq(hotelRecords.approvalStatus, "approved"),
+    ),
+  });
+  if (!hotel) return null;
+  const rooms = await db.query.hotelRooms.findMany({
+    where: and(eq(hotelRoomRecords.hotelId, hotel.id), eq(hotelRoomRecords.status, "active")),
+  });
+  return {
+    hotelId: id,
+    notice: "Room details were entered by the approved demo vendor. They are not live supplier inventory.",
+    items: rooms.map((room) => ({
+      id: room.catalogRoomId ?? room.id,
+      name: room.name,
+      capacity: room.capacity,
+      nightlyRate: Number(room.nightlyRate),
+      currency: room.currency,
+      status: room.status,
+    })),
   };
 }
 

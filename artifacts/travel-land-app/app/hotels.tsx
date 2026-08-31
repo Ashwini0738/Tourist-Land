@@ -8,6 +8,7 @@ import { useColors } from '@/hooks/useColors';
 import { useAppState } from '@/context/AppStateContext';
 import { getMapLocationMessage, useMapLocation } from '@/features/maps/useMapLocation';
 import { DateGuestControls, EmptyHotels, HotelCard, HotelHeader, HotelSearchSelection, HotelSkeleton, NoticeBanner, SearchBar } from '@/features/hotels/HotelUI';
+import { DemoBadge } from '@/components/DemoBadge';
 
 type HotelFilters = { hotelType?: string; amenity?: string; minRating?: number; maxPrice?: number; radiusKm?: number; sort: SearchHotelsSort };
 const ratingOptions = [0, 3, 4, 4.5];
@@ -89,6 +90,7 @@ export default function HotelsScreen() {
     <HotelHeader onBack={() => router.back()} title="Hotels" right={<Pressable testID="hotel-filter-button" accessibilityRole="button" accessibilityLabel={`Open hotel filters${activeFilterCount ? `, ${activeFilterCount} active` : ''}`} onPress={() => setFilterOpen(true)} style={styles.headerFilter}><Feather name="sliders" size={18} color={colors.primary} />{activeFilterCount ? <View style={[styles.filterDot, { backgroundColor: colors.accent }]} /> : null}</Pressable>} />
     <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 18 }]} keyboardShouldPersistTaps="handled">
       <Text style={[styles.kicker, { color: colors.primary }]}>STAYS, NOT INVENTORY</Text>
+       <DemoBadge label="Demo hotel catalogue" />
       <Text style={[styles.title, { color: colors.foreground }]}>Sleep somewhere{'\n'}worth waking up in.</Text>
       <Text style={[styles.intro, { color: colors.mutedForeground }]}>A grounded catalog of places to know. Every card is clearly marked when it is sample or development data.</Text>
        <SearchBar value={query} onChangeText={(value) => { setQuery(value); setPage(1); }} />

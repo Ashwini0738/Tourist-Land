@@ -10,3 +10,4 @@
 - [Standalone API typecheck](standalone-api-typecheck.md) — build referenced workspace declarations before the API’s strict no-emit check.
 - [Monorepo package installs](monorepo-package-installs.md) — when the package helper targets the workspace root, use the app-scoped pnpm filter rather than changing root dependencies.
 - [API contract drift check](api-contract-validation.md) — generated-output validation compares against HEAD, so expected codegen changes make it fail until the worktree is committed.
+- [Demo data fixtures](demo-data-fixtures.md) — keep one payment state per demo booking so booking reads remain deterministic.

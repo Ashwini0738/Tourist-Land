@@ -1,6 +1,6 @@
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { useColors } from '@/hooks/useColors';
-import { useInviteAdmin, useListAdminInvitations, useListAdminUsers } from '@workspace/api-client-react';
+import { useInviteAdmin, useListAdminInvitations, useListAdminUsersPage } from '@workspace/api-client-react';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -11,7 +11,7 @@ export default function AdminUsersScreen() {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
-  const users = useListAdminUsers();
+  const users = useListAdminUsersPage();
   const invitations = useListAdminInvitations();
   const invite = useInviteAdmin();
 
