@@ -8,7 +8,7 @@
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
     "validate:api-contract": "pnpm --filter @workspace/api-spec run codegen:check",
-    "validate:workflows": "actionlint"
+    "validate:workflows": "actionlint && bash scripts/check-demo-e2e-failure-classifier.sh"
   },
   "private": true,
   "dependencies": {

@@ -160,16 +160,7 @@ jobs:
           API_STARTUP_OUTCOME: ${{ steps.api-startup.outcome }}
           JOURNEY_TEST_OUTCOME: ${{ steps.journey-test.outcome }}
         run: |
-          failure_class="workflow setup or PostgreSQL service startup"
-          if [[ "$DATABASE_SERVICE_DRILL_OUTCOME" == "failure" || "$DATABASE_SERVICE_HEALTH_OUTCOME" == "failure" ]]; then
-            failure_class="PostgreSQL service startup"
-          elif [[ "$DATABASE_SCHEMA_OUTCOME" == "failure" ]]; then
-            failure_class="database schema application"
-          elif [[ "$API_STARTUP_DRILL_OUTCOME" == "failure" || "$API_STARTUP_OUTCOME" == "failure" ]]; then
-            failure_class="API startup/import"
-          elif [[ "$JOURNEY_TEST_OUTCOME" == "failure" ]]; then
-            failure_class="seeded API journey test"
-          fi
+          failure_class="$(bash scripts/classify-demo-e2e-failure.sh)"
 
           echo "::notice title=Demo journey failure class::$failure_class"
           echo "::group::PostgreSQL service diagnostics (failure-only and supplemental)"
