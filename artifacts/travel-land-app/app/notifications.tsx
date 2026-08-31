@@ -14,9 +14,20 @@ import React from 'react';
 import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
-import * as Notifications from 'expo-notifications';
+import Constants, { AppOwnership, ExecutionEnvironment } from 'expo-constants';
 import { DemoBadge } from '@/components/DemoBadge';
 import { elevation, radii, spacing } from '@/constants/theme';
+
+const isExpoGo = Platform.OS !== 'web' && (
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient
+  || Constants.appOwnership === AppOwnership.Expo
+);
+let notificationsModulePromise: Promise<typeof import('expo-notifications')> | null = null;
+
+function loadNotificationsModule() {
+  notificationsModulePromise ??= import('expo-notifications');
+  return notificationsModulePromise;
+}
 
 function relativeTime(value: string) {
   const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
@@ -81,7 +92,18 @@ export default function NotificationsScreen() {
       setPushMessage('Native push registration is available in the Android or iOS app.');
       return;
     }
+    if (isExpoGo) {
+      setPushMessage('Remote push is disabled in Expo Go. Use a development build or production app to enable device notifications. In-app updates still work here.');
+      return;
+    }
     try {
+      const Notifications = await loadNotificationsModule();
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('booking-updates', {
+          name: 'Booking updates',
+          importance: Notifications.AndroidImportance.DEFAULT,
+        });
+      }
       const current = await Notifications.getPermissionsAsync();
       const permissions = current.granted ? current : await Notifications.requestPermissionsAsync();
       if (!permissions.granted) {
@@ -109,7 +131,7 @@ export default function NotificationsScreen() {
       </View>
       <Text style={[styles.kicker, { color: colors.primary }]}>ACCOUNT UPDATES</Text>
       <DemoBadge label="Demo account data" />
-      <View style={[styles.pushCard, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={styles.pushCopy}><Text style={[styles.pushTitle, { color: colors.foreground }]}>Stay close to real updates</Text><Text style={[styles.pushText, { color: colors.mutedForeground }]}>Enable native notifications when you are ready. Travel & Land does not send fake or sample pushes.</Text></View><Pressable disabled={pushMutation.isPending} onPress={() => void enablePush()} style={[styles.pushButton, { borderColor: colors.primary }]}><Text style={[styles.buttonText, { color: colors.primary }]}>{pushMutation.isPending ? 'Registering…' : 'Enable'}</Text></Pressable></View>
+       <View style={[styles.pushCard, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={styles.pushCopy}><Text style={[styles.pushTitle, { color: colors.foreground }]}>Stay close to real updates</Text><Text style={[styles.pushText, { color: colors.mutedForeground }]}>{isExpoGo ? 'Remote push needs a development build or production app. In-app updates still work in Expo Go.' : 'Enable native notifications when you are ready. Travel & Land does not send fake or sample pushes.'}</Text></View><Pressable disabled={pushMutation.isPending || isExpoGo} onPress={() => void enablePush()} style={[styles.pushButton, { borderColor: colors.primary, opacity: isExpoGo ? 0.55 : 1 }]}><Text style={[styles.buttonText, { color: colors.primary }]}>{isExpoGo ? 'Build needed' : pushMutation.isPending ? 'Registering…' : 'Enable'}</Text></Pressable></View>
       {pushMessage ? <Text style={[styles.pushMessage, { color: colors.mutedForeground }]}>{pushMessage}</Text> : null}
       {listQuery.isLoading && !items.length ? <View style={styles.loading}><ActivityIndicator color={colors.primary} /><Text style={[styles.helper, { color: colors.mutedForeground }]}>Loading your updates…</Text></View> : null}
       {listQuery.isError ? <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border }]}><Feather name="alert-circle" size={24} color={colors.destructive} /><Text style={[styles.emptyTitle, { color: colors.foreground }]}>Updates are unavailable</Text><Text style={[styles.helper, { color: colors.mutedForeground }]}>Try again when your connection is steadier.</Text><Pressable onPress={() => void listQuery.refetch()} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Try again</Text></Pressable></View> : null}

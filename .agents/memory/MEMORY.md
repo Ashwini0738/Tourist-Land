@@ -14,3 +14,4 @@
 - [Demo end-to-end harness](demo-e2e-test-harness.md) — disposable PostgreSQL runs need Date timestamps, the tsx loader, and Clerk-shaped test claims.
 - [Public hotel review identifiers](public-hotel-review-identifiers.md) — review entity IDs use catalog IDs shared by hotel routes and bookings, not internal UUIDs.
 - [Mobile-web visual checks](mobile-web-visual-checks.md) — use DOM contracts at representative web frames; keep native location, biometric, and map behavior out of this layer.
+- [Expo Go push limitation](expo-go-notifications.md) — lazy-load expo-notifications because SDK 53+ Expo Go can throw at module import time on Android.
