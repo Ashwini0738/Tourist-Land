@@ -1,5 +1,12 @@
 name: Demo API journey
 
+# Failure drills are manual-only. From Actions > Demo API journey > Run
+# workflow, choose failure_mode to verify that the failure-only PostgreSQL
+# diagnostics remain useful without printing DATABASE_URL or any other
+# database credential. Keep the four named failure boundaries below in sync
+# with the classifier in the final diagnostics step.
+# Keep that final step failure-only (`if: failure()`), so successful journeys
+# never dump service logs.
 on:
   pull_request:
     paths:
@@ -26,6 +33,18 @@ on:
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
   workflow_dispatch:
+    inputs:
+      failure_mode:
+        description: "Optional CI diagnostics drill"
+        required: false
+        default: none
+        type: choice
+        options:
+          - none
+          - database-service
+          - schema
+          - application
+          - journey
 
 permissions:
   contents: read
@@ -36,6 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DEMO_E2E_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/travel_land_ci_demo
+      DEMO_E2E_FAILURE_MODE: ${{ inputs.failure_mode || 'none' }}
     services:
       postgres:
         image: postgres:16
@@ -69,18 +89,80 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Mask demo database URL in workflow logs
+        run: echo "::add-mask::${DEMO_E2E_DATABASE_URL}"
+
+      # This is deliberately a separate step from schema application. A
+      # failed health check means the service is unavailable; it is not a
+      # schema, application, or journey-test failure.
+      - name: Exercise PostgreSQL service failure diagnostics
+        id: database-service-drill
+        if: ${{ env.DEMO_E2E_FAILURE_MODE == 'database-service' }}
+        run: |
+          echo "::error title=PostgreSQL service startup failure::Intentional diagnostics drill."
+          exit 1
+
+      - name: Verify PostgreSQL service is ready
+        id: database-service-health
+        run: |
+          if ! docker exec "${{ job.services.postgres.id }}" pg_isready -U postgres -d travel_land_ci_demo; then
+            echo "::error title=PostgreSQL service startup failure::The PostgreSQL service is not accepting connections."
+            exit 1
+          fi
+
       - name: Apply current database schema
+        id: database-schema
         env:
           DATABASE_URL: ${{ env.DEMO_E2E_DATABASE_URL }}
-        run: pnpm --filter @workspace/db run push
+        run: |
+          if [[ "$DEMO_E2E_FAILURE_MODE" == "schema" ]]; then
+            echo "::error title=Database schema failure::Intentional diagnostics drill."
+            exit 1
+          fi
+          pnpm --filter @workspace/db run push
+
+      # The demo test starts the API in-process, so this named drill preserves
+      # an application-level boundary without changing the test harness.
+      - name: Exercise application startup failure diagnostics
+        id: application-drill
+        if: ${{ env.DEMO_E2E_FAILURE_MODE == 'application' }}
+        run: |
+          echo "::error title=Application startup failure::Intentional diagnostics drill."
+          exit 1
 
       - name: Run seeded API journey
-        run: pnpm --filter @workspace/api-server run test:demo-e2e
+        id: journey-test
+        run: |
+          if [[ "$DEMO_E2E_FAILURE_MODE" == "journey" ]]; then
+            echo "::error title=Seeded API journey test failure::Intentional diagnostics drill."
+            exit 1
+          fi
+          pnpm --filter @workspace/api-server run test:demo-e2e
 
       - name: Collect PostgreSQL service logs after failure
         if: ${{ failure() }}
+        env:
+          DATABASE_SERVICE_DRILL_OUTCOME: ${{ steps.database-service-drill.outcome }}
+          DATABASE_SERVICE_HEALTH_OUTCOME: ${{ steps.database-service-health.outcome }}
+          DATABASE_SCHEMA_OUTCOME: ${{ steps.database-schema.outcome }}
+          APPLICATION_DRILL_OUTCOME: ${{ steps.application-drill.outcome }}
+          JOURNEY_TEST_OUTCOME: ${{ steps.journey-test.outcome }}
         run: |
-          echo "::group::PostgreSQL service logs (supplemental infrastructure diagnostics)"
-          echo "The failed step above remains the primary application or test result."
+          failure_class="workflow setup or PostgreSQL service startup"
+          if [[ "$DATABASE_SERVICE_DRILL_OUTCOME" == "failure" || "$DATABASE_SERVICE_HEALTH_OUTCOME" == "failure" ]]; then
+            failure_class="PostgreSQL service startup"
+          elif [[ "$DATABASE_SCHEMA_OUTCOME" == "failure" ]]; then
+            failure_class="database schema application"
+          elif [[ "$APPLICATION_DRILL_OUTCOME" == "failure" ]]; then
+            failure_class="application startup"
+          elif [[ "$JOURNEY_TEST_OUTCOME" == "failure" ]]; then
+            failure_class="seeded API journey test"
+          fi
+
+          echo "::notice title=Demo journey failure class::$failure_class"
+          echo "::group::PostgreSQL service diagnostics (failure-only and supplemental)"
+          echo "The failed step above remains the primary result: $failure_class."
+          echo "Only PostgreSQL health metadata and service logs are collected here; database credentials are not printed."
+          docker inspect --format 'status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}unavailable{{end}}' "${{ job.services.postgres.id }}" 2>&1 || true
           docker logs "${{ job.services.postgres.id }}" 2>&1 || true
           echo "::endgroup::"
