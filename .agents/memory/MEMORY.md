@@ -16,3 +16,4 @@
 - [Mobile-web visual checks](mobile-web-visual-checks.md) — use DOM contracts at representative web frames; keep native location, biometric, and map behavior out of this layer.
 - [Expo Go push limitation](expo-go-notifications.md) — lazy-load expo-notifications because SDK 53+ Expo Go can throw at module import time on Android.
 - [Expo static build cleanup](expo-static-build-cleanup.md) — static Expo builds can remove assets from older tracked build snapshots; restore stale snapshots before finishing.
+- [Playwright on Nix](playwright-nix-runtime.md) — headless Chromium needs explicit Nix shared libraries; keep downloaded browser binaries outside the repository.
