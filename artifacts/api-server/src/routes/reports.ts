@@ -240,11 +240,11 @@ async function reportForAdmin(req: Parameters<RequestHandler>[0], range: Range) 
     db.select({ value: sql<string>`coalesce(avg(${reviews.rating}), 0)` }).from(reviews).where(withConditions(reviewConditions)),
     groupedCounts(hotels, hotels.country, hotelConditions),
     countRows(wallets, createdBetween(wallets.createdAt, range)),
-    db.select().from(bookings).where(withConditions(bookingConditions)).orderBy(desc(bookings.createdAt)).limit(page.limit).offset(page.offset),
-    db.select({ payment: payments, booking: bookings }).from(payments).leftJoin(bookings, eq(payments.bookingId, bookings.id)).where(withConditions(paymentConditions)).orderBy(desc(payments.createdAt)).limit(page.limit).offset(page.offset),
-    db.select({ property: properties }).from(properties).where(withConditions(propertyConditions)).orderBy(desc(properties.createdAt)).limit(page.limit).offset(page.offset),
-    db.select({ enquiry: propertyEnquiries, property: properties }).from(propertyEnquiries).innerJoin(properties, eq(properties.id, propertyEnquiries.propertyId)).where(withConditions(enquiryConditions)).orderBy(desc(propertyEnquiries.createdAt)).limit(page.limit).offset(page.offset),
-    db.select({ profile: vendorProfiles, user: users }).from(vendorProfiles).innerJoin(users, eq(users.id, vendorProfiles.userId)).where(withConditions(vendorConditions)).orderBy(desc(vendorProfiles.createdAt)).limit(page.limit).offset(page.offset),
+     db.select().from(bookings).where(withConditions(bookingConditions)).orderBy(desc(bookings.createdAt), desc(bookings.id)).limit(page.limit).offset(page.offset),
+     db.select({ payment: payments, booking: bookings }).from(payments).leftJoin(bookings, eq(payments.bookingId, bookings.id)).where(withConditions(paymentConditions)).orderBy(desc(payments.createdAt), desc(payments.id)).limit(page.limit).offset(page.offset),
+     db.select({ property: properties }).from(properties).where(withConditions(propertyConditions)).orderBy(desc(properties.createdAt), desc(properties.id)).limit(page.limit).offset(page.offset),
+     db.select({ enquiry: propertyEnquiries, property: properties }).from(propertyEnquiries).innerJoin(properties, eq(properties.id, propertyEnquiries.propertyId)).where(withConditions(enquiryConditions)).orderBy(desc(propertyEnquiries.createdAt), desc(propertyEnquiries.id)).limit(page.limit).offset(page.offset),
+     db.select({ profile: vendorProfiles, user: users }).from(vendorProfiles).innerJoin(users, eq(users.id, vendorProfiles.userId)).where(withConditions(vendorConditions)).orderBy(desc(vendorProfiles.createdAt), desc(vendorProfiles.id)).limit(page.limit).offset(page.offset),
   ]);
 
   return {
@@ -343,10 +343,10 @@ async function reportForVendor(req: Parameters<RequestHandler>[0], range: Range)
     trend(propertyEnquiries, propertyEnquiries.createdAt, enquiryConditions),
     trend(reviews, reviews.createdAt, reviewConditions),
     db.select({ value: sql<string>`coalesce(avg(${reviews.rating}), 0)` }).from(reviews).where(withConditions(reviewConditions)),
-    db.select().from(bookings).where(withConditions(bookingConditions)).orderBy(desc(bookings.createdAt)).limit(page.limit).offset(page.offset),
-    db.select({ payment: payments, booking: bookings }).from(payments).leftJoin(bookings, eq(payments.bookingId, bookings.id)).where(withConditions(paymentConditions)).orderBy(desc(payments.createdAt)).limit(page.limit).offset(page.offset),
-    db.select({ property: properties }).from(properties).where(withConditions(propertyConditions)).orderBy(desc(properties.createdAt)).limit(page.limit).offset(page.offset),
-    db.select({ enquiry: propertyEnquiries, property: properties }).from(propertyEnquiries).innerJoin(properties, eq(properties.id, propertyEnquiries.propertyId)).where(withConditions(enquiryConditions)).orderBy(desc(propertyEnquiries.createdAt)).limit(page.limit).offset(page.offset),
+     db.select().from(bookings).where(withConditions(bookingConditions)).orderBy(desc(bookings.createdAt), desc(bookings.id)).limit(page.limit).offset(page.offset),
+     db.select({ payment: payments, booking: bookings }).from(payments).leftJoin(bookings, eq(payments.bookingId, bookings.id)).where(withConditions(paymentConditions)).orderBy(desc(payments.createdAt), desc(payments.id)).limit(page.limit).offset(page.offset),
+     db.select({ property: properties }).from(properties).where(withConditions(propertyConditions)).orderBy(desc(properties.createdAt), desc(properties.id)).limit(page.limit).offset(page.offset),
+     db.select({ enquiry: propertyEnquiries, property: properties }).from(propertyEnquiries).innerJoin(properties, eq(properties.id, propertyEnquiries.propertyId)).where(withConditions(enquiryConditions)).orderBy(desc(propertyEnquiries.createdAt), desc(propertyEnquiries.id)).limit(page.limit).offset(page.offset),
   ]);
 
   return {

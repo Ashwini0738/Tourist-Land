@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useMemo, useState } from 'react';
-import { useGetAdminReports } from '@workspace/api-client-react';
+import { getAdminReports, useGetAdminReports } from '@workspace/api-client-react';
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -52,6 +52,16 @@ const TABLE_LABELS: Record<TableKey, string> = {
   enquiries: 'Enquiries',
   vendors: 'Vendors',
 };
+
+const CSV_COLUMNS: Record<TableKey, string[]> = {
+  bookings: ['id', 'reference', 'hotelCatalogId', 'startsOn', 'endsOn', 'totalAmount', 'currency', 'status', 'createdAt'],
+  payments: ['id', 'bookingReference', 'amount', 'currency', 'status', 'provider', 'createdAt'],
+  properties: ['id', 'title', 'propertyType', 'status', 'askingPrice', 'currency', 'createdAt'],
+  enquiries: ['id', 'propertyTitle', 'status', 'createdAt'],
+  vendors: ['id', 'businessName', 'country', 'city', 'status', 'email', 'createdAt'],
+};
+
+const EXPORT_LIMIT = 100;
 
 const formatInputDate = (date: Date) => {
   const year = date.getFullYear();
@@ -280,10 +290,12 @@ function ReportTable({
   table,
   rows,
   onExport,
+  exporting,
 }: {
   table: TableKey;
   rows: any[];
   onExport: () => void;
+  exporting: boolean;
 }) {
   const heads =
     table === 'bookings'
@@ -303,9 +315,9 @@ function ReportTable({
           <p className="eyebrow">Loaded records</p>
           <h2 className="mt-1 text-base font-semibold">{TABLE_LABELS[table]}</h2>
         </div>
-        <Button testId={`button-export-${table}`} variant="quiet" onClick={onExport}>
+        <Button testId={`button-export-${table}`} variant="quiet" onClick={onExport} disabled={exporting}>
           <Download size={14} />
-          Export CSV
+          {exporting ? 'Preparing CSV…' : 'Export CSV'}
         </Button>
       </div>
       {!rows.length ? (
@@ -387,6 +399,8 @@ export function ReportsPage() {
   const [page, setPage] = useState(1);
   const [table, setTable] = useState<TableKey>('bookings');
   const [dateError, setDateError] = useState('');
+  const [exportStatus, setExportStatus] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
 
   const params = useMemo(
     () => ({
@@ -441,17 +455,52 @@ export function ReportsPage() {
     setPage(1);
   };
 
-  const exportCsv = () => {
-    if (!rows.length) return;
-    const columns = Object.keys(rows[0]);
-    const csv = [columns.map(csvCell).join(','), ...rows.map((row) => columns.map((column) => csvCell(row[column])).join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `travel-land-${table}-${from}-to-${to}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+  const exportCsv = async () => {
+    setExportStatus('');
+    setIsExporting(true);
+    try {
+      const exportRows: any[] = [];
+      let exportPage = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await getAdminReports({
+          ...params,
+          page: exportPage,
+          limit: EXPORT_LIMIT,
+        });
+        const pageRows = response.tables?.[table] ?? [];
+        const pageMeta = response.meta?.[table];
+        exportRows.push(...pageRows);
+        hasMore = Boolean(pageMeta?.hasMore);
+        if (hasMore && !pageRows.length) {
+          throw new Error('The report returned an empty page before all records were loaded.');
+        }
+        exportPage += 1;
+      }
+
+      const columns = CSV_COLUMNS[table];
+      const csv = [
+        columns.map(csvCell).join(','),
+        ...exportRows.map((row) => columns.map((column) => csvCell(row[column])).join(',')),
+      ].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `travel-land-${table}-${from}-to-${to}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setExportStatus(
+        exportRows.length
+          ? `Exported ${exportRows.length.toLocaleString()} ${TABLE_LABELS[table].toLowerCase()} across all matching pages.`
+          : `No ${TABLE_LABELS[table].toLowerCase()} match the selected filters. Downloaded an empty CSV with headers.`,
+      );
+    } catch {
+      setExportStatus('The CSV could not be prepared. Try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -656,7 +705,12 @@ export function ReportsPage() {
                   </button>
                 ))}
               </div>
-              <ReportTable table={table} rows={rows} onExport={exportCsv} />
+              <ReportTable table={table} rows={rows} onExport={() => void exportCsv()} exporting={isExporting} />
+              {exportStatus && (
+                <p data-testid="text-report-export-status" className="mt-2 text-xs text-muted-foreground">
+                  {exportStatus}
+                </p>
+              )}
               {tableMeta && (tableMeta.page > 1 || tableMeta.hasMore) && (
                 <div className="mt-3 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
                   <p data-testid="text-report-pagination" className="text-xs text-muted-foreground">
@@ -676,7 +730,7 @@ export function ReportsPage() {
 
             <div className="mt-5 flex flex-col gap-2 border-t border-border pt-4 text-[11px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
               <span data-testid="text-report-generated">Generated {day(report.generatedAt)} · source: {report.source}</span>
-              <span>Results are limited to the loaded server page. CSV does not combine currencies.</span>
+              <span>CSV includes every matching page and keeps currencies separated by row.</span>
             </div>
           </>
         )}
