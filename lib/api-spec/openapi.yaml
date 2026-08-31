@@ -802,6 +802,37 @@ paths:
           $ref: "#/components/responses/NotFound"
         "401":
           $ref: "#/components/responses/Unauthenticated"
+  /v1/me/enquiries:
+    get:
+      operationId: listMyPropertyEnquiries
+      tags: [properties]
+      security: [{ bearerAuth: [] }]
+      summary: List property enquiries submitted by the authenticated traveller
+      responses:
+        "200":
+          description: The authenticated traveller's property enquiries and safe status history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TravellerPropertyEnquiryList"
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /v1/me/enquiries/{id}:
+    get:
+      operationId: getMyPropertyEnquiry
+      tags: [properties]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      summary: Get one property enquiry owned by the authenticated traveller
+      responses:
+        "200":
+          description: A safe view of the authenticated traveller's property enquiry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TravellerPropertyEnquiry"
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /v1/auth/session:
     get:
       operationId: getAuthSession
@@ -3205,6 +3236,37 @@ components:
     PropertyEnquiryStatus:
       type: string
       enum: [new, contacted, closed]
+    TravellerPropertyEnquiryHistory:
+      type: object
+      properties:
+        id: { type: string }
+        status: { $ref: "#/components/schemas/PropertyEnquiryStatus" }
+        createdAt: { type: string, format: date-time }
+      required: [id, status, createdAt]
+    TravellerPropertyEnquiry:
+      type: object
+      properties:
+        id: { type: string }
+        property:
+          type: object
+          properties:
+            id: { type: string }
+            title: { type: string }
+            address: { type: string }
+          required: [id, title, address]
+        status: { $ref: "#/components/schemas/PropertyEnquiryStatus" }
+        createdAt: { type: string, format: date-time }
+        history:
+          type: array
+          items: { $ref: "#/components/schemas/TravellerPropertyEnquiryHistory" }
+      required: [id, property, status, createdAt, history]
+    TravellerPropertyEnquiryList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/TravellerPropertyEnquiry" }
+      required: [items]
     VendorPropertyEnquiryHistory:
       type: object
       properties:

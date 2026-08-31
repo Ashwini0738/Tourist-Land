@@ -1375,6 +1375,30 @@ export const PropertyEnquiryStatus = {
   closed: 'closed',
 } as const;
 
+export interface TravellerPropertyEnquiryHistory {
+  id: string;
+  status: PropertyEnquiryStatus;
+  createdAt: string;
+}
+
+export type TravellerPropertyEnquiryProperty = {
+  id: string;
+  title: string;
+  address: string;
+};
+
+export interface TravellerPropertyEnquiry {
+  id: string;
+  property: TravellerPropertyEnquiryProperty;
+  status: PropertyEnquiryStatus;
+  createdAt: string;
+  history: TravellerPropertyEnquiryHistory[];
+}
+
+export interface TravellerPropertyEnquiryList {
+  items: TravellerPropertyEnquiry[];
+}
+
 export interface VendorPropertyEnquiryHistory {
   id: string;
   status: PropertyEnquiryStatus;

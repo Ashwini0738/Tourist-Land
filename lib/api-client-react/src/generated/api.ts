@@ -139,6 +139,8 @@ import type {
   SearchExploreParams,
   SearchHotelsParams,
   ServiceUnavailableResponse,
+  TravellerPropertyEnquiry,
+  TravellerPropertyEnquiryList,
   UnauthenticatedResponse,
   UpdateReviewInput,
   VendorApplication,
@@ -3409,6 +3411,160 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getCreatePropertyEnquiryMutationOptions(options));
     }
+
+export const getListMyPropertyEnquiriesUrl = () => {
+
+
+
+
+  return `/api/v1/me/enquiries`
+}
+
+/**
+ * @summary List property enquiries submitted by the authenticated traveller
+ */
+export const listMyPropertyEnquiries = async ( options?: Parameters<typeof customFetch>[1]): Promise<TravellerPropertyEnquiryList> => {
+
+  return customFetch<TravellerPropertyEnquiryList>(getListMyPropertyEnquiriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyPropertyEnquiriesQueryKey = () => {
+    return [
+    `/api/v1/me/enquiries`
+    ] as const;
+    }
+
+
+export const getListMyPropertyEnquiriesQueryOptions = <TData = Awaited<ReturnType<typeof listMyPropertyEnquiries>>, TError = ErrorType<UnauthenticatedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyPropertyEnquiries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyPropertyEnquiriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyPropertyEnquiries>>> = ({ signal }) => listMyPropertyEnquiries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyPropertyEnquiries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyPropertyEnquiriesQueryResult = NonNullable<Awaited<ReturnType<typeof listMyPropertyEnquiries>>>
+export type ListMyPropertyEnquiriesQueryError = ErrorType<UnauthenticatedResponse>
+
+
+/**
+ * @summary List property enquiries submitted by the authenticated traveller
+ */
+
+export function useListMyPropertyEnquiries<TData = Awaited<ReturnType<typeof listMyPropertyEnquiries>>, TError = ErrorType<UnauthenticatedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyPropertyEnquiries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyPropertyEnquiriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMyPropertyEnquiryUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/me/enquiries/${id}`
+}
+
+/**
+ * @summary Get one property enquiry owned by the authenticated traveller
+ */
+export const getMyPropertyEnquiry = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<TravellerPropertyEnquiry> => {
+
+  return customFetch<TravellerPropertyEnquiry>(getGetMyPropertyEnquiryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyPropertyEnquiryQueryKey = (id: string,) => {
+    return [
+    `/api/v1/me/enquiries/${id}`
+    ] as const;
+    }
+
+
+export const getGetMyPropertyEnquiryQueryOptions = <TData = Awaited<ReturnType<typeof getMyPropertyEnquiry>>, TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyPropertyEnquiry>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyPropertyEnquiryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyPropertyEnquiry>>> = ({ signal }) => getMyPropertyEnquiry(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyPropertyEnquiry>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyPropertyEnquiryQueryResult = NonNullable<Awaited<ReturnType<typeof getMyPropertyEnquiry>>>
+export type GetMyPropertyEnquiryQueryError = ErrorType<UnauthenticatedResponse | NotFoundResponse>
+
+
+/**
+ * @summary Get one property enquiry owned by the authenticated traveller
+ */
+
+export function useGetMyPropertyEnquiry<TData = Awaited<ReturnType<typeof getMyPropertyEnquiry>>, TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyPropertyEnquiry>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyPropertyEnquiryQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetAuthSessionUrl = () => {
 

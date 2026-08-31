@@ -155,6 +155,34 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
   assert.equal(me.body.id, demoIds.users.traveller);
   assert.equal(me.body.role, "user");
 
+  const travellerEnquiries = await request(server.baseUrl, "/v1/me/enquiries", "demo_traveller");
+  assert.equal(travellerEnquiries.response.status, 200, JSON.stringify(travellerEnquiries.body));
+  assert.equal(travellerEnquiries.body.items.length, 3);
+  assert.deepEqual(
+    Object.keys(travellerEnquiries.body.items[0]).sort(),
+    ["createdAt", "history", "id", "property", "status"],
+  );
+  assert.deepEqual(
+    Object.keys(travellerEnquiries.body.items[0].property).sort(),
+    ["address", "id", "title"],
+  );
+  assert.equal(JSON.stringify(travellerEnquiries.body).includes("sourcing specialist"), false);
+  const firstTravellerEnquiry = travellerEnquiries.body.items[0];
+  const travellerEnquiryDetail = await request(
+    server.baseUrl,
+    `/v1/me/enquiries/${firstTravellerEnquiry.id}`,
+    "demo_traveller",
+  );
+  assert.equal(travellerEnquiryDetail.response.status, 200, JSON.stringify(travellerEnquiryDetail.body));
+  assert.equal(travellerEnquiryDetail.body.id, firstTravellerEnquiry.id);
+  const otherTravellerRead = await request(
+    server.baseUrl,
+    `/v1/me/enquiries/${firstTravellerEnquiry.id}`,
+    "demo_vendor",
+  );
+  assert.equal(otherTravellerRead.response.status, 404);
+  assert.equal((await request(server.baseUrl, "/v1/me/enquiries", "demo_vendor")).body.items.length, 0);
+
   const home = await request(server.baseUrl, "/v1/home");
   assert.equal(home.response.status, 200);
   assert.equal(home.body.destinations.length, 8);

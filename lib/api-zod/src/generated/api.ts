@@ -1921,6 +1921,52 @@ export const CreatePropertyEnquiryResponse = zod.object({
 
 
 /**
+ * @summary List property enquiries submitted by the authenticated traveller
+ */
+export const ListMyPropertyEnquiriesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "property": zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "address": zod.string()
+}),
+  "status": zod.enum(['new', 'contacted', 'closed']),
+  "createdAt": zod.coerce.date(),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['new', 'contacted', 'closed']),
+  "createdAt": zod.coerce.date()
+}))
+}))
+})
+
+
+/**
+ * @summary Get one property enquiry owned by the authenticated traveller
+ */
+export const GetMyPropertyEnquiryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetMyPropertyEnquiryResponse = zod.object({
+  "id": zod.string(),
+  "property": zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "address": zod.string()
+}),
+  "status": zod.enum(['new', 'contacted', 'closed']),
+  "createdAt": zod.coerce.date(),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['new', 'contacted', 'closed']),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
  * @summary Get the authenticated Clerk session status
  */
 export const GetAuthSessionResponse = zod.object({

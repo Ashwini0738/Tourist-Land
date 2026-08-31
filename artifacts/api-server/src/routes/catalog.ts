@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Response } from "express";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import {
   db,
   destinations as destinationRecords,
@@ -98,6 +98,32 @@ function parseDemoEnquiryBody(value: unknown): { message: string; preferredConta
 function parseEnquiryIdempotencyKey(value: string | undefined): string | null {
   const key = value?.trim();
   return key && key.length >= 8 && key.length <= 128 ? key : null;
+}
+
+function serializeTravellerEnquiryHistory(history: typeof propertyEnquiryHistory.$inferSelect) {
+  return {
+    id: history.id,
+    status: history.status,
+    createdAt: history.createdAt.toISOString(),
+  };
+}
+
+function serializeTravellerEnquiry(
+  enquiry: typeof propertyEnquiries.$inferSelect,
+  property: typeof propertyRecords.$inferSelect,
+  history: Array<typeof propertyEnquiryHistory.$inferSelect>,
+) {
+  return {
+    id: enquiry.id,
+    property: {
+      id: property.id,
+      title: property.title,
+      address: property.address,
+    },
+    status: enquiry.status,
+    createdAt: enquiry.createdAt.toISOString(),
+    history: history.map(serializeTravellerEnquiryHistory),
+  };
 }
 
 const demoHomeData = {
@@ -404,6 +430,51 @@ export function createCatalogRouter(
       return;
     }
     res.json(property);
+  });
+
+  router.get("/v1/me/enquiries", requireAuth, async (req, res): Promise<void> => {
+    const rows = await db
+      .select({ enquiry: propertyEnquiries, property: propertyRecords })
+      .from(propertyEnquiries)
+      .innerJoin(propertyRecords, eq(propertyRecords.id, propertyEnquiries.propertyId))
+      .where(eq(propertyEnquiries.userId, req.localUser!.id))
+      .orderBy(desc(propertyEnquiries.createdAt));
+    const historyRows = rows.length
+      ? await db
+          .select()
+          .from(propertyEnquiryHistory)
+          .where(inArray(propertyEnquiryHistory.enquiryId, rows.map(({ enquiry }) => enquiry.id)))
+          .orderBy(asc(propertyEnquiryHistory.createdAt))
+      : [];
+    const historyByEnquiry = new Map<string, Array<typeof propertyEnquiryHistory.$inferSelect>>();
+    for (const row of historyRows) {
+      historyByEnquiry.set(row.enquiryId, [...(historyByEnquiry.get(row.enquiryId) ?? []), row]);
+    }
+
+    res.json({
+      items: rows.map(({ enquiry, property }) =>
+        serializeTravellerEnquiry(enquiry, property, historyByEnquiry.get(enquiry.id) ?? []),
+      ),
+    });
+  });
+
+  router.get("/v1/me/enquiries/:id", requireAuth, async (req, res): Promise<void> => {
+    const enquiryId = typeof req.params.id === "string" ? req.params.id : req.params.id[0];
+    const [row] = await db
+      .select({ enquiry: propertyEnquiries, property: propertyRecords })
+      .from(propertyEnquiries)
+      .innerJoin(propertyRecords, eq(propertyRecords.id, propertyEnquiries.propertyId))
+      .where(and(eq(propertyEnquiries.id, enquiryId), eq(propertyEnquiries.userId, req.localUser!.id)));
+    if (!row) {
+      res.status(404).json({ error: { code: "NOT_FOUND", message: "Property enquiry not found." } });
+      return;
+    }
+    const history = await db
+      .select()
+      .from(propertyEnquiryHistory)
+      .where(eq(propertyEnquiryHistory.enquiryId, enquiryId))
+      .orderBy(asc(propertyEnquiryHistory.createdAt));
+    res.json(serializeTravellerEnquiry(row.enquiry, row.property, history));
   });
 
   router.post("/v1/properties/:id/enquiries", requireAuth, async (req, res): Promise<void> => {

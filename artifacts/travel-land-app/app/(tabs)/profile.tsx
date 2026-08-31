@@ -18,6 +18,7 @@ export default function ProfileTab() {
     ['heart', 'Favorites', '/saved'],
     ['credit-card', 'Wallet & payments', '/wallet'],
     ['calendar', 'My bookings', '/bookings'],
+    ['inbox', 'Property enquiries', '/property-enquiries'],
     ['star', 'Reviews', '/reviews'],
     ['help-circle', 'Help & support', '/notifications'],
   ] as const;

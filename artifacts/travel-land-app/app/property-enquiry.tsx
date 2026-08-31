@@ -70,8 +70,12 @@ export default function PropertyEnquiryScreen() {
         <Text style={[styles.confirmText, { color: colors.mutedForeground }]}>
           Your request about {property} was saved. The property owner can review it from their protected workspace.
         </Text>
-        <Pressable accessibilityRole="button" onPress={() => router.replace('/(tabs)/land')} style={[styles.button, { backgroundColor: colors.primary }]}>
-          <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Back to Land</Text>
+        <Pressable accessibilityRole="button" onPress={() => router.replace('/property-enquiries')} style={[styles.button, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Track my enquiries</Text>
+          <Feather name="arrow-right" size={17} color={colors.primaryForeground} />
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={() => router.replace('/(tabs)/land')} style={[styles.secondaryButton, { borderColor: colors.border }]}>
+          <Text style={[styles.buttonText, { color: colors.primary }]}>Back to Land</Text>
         </Pressable>
       </View>
     );
@@ -138,6 +142,7 @@ const styles = StyleSheet.create({
   error: { fontSize: 12, lineHeight: 18, marginTop: 14, fontWeight: '600' },
   button: { minWidth: 210, minHeight: 54, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 16, paddingHorizontal: 18 },
   buttonText: { fontSize: 14, fontWeight: '700' },
+  secondaryButton: { minWidth: 210, minHeight: 52, borderWidth: 1, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, paddingHorizontal: 18 },
   confirm: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 25 },
   confirmIcon: { width: 66, height: 66, borderRadius: 33, alignItems: 'center', justifyContent: 'center' },
   confirmTitle: { fontSize: 29, fontWeight: '700', marginTop: 22 },
