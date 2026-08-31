@@ -1,0 +1,652 @@
+# NEXT TASK — COMPLETE DATABASE QA + VENDOR ENQUIRY WORKFLOW
+
+Continue from the completed **Full Application QA Hardening** task.
+
+Do NOT repeat the entire previous QA audit.
+
+The previous audit already established that:
+
+* Application builds pass
+* TypeScript checks pass
+* Existing automated tests pass
+* API/Admin/Expo runtime checks pass
+* Payment concurrency protection was improved
+* Property enquiry persistence was improved
+* Enquiry idempotency was improved
+* User-friendly API error handling was improved
+* Invalid property deep-link handling was improved
+* Real-device and production-provider testing remains environment-dependent
+* Some database-backed tests are currently blocked because the required schema has not been applied
+* Vendor property-enquiry workflow is incomplete
+
+## OBJECTIVE
+
+Close the remaining actionable QA gaps:
+
+1. Apply/verify the correct database schema.
+2. Run the previously blocked database-backed tests.
+3. Complete the Vendor Property Enquiry workflow.
+4. Verify User → Property → Enquiry → Vendor → Status Update → User notification end-to-end.
+5. Fix any P0/P1/P2 issues found.
+6. Do NOT duplicate the previous full QA audit.
+
+---
+
+# 1. DATABASE SCHEMA
+
+Inspect the current database migration/schema system.
+
+Determine exactly why the database-backed tests were skipped.
+
+Do NOT delete tests.
+
+Do NOT bypass database tests.
+
+Do NOT replace database tests with mocks.
+
+Apply the required development/test schema using the project's existing migration mechanism.
+
+Verify:
+
+* Tables exist
+* Foreign keys exist
+* Indexes exist
+* Constraints exist
+* Enquiry tables exist
+* Enquiry status history exists
+* Payment-related tables are correct
+* Booking/inventory relationships are correct
+
+Do NOT modify production data.
+
+If the database cannot be safely migrated in this environment, mark the exact reason as BLOCKED.
+
+---
+
+# 2. DATABASE TESTS
+
+Run all previously skipped database-backed tests.
+
+Record:
+
+* Previously skipped
+* Now passed
+* Failed
+* Still blocked
+
+For every failure:
+
+Investigate the root cause.
+
+Fix real application defects.
+
+Do not weaken assertions just to make tests pass.
+
+---
+
+# 3. VENDOR PROPERTY ENQUIRIES
+
+Complete the missing Vendor Property Enquiries functionality.
+
+Vendor should have:
+
+Vendor Portal
+→ Property Enquiries
+
+Display:
+
+* Enquiry ID
+* Property
+* Customer name
+* Customer contact information according to business rules
+* Message
+* Budget where permitted
+* Preferred callback
+* Preferred site visit
+* Status
+* Created date
+* Last updated
+
+---
+
+# 4. VENDOR FILTERING
+
+Vendor should be able to filter enquiries by:
+
+* Status
+* Property
+* Date
+
+Vendor must only receive enquiries belonging to their own properties.
+
+---
+
+# 5. VENDOR ENQUIRY DETAILS
+
+Create a proper enquiry detail screen.
+
+Display:
+
+### Customer
+
+Name
+
+Email
+
+Phone
+
+### Property
+
+Property name
+
+Location
+
+Area
+
+### Requirement
+
+Message
+
+Budget
+
+Preferred contact
+
+Preferred callback
+
+Preferred site visit
+
+### Status
+
+Current enquiry status
+
+### Timeline
+
+Status history
+
+Do NOT expose:
+
+* Internal admin notes
+* Other vendor information
+* Unrelated enquiries
+* Private internal data
+
+---
+
+# 6. VENDOR STATUS UPDATE
+
+Allow vendor to update only statuses permitted by the business workflow.
+
+For example:
+
+submitted
+→ received
+→ contacted
+→ site_visit_scheduled
+→ negotiation
+→ closed
+
+Do NOT allow arbitrary status values from the client.
+
+Server must validate transitions.
+
+---
+
+# 7. STATUS TRANSITION RULES
+
+Implement sensible server-side transition validation.
+
+Example:
+
+submitted → received
+
+received → contacted
+
+contacted → site_visit_scheduled
+
+contacted → negotiation
+
+site_visit_scheduled → negotiation
+
+negotiation → closed
+
+Allow cancellation only where business rules permit.
+
+Do NOT allow:
+
+closed → submitted
+
+or arbitrary manipulation.
+
+If reopening is required in the future, document it rather than inventing behavior.
+
+---
+
+# 8. STATUS HISTORY
+
+Every status change must create:
+
+* old_status
+* new_status
+* changed_by
+* timestamp
+* optional note
+
+Users must not be able to modify status history.
+
+---
+
+# 9. USER NOTIFICATION
+
+When vendor updates an enquiry:
+
+Notify the user.
+
+Examples:
+
+"Your property enquiry has been received."
+
+"Your enquiry is being reviewed."
+
+"Your site visit has been scheduled."
+
+"Your enquiry status has been updated."
+
+Notifications must be generated from actual status changes.
+
+Do not create fake notifications merely for testing.
+
+---
+
+# 10. DUPLICATE STATUS UPDATE
+
+Prevent duplicate status updates caused by:
+
+* Double tap
+* Slow network
+* Retry
+* Refresh
+* Repeated API request
+
+Do not create duplicate status-history records for the same effective transition.
+
+Use appropriate server-side protection/idempotency where required.
+
+---
+
+# 11. AUTHORIZATION
+
+Test:
+
+### User
+
+Can:
+
+* Create enquiry
+* View own enquiry
+* View own status history
+* Receive notifications
+
+Cannot:
+
+* Change enquiry status
+* View another user's enquiry
+* View vendor internal notes
+
+### Vendor
+
+Can:
+
+* View enquiries for own properties
+* Update permitted statuses
+* View appropriate customer information
+
+Cannot:
+
+* View another vendor's enquiries
+* Change another vendor's property enquiry
+* Approve their own property
+* Modify enquiry ownership
+
+### Admin
+
+Can:
+
+* View all appropriate enquiries
+* Assign enquiries
+* Update permitted administrative fields/statuses
+* View operational information
+
+All authorization must be enforced server-side.
+
+---
+
+# 12. END-TO-END TEST
+
+Run this exact scenario using real database records:
+
+## User
+
+Login
+
+→ Land
+
+→ Property
+
+→ Enquire Now
+
+→ Submit enquiry
+
+Verify:
+
+* Database record created
+* Correct user linked
+* Correct property linked
+* Correct vendor linked
+* Initial status correct
+* Status history created
+* User notification created
+
+## Vendor
+
+Login
+
+→ Vendor Portal
+
+→ Property Enquiries
+
+→ Open enquiry
+
+→ Change status
+
+Verify:
+
+* Database updated
+* Status history created
+* User notification generated
+
+## User
+
+Open:
+
+Profile
+
+→ My Land Enquiries
+
+→ Enquiry
+
+Verify:
+
+* Updated status appears
+* Timeline appears
+* Notification appears
+
+---
+
+# 13. TEST FAILURE SCENARIOS
+
+Test:
+
+* Property does not exist
+* Property is not approved
+* Property is inactive
+* User is unauthenticated
+* Vendor does not own property
+* Invalid enquiry ID
+* Invalid status
+* Invalid status transition
+* Duplicate submission
+* Duplicate status update
+* Database failure
+* Notification failure
+
+The core enquiry operation should remain consistent even if notification delivery fails.
+
+---
+
+# 14. ERROR MESSAGES
+
+Verify vendor-facing errors are user friendly.
+
+Do NOT show:
+
+"500 Internal Server Error"
+
+"SQL constraint failed"
+
+"Cannot read properties of undefined"
+
+"Unauthorized exception"
+
+Instead show contextual messages such as:
+
+"Unable to update the enquiry. Please try again."
+
+"You don't have permission to update this enquiry."
+
+"This enquiry could not be found."
+
+"The enquiry status cannot be changed from its current state."
+
+---
+
+# 15. UI STATES
+
+Vendor Enquiries must have:
+
+### Loading
+
+Skeleton/list loading state.
+
+### Empty
+
+"No property enquiries yet."
+
+### Error
+
+"Unable to load enquiries."
+
+Retry button.
+
+### Detail loading
+
+Stable loading state.
+
+### Update
+
+Disable update action while saving.
+
+### Success
+
+Show confirmation.
+
+### Failure
+
+Keep the current valid status and show retry.
+
+Never leave the UI in an uncertain state.
+
+---
+
+# 16. RESPONSIVE TESTING
+
+Verify Vendor Enquiries on:
+
+* Desktop web
+* Tablet
+* Mobile web
+
+Ensure:
+
+* No horizontal overflow
+* Tables remain usable
+* Long property names do not break layout
+* Status badges remain readable
+* Buttons remain accessible
+
+---
+
+# 17. AUTOMATED TESTS
+
+Add/complete tests for:
+
+1. Database schema availability
+2. Enquiry persistence
+3. Vendor enquiry retrieval
+4. Vendor ownership filtering
+5. Vendor cannot access another vendor's enquiry
+6. Vendor enquiry detail
+7. Valid status transition
+8. Invalid status transition
+9. Status history creation
+10. Duplicate status update
+11. User notification
+12. User sees updated enquiry
+13. Admin sees enquiry
+14. Unauthorized access
+15. Invalid enquiry ID
+16. Inactive property
+17. Unapproved property
+18. Database failure handling
+
+---
+
+# 18. REGRESSION
+
+After implementing the above, run the existing regression suite.
+
+Verify:
+
+* User login
+* Vendor login
+* Admin login
+* Home
+* Explore
+* Destinations
+* Maps
+* Hotels
+* Availability
+* Booking
+* Payment
+* Wallet
+* Notifications
+* Favorites
+* Reviews
+* Land
+* Properties
+* Property enquiries
+* Vendor Portal
+* Admin Portal
+
+Do not modify unrelated functionality.
+
+---
+
+# 19. FINAL STATUS REPORT
+
+Return:
+
+### Database
+
+Schema status:
+
+PASS / FAIL / BLOCKED
+
+Previously skipped database tests:
+
+X
+
+Now passing:
+
+X
+
+Still failing:
+
+X
+
+Still blocked:
+
+X
+
+### Vendor Enquiries
+
+UI:
+
+PASS / FAIL
+
+API:
+
+PASS / FAIL
+
+Database:
+
+PASS / FAIL
+
+Authorization:
+
+PASS / FAIL
+
+Status workflow:
+
+PASS / FAIL
+
+Notifications:
+
+PASS / FAIL
+
+### End-to-End
+
+User creates enquiry:
+
+PASS / FAIL
+
+Vendor receives:
+
+PASS / FAIL
+
+Vendor updates:
+
+PASS / FAIL
+
+User sees update:
+
+PASS / FAIL
+
+Notification generated:
+
+PASS / FAIL
+
+### Bugs
+
+List:
+
+* P0
+* P1
+* P2
+* P3
+
+### Tests
+
+Total:
+
+Passed:
+
+Failed:
+
+Blocked:
+
+### Remaining limitations
+
+Clearly separate:
+
+* Application defects
+* Environment limitations
+* External provider limitations
+* Physical-device testing limitations
+
+Do not claim iOS/Android physical-device performance validation unless an actual physical device was tested.
+
+## IMPORTANT
+
+Do not repeat the previous full QA audit.
+
+Focus only on closing the identified database and Vendor Enquiry gaps and validating the complete enquiry workflow.
