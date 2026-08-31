@@ -106,28 +106,34 @@ async function streamExportToFile(
   url: string,
   fileName: string,
   onProgress: (message: string) => void,
-): Promise<boolean> {
+): Promise<void> {
   const showSaveFilePicker = (window as any).showSaveFilePicker;
-  if (typeof showSaveFilePicker !== 'function') return false;
-
   let writable: any;
   try {
-    const fileHandle = await showSaveFilePicker({
-      suggestedName: fileName,
-      types: [{ description: 'CSV file', accept: { 'text/csv': ['.csv'] } }],
-    });
+    const fileHandle =
+      typeof showSaveFilePicker === 'function'
+        ? await showSaveFilePicker({
+            suggestedName: fileName,
+            types: [{ description: 'CSV file', accept: { 'text/csv': ['.csv'] } }],
+          })
+        : null;
     const response = await fetch(url, { credentials: 'include' });
     if (!response.ok) throw new Error(await responseErrorMessage(response));
     if (!response.body) throw new Error('The browser could not read the streamed export. Try again.');
 
-    writable = await fileHandle.createWritable();
+    writable = fileHandle ? await fileHandle.createWritable() : null;
     const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
     let receivedBytes = 0;
     const contentLength = Number(response.headers.get('content-length') ?? 0);
     while (true) {
       const chunk = await reader.read();
       if (chunk.done) break;
-      await writable.write(chunk.value);
+      if (writable) {
+        await writable.write(chunk.value);
+      } else {
+        chunks.push(chunk.value);
+      }
       receivedBytes += chunk.value.byteLength;
       onProgress(
         contentLength
@@ -135,8 +141,21 @@ async function streamExportToFile(
           : `Downloading server export… ${(receivedBytes / 1024).toLocaleString(undefined, { maximumFractionDigits: 0 })} KB received`,
       );
     }
-    await writable.close();
-    return true;
+    if (writable) {
+      await writable.close();
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(new Blob(chunks, { type: 'text/csv' }));
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = fileName;
+    anchor.rel = 'noopener';
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
   } catch (cause) {
     try {
       await writable?.abort();
@@ -459,6 +478,7 @@ export function ReportsPage() {
   const [table, setTable] = useState<TableKey>('bookings');
   const [dateError, setDateError] = useState('');
   const [exportStatus, setExportStatus] = useState('');
+  const [exportError, setExportError] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   const params = useMemo(
@@ -516,6 +536,7 @@ export function ReportsPage() {
 
   const exportCsv = async () => {
     setExportStatus('');
+    setExportError(false);
     setIsExporting(true);
     const fileName = exportFileName(table, from, to);
     const url = exportUrl({ table, from, to, country, status });
@@ -531,27 +552,12 @@ export function ReportsPage() {
           : `No ${tableName} match the selected filters. Starting a header-only CSV download…`,
       );
 
-      if (await streamExportToFile(url, fileName, setExportStatus)) {
-        setExportStatus(
-          rowCount
-            ? `Downloaded ${rowCount.toLocaleString()} ${tableName} from the server stream.`
-            : `Downloaded an empty ${tableName} CSV with headers.`,
-        );
-      } else {
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = fileName;
-        anchor.rel = 'noopener';
-        anchor.style.display = 'none';
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        setExportStatus(
-          rowCount
-            ? `Download started: the server is streaming ${rowCount.toLocaleString()} ${tableName} without loading all rows in the browser.`
-            : `Download started: an empty ${tableName} CSV with headers.`,
-        );
-      }
+      await streamExportToFile(url, fileName, setExportStatus);
+      setExportStatus(
+        rowCount
+          ? `Downloaded ${rowCount.toLocaleString()} ${tableName} from the server stream.`
+          : `Downloaded an empty ${tableName} CSV with headers.`,
+      );
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === 'AbortError') {
         setExportStatus('Export cancelled before the file was saved.');
@@ -559,6 +565,9 @@ export function ReportsPage() {
         setExportStatus('The report service could not be reached. Try again.');
       } else {
         setExportStatus(cause instanceof Error ? cause.message : 'The CSV could not be prepared. Try again.');
+      }
+      if (!(cause instanceof DOMException && cause.name === 'AbortError')) {
+        setExportError(true);
       }
     } finally {
       setIsExporting(false);
@@ -769,9 +778,28 @@ export function ReportsPage() {
               </div>
               <ReportTable table={table} rows={rows} onExport={() => void exportCsv()} exporting={isExporting} />
               {exportStatus && (
-                <p data-testid="text-report-export-status" className="mt-2 text-xs text-muted-foreground">
-                  {exportStatus}
-                </p>
+                <div
+                  role={exportError ? 'alert' : undefined}
+                  aria-live="polite"
+                  className={`mt-2 flex flex-col gap-2 rounded-lg border px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between ${
+                    exportError
+                      ? 'border-destructive/25 bg-destructive/5 text-destructive'
+                      : 'border-border text-muted-foreground'
+                  }`}
+                >
+                  <p data-testid="text-report-export-status">{exportStatus}</p>
+                  {exportError && (
+                    <Button
+                      testId="button-retry-report-export"
+                      variant="quiet"
+                      onClick={() => void exportCsv()}
+                      disabled={isExporting}
+                    >
+                      <RefreshCw size={13} className={isExporting ? 'animate-spin' : ''} />
+                      Try again
+                    </Button>
+                  )}
+                </div>
               )}
               {tableMeta && (tableMeta.page > 1 || tableMeta.hasMore) && (
                 <div className="mt-3 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
