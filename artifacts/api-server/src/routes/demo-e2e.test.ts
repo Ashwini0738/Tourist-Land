@@ -387,7 +387,7 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
   assert.equal(hotel.response.status, 200);
   assert.equal(hotel.body.hotel.id, "demo-hotel-1");
 
-  const { db, pool, reviews } = await import("@workspace/db");
+  const { db, pool, properties, reviews } = await import("@workspace/db");
   const unpublishedReviewIds = {
     pending: "00000000-0000-4117-8000-000000000001",
     rejected: "00000000-0000-4117-8000-000000000002",
@@ -528,7 +528,7 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
   assert.equal(availability.body.status, "available");
   assert.equal(availability.body.source, "vendor");
   assert.ok(availability.body.items.length >= 1);
-  assert.equal(availability.body.items.find((item: any) => item.id === "demo-room-1-1")?.availableUnits, 4);
+  assert.equal(availability.body.items.find((item: any) => item.id === "demo-room-1-1")?.availableUnits, 3);
   const overbooked = await request(
     server.baseUrl,
     "/v1/bookings",
@@ -635,6 +635,50 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
   assert.equal(duplicateEnquiry.body.id, enquiry.body.id);
   assert.equal(duplicateEnquiry.body.status, "new");
   assert.match(duplicateEnquiry.body.message, /already recorded/i);
+  const unauthenticatedEnquiry = await request(
+    server.baseUrl,
+    `/v1/properties/${demoProperties[3].slug}/enquiries`,
+    undefined,
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": "demo-property-enquiry-unauthenticated" },
+      body: JSON.stringify({ message: "No session.", preferredContactMethod: "email" }),
+    },
+  );
+  assert.equal(unauthenticatedEnquiry.response.status, 401);
+  const unknownPropertyEnquiry = await request(
+    server.baseUrl,
+    "/v1/properties/not-a-real-property/enquiries",
+    "demo_traveller",
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": "demo-property-enquiry-unknown" },
+      body: JSON.stringify({ message: "Unknown property.", preferredContactMethod: "email" }),
+    },
+  );
+  assert.equal(unknownPropertyEnquiry.response.status, 404);
+  await db.update(properties).set({ status: "draft" }).where(eq(properties.id, demoProperties[3].id));
+  try {
+    const unpublishedPropertyDetail = await request(
+      server.baseUrl,
+      `/v1/properties/${demoProperties[3].slug}`,
+      "demo_traveller",
+    );
+    assert.equal(unpublishedPropertyDetail.response.status, 404);
+    const unpublishedPropertyEnquiry = await request(
+      server.baseUrl,
+      `/v1/properties/${demoProperties[3].slug}/enquiries`,
+      "demo_traveller",
+      {
+        method: "POST",
+        headers: { "Idempotency-Key": "demo-property-enquiry-unpublished" },
+        body: JSON.stringify({ message: "Unpublished property.", preferredContactMethod: "email" }),
+      },
+    );
+    assert.equal(unpublishedPropertyEnquiry.response.status, 404);
+  } finally {
+    await db.update(properties).set({ status: "published" }).where(eq(properties.id, demoProperties[3].id));
+  }
 
   const vendorSession = await request(server.baseUrl, "/v1/auth/session", "demo_vendor");
   assert.equal(vendorSession.response.status, 200);
@@ -689,22 +733,26 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
 test("demo catalogue is absent when demo mode is disabled", { skip: skipUnlessPhase("journey") }, async () => {
   if (!databaseUrl) return;
   const script = `
-    import express from "express";
-    import http from "node:http";
-    import { createCatalogRouter } from "./src/routes/catalog.ts";
-    const app = express();
-    app.use(createCatalogRouter());
-    const server = http.createServer(app);
-    await new Promise((resolve, reject) => {
-      server.once("error", reject);
-      server.listen(0, "127.0.0.1", resolve);
-    });
-    const address = server.address();
-    const response = await fetch("http://127.0.0.1:" + address.port + "/v1/home");
-    console.log(JSON.stringify({ status: response.status, body: await response.json() }));
-    await new Promise((resolve) => server.close(resolve));
+    void (async () => {
+      const [{ default: express }, { default: http }, { createCatalogRouter }] = await Promise.all([
+        import("express"),
+        import("node:http"),
+        import("./src/routes/catalog.ts"),
+      ]);
+      const app = express();
+      app.use(createCatalogRouter());
+      const server = http.createServer(app);
+      await new Promise((resolve, reject) => {
+        server.once("error", reject);
+        server.listen(0, "127.0.0.1", resolve);
+      });
+      const address = server.address();
+      const response = await fetch("http://127.0.0.1:" + address.port + "/v1/home");
+      console.log(JSON.stringify({ status: response.status, body: await response.json() }));
+      await new Promise((resolve) => server.close(resolve));
+    })();
   `;
-  const result = await execFileAsync(process.execPath, ["--import", tsxLoader, "--input-type=module", "-e", script], {
+  const result = await execFileAsync(process.execPath, ["--import", tsxLoader, "-e", script], {
     cwd: apiRoot,
     env: {
       ...process.env,

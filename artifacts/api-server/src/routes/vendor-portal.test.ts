@@ -15,6 +15,7 @@ import {
   propertyEnquiries,
   propertyEnquiryHistory,
   notifications,
+  pushTokens,
   roomAvailability,
   userRoles,
   users,
@@ -273,6 +274,7 @@ async function createVendorFixture(): Promise<VendorFixture> {
 
 async function deleteVendorFixture(fixture: VendorFixture): Promise<void> {
   await db.delete(vendorAuditLogs).where(inArray(vendorAuditLogs.vendorId, [fixture.vendorA, fixture.vendorB]));
+  await db.delete(pushTokens).where(eq(pushTokens.userId, fixture.vendorB));
   await db.delete(notifications).where(inArray(notifications.userId, [fixture.vendorA, fixture.vendorB]));
   await db.delete(propertyEnquiryHistory).where(inArray(propertyEnquiryHistory.enquiryId, [fixture.enquiryA, fixture.enquiryB]));
   await db.delete(propertyEnquiries).where(inArray(propertyEnquiries.id, [fixture.enquiryA, fixture.enquiryB]));
@@ -469,10 +471,30 @@ test("database-backed vendor requests stay isolated by hotel ownership", async (
       ["new"],
     );
 
-    const contacted = await vendorRequest(server.baseUrl, fixture.vendorA, `/v1/vendor/enquiries/${fixture.enquiryA}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status: "contacted", note: "Called the customer." }),
+    await db.insert(pushTokens).values({
+      userId: fixture.vendorB,
+      token: `ExponentPushToken[${fixture.vendorB}]`,
+      platform: "ios",
+      lastSeenAt: new Date(),
+      revokedAt: null,
     });
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (input, init) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      if (url === "https://exp.host/--/api/v2/push/send") {
+        throw new Error("simulated Expo push outage");
+      }
+      return originalFetch(input, init);
+    }) as typeof fetch;
+    let contacted: Awaited<ReturnType<typeof vendorRequest>>;
+    try {
+      contacted = await vendorRequest(server.baseUrl, fixture.vendorA, `/v1/vendor/enquiries/${fixture.enquiryA}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "contacted", note: "Called the customer." }),
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
     assert.equal(contacted.status, 200);
     assert.equal((contacted.body as { status: string }).status, "contacted");
     assert.deepEqual((contacted.body as { history: Array<{ status: string }> }).history.map((entry) => entry.status), ["new", "contacted"]);
@@ -490,6 +512,20 @@ test("database-backed vendor requests stay isolated by hotel ownership", async (
     assert.equal(contactedData?.relatedId, fixture.propertyA);
     assert.equal("note" in (contactedData ?? {}), false);
     assert.doesNotMatch(JSON.stringify(contactedData), /Called the customer/);
+
+    const invalidStatus = await vendorRequest(server.baseUrl, fixture.vendorA, `/v1/vendor/enquiries/${fixture.enquiryA}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "not-a-status" }),
+    });
+    assert.equal(invalidStatus.status, 400);
+    assert.equal((invalidStatus.body.error as { code: string }).code, "INVALID_ENQUIRY_STATUS");
+
+    const invalidTransition = await vendorRequest(server.baseUrl, fixture.vendorA, `/v1/vendor/enquiries/${fixture.enquiryA}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "new" }),
+    });
+    assert.equal(invalidTransition.status, 409);
+    assert.equal((invalidTransition.body.error as { code: string }).code, "ENQUIRY_STATE_INVALID");
 
     const closed = await vendorRequest(server.baseUrl, fixture.vendorA, `/v1/vendor/enquiries/${fixture.enquiryA}`, {
       method: "PATCH",

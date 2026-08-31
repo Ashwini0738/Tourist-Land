@@ -490,7 +490,13 @@ router.post("/v1/admin/hotels/:id/status", async (req, res) => {
   try {
     updated = await db.transaction(async (tx) => {
       const changed = (await tx.update(hotels).set(patch).where(eq(hotels.id, current.id)).returning())[0];
-      if (changed) await audit(req, "status_updated", "hotel", current.id, { status: status ?? null, approvalStatus: approvalStatus ?? null, reason: body?.reason ?? null }, tx);
+      if (changed) {
+        await audit(req, "status_updated", "hotel", current.id, {
+          ...(status ? { status } : {}),
+          ...(approvalStatus ? { approvalStatus } : {}),
+          reason: body?.reason ?? null,
+        }, tx);
+      }
       return changed;
     });
   } catch {

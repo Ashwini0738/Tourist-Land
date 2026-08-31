@@ -46,7 +46,7 @@ Status meanings:
 | `/vendor/bookings` | PASS | route compiles; server query is owner-scoped |
 | `/vendor/listings` | PASS | route compiles; role/ownership guard is server-side |
 | `/vendor/profile` | PASS | route compiles |
-| `/vendor/enquiries` | FAIL | explicit placeholder; no vendor enquiry contract yet |
+| `/vendor/enquiries` | PASS | database-backed vendor list/detail/status flow, ownership isolation, valid/invalid transitions, duplicate status protection, and push-failure resilience |
 | `/admin` and `/admin/index` | PASS | protected mobile namespace compiles |
 | `/admin/users` | PASS | route tests pass |
 | `/admin/vendors` | PASS | focused component tests pass |
@@ -82,7 +82,7 @@ Status meanings:
 
 ## API routes
 
-Every OpenAPI path was regenerated into the client and Zod packages. “Auth matrix” means unauthenticated/wrong-role rejection is tested; database mutation acceptance remains BLOCKED where the pending schema is required.
+Every OpenAPI path was regenerated into the client and Zod packages. “Auth matrix” means unauthenticated/wrong-role rejection is tested; disposable-database mutation acceptance is covered where listed, while native/provider/production acceptance remains BLOCKED.
 
 | Surface | Paths | Status | Evidence |
 |---|---|---|---|
@@ -90,8 +90,8 @@ Every OpenAPI path was regenerated into the client and Zod packages. “Auth mat
 | Home | `GET /v1/home`, `/banners`, `/featured`, `/destinations`, `/nearby`, `/events`, `/hotels`, `/properties` | PASS | pure/HTTP catalog tests and generated response schemas |
 | Explore | `GET /v1/explore/search`, `/categories`, `/filters` | PASS | filter, pagination, provider-isolation tests |
 | Destinations | `GET /v1/destinations`, `/v1/destinations/{id}` | PASS | detail composition and 404 tests |
-| Properties | `GET /v1/properties`, `/v1/properties/{id}` | PASS | generated contract; database catalogue acceptance BLOCKED |
-| Enquiries | `POST /v1/properties/{id}/enquiries` | PASS | auth, validation, persistent idempotency, safe unavailable behavior; full DB journey BLOCKED |
+| Properties | `GET /v1/properties`, `/v1/properties/{id}` | PASS | generated contract; published-only enquiry eligibility and invalid/unpublished property checks run against disposable PostgreSQL |
+| Enquiries | `POST /v1/properties/{id}/enquiries` | PASS | unauthenticated/invalid/unpublished rejection, persistent idempotency, transactional history, vendor ownership/status lifecycle, and traveller notification reads run against disposable PostgreSQL |
 | Hotels | `GET /v1/hotels`, `/{id}`, `/{id}/rooms`, `/{id}/availability`, `/{id}/nearby` | PASS | catalog and availability tests |
 | Bookings | `GET/POST /v1/bookings`, `GET /{reference}`, `POST /{reference}/checkout`, `POST /{reference}/cancel` | PASS | validation, ownership, idempotency, inventory, payment-state tests; live provider BLOCKED |
 | Favorites | `GET /v1/favorites`, `PUT/DELETE /{entityType}/{entityId}` | PASS | entity resolution and no-fallback tests |
@@ -100,9 +100,9 @@ Every OpenAPI path was regenerated into the client and Zod packages. “Auth mat
 | Auth/user | `GET /v1/auth/session`, `POST /refresh`, `POST /logout`, `GET/PATCH /v1/me` | PASS | Clerk authority and role tests; live provider BLOCKED |
 | Vendor onboarding | `POST /v1/vendor/applications`, `GET /status` | PASS | validation/idempotent approval tests; email delivery BLOCKED |
 | Vendor dashboard/profile | `GET /v1/vendor/dashboard`, `GET/PATCH /profile` | PASS | auth matrix |
-| Vendor hotels | `GET/POST /v1/vendor/hotels`, `GET/PATCH /{id}`, `POST /{id}/submit`, `/archive` | PASS | owner-isolation tests; DB mutation acceptance BLOCKED |
-| Vendor rooms | `GET/POST /v1/vendor/rooms`, `GET /hotels/{hotelId}/rooms`, `PATCH /rooms/{id}`, `POST /activate`, `/deactivate` | PASS | owner-isolation and validation tests; DB mutation acceptance BLOCKED |
-| Vendor inventory | `GET/PATCH /v1/vendor/availability` | PASS | bounded parser/reservation-floor tests; DB mutation acceptance BLOCKED |
+| Vendor hotels | `GET/POST /v1/vendor/hotels`, `GET/PATCH /{id}`, `POST /{id}/submit`, `/archive` | PASS | disposable-database owner-isolation and mutation tests |
+| Vendor rooms | `GET/POST /v1/vendor/rooms`, `GET /hotels/{hotelId}/rooms`, `PATCH /rooms/{id}`, `POST /activate`, `/deactivate` | PASS | disposable-database owner-isolation and validation tests |
+| Vendor inventory | `GET/PATCH /v1/vendor/availability` | PASS | disposable-database reservation-floor and owner-isolation tests |
 | Vendor bookings | `GET /v1/vendor/bookings` | PASS | owner-scoped query and auth matrix |
 | Vendor listings | `GET/POST /v1/vendor/listings`, `GET/PATCH /{id}`, `POST /publish`, `/archive` | PASS | role guard and generated contract |
 | Admin onboarding | `GET /vendor-applications`, `/vendor-approval-history`, `/vendor-listings`; approval/rejection/invitation/role/suspension mutations | PASS | all admin paths reject non-admins; transition tests |
@@ -121,6 +121,6 @@ Every OpenAPI path was regenerated into the client and Zod packages. “Auth mat
 | Live payment, webhook latency, declined card recovery | requires controlled Stripe test execution |
 | Email acceptance/retry | requires controlled Resend delivery and inbox access |
 | Supplier reservation confirmation/outage | no managed inventory provider is connected |
-| Production data/schema | no production database or published deployment was used |
+| Production data/schema | no production database or published deployment was used; the disposable schema run deliberately targeted a separate local database |
 | 3G/4G/offline restoration, cross-region latency | requires device/network shaping |
 | Multi-country currency/locale acceptance | requires region-specific device settings and provider records; no FX is implemented |

@@ -100,6 +100,10 @@ function parseEnquiryIdempotencyKey(value: string | undefined): string | null {
   return key && key.length >= 8 && key.length <= 128 ? key : null;
 }
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 function serializeTravellerEnquiryHistory(history: typeof propertyEnquiryHistory.$inferSelect) {
   return {
     id: history.id,
@@ -414,12 +418,20 @@ export function createCatalogRouter(
   router.get("/v1/properties/:id", async (req, res): Promise<void> => {
     if (demoModeEnabled()) {
       const propertyId = typeof req.params.id === "string" ? req.params.id : req.params.id[0];
+      if (!propertyId.startsWith("demo-") && !isUuid(propertyId)) {
+        res.status(404).json({ error: { code: "NOT_FOUND", message: "Property not found" } });
+        return;
+      }
       const [record] = await db.select().from(propertyRecords).where(
         propertyId.startsWith("demo-")
           ? dbEq(propertyRecords.slug, propertyId)
           : dbEq(propertyRecords.id, propertyId),
       );
       if (record) {
+        if (record.status !== "published") {
+          res.status(404).json({ error: { code: "NOT_FOUND", message: "Property not found" } });
+          return;
+        }
         res.json(demoPropertyPayload(record));
         return;
       }
@@ -490,11 +502,13 @@ export function createCatalogRouter(
       return;
     }
 
-    const [persistedProperty] = await db.select().from(propertyRecords).where(
-      propertyId.startsWith("demo-")
-        ? eq(propertyRecords.slug, propertyId)
-        : eq(propertyRecords.id, propertyId),
-    );
+    const [persistedProperty] = !propertyId.startsWith("demo-") && !isUuid(propertyId)
+      ? []
+      : await db.select().from(propertyRecords).where(
+        propertyId.startsWith("demo-")
+          ? eq(propertyRecords.slug, propertyId)
+          : eq(propertyRecords.id, propertyId),
+      );
     if (!persistedProperty) {
       const staticProperty = properties.find((item) => item.id === propertyId);
       if (staticProperty) {
@@ -502,6 +516,10 @@ export function createCatalogRouter(
       } else {
         res.status(404).json({ error: { code: "NOT_FOUND", message: "Property not found" } });
       }
+      return;
+    }
+    if (persistedProperty.status !== "published") {
+      res.status(404).json({ error: { code: "NOT_FOUND", message: "Property not found" } });
       return;
     }
 

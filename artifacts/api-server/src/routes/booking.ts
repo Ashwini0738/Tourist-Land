@@ -1,5 +1,5 @@
-import { and, asc, desc, eq, gt, lt, or, sql } from "drizzle-orm";
-import { db, bookingItems, bookings, hotels, hotelRooms, payments } from "@workspace/db";
+import { and, asc, desc, eq, gt, inArray, lte, or, sql } from "drizzle-orm";
+import { db, bookingItems, bookings, hotels, hotelRooms, payments, roomAvailability } from "@workspace/db";
 import { getHotelCatalogRecord } from "./hotel-catalog.ts";
 import { getDevelopmentRoom, getManagedHotelAvailability, availabilityDevelopmentNotice } from "./hotel-availability.ts";
 import { inventoryOffersEnabled } from "./hotel-inventory-policy.ts";
@@ -41,6 +41,10 @@ function calculateBookingPricing(input: BookingRequest, rooms: BookingRoomPrice[
 function createReference() {
   const random = Math.random().toString(36).slice(2, 8).toUpperCase();
   return `TL-${new Date().toISOString().slice(2, 10).replaceAll("-", "")}-${random}`;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 type BookingRow = typeof bookings.$inferSelect;
@@ -204,10 +208,13 @@ export async function createUserBooking(userId: string, input: BookingRequest, i
 
     for (const room of rooms) {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${room.id}))`);
-        const [roomRecord] = await tx.select({ room: hotelRooms, hotel: hotels })
+      const roomSelector = isUuid(room.id)
+        ? or(eq(hotelRooms.catalogRoomId, room.id), eq(hotelRooms.id, room.id))
+        : eq(hotelRooms.catalogRoomId, room.id);
+      const [roomRecord] = await tx.select({ room: hotelRooms, hotel: hotels })
         .from(hotelRooms)
         .leftJoin(hotels, eq(hotels.id, hotelRooms.hotelId))
-          .where(or(eq(hotelRooms.catalogRoomId, room.id), eq(hotelRooms.id, room.id)));
+        .where(roomSelector);
       let persistedRoom = roomRecord?.room;
       let persistedHotel = roomRecord?.hotel ?? null;
       if (!persistedHotel) {
@@ -234,18 +241,34 @@ export async function createUserBooking(userId: string, input: BookingRequest, i
       }
       if (!persistedRoom) throw new BookingNotFoundError("The selected room could not be prepared.");
 
-      const [reserved] = await tx.select({
-        quantity: sql<string>`coalesce(sum(${bookingItems.quantity}), 0)`,
-      }).from(bookingItems)
-        .innerJoin(bookings, eq(bookings.id, bookingItems.bookingId))
-        .where(and(
-          eq(bookingItems.roomId, persistedRoom.id),
-          eq(bookings.status, "pending_payment"),
-          lt(bookings.startsOn, input.checkOut),
-          gt(bookings.endsOn, input.checkIn),
-        ));
-      if (Number(reserved?.quantity ?? 0) + room.quantity > room.availableUnits) {
-        throw new BookingConflictError("That room is no longer available for the requested stay.");
+      const nights = calculateBookingNights(input.checkIn, input.checkOut);
+      const dates = Array.from({ length: nights }, (_, index) => {
+        const date = new Date(`${input.checkIn}T12:00:00Z`);
+        date.setUTCDate(date.getUTCDate() + index);
+        return date.toISOString().slice(0, 10);
+      });
+      const dailyRows = await tx.select().from(roomAvailability)
+        .where(and(eq(roomAvailability.roomId, persistedRoom.id), inArray(roomAvailability.date, dates)));
+      const availabilityByDate = new Map(dailyRows.map((row) => [row.date, row]));
+      for (const date of dates) {
+        const daily = availabilityByDate.get(date);
+        if (daily?.status === "blackout") {
+          throw new BookingConflictError("That room is no longer available for the requested stay.");
+        }
+        const [reserved] = await tx.select({
+          quantity: sql<string>`coalesce(sum(${bookingItems.quantity}), 0)`,
+        }).from(bookingItems)
+          .innerJoin(bookings, eq(bookings.id, bookingItems.bookingId))
+          .where(and(
+            eq(bookingItems.roomId, persistedRoom.id),
+            inArray(bookings.status, ["pending_payment", "confirmed"]),
+            lte(bookings.startsOn, date),
+            gt(bookings.endsOn, date),
+          ));
+        const configuredUnits = Math.min(daily?.availableUnits ?? persistedRoom.totalUnits, persistedRoom.totalUnits);
+        if (Number(reserved?.quantity ?? 0) + room.quantity > configuredUnits) {
+          throw new BookingConflictError("That room is no longer available for the requested stay.");
+        }
       }
     }
 

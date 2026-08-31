@@ -267,7 +267,6 @@ export async function getManagedHotelAvailability(
     for (const date of dates) {
       const row = byDate.get(date);
       if (row?.status === "blackout") blocked = true;
-      availableUnits = Math.min(availableUnits, row?.availableUnits ?? room.totalUnits);
       nightlyRates.push(row?.priceOverride === null || row?.priceOverride === undefined ? Number(room.nightlyRate) : Number(row.priceOverride));
       const [reserved] = await db.select({ quantity: sql<number>`coalesce(sum(${bookingItems.quantity}), 0)` })
         .from(bookingItems)
@@ -278,7 +277,9 @@ export async function getManagedHotelAvailability(
           lte(bookings.startsOn, date),
           gt(bookings.endsOn, date),
         ));
-      availableUnits = Math.min(availableUnits, room.totalUnits - Number(reserved?.quantity ?? 0));
+      const configuredUnits = Math.min(row?.availableUnits ?? room.totalUnits, room.totalUnits);
+      const remainingUnits = Math.max(0, configuredUnits - Number(reserved?.quantity ?? 0));
+      availableUnits = Math.min(availableUnits, remainingUnits);
     }
     if (blocked || availableUnits < input.rooms || room.capacity * input.rooms < input.adults + input.children) continue;
     const nightlyRate = roundCurrency(nightlyRates.reduce((sum, rate) => sum + rate, 0) / nightlyRates.length);
