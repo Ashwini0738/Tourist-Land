@@ -1,0 +1,866 @@
+# DEVELOPMENT TASK — END-TO-END DUMMY DATA + DEMO ENVIRONMENT
+
+Continue development of the existing **Travel & Land** application.
+
+## OBJECTIVE
+
+Create a controlled **development/demo seed-data system** so that every major feature of the application can be demonstrated end-to-end without requiring real vendors, hotels, properties, payments, or external travel providers.
+
+This is DEVELOPMENT DATA ONLY.
+
+Do NOT present dummy data as real inventory.
+
+The application must clearly distinguish:
+
+* Demo/development data
+* Real/production data
+
+---
+
+# 1. IMPORTANT EXISTING MODULES
+
+Do NOT rebuild:
+
+* User authentication
+* Vendor authentication
+* Admin authentication
+* Clerk
+* Email verification
+* OTP/MFA
+* Fingerprint/Face ID/device authentication
+* Role authorization
+* Home
+* Explore
+* Destinations
+* Maps
+* Hotels
+* Rooms
+* Availability
+* Booking
+* Payment
+* Wallet
+* Notifications
+* Favorites
+* Reviews
+* Vendor Portal
+* Admin Portal
+* Land Sourcing
+* Property enquiries
+* REST API
+* OpenAPI
+* Generated API client
+* React Query
+* Zod
+
+Extend the existing architecture.
+
+---
+
+# 2. CREATE A SEED DATA SYSTEM
+
+Create a repeatable database seed script.
+
+It should be possible to run something similar to:
+
+npm run seed
+
+or the existing project-equivalent command.
+
+The seed operation must be:
+
+* Repeatable
+* Idempotent
+* Safe for development
+* Clearly separated from production
+
+Do NOT insert duplicate records every time the seed script runs.
+
+Use stable demo IDs/identifiers where appropriate.
+
+---
+
+# 3. DEMO MODE
+
+Create a development environment flag such as:
+
+DEMO_MODE=true
+
+or use the existing environment configuration pattern.
+
+When DEMO_MODE is enabled:
+
+Show a subtle:
+
+"Demo Data"
+
+indicator where appropriate.
+
+Do not show this indicator in production mode.
+
+Do NOT create hidden fake production data.
+
+---
+
+# 4. DEMO USERS
+
+Create development users representing the three main roles:
+
+### Traveller
+
+Demo traveller account
+
+Role:
+
+user
+
+### Vendor
+
+Demo hotel/property vendor
+
+Role:
+
+vendor
+
+### Admin
+
+Demo administrator
+
+Role:
+
+admin
+
+Do not bypass Clerk security.
+
+Do not create insecure hardcoded production credentials.
+
+If Clerk development users must be created through Clerk, document the correct development setup instead of storing passwords in source code.
+
+---
+
+# 5. DEMO VENDOR
+
+Create at least:
+
+### Vendor 1
+
+Business:
+
+"Travel & Stay Demo Partner"
+
+Include:
+
+* Business name
+* Contact name
+* Email
+* Phone
+* Address
+* Approved status
+
+---
+
+# 6. DEMO HOTELS
+
+Create at least 4 hotels.
+
+Example:
+
+### Hotel 1
+
+The Mango House
+
+Location:
+
+Coorg, Karnataka
+
+### Hotel 2
+
+Misty Fig Estate
+
+Location:
+
+Chikmagalur, Karnataka
+
+### Hotel 3
+
+Konkan Bay Retreat
+
+Location:
+
+Gokarna, Karnataka
+
+### Hotel 4
+
+River View Residency
+
+Location:
+
+Mysuru, Karnataka
+
+Use clearly marked demo content.
+
+---
+
+# 7. DEMO ROOMS
+
+Each hotel should contain multiple room types.
+
+For example:
+
+Standard Room
+
+Deluxe Room
+
+Premium Suite
+
+Family Room
+
+Create realistic:
+
+* Capacity
+* Bed type
+* Base price
+* Number of units
+* Amenities
+* Images
+
+Use sensible development prices.
+
+---
+
+# 8. DEMO INVENTORY
+
+Create availability for multiple future dates.
+
+At minimum seed:
+
+* Current date
+* Next 7 days
+* Next 30 days
+* Several weekend dates
+
+For each room:
+
+* Total inventory
+* Reserved inventory
+* Available inventory
+* Price
+
+Ensure:
+
+available + reserved <= total
+
+Do not create impossible inventory.
+
+---
+
+# 9. DEMO BOOKINGS
+
+Create several bookings in different states.
+
+Examples:
+
+### Booking 1
+
+confirmed
+
+### Booking 2
+
+upcoming
+
+### Booking 3
+
+completed
+
+### Booking 4
+
+cancelled
+
+### Booking 5
+
+pending payment
+
+Use realistic relationships between:
+
+* User
+* Hotel
+* Room
+* Inventory
+* Payment
+
+Do not create inconsistent booking records.
+
+---
+
+# 10. DEMO PAYMENTS
+
+Create development/test payment records corresponding to demo bookings.
+
+Statuses:
+
+* successful
+* pending
+* failed
+* refunded
+
+Do NOT use real card data.
+
+Do NOT store fake card numbers.
+
+Payment records should clearly indicate:
+
+demo/test transaction
+
+---
+
+# 11. DEMO WALLET
+
+Create demo wallet data where the existing architecture supports it.
+
+Include:
+
+* Starting balance
+* Credits
+* Debits
+* Booking-related transactions
+* Refund transaction
+
+Do not display fake wallet data in production mode.
+
+---
+
+# 12. DEMO DESTINATIONS
+
+Create at least 8 destinations.
+
+Suggested:
+
+* Coorg
+* Chikmagalur
+* Gokarna
+* Mysuru
+* Hampi
+* Udupi
+* Wayanad
+* Konkan Coast
+
+Each should include:
+
+* Name
+* Description
+* State
+* Country
+* Coordinates
+* Image
+* Tags
+* Active status
+
+---
+
+# 13. DEMO PLACES
+
+Create at least 12 places.
+
+Examples:
+
+* Coffee Estate Trail
+* Coastal Lighthouse Walk
+* Abbey Falls
+* Mandalpatti
+* Om Beach
+* Hampi Bazaar
+* Mysore Palace
+* Malpe Beach
+* Kudremukh Viewpoint
+* Dubare Elephant Camp
+* St Mary's Island
+* Agumbe Sunset Point
+
+Connect places to destinations.
+
+---
+
+# 14. DEMO EVENTS
+
+Create at least 6 future events.
+
+Each should have:
+
+* Event name
+* Description
+* Date
+* Location
+* Destination
+* Image
+* Active status
+
+Do not create events in the past unless specifically required for testing historical states.
+
+---
+
+# 15. DEMO LAND PROPERTIES
+
+Create at least 8 approved/active properties.
+
+Example:
+
+* Riverstone Estate
+* Sea Wind Grove
+* Coffee Valley Land
+* Konkan Green Acres
+* Hillside Retreat Plot
+* Coastal Development Land
+* Valley View Estate
+* Riverside Farm Land
+
+Each should include:
+
+* Property name
+* Property type
+* Description
+* Area
+* Unit
+* Asking price
+* State
+* City
+* Locality
+* Coordinates
+* Images
+* Development status
+* Approval status
+* Vendor
+
+Clearly mark as:
+
+Demo Property
+
+when DEMO_MODE is enabled.
+
+---
+
+# 16. DEMO PROPERTY ENQUIRIES
+
+Create enquiries in different states:
+
+* submitted
+* received
+* contacted
+* site_visit_scheduled
+* negotiation
+* closed
+
+Connect them correctly to:
+
+* User
+* Property
+* Vendor
+
+Create status history records.
+
+---
+
+# 17. DEMO REVIEWS
+
+Create realistic reviews for demo hotels and destinations.
+
+Include:
+
+* Rating
+* Review text
+* User
+* Entity
+* Published status
+* Created date
+
+Create different ratings:
+
+* 5
+* 4
+* 3
+
+Do not create fake reviews in production.
+
+---
+
+# 18. DEMO FAVORITES
+
+Create favorites for the demo traveller.
+
+Include:
+
+* Destinations
+* Hotels
+* Properties
+
+Ensure favorites appear in the user's account.
+
+---
+
+# 19. DEMO NOTIFICATIONS
+
+Create example notifications:
+
+### Booking
+
+"Your booking has been confirmed."
+
+### Payment
+
+"Payment received successfully."
+
+### Land
+
+"Your property enquiry has been received."
+
+### Site visit
+
+"Your site visit has been scheduled."
+
+### General
+
+"Discover new destinations this weekend."
+
+Use actual notification records.
+
+---
+
+# 20. HOME PAGE
+
+Ensure the seeded data populates:
+
+* Welcome header
+* Featured destinations
+* Nearby/popular places
+* Events
+* Hotels
+* Land opportunities
+* Banners
+
+No Home section should be empty in DEMO_MODE.
+
+Each section must use the real API/database flow.
+
+Do NOT bypass APIs by directly injecting frontend arrays.
+
+---
+
+# 21. EXPLORE
+
+Verify demo data appears through:
+
+* Search
+* Categories
+* Filters
+* Sorting
+
+Test:
+
+Destination search
+
+Hotel search
+
+Property search
+
+Place search
+
+---
+
+# 22. HOTEL FLOW
+
+The demo environment must support:
+
+Home
+
+→ Hotel
+
+→ Hotel Details
+
+→ Select Dates
+
+→ Availability
+
+→ Select Room
+
+→ Guest Details
+
+→ Booking Summary
+
+→ Test Payment
+
+→ Confirmation
+
+→ My Bookings
+
+Everything should use real database/API relationships.
+
+---
+
+# 23. VENDOR FLOW
+
+Demo vendor should be able to demonstrate:
+
+Login
+
+→ Vendor Dashboard
+
+→ Hotels
+
+→ Hotel Details
+
+→ Rooms
+
+→ Availability
+
+→ Bookings
+
+→ Property
+
+→ Property Enquiries
+
+Use seeded data.
+
+---
+
+# 24. ADMIN FLOW
+
+Demo admin should be able to demonstrate:
+
+Login
+
+→ Admin Dashboard
+
+→ Users
+
+→ Vendors
+
+→ Hotels
+
+→ Destinations
+
+→ Events
+
+→ Properties
+
+→ Bookings
+
+→ Reviews
+
+→ Notifications
+
+Populate each section with meaningful demo data.
+
+---
+
+# 25. LAND FLOW
+
+Demo traveller:
+
+Land
+
+→ Property Listing
+
+→ Search
+
+→ Filter
+
+→ Property Details
+
+→ Map
+
+→ Favorite
+
+→ Enquire Now
+
+→ Submit Enquiry
+
+→ My Enquiries
+
+Demo vendor/admin should see the enquiry.
+
+---
+
+# 26. BOOKING CONSISTENCY
+
+Ensure demo bookings correctly affect inventory.
+
+Example:
+
+Room inventory:
+
+10
+
+Existing reservations:
+
+3
+
+Available:
+
+7
+
+The availability API must return:
+
+7
+
+Do not simply hardcode "7".
+
+Calculate it from the actual data model.
+
+---
+
+# 27. DEMO DATA LABELING
+
+Where appropriate, display:
+
+"Demo Data"
+
+or:
+
+"Sample Listing"
+
+for seeded content.
+
+Do not make the UI imply:
+
+* Real hotel availability
+* Real land ownership
+* Real property verification
+* Real payment processing
+* Real market pricing
+
+---
+
+# 28. RESET DEMO DATA
+
+Create a safe development-only reset mechanism.
+
+Example:
+
+npm run seed:reset
+
+This should:
+
+* Clear demo records
+* Recreate demo records
+
+IMPORTANT:
+
+This command must refuse to run if:
+
+NODE_ENV=production
+
+or equivalent production protection is active.
+
+Never provide a production database reset command without explicit safeguards.
+
+---
+
+# 29. DATABASE INTEGRITY
+
+Seed data must respect:
+
+* Foreign keys
+* Unique constraints
+* Booking relationships
+* Inventory relationships
+* Vendor ownership
+* Property ownership
+* User relationships
+* Review relationships
+* Notification relationships
+
+Do not disable database constraints merely to make seeding easier.
+
+---
+
+# 30. TESTING
+
+Add tests confirming:
+
+1. Seed script executes
+2. Seed script is idempotent
+3. Demo users/roles exist
+4. Hotels exist
+5. Rooms exist
+6. Inventory exists
+7. Bookings exist
+8. Payments exist
+9. Wallet records exist
+10. Destinations exist
+11. Places exist
+12. Events exist
+13. Properties exist
+14. Property enquiries exist
+15. Reviews exist
+16. Favorites exist
+17. Notifications exist
+18. Home returns seeded data
+19. Hotel availability uses seeded inventory
+20. Booking flow works with demo data
+21. Vendor sees seeded vendor data
+22. Admin sees seeded platform data
+23. User sees own bookings
+24. User sees own enquiries
+25. Vendor sees own enquiries
+26. Admin sees platform enquiries
+27. Demo reset is protected from production
+
+---
+
+# 31. REGRESSION TEST
+
+After implementing seed data, verify:
+
+* User login
+* Vendor login
+* Admin login
+* Home
+* Explore
+* Destinations
+* Maps
+* Hotels
+* Availability
+* Booking
+* Payment
+* Wallet
+* Notifications
+* Favorites
+* Reviews
+* Vendor Portal
+* Admin Portal
+* Land Sourcing
+
+Do not weaken existing security to make demo flows work.
+
+---
+
+# 32. FINAL REPORT
+
+Report:
+
+1. Seed command
+2. Demo mode configuration
+3. Demo users
+4. Number of vendors
+5. Number of hotels
+6. Number of rooms
+7. Number of inventory records
+8. Number of bookings
+9. Number of payment records
+10. Number of wallet transactions
+11. Number of destinations
+12. Number of places
+13. Number of events
+14. Number of properties
+15. Number of enquiries
+16. Number of reviews
+17. Number of favorites
+18. Number of notifications
+19. Tests added
+20. Total tests passing
+21. End-to-end flows verified
+22. Known limitations
+
+IMPORTANT:
+
+Do NOT connect real payment providers or real travel inventory in this task.
+
+The purpose of this task is to make the entire Travel & Land application **fully demonstrable end-to-end using safe development data**.
