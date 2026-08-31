@@ -73,6 +73,7 @@ import type {
   ExploreCategoriesResponse,
   ExploreFiltersResponse,
   ExploreSearchResponse,
+  ExportAdminReportsParams,
   Favorite,
   FavoriteList,
   FeaturedContentList,
@@ -6702,6 +6703,90 @@ export function useGetAdminReports<TData = Awaited<ReturnType<typeof getAdminRep
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAdminReportsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getExportAdminReportsUrl = (params: ExportAdminReportsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/reports/export?${stringifiedParams}` : `/api/v1/admin/reports/export`
+}
+
+/**
+ * @summary Stream a filtered platform report as CSV
+ */
+export const exportAdminReports = async (params: ExportAdminReportsParams, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getExportAdminReportsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportAdminReportsQueryKey = (params?: ExportAdminReportsParams,) => {
+    return [
+    `/api/v1/admin/reports/export`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getExportAdminReportsQueryOptions = <TData = Awaited<ReturnType<typeof exportAdminReports>>, TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ServiceUnavailableResponse>>(params: ExportAdminReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAdminReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportAdminReportsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAdminReports>>> = ({ signal }) => exportAdminReports(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportAdminReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportAdminReportsQueryResult = NonNullable<Awaited<ReturnType<typeof exportAdminReports>>>
+export type ExportAdminReportsQueryError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary Stream a filtered platform report as CSV
+ */
+
+export function useExportAdminReports<TData = Awaited<ReturnType<typeof exportAdminReports>>, TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | ServiceUnavailableResponse>>(
+ params: ExportAdminReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAdminReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportAdminReportsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -4254,6 +4254,26 @@ export const GetAdminReportsResponse = zod.object({
 
 
 /**
+ * @summary Stream a filtered platform report as CSV
+ */
+export const exportAdminReportsQueryCountryMax = 120;
+
+export const exportAdminReportsQueryStatusMax = 40;
+
+
+
+export const ExportAdminReportsQueryParams = zod.object({
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "country": zod.coerce.string().max(exportAdminReportsQueryCountryMax).optional(),
+  "status": zod.coerce.string().max(exportAdminReportsQueryStatusMax).optional(),
+  "table": zod.enum(['bookings', 'payments', 'properties', 'enquiries', 'vendors'])
+})
+
+export const ExportAdminReportsResponse = zod.unknown()
+
+
+/**
  * @summary List eligible catalog content and persisted featured selections
  */
 export const listAdminFeaturedContentResponseItemsItemSortOrderMin = 0;

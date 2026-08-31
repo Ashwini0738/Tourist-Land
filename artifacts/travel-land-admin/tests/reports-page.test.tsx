@@ -1,14 +1,14 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getAdminReports, useGetAdminReports } = vi.hoisted(() => ({
-  getAdminReports: vi.fn(),
+const { fetchMock, useGetAdminReports } = vi.hoisted(() => ({
+  fetchMock: vi.fn(),
   useGetAdminReports: vi.fn(),
 }));
 
 vi.mock('@workspace/api-client-react', async () => {
   const actual = await vi.importActual<typeof import('@workspace/api-client-react')>('@workspace/api-client-react');
-  return { ...actual, getAdminReports, useGetAdminReports };
+  return { ...actual, useGetAdminReports };
 });
 
 import { ReportsPage } from '@/pages/reports-page';
@@ -58,8 +58,9 @@ const reportFor = (page = 1, rows = [bookingsPageOne], hasMore = false) => ({
 
 describe('ReportsPage CSV export', () => {
   beforeEach(() => {
-    getAdminReports.mockReset();
+    fetchMock.mockReset();
     useGetAdminReports.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
     useGetAdminReports.mockImplementation((params: { page?: number }) => ({
       data: params?.page === 2 ? reportFor(2, [bookingsPageTwo]) : reportFor(1, [bookingsPageOne], true),
       isLoading: false,
@@ -67,19 +68,18 @@ describe('ReportsPage CSV export', () => {
       isFetching: false,
       refetch: vi.fn(),
     }));
-    getAdminReports.mockImplementation(async (params: { page?: number }) =>
-      params.page === 2 ? reportFor(2, [bookingsPageTwo]) : reportFor(1, [bookingsPageOne], true),
+    fetchMock.mockResolvedValue(
+      new Response(null, { status: 200, headers: { 'X-Report-Row-Count': '250000' } }),
     );
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:report');
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    delete (window as any).showSaveFilePicker;
     cleanup();
   });
 
-  it('loads every matching page while preserving active filters and currency columns', async () => {
+  it('starts a server stream for a large result while preserving active filters and the selected table', async () => {
     render(<ReportsPage />);
 
     fireEvent.change(screen.getByTestId('input-report-from'), { target: { value: '2026-08-01' } });
@@ -89,30 +89,14 @@ describe('ReportsPage CSV export', () => {
     fireEvent.click(screen.getByTestId('button-apply-report-range'));
     fireEvent.click(screen.getByTestId('button-export-bookings'));
 
-    await waitFor(() => expect(getAdminReports).toHaveBeenCalledTimes(2));
-    expect(getAdminReports).toHaveBeenNthCalledWith(1, {
-      from: '2026-08-01',
-      to: '2026-08-31',
-      country: 'India',
-      status: 'confirmed',
-      page: 1,
-      limit: 100,
-    });
-    expect(getAdminReports).toHaveBeenNthCalledWith(2, {
-      from: '2026-08-01',
-      to: '2026-08-31',
-      country: 'India',
-      status: 'confirmed',
-      page: 2,
-      limit: 100,
-    });
-    expect(screen.getByTestId('text-report-export-status')).toHaveTextContent(
-      'Exported 2 bookings across all matching pages.',
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/admin/reports/export?from=2026-08-01&to=2026-08-31&country=India&status=confirmed&table=bookings',
+      { method: 'HEAD', credentials: 'include' },
     );
-    const [blob] = vi.mocked(URL.createObjectURL).mock.calls[0];
-    const csv = await (blob as Blob).text();
-    expect(csv).toContain('"USD"');
-    expect(csv).toContain('"TL-002"');
+    expect(screen.getByTestId('text-report-export-status')).toHaveTextContent(
+      'Download started: the server is streaming 250,000 bookings without loading all rows in the browser.',
+    );
   });
 
   it('downloads a valid header-only CSV and explains empty filtered results', async () => {
@@ -123,20 +107,48 @@ describe('ReportsPage CSV export', () => {
       isFetching: false,
       refetch: vi.fn(),
     });
-    getAdminReports.mockResolvedValue(reportFor(1, [], false));
+    fetchMock.mockResolvedValue(
+      new Response(null, { status: 200, headers: { 'X-Report-Row-Count': '0' } }),
+    );
     render(<ReportsPage />);
 
     fireEvent.click(screen.getByTestId('button-export-bookings'));
 
     await waitFor(() =>
       expect(screen.getByTestId('text-report-export-status')).toHaveTextContent(
-        'No bookings match the selected filters. Downloaded an empty CSV with headers.',
+        'Download started: an empty bookings CSV with headers.',
       ),
     );
-    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
-    const [blob] = vi.mocked(URL.createObjectURL).mock.calls[0];
-    expect(blob).toBeInstanceOf(Blob);
-    expect(await (blob as Blob).text()).toContain('"id","reference","hotelCatalogId"');
-    expect(await (blob as Blob).text()).not.toContain('booking-1');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('explains an interrupted streamed save and aborts the partial file', async () => {
+    const abort = vi.fn();
+    const write = vi.fn();
+    const close = vi.fn();
+    const read = vi.fn()
+      .mockResolvedValueOnce({ done: false, value: new Uint8Array([1, 2]) })
+      .mockRejectedValueOnce(new Error('connection reset'));
+    const createWritable = vi.fn().mockResolvedValue({ write, close, abort });
+    Object.assign(window, {
+      showSaveFilePicker: vi.fn().mockResolvedValue({ createWritable }),
+    });
+    fetchMock
+      .mockResolvedValueOnce(new Response(null, { status: 200, headers: { 'X-Report-Row-Count': '2' } }))
+      .mockResolvedValueOnce({
+        ok: true,
+        body: { getReader: () => ({ read }) },
+        headers: new Headers(),
+      });
+
+    render(<ReportsPage />);
+    fireEvent.click(screen.getByTestId('button-export-bookings'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('text-report-export-status')).toHaveTextContent(
+        'The export download was interrupted before it finished. Try again.',
+      ),
+    );
+    expect(abort).toHaveBeenCalledTimes(1);
   });
 });

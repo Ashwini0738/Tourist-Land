@@ -1639,6 +1639,32 @@ paths:
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /v1/admin/reports/export:
+    get:
+      operationId: exportAdminReports
+      tags: [admin]
+      security: [{ bearerAuth: [] }]
+      summary: Stream a filtered platform report as CSV
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: country, in: query, schema: { type: string, maxLength: 120 } }
+        - { name: status, in: query, schema: { type: string, maxLength: 40 } }
+        - { name: table, in: query, required: true, schema: { type: string, enum: [bookings, payments, properties, enquiries, vendors] } }
+      responses:
+        "200":
+          description: Streamed CSV report
+          headers:
+            X-Report-Row-Count:
+              description: Number of matching records included in the stream
+              schema: { type: integer, minimum: 0 }
+          content:
+            text/csv:
+              schema: { type: string }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /v1/admin/featured-content:
     get:
       operationId: listAdminFeaturedContent

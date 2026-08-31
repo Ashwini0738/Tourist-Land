@@ -2979,6 +2979,31 @@ page?: number;
 limit?: number;
 };
 
+export type ExportAdminReportsParams = {
+from?: string;
+to?: string;
+/**
+ * @maxLength 120
+ */
+country?: string;
+/**
+ * @maxLength 40
+ */
+status?: string;
+table: ExportAdminReportsTable;
+};
+
+export type ExportAdminReportsTable = typeof ExportAdminReportsTable[keyof typeof ExportAdminReportsTable];
+
+
+export const ExportAdminReportsTable = {
+  bookings: 'bookings',
+  payments: 'payments',
+  properties: 'properties',
+  enquiries: 'enquiries',
+  vendors: 'vendors',
+} as const;
+
 export type DeleteAdminFeaturedContent200 = {
   deleted: boolean;
   id: string;

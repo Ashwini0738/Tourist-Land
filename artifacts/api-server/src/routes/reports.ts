@@ -26,6 +26,17 @@ type Conditions = any[];
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_REPORT_ROWS = 100;
+const EXPORT_PAGE_SIZE = 1_000;
+
+type ExportTable = "bookings" | "payments" | "properties" | "enquiries" | "vendors";
+
+const EXPORT_COLUMNS: Record<ExportTable, string[]> = {
+  bookings: ["id", "reference", "hotelCatalogId", "startsOn", "endsOn", "totalAmount", "currency", "status", "createdAt"],
+  payments: ["id", "bookingReference", "amount", "currency", "status", "provider", "createdAt"],
+  properties: ["id", "title", "propertyType", "status", "askingPrice", "currency", "createdAt"],
+  enquiries: ["id", "propertyTitle", "status", "createdAt"],
+  vendors: ["id", "businessName", "country", "city", "status", "email", "createdAt"],
+};
 
 function numberValue(value: unknown): number {
   const number = Number(value);
@@ -186,6 +197,242 @@ function baseResponse(role: ReportRole, range: Range, country: string | undefine
 
 function statusRows(rows: Array<{ key: string; count: number }>) {
   return rows.map(({ key, count }) => ({ status: key, count }));
+}
+
+function csvCell(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (value instanceof Date) return `"${value.toISOString()}"`;
+  const stringValue = typeof value === "object" ? JSON.stringify(value) : String(value);
+  return `"${stringValue.replaceAll('"', '""')}"`;
+}
+
+function isExportTable(value: string | undefined): value is ExportTable {
+  return value !== undefined && Object.hasOwn(EXPORT_COLUMNS, value);
+}
+
+type ExportPlan = {
+  table: ExportTable;
+  total: number;
+  fetchPage: (offset: number) => Promise<Array<Record<string, unknown>>>;
+};
+
+async function adminExportPlan(req: Parameters<RequestHandler>[0], range: Range): Promise<ExportPlan> {
+  const tableValue = queryString(req, "table");
+  if (!isExportTable(tableValue)) {
+    throw new Error("INVALID_REPORT_TABLE");
+  }
+
+  const country = queryString(req, "country");
+  const status = queryString(req, "status");
+  const countryHotels = country
+    ? await db.select({ id: hotels.id, catalogId: hotels.catalogId }).from(hotels).where(eq(hotels.country, country))
+    : [];
+  const countryCatalogIds = countryHotels.flatMap((row) => row.catalogId ? [row.catalogId] : []);
+  const bookingConditions = [
+    ...createdBetween(bookings.createdAt, range),
+    country ? inArray(bookings.hotelCatalogId, countryCatalogIds.length ? countryCatalogIds : ["__none__"]) : undefined,
+    status ? eq(bookings.status, status) : undefined,
+  ];
+  const paymentConditions = [...createdBetween(payments.createdAt, range), status ? eq(payments.status, status) : undefined];
+  const propertyConditions = [...createdBetween(properties.createdAt, range), status ? eq(properties.status, status) : undefined];
+  const enquiryConditions = [...createdBetween(propertyEnquiries.createdAt, range), status ? eq(propertyEnquiries.status, status) : undefined];
+  const vendorConditions = [...createdBetween(vendorProfiles.createdAt, range), status ? eq(vendorProfiles.status, status) : undefined];
+
+  switch (tableValue) {
+    case "bookings": {
+      const total = await countRows(bookings, bookingConditions);
+      return {
+        table: tableValue,
+        total,
+        fetchPage: async (offset) => {
+          const rows = await db.select().from(bookings)
+            .where(withConditions(bookingConditions))
+            .orderBy(desc(bookings.createdAt), desc(bookings.id))
+            .limit(EXPORT_PAGE_SIZE)
+            .offset(offset);
+          return (rows as any[]).map((row) => ({
+            id: row.id,
+            reference: row.reference,
+            hotelCatalogId: row.hotelCatalogId,
+            startsOn: row.startsOn,
+            endsOn: row.endsOn,
+            totalAmount: numberValue(row.totalAmount),
+            currency: row.currency,
+            status: row.status,
+            createdAt: row.createdAt,
+          }));
+        },
+      };
+    }
+    case "payments": {
+      const total = await countRows(payments, paymentConditions);
+      return {
+        table: tableValue,
+        total,
+        fetchPage: async (offset) => {
+          const rows = await db.select({ payment: payments, booking: bookings })
+            .from(payments)
+            .leftJoin(bookings, eq(payments.bookingId, bookings.id))
+            .where(withConditions(paymentConditions))
+            .orderBy(desc(payments.createdAt), desc(payments.id))
+            .limit(EXPORT_PAGE_SIZE)
+            .offset(offset);
+          return (rows as any[]).map(({ payment, booking }) => ({
+            id: payment.id,
+            bookingReference: booking?.reference ?? null,
+            amount: numberValue(payment.amount),
+            currency: payment.currency,
+            status: payment.status,
+            provider: payment.provider,
+            createdAt: payment.createdAt,
+          }));
+        },
+      };
+    }
+    case "properties": {
+      const total = await countRows(properties, propertyConditions);
+      return {
+        table: tableValue,
+        total,
+        fetchPage: async (offset) => {
+          const rows = await db.select({ property: properties })
+            .from(properties)
+            .where(withConditions(propertyConditions))
+            .orderBy(desc(properties.createdAt), desc(properties.id))
+            .limit(EXPORT_PAGE_SIZE)
+            .offset(offset);
+          return (rows as any[]).map(({ property }) => ({
+            id: property.id,
+            title: property.title,
+            propertyType: property.propertyType,
+            status: property.status,
+            askingPrice: property.askingPrice === null ? null : numberValue(property.askingPrice),
+            currency: property.currency,
+            createdAt: property.createdAt,
+          }));
+        },
+      };
+    }
+    case "enquiries": {
+      const total = await countRows(propertyEnquiries, enquiryConditions);
+      return {
+        table: tableValue,
+        total,
+        fetchPage: async (offset) => {
+          const rows = await db.select({ enquiry: propertyEnquiries, property: properties })
+            .from(propertyEnquiries)
+            .innerJoin(properties, eq(properties.id, propertyEnquiries.propertyId))
+            .where(withConditions(enquiryConditions))
+            .orderBy(desc(propertyEnquiries.createdAt), desc(propertyEnquiries.id))
+            .limit(EXPORT_PAGE_SIZE)
+            .offset(offset);
+          return (rows as any[]).map(({ enquiry, property }) => ({
+            id: enquiry.id,
+            propertyTitle: property.title,
+            status: enquiry.status,
+            createdAt: enquiry.createdAt,
+          }));
+        },
+      };
+    }
+    case "vendors": {
+      const total = await countRows(vendorProfiles, vendorConditions);
+      return {
+        table: tableValue,
+        total,
+        fetchPage: async (offset) => {
+          const rows = await db.select({ profile: vendorProfiles, user: users })
+            .from(vendorProfiles)
+            .innerJoin(users, eq(users.id, vendorProfiles.userId))
+            .where(withConditions(vendorConditions))
+            .orderBy(desc(vendorProfiles.createdAt), desc(vendorProfiles.id))
+            .limit(EXPORT_PAGE_SIZE)
+            .offset(offset);
+          return (rows as any[]).map(({ profile, user }) => ({
+            id: profile.userId,
+            businessName: profile.businessName,
+            country: profile.country,
+            city: profile.city,
+            status: profile.status,
+            email: user.email,
+            createdAt: profile.createdAt,
+          }));
+        },
+      };
+    }
+  }
+}
+
+function writeCsvChunk(res: Parameters<RequestHandler>[1], chunk: string): Promise<boolean> {
+  if (res.write(chunk)) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const onDrain = () => {
+      cleanup();
+      resolve(true);
+    };
+    const onClose = () => {
+      cleanup();
+      resolve(false);
+    };
+    const cleanup = () => {
+      res.off("drain", onDrain);
+      res.off("close", onClose);
+    };
+    res.once("drain", onDrain);
+    res.once("close", onClose);
+  });
+}
+
+async function streamAdminReportExport(
+  req: Parameters<RequestHandler>[0],
+  res: Parameters<RequestHandler>[1],
+  range: Range,
+  headOnly = false,
+) {
+  let plan: ExportPlan;
+  try {
+    plan = await adminExportPlan(req, range);
+  } catch (cause) {
+    if (cause instanceof Error && cause.message === "INVALID_REPORT_TABLE") {
+      error(res, 400, "INVALID_REPORT_TABLE", "Choose one of the supported report tables.");
+      return;
+    }
+    error(res, 503, "REPORT_UNAVAILABLE", "Reporting data is temporarily unavailable. Try again.");
+    return;
+  }
+
+  const fileName = `travel-land-${plan.table}-${range.fromDate}-to-${range.toDate}.csv`;
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("X-Report-Row-Count", String(plan.total));
+  if (headOnly) {
+    res.status(200).end();
+    return;
+  }
+
+  try {
+    res.flushHeaders();
+    if (!(await writeCsvChunk(res, EXPORT_COLUMNS[plan.table].map(csvCell).join(",")))) return;
+    for (let offset = 0; offset < plan.total; offset += EXPORT_PAGE_SIZE) {
+      if (res.destroyed) return;
+      const rows = await plan.fetchPage(offset);
+      if (!rows.length) {
+        throw new Error("The report changed while it was being exported.");
+      }
+      const csvRows = rows.map((row) =>
+        EXPORT_COLUMNS[plan.table].map((column) => csvCell(row[column])).join(","),
+      );
+      if (!(await writeCsvChunk(res, `\n${csvRows.join("\n")}`))) return;
+    }
+    if (!res.destroyed) res.end();
+  } catch {
+    if (!res.headersSent) {
+      error(res, 503, "REPORT_UNAVAILABLE", "Reporting data is temporarily unavailable. Try again.");
+    } else {
+      res.destroy();
+    }
+  }
 }
 
 async function reportForAdmin(req: Parameters<RequestHandler>[0], range: Range) {
@@ -376,6 +623,20 @@ async function reportForVendor(req: Parameters<RequestHandler>[0], range: Range)
 
 export function createReportsRouter(authenticate: RequestHandler = requireAuth): IRouter {
   const router = Router();
+  const handleAdminExport = async (req: Parameters<RequestHandler>[0], res: Parameters<RequestHandler>[1], headOnly: boolean) => {
+    const range = reportRange(req);
+    if (!range) {
+      error(res, 400, "INVALID_REPORT_RANGE", "Provide valid UTC dates from and to within one year.");
+      return;
+    }
+    await streamAdminReportExport(req, res, range, headOnly);
+  };
+  router.head("/v1/admin/reports/export", authenticate, requireRole("admin"), async (req, res) => {
+    await handleAdminExport(req, res, true);
+  });
+  router.get("/v1/admin/reports/export", authenticate, requireRole("admin"), async (req, res) => {
+    await handleAdminExport(req, res, false);
+  });
   router.get("/v1/admin/reports", authenticate, requireRole("admin"), async (req, res) => {
     const range = reportRange(req);
     if (!range) {

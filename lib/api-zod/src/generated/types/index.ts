@@ -119,6 +119,8 @@ export * from './exploreItemType';
 export * from './exploreSearchResponse';
 export * from './exploreSuggestion';
 export * from './exploreSuggestionType';
+export * from './exportAdminReportsParams';
+export * from './exportAdminReportsTable';
 export * from './favorite';
 export * from './favoriteEntityType';
 export * from './favoriteList';

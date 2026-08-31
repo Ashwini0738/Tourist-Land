@@ -49,6 +49,7 @@ test("report routes enforce authentication and role isolation before querying da
   assert.equal((await request(app, "/v1/admin/reports")).status, 401);
   assert.equal((await request(app, "/v1/admin/reports", "vendor")).body.error?.code, "FORBIDDEN");
   assert.equal((await request(app, "/v1/vendor/reports", "admin")).body.error?.code, "FORBIDDEN");
+  assert.equal((await request(app, "/v1/admin/reports/export?table=bookings", "vendor")).body.error?.code, "FORBIDDEN");
 });
 
 test("admin report route validates UTC date ranges before database access", async () => {
@@ -58,4 +59,14 @@ test("admin report route validates UTC date ranges before database access", asyn
   assert.equal(invalidDate.body.error?.code, "INVALID_REPORT_RANGE");
   const tooLong = await request(app, "/v1/admin/reports?from=2025-01-01&to=2026-03-01", "admin");
   assert.equal(tooLong.status, 400);
+});
+
+test("admin report export validates the selected table before database access", async () => {
+  const app = buildTestApp();
+  const invalidTable = await request(app, "/v1/admin/reports/export?table=ledger", "admin");
+  assert.equal(invalidTable.status, 400);
+  assert.equal(invalidTable.body.error?.code, "INVALID_REPORT_TABLE");
+  const missingTable = await request(app, "/v1/admin/reports/export", "admin");
+  assert.equal(missingTable.status, 400);
+  assert.equal(missingTable.body.error?.code, "INVALID_REPORT_TABLE");
 });

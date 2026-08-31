@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useMemo, useState } from 'react';
-import { getAdminReports, useGetAdminReports } from '@workspace/api-client-react';
+import { getExportAdminReportsUrl, useGetAdminReports } from '@workspace/api-client-react';
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -53,16 +53,6 @@ const TABLE_LABELS: Record<TableKey, string> = {
   vendors: 'Vendors',
 };
 
-const CSV_COLUMNS: Record<TableKey, string[]> = {
-  bookings: ['id', 'reference', 'hotelCatalogId', 'startsOn', 'endsOn', 'totalAmount', 'currency', 'status', 'createdAt'],
-  payments: ['id', 'bookingReference', 'amount', 'currency', 'status', 'provider', 'createdAt'],
-  properties: ['id', 'title', 'propertyType', 'status', 'askingPrice', 'currency', 'createdAt'],
-  enquiries: ['id', 'propertyTitle', 'status', 'createdAt'],
-  vendors: ['id', 'businessName', 'country', 'city', 'status', 'email', 'createdAt'],
-};
-
-const EXPORT_LIMIT = 100;
-
 const formatInputDate = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -83,12 +73,81 @@ const prettyKey = (key: string) =>
     .replaceAll('_', ' ')
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-const csvCell = (value: unknown) => {
-  if (value === null || value === undefined) return '';
-  const stringValue =
-    typeof value === 'object' ? JSON.stringify(value) : String(value);
-  return `"${stringValue.replaceAll('"', '""')}"`;
+const exportFileName = (table: TableKey, from: string, to: string) =>
+  `travel-land-${table}-${from}-to-${to}.csv`;
+
+const exportUrl = ({
+  table,
+  from,
+  to,
+  country,
+  status,
+}: {
+  table: TableKey;
+  from?: string;
+  to?: string;
+  country?: string;
+  status?: string;
+}) => {
+  return getExportAdminReportsUrl({ from, to, country, status, table });
 };
+
+const responseErrorMessage = async (response: Response) => {
+  try {
+    const body = await response.json();
+    if (body?.error?.message) return body.error.message;
+  } catch {
+    // The service may have closed the response before writing its JSON error.
+  }
+  return `The report service returned an error (${response.status}). Try again.`;
+};
+
+async function streamExportToFile(
+  url: string,
+  fileName: string,
+  onProgress: (message: string) => void,
+): Promise<boolean> {
+  const showSaveFilePicker = (window as any).showSaveFilePicker;
+  if (typeof showSaveFilePicker !== 'function') return false;
+
+  let writable: any;
+  try {
+    const fileHandle = await showSaveFilePicker({
+      suggestedName: fileName,
+      types: [{ description: 'CSV file', accept: { 'text/csv': ['.csv'] } }],
+    });
+    const response = await fetch(url, { credentials: 'include' });
+    if (!response.ok) throw new Error(await responseErrorMessage(response));
+    if (!response.body) throw new Error('The browser could not read the streamed export. Try again.');
+
+    writable = await fileHandle.createWritable();
+    const reader = response.body.getReader();
+    let receivedBytes = 0;
+    const contentLength = Number(response.headers.get('content-length') ?? 0);
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      await writable.write(chunk.value);
+      receivedBytes += chunk.value.byteLength;
+      onProgress(
+        contentLength
+          ? `Downloading server export… ${Math.round((receivedBytes / contentLength) * 100)}%`
+          : `Downloading server export… ${(receivedBytes / 1024).toLocaleString(undefined, { maximumFractionDigits: 0 })} KB received`,
+      );
+    }
+    await writable.close();
+    return true;
+  } catch (cause) {
+    try {
+      await writable?.abort();
+    } catch {
+      // The partial file is best-effort cleanup; the original stream error is more useful.
+    }
+    if (cause instanceof DOMException && cause.name === 'AbortError') throw cause;
+    if (cause instanceof Error && cause.message.startsWith('The report')) throw cause;
+    throw new Error('The export download was interrupted before it finished. Try again.');
+  }
+}
 
 function MetricCard({
   label,
@@ -317,7 +376,7 @@ function ReportTable({
         </div>
         <Button testId={`button-export-${table}`} variant="quiet" onClick={onExport} disabled={exporting}>
           <Download size={14} />
-          {exporting ? 'Preparing CSV…' : 'Export CSV'}
+          {exporting ? 'Streaming CSV…' : 'Export CSV'}
         </Button>
       </div>
       {!rows.length ? (
@@ -458,46 +517,49 @@ export function ReportsPage() {
   const exportCsv = async () => {
     setExportStatus('');
     setIsExporting(true);
+    const fileName = exportFileName(table, from, to);
+    const url = exportUrl({ table, from, to, country, status });
     try {
-      const exportRows: any[] = [];
-      let exportPage = 1;
-      let hasMore = true;
-
-      while (hasMore) {
-        const response = await getAdminReports({
-          ...params,
-          page: exportPage,
-          limit: EXPORT_LIMIT,
-        });
-        const pageRows = response.tables?.[table] ?? [];
-        const pageMeta = response.meta?.[table];
-        exportRows.push(...pageRows);
-        hasMore = Boolean(pageMeta?.hasMore);
-        if (hasMore && !pageRows.length) {
-          throw new Error('The report returned an empty page before all records were loaded.');
-        }
-        exportPage += 1;
-      }
-
-      const columns = CSV_COLUMNS[table];
-      const csv = [
-        columns.map(csvCell).join(','),
-        ...exportRows.map((row) => columns.map((column) => csvCell(row[column])).join(',')),
-      ].join('\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `travel-land-${table}-${from}-to-${to}.csv`;
-      anchor.click();
-      URL.revokeObjectURL(url);
+      setExportStatus(`Preparing ${TABLE_LABELS[table].toLowerCase()} export on the server…`);
+      const preflight = await fetch(url, { method: 'HEAD', credentials: 'include' });
+      if (!preflight.ok) throw new Error(await responseErrorMessage(preflight));
+      const rowCount = Number(preflight.headers.get('x-report-row-count') ?? 0);
+      const tableName = TABLE_LABELS[table].toLowerCase();
       setExportStatus(
-        exportRows.length
-          ? `Exported ${exportRows.length.toLocaleString()} ${TABLE_LABELS[table].toLowerCase()} across all matching pages.`
-          : `No ${TABLE_LABELS[table].toLowerCase()} match the selected filters. Downloaded an empty CSV with headers.`,
+        rowCount
+          ? `Server prepared ${rowCount.toLocaleString()} ${tableName}. Starting streamed download…`
+          : `No ${tableName} match the selected filters. Starting a header-only CSV download…`,
       );
-    } catch {
-      setExportStatus('The CSV could not be prepared. Try again.');
+
+      if (await streamExportToFile(url, fileName, setExportStatus)) {
+        setExportStatus(
+          rowCount
+            ? `Downloaded ${rowCount.toLocaleString()} ${tableName} from the server stream.`
+            : `Downloaded an empty ${tableName} CSV with headers.`,
+        );
+      } else {
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = fileName;
+        anchor.rel = 'noopener';
+        anchor.style.display = 'none';
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setExportStatus(
+          rowCount
+            ? `Download started: the server is streaming ${rowCount.toLocaleString()} ${tableName} without loading all rows in the browser.`
+            : `Download started: an empty ${tableName} CSV with headers.`,
+        );
+      }
+    } catch (cause) {
+      if (cause instanceof DOMException && cause.name === 'AbortError') {
+        setExportStatus('Export cancelled before the file was saved.');
+      } else if (cause instanceof TypeError) {
+        setExportStatus('The report service could not be reached. Try again.');
+      } else {
+        setExportStatus(cause instanceof Error ? cause.message : 'The CSV could not be prepared. Try again.');
+      }
     } finally {
       setIsExporting(false);
     }
@@ -730,7 +792,7 @@ export function ReportsPage() {
 
             <div className="mt-5 flex flex-col gap-2 border-t border-border pt-4 text-[11px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
               <span data-testid="text-report-generated">Generated {day(report.generatedAt)} · source: {report.source}</span>
-              <span>CSV includes every matching page and keeps currencies separated by row.</span>
+               <span>CSV streams every matching record and keeps currencies separated by row.</span>
             </div>
           </>
         )}
