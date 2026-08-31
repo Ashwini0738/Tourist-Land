@@ -8,6 +8,29 @@ import { Redirect } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
 import { radii, spacing } from '@/constants/theme';
+
+const webTabBar = {
+  height: 96,
+  minHeight: 96,
+  paddingTop: 8,
+  paddingBottom: 12,
+} as const;
+
+const webTabItem = {
+  flex: 1,
+  minHeight: 64,
+  minWidth: 56,
+  paddingHorizontal: 2,
+} as const;
+
+const webTabLabel = {
+  fontSize: 11,
+  fontWeight: '700' as const,
+  marginTop: 2,
+  flexShrink: 1,
+  textAlign: 'center' as const,
+} as const;
+
 function ClassicTabLayout() {
   const colors = useColors();
   const colorScheme = useColorScheme();
@@ -27,17 +50,14 @@ function ClassicTabLayout() {
           borderTopWidth: 1,
           borderTopColor: colors.border,
           elevation: 0,
-          height: isWeb ? 84 : 78,
-          paddingTop: 8,
-          paddingBottom: isWeb ? 10 : 8,
+          height: isWeb ? webTabBar.height : 78,
+          minHeight: isWeb ? webTabBar.minHeight : undefined,
+          paddingTop: isWeb ? webTabBar.paddingTop : 8,
+          paddingBottom: isWeb ? webTabBar.paddingBottom : 8,
         },
-        tabBarItemStyle: { flex: 1, minHeight: 58, minWidth: 0 },
+        tabBarItemStyle: isWeb ? webTabItem : { flex: 1, minHeight: 58, minWidth: 0 },
         tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '700',
-          marginTop: 2,
-          flexShrink: 1,
-          textAlign: 'center',
+          ...(isWeb ? webTabLabel : { fontSize: 10, fontWeight: '700', marginTop: 2 }),
         },
         tabBarBackground: () =>
           isIOS ? (
@@ -76,14 +96,14 @@ function ClassicTabLayout() {
           title: 'Bookings',
           tabBarIcon: ({ color, focused }) => (
             <View style={{
-               width: 52, height: 52, borderRadius: radii.pill,
+               width: isWeb ? 44 : 52, height: isWeb ? 44 : 52, borderRadius: radii.pill,
                backgroundColor: focused ? colors.primary : colors.card,
                borderWidth: focused ? 0 : 1, borderColor: colors.border,
                alignItems: 'center', justifyContent: 'center',
-               marginTop: -8,
+               marginTop: isWeb ? -4 : -8,
                shadowColor: focused ? colors.primary : '#000', shadowOpacity: focused ? 0.24 : 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: focused ? 6 : 0
             }}>
-              <Feather name="calendar" size={20} color={focused ? colors.primaryForeground : color} />
+              <Feather name="calendar" size={isWeb ? 18 : 20} color={focused ? colors.primaryForeground : color} />
             </View>
           ),
           tabBarLabel: 'Bookings',

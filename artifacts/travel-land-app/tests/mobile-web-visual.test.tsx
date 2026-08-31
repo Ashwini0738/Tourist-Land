@@ -282,9 +282,10 @@ describe('mobile web visual contracts', () => {
 
     const tabBar = screen.getByTestId('web-tab-bar');
     const tabBarStyle = StyleSheet.flatten(tabBar.props.style);
-    expect(tabBarStyle.height).toBe(84);
+    expect(tabBarStyle.height).toBe(96);
+    expect(tabBarStyle.minHeight).toBe(96);
     expect(tabBarStyle.paddingTop).toBe(8);
-    expect(tabBarStyle.paddingBottom).toBe(10);
+    expect(tabBarStyle.paddingBottom).toBe(12);
 
     const tabs = [
       ['index', 'Home', 'home'],
@@ -298,16 +299,53 @@ describe('mobile web visual contracts', () => {
       const tab = screen.getByTestId(`web-tab-${name}`);
       const itemStyle = StyleSheet.flatten(tab.props.style);
       expect(itemStyle.flex).toBe(1);
-      expect(itemStyle.minHeight).toBeGreaterThanOrEqual(58);
-      expect(itemStyle.minWidth).toBe(0);
+      expect(itemStyle.minHeight).toBeGreaterThanOrEqual(64);
+      expect(itemStyle.minWidth).toBeGreaterThanOrEqual(56);
+      expect(itemStyle.paddingHorizontal).toBeGreaterThanOrEqual(2);
       expect(screen.getByText(label)).toBeTruthy();
       expect(screen.getByTestId(`platform-icon-${icon}`)).toBeTruthy();
     }
+
+    const labelStyle = StyleSheet.flatten(
+      screen.getByText('Bookings').props.style,
+    );
+    expect(labelStyle.fontSize).toBe(11);
+    expect(labelStyle.lineHeight).toBeUndefined();
+    expect(labelStyle.flexShrink).toBe(1);
+    expect(labelStyle.textAlign).toBe('center');
 
     expect(screen.getByTestId('web-tab-index').props.accessibilityState).toEqual({ selected: true });
     expect(screen.getByTestId('web-tab-bookings').props.accessibilityState).toEqual({ selected: false });
     expect(screen.getByTestId('platform-icon-home').props.color).toBe(mockColors.primary);
     expect(screen.getByTestId('platform-icon-calendar').props.color).toBe(mockColors.mutedForeground);
+  });
+
+  it('keeps every primary label readable when web text is scaled', () => {
+    const screen = renderAtWidth(<TabLayout />, 320);
+    const labels = ['Home', 'Explore', 'Bookings', 'Land', 'Profile'];
+    const tabBar = screen.getByTestId('web-tab-bar');
+    const tabBarStyle = StyleSheet.flatten(tabBar.props.style);
+
+    expect(tabBarStyle.minHeight).toBeGreaterThanOrEqual(96);
+    expect(tabBarStyle.height).toBeGreaterThanOrEqual(96);
+
+    for (const label of labels) {
+      const text = screen.getByText(label);
+      const style = StyleSheet.flatten(text.props.style);
+      const fontSizeAtLargerScale = style.fontSize * 1.5;
+
+      expect(text.props.children).toBe(label);
+      expect(style.flexShrink).toBe(1);
+      expect(style.textAlign).toBe('center');
+      expect(style.lineHeight).toBeUndefined();
+      expect(fontSizeAtLargerScale).toBeGreaterThan(style.fontSize);
+    }
+
+    for (const name of ['index', 'explore', 'bookings', 'land', 'profile']) {
+      const itemStyle = StyleSheet.flatten(screen.getByTestId(`web-tab-${name}`).props.style);
+      expect(itemStyle.minHeight).toBeGreaterThanOrEqual(64);
+      expect(itemStyle.minWidth).toBeGreaterThanOrEqual(56);
+    }
   });
 
   it.each([375, 768])('keeps the shared hierarchy intact at %ipx', async (width) => {
