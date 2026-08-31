@@ -169,6 +169,7 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
     pending: "00000000-0000-4117-8000-000000000001",
     rejected: "00000000-0000-4117-8000-000000000002",
     deleted: "00000000-0000-4117-8000-000000000003",
+    moderated: "00000000-0000-4117-8000-000000000004",
   };
   cleanupTemporaryReviews = async () => {
     await db.delete(reviews).where(inArray(reviews.id, Object.values(unpublishedReviewIds)));
@@ -205,17 +206,75 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
       body: "This review is removed before it can be displayed.",
       status: "pending",
     },
+    {
+      id: unpublishedReviewIds.moderated,
+      userId: demoIds.users.traveller,
+      entityType: "hotel",
+      entityId: demoReviews[0].entityId,
+      rating: 3,
+      title: "Moderated review",
+      body: "This review changes visibility through the admin moderation flow.",
+      status: "published",
+    },
   ]);
   await db.delete(reviews).where(eq(reviews.id, unpublishedReviewIds.deleted));
 
   const publicReviews = await request(server.baseUrl, "/v1/hotels/demo-hotel-2/reviews");
   assert.equal(publicReviews.response.status, 200, JSON.stringify(publicReviews.body));
-  assert.equal(publicReviews.body.reviewCount, 1);
-  assert.equal(publicReviews.body.ratingAverage, 5);
-  assert.deepEqual(publicReviews.body.items.map((item: any) => item.id), [demoReviews[0].id]);
+  assert.equal(publicReviews.body.reviewCount, 2);
+  assert.equal(publicReviews.body.ratingAverage, 4);
+  assert.deepEqual(
+    new Set(publicReviews.body.items.map((item: any) => item.id)),
+    new Set([demoReviews[0].id, unpublishedReviewIds.moderated]),
+  );
   assert.equal(publicReviews.body.items.every((item: any) => item.status === "published"), true);
-  assert.equal(publicReviews.body.items[0].entityId, demoReviews[0].entityId);
-  assert.equal(publicReviews.body.items[0].rating, 5);
+  const seededPublicReview = publicReviews.body.items.find((item: any) => item.id === demoReviews[0].id);
+  assert.equal(seededPublicReview?.entityId, demoReviews[0].entityId);
+  assert.equal(seededPublicReview?.rating, 5);
+
+  const rejectModeratedReview = await request(
+    server.baseUrl,
+    `/v1/admin/reviews/${unpublishedReviewIds.moderated}/status`,
+    "demo_admin",
+    {
+      method: "POST",
+      body: JSON.stringify({ status: "rejected", reason: "Moderation fixture rejection" }),
+    },
+  );
+  assert.equal(rejectModeratedReview.response.status, 200, JSON.stringify(rejectModeratedReview.body));
+  assert.equal(rejectModeratedReview.body.status, "rejected");
+
+  const afterRejection = await request(server.baseUrl, "/v1/hotels/demo-hotel-2/reviews");
+  assert.equal(afterRejection.response.status, 200, JSON.stringify(afterRejection.body));
+  assert.equal(afterRejection.body.reviewCount, 1);
+  assert.equal(afterRejection.body.ratingAverage, 5);
+  assert.deepEqual(afterRejection.body.items.map((item: any) => item.id), [demoReviews[0].id]);
+
+  const republishModeratedReview = await request(
+    server.baseUrl,
+    `/v1/admin/reviews/${unpublishedReviewIds.moderated}/status`,
+    "demo_admin",
+    {
+      method: "POST",
+      body: JSON.stringify({ status: "published", reason: "Moderation fixture republished" }),
+    },
+  );
+  assert.equal(republishModeratedReview.response.status, 200, JSON.stringify(republishModeratedReview.body));
+  assert.equal(republishModeratedReview.body.status, "published");
+
+  const afterRepublish = await request(server.baseUrl, "/v1/hotels/demo-hotel-2/reviews");
+  assert.equal(afterRepublish.response.status, 200, JSON.stringify(afterRepublish.body));
+  assert.equal(afterRepublish.body.reviewCount, 2);
+  assert.equal(afterRepublish.body.ratingAverage, 4);
+  assert.deepEqual(
+    new Set(afterRepublish.body.items.map((item: any) => item.id)),
+    new Set([demoReviews[0].id, unpublishedReviewIds.moderated]),
+  );
+  assert.equal(
+    afterRepublish.body.items.find((item: any) => item.id === unpublishedReviewIds.moderated)?.rating,
+    3,
+  );
+  await db.delete(reviews).where(eq(reviews.id, unpublishedReviewIds.moderated));
 
   const availability = await request(
     server.baseUrl,
