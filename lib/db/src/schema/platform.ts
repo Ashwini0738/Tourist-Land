@@ -528,3 +528,38 @@ export const offers = pgTable("offers", {
   status: text("status").default("draft").notNull(),
   ...timestamps,
 });
+
+/**
+ * A traveller's itinerary is intentionally separate from bookings and the
+ * discovery catalog.  Trip items retain references (rather than copying or
+ * deleting catalog rows), so archived/deleted itineraries cannot affect
+ * commerce or provenance data.
+ */
+export const trips = pgTable("trips", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
+  startsOn: date("starts_on"),
+  endsOn: date("ends_on"),
+  status: text("status").default("active").notNull(),
+  ...timestamps,
+}, (table) => [
+  index("trips_user_status_idx").on(table.userId, table.status),
+  index("trips_user_updated_idx").on(table.userId, table.updatedAt),
+  check("trip_status_valid", sql`${table.status} in ('active', 'archived')`),
+  check("trip_dates_ordered", sql`${table.startsOn} is null or ${table.endsOn} is null or ${table.startsOn} <= ${table.endsOn}`),
+]);
+
+export const tripItems = pgTable("trip_items", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tripId: uuid("trip_id").references(() => trips.id, { onDelete: "cascade" }).notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: text("entity_id").notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  note: text("note"),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("trip_item_entity_unique").on(table.tripId, table.entityType, table.entityId),
+  index("trip_items_order_idx").on(table.tripId, table.sortOrder),
+  check("trip_item_sort_order_non_negative", sql`${table.sortOrder} >= 0`),
+]);

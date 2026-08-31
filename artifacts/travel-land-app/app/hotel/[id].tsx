@@ -28,6 +28,8 @@ import {
   SourceBadge,
 } from '@/features/hotels/HotelUI';
 import { DemoBadge } from '@/components/DemoBadge';
+import { Gallery } from '@/features/gallery/Gallery';
+import { AddToTripButton } from '@/features/trips/AddToTripButton';
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
@@ -88,10 +90,7 @@ export default function HotelDetailsScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 18 }]}
       >
         <View style={styles.hero}>
-          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={StyleSheet.absoluteFill}>
-            {gallery.map((imageKey, index) => <ImageWithFallback key={`${imageKey}-${index}`} imageKey={imageKey} label={`${hotel.name} gallery image ${index + 1}`} style={styles.heroImage} />)}
-          </ScrollView>
-          <View style={styles.heroShade} />
+          <Gallery imageKeys={gallery} label={hotel.name} height={420} />
           <View style={[styles.heroHeader, { paddingTop: insets.top + 4 }]}>
             <Pressable testID="hotel-detail-back" accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={[styles.heroIcon, { backgroundColor: 'rgba(31,42,36,0.44)' }]}><Feather name="arrow-left" size={20} color={colors.primaryForeground} /></Pressable>
             <View style={styles.heroActions}>
@@ -112,6 +111,7 @@ export default function HotelDetailsScreen() {
           {detail.checkOutTime ? <Fact label="CHECK OUT" value={detail.checkOutTime} icon="clock" /> : null}
         </View>
         {detail.address || hotel.coordinates ? <View style={[styles.addressRow, { borderColor: colors.border }]}><Feather name="map-pin" size={16} color={colors.primary} /><Text style={[styles.address, { color: colors.mutedForeground }]}>{detail.address || hotel.location}</Text>{hotel.coordinates ? <Pressable testID="hotel-open-map" accessibilityRole="button" accessibilityLabel="Open hotel on map" onPress={openMap}><Text style={[styles.mapText, { color: colors.primary }]}>Map</Text></Pressable> : null}</View> : null}
+        <AddToTripButton entityType="hotel" entityId={hotel.id} label={hotel.name} />
         <Text style={[styles.sectionKicker, { color: colors.primary }]}>CHECK A STAY</Text>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Plan the shape of your stay.</Text>
         <Text style={[styles.sectionBody, { color: colors.mutedForeground }]}>Choose a future stay window to view clearly labeled development room availability. No booking is created here.</Text>

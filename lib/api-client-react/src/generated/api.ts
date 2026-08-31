@@ -145,6 +145,13 @@ import type {
   ServiceUnavailableResponse,
   TravellerPropertyEnquiry,
   TravellerPropertyEnquiryList,
+  Trip,
+  TripInput,
+  TripItem,
+  TripItemInput,
+  TripList,
+  TripReorderInput,
+  TripUpdateInput,
   UnauthenticatedResponse,
   UpdateReviewInput,
   VendorApplication,
@@ -2086,6 +2093,537 @@ export const useRemoveFavorite = <TError = ErrorType<InvalidInputResponse | Unau
         TContext
       > => {
       return useMutation(getRemoveFavoriteMutationOptions(options));
+    }
+
+export const getListTripsUrl = () => {
+
+
+
+
+  return `/api/v1/trips`
+}
+
+export const listTrips = async ( options?: Parameters<typeof customFetch>[1]): Promise<TripList> => {
+
+  return customFetch<TripList>(getListTripsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTripsQueryKey = () => {
+    return [
+    `/api/v1/trips`
+    ] as const;
+    }
+
+
+export const getListTripsQueryOptions = <TData = Awaited<ReturnType<typeof listTrips>>, TError = ErrorType<UnauthenticatedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTrips>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTripsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTrips>>> = ({ signal }) => listTrips({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTrips>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTripsQueryResult = NonNullable<Awaited<ReturnType<typeof listTrips>>>
+export type ListTripsQueryError = ErrorType<UnauthenticatedResponse>
+
+
+
+export function useListTrips<TData = Awaited<ReturnType<typeof listTrips>>, TError = ErrorType<UnauthenticatedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTrips>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTripsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateTripUrl = () => {
+
+
+
+
+  return `/api/v1/trips`
+}
+
+export const createTrip = async (tripInput: TripInput, options?: Parameters<typeof customFetch>[1]): Promise<Trip> => {
+
+  return customFetch<Trip>(getCreateTripUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tripInput)
+  }
+);}
+
+
+
+
+
+export const getCreateTripMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTrip>>, TError,{data: BodyType<TripInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTrip>>, TError,{data: BodyType<TripInput>}, TContext> => {
+
+const mutationKey = ['createTrip'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTrip>>, {data: BodyType<TripInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createTrip(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTripMutationResult = NonNullable<Awaited<ReturnType<typeof createTrip>>>
+    export type CreateTripMutationBody = BodyType<TripInput>
+    export type CreateTripMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse>
+
+    export const useCreateTrip = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTrip>>, TError,{data: BodyType<TripInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTrip>>,
+        TError,
+        {data: BodyType<TripInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTripMutationOptions(options));
+    }
+
+export const getUpdateTripUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/trips/${id}`
+}
+
+export const updateTrip = async (id: string,
+    tripUpdateInput: TripUpdateInput, options?: Parameters<typeof customFetch>[1]): Promise<Trip> => {
+
+  return customFetch<Trip>(getUpdateTripUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tripUpdateInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateTripMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTrip>>, TError,{id: string;data: BodyType<TripUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTrip>>, TError,{id: string;data: BodyType<TripUpdateInput>}, TContext> => {
+
+const mutationKey = ['updateTrip'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTrip>>, {id: string;data: BodyType<TripUpdateInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateTrip(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTripMutationResult = NonNullable<Awaited<ReturnType<typeof updateTrip>>>
+    export type UpdateTripMutationBody = BodyType<TripUpdateInput>
+    export type UpdateTripMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse | ConflictResponse>
+
+    export const useUpdateTrip = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTrip>>, TError,{id: string;data: BodyType<TripUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTrip>>,
+        TError,
+        {id: string;data: BodyType<TripUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateTripMutationOptions(options));
+    }
+
+export const getDeleteTripUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/trips/${id}`
+}
+
+export const deleteTrip = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteTripUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteTripMutationOptions = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTrip>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTrip>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteTrip'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTrip>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteTrip(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTripMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTrip>>>
+
+    export type DeleteTripMutationError = ErrorType<UnauthenticatedResponse | NotFoundResponse>
+
+    export const useDeleteTrip = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTrip>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTrip>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteTripMutationOptions(options));
+    }
+
+export const getArchiveTripUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/trips/${id}/archive`
+}
+
+export const archiveTrip = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Trip> => {
+
+  return customFetch<Trip>(getArchiveTripUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getArchiveTripMutationOptions = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveTrip>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof archiveTrip>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['archiveTrip'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archiveTrip>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  archiveTrip(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ArchiveTripMutationResult = NonNullable<Awaited<ReturnType<typeof archiveTrip>>>
+
+    export type ArchiveTripMutationError = ErrorType<UnauthenticatedResponse | NotFoundResponse>
+
+    export const useArchiveTrip = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveTrip>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof archiveTrip>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getArchiveTripMutationOptions(options));
+    }
+
+export const getAddTripItemUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/trips/${id}/items`
+}
+
+export const addTripItem = async (id: string,
+    tripItemInput: TripItemInput, options?: Parameters<typeof customFetch>[1]): Promise<TripItem> => {
+
+  return customFetch<TripItem>(getAddTripItemUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tripItemInput)
+  }
+);}
+
+
+
+
+
+export const getAddTripItemMutationOptions = <TError = ErrorType<InvalidInputResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addTripItem>>, TError,{id: string;data: BodyType<TripItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addTripItem>>, TError,{id: string;data: BodyType<TripItemInput>}, TContext> => {
+
+const mutationKey = ['addTripItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addTripItem>>, {id: string;data: BodyType<TripItemInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addTripItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddTripItemMutationResult = NonNullable<Awaited<ReturnType<typeof addTripItem>>>
+    export type AddTripItemMutationBody = BodyType<TripItemInput>
+    export type AddTripItemMutationError = ErrorType<InvalidInputResponse | NotFoundResponse | ConflictResponse>
+
+    export const useAddTripItem = <TError = ErrorType<InvalidInputResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addTripItem>>, TError,{id: string;data: BodyType<TripItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addTripItem>>,
+        TError,
+        {id: string;data: BodyType<TripItemInput>},
+        TContext
+      > => {
+      return useMutation(getAddTripItemMutationOptions(options));
+    }
+
+export const getRemoveTripItemUrl = (tripId: string,
+    itemId: string,) => {
+
+
+
+
+  return `/api/v1/trips/${tripId}/items/${itemId}`
+}
+
+export const removeTripItem = async (tripId: string,
+    itemId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getRemoveTripItemUrl(tripId,itemId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveTripItemMutationOptions = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeTripItem>>, TError,{tripId: string;itemId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeTripItem>>, TError,{tripId: string;itemId: string}, TContext> => {
+
+const mutationKey = ['removeTripItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeTripItem>>, {tripId: string;itemId: string}> = (props) => {
+          const {tripId,itemId} = props ?? {};
+
+          return  removeTripItem(tripId,itemId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveTripItemMutationResult = NonNullable<Awaited<ReturnType<typeof removeTripItem>>>
+
+    export type RemoveTripItemMutationError = ErrorType<UnauthenticatedResponse | NotFoundResponse>
+
+    export const useRemoveTripItem = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeTripItem>>, TError,{tripId: string;itemId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeTripItem>>,
+        TError,
+        {tripId: string;itemId: string},
+        TContext
+      > => {
+      return useMutation(getRemoveTripItemMutationOptions(options));
+    }
+
+export const getReorderTripItemsUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/trips/${id}/items/reorder`
+}
+
+export const reorderTripItems = async (id: string,
+    tripReorderInput: TripReorderInput, options?: Parameters<typeof customFetch>[1]): Promise<Trip> => {
+
+  return customFetch<Trip>(getReorderTripItemsUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tripReorderInput)
+  }
+);}
+
+
+
+
+
+export const getReorderTripItemsMutationOptions = <TError = ErrorType<InvalidInputResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderTripItems>>, TError,{id: string;data: BodyType<TripReorderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reorderTripItems>>, TError,{id: string;data: BodyType<TripReorderInput>}, TContext> => {
+
+const mutationKey = ['reorderTripItems'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderTripItems>>, {id: string;data: BodyType<TripReorderInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reorderTripItems(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReorderTripItemsMutationResult = NonNullable<Awaited<ReturnType<typeof reorderTripItems>>>
+    export type ReorderTripItemsMutationBody = BodyType<TripReorderInput>
+    export type ReorderTripItemsMutationError = ErrorType<InvalidInputResponse | NotFoundResponse | ConflictResponse>
+
+    export const useReorderTripItems = <TError = ErrorType<InvalidInputResponse | NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderTripItems>>, TError,{id: string;data: BodyType<TripReorderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reorderTripItems>>,
+        TError,
+        {id: string;data: BodyType<TripReorderInput>},
+        TContext
+      > => {
+      return useMutation(getReorderTripItemsMutationOptions(options));
     }
 
 export const getListNotificationsUrl = (params?: ListNotificationsParams,) => {

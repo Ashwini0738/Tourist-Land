@@ -1344,6 +1344,222 @@ export const RemoveFavoriteParams = zod.object({
 export const RemoveFavoriteResponse = zod.void()
 
 
+export const listTripsResponseItemsItemItemsItemSortOrderMin = 0;
+
+
+
+export const ListTripsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "title": zod.string(),
+  "startsOn": zod.coerce.date().nullable(),
+  "endsOn": zod.coerce.date().nullable(),
+  "status": zod.enum(['active', 'archived']),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
+  "entityId": zod.string(),
+  "sortOrder": zod.number().int().min(listTripsResponseItemsItemItemsItemSortOrderMin),
+  "note": zod.string().nullable(),
+  "name": zod.string().nullable(),
+  "location": zod.string().nullable(),
+  "imageKey": zod.string().nullable(),
+  "route": zod.string().nullable(),
+  "available": zod.boolean()
+}))
+}))
+})
+
+
+export const createTripBodyTitleMax = 200;
+
+
+
+export const CreateTripBody = zod.object({
+  "title": zod.string().min(1).max(createTripBodyTitleMax),
+  "startsOn": zod.coerce.date().nullish(),
+  "endsOn": zod.coerce.date().nullish()
+})
+
+export const createTripResponseItemsItemSortOrderMin = 0;
+
+
+
+export const CreateTripResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "title": zod.string(),
+  "startsOn": zod.coerce.date().nullable(),
+  "endsOn": zod.coerce.date().nullable(),
+  "status": zod.enum(['active', 'archived']),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
+  "entityId": zod.string(),
+  "sortOrder": zod.number().int().min(createTripResponseItemsItemSortOrderMin),
+  "note": zod.string().nullable(),
+  "name": zod.string().nullable(),
+  "location": zod.string().nullable(),
+  "imageKey": zod.string().nullable(),
+  "route": zod.string().nullable(),
+  "available": zod.boolean()
+}))
+})
+
+
+export const UpdateTripParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateTripBodyOneTitleMax = 200;
+
+
+
+export const UpdateTripBody = zod.object({
+  "title": zod.string().min(1).max(updateTripBodyOneTitleMax),
+  "startsOn": zod.coerce.date().nullish(),
+  "endsOn": zod.coerce.date().nullish()
+})
+
+export const updateTripResponseItemsItemSortOrderMin = 0;
+
+
+
+export const UpdateTripResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "title": zod.string(),
+  "startsOn": zod.coerce.date().nullable(),
+  "endsOn": zod.coerce.date().nullable(),
+  "status": zod.enum(['active', 'archived']),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
+  "entityId": zod.string(),
+  "sortOrder": zod.number().int().min(updateTripResponseItemsItemSortOrderMin),
+  "note": zod.string().nullable(),
+  "name": zod.string().nullable(),
+  "location": zod.string().nullable(),
+  "imageKey": zod.string().nullable(),
+  "route": zod.string().nullable(),
+  "available": zod.boolean()
+}))
+})
+
+
+export const DeleteTripParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteTripResponse = zod.void()
+
+
+export const ArchiveTripParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const archiveTripResponseItemsItemSortOrderMin = 0;
+
+
+
+export const ArchiveTripResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "title": zod.string(),
+  "startsOn": zod.coerce.date().nullable(),
+  "endsOn": zod.coerce.date().nullable(),
+  "status": zod.enum(['active', 'archived']),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
+  "entityId": zod.string(),
+  "sortOrder": zod.number().int().min(archiveTripResponseItemsItemSortOrderMin),
+  "note": zod.string().nullable(),
+  "name": zod.string().nullable(),
+  "location": zod.string().nullable(),
+  "imageKey": zod.string().nullable(),
+  "route": zod.string().nullable(),
+  "available": zod.boolean()
+}))
+})
+
+
+export const AddTripItemParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+export const addTripItemBodyNoteMax = 2000;
+
+
+
+export const AddTripItemBody = zod.object({
+  "entityType": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
+  "entityId": zod.string().min(1),
+  "note": zod.string().max(addTripItemBodyNoteMax).nullish()
+})
+
+export const addTripItemResponseSortOrderMin = 0;
+
+
+
+export const AddTripItemResponse = zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
+  "entityId": zod.string(),
+  "sortOrder": zod.number().int().min(addTripItemResponseSortOrderMin),
+  "note": zod.string().nullable(),
+  "name": zod.string().nullable(),
+  "location": zod.string().nullable(),
+  "imageKey": zod.string().nullable(),
+  "route": zod.string().nullable(),
+  "available": zod.boolean()
+})
+
+
+export const RemoveTripItemParams = zod.object({
+  "tripId": zod.coerce.string(),
+  "itemId": zod.coerce.string()
+})
+
+export const RemoveTripItemResponse = zod.void()
+
+
+export const ReorderTripItemsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ReorderTripItemsBody = zod.object({
+  "itemIds": zod.array(zod.string())
+})
+
+export const reorderTripItemsResponseItemsItemSortOrderMin = 0;
+
+
+
+export const ReorderTripItemsResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "title": zod.string(),
+  "startsOn": zod.coerce.date().nullable(),
+  "endsOn": zod.coerce.date().nullable(),
+  "status": zod.enum(['active', 'archived']),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['destination', 'place', 'temple', 'attraction', 'event', 'food', 'hotel', 'property']),
+  "entityId": zod.string(),
+  "sortOrder": zod.number().int().min(reorderTripItemsResponseItemsItemSortOrderMin),
+  "note": zod.string().nullable(),
+  "name": zod.string().nullable(),
+  "location": zod.string().nullable(),
+  "imageKey": zod.string().nullable(),
+  "route": zod.string().nullable(),
+  "available": zod.boolean()
+}))
+})
+
+
 /**
  * @summary List notifications for the authenticated account
  */

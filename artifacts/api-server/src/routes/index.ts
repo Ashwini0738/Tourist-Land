@@ -13,6 +13,7 @@ import reviewsRouter from "./reviews";
 import vendorPortalRouter from "./vendor-portal";
 import adminRouter from "./admin";
 import reportsRouter from "./reports";
+import tripsRouter from "./trips";
 
 const router: IRouter = Router();
 
@@ -34,6 +35,7 @@ router.use(healthRouter);
 router.use(catalogRouter);
 router.use(exploreRouter);
 mountOnPaths(favoritesRouter, (path) => hasPrefix(path, "/v1/favorites"));
+  mountOnPaths(tripsRouter, (path) => hasPrefix(path, "/v1/trips"));
 router.use(hotelsRouter);
 mountOnPaths(bookingsRouter, (path) => hasPrefix(path, "/v1/bookings"));
 mountOnPaths(notificationsRouter, (path) => hasPrefix(path, "/v1/notifications"));

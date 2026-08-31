@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
@@ -7,6 +7,8 @@ import { useColors } from '@/hooks/useColors';
 import { useAppState } from '@/context/AppStateContext';
 import { getImageSource } from '@/features/home/utils/images';
 import { getSearchExploreQueryKey, type ExploreItemType, useSearchExplore } from '@workspace/api-client-react';
+import { Gallery } from '@/features/gallery/Gallery';
+import { AddToTripButton } from '@/features/trips/AddToTripButton';
 
 export default function ExploreDetailScreen({ defaultType = 'hotel' }: { defaultType?: ExploreItemType } = {}) {
   const params = useLocalSearchParams<{
@@ -58,8 +60,7 @@ export default function ExploreDetailScreen({ defaultType = 'hotel' }: { default
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.container}>
       <View style={styles.hero}>
-        <Image source={getImageSource(imageKey)} style={styles.heroImage} />
-        <View style={styles.heroShade} />
+        <Gallery imageKeys={[imageKey]} label={title} height={420} />
         <View style={[styles.heroActions, { top: insets.top + 10 }]}>
           <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.actionButton}>
             <Feather name="arrow-left" size={20} color="#fff" />
@@ -88,10 +89,13 @@ export default function ExploreDetailScreen({ defaultType = 'hotel' }: { default
           <Text style={[styles.infoText, { color: colors.foreground }]}>{sourceNotice}</Text>
           {item?.checkedAt ? <Text style={[styles.checkedAt, { color: colors.mutedForeground }]}>Checked {new Date(item.checkedAt).toLocaleString()}</Text> : null}
         </View>
-        <Pressable accessibilityRole="button" onPress={() => router.push(canSelectDates ? '/booking' : '/(tabs)/explore')} style={[styles.button, { backgroundColor: colors.primary }]}>
-          <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>{canSelectDates ? 'Select dates' : 'Continue exploring'}</Text>
-          <Feather name="arrow-right" size={17} color={colors.primaryForeground} />
-        </Pressable>
+        <View style={styles.actionRow}>
+          <AddToTripButton entityType={itemType as any} entityId={id} label={title} compact />
+          <Pressable accessibilityRole="button" onPress={() => router.push(canSelectDates ? '/booking' : '/(tabs)/explore')} style={[styles.button, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>{canSelectDates ? 'Select dates' : 'Continue exploring'}</Text>
+            <Feather name="arrow-right" size={17} color={colors.primaryForeground} />
+          </Pressable>
+        </View>
       </View>
     </ScrollView>
   );
@@ -119,6 +123,7 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 9, fontWeight: '800', letterSpacing: 1.1 },
   infoText: { fontSize: 12, lineHeight: 18, marginTop: 9 },
   checkedAt: { fontSize: 10, marginTop: 10 },
-  button: { borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 24 },
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 24 },
+  button: { flex: 1, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
   buttonText: { fontSize: 14, fontWeight: '800' },
 });

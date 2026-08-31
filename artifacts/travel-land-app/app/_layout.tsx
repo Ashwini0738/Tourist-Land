@@ -126,6 +126,7 @@ function renderRoutes() {
       <Stack.Screen name="property-enquiry" />
       <Stack.Screen name="property-enquiries" />
       <Stack.Screen name="booking" />
+      <Stack.Screen name="trips" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="reviews" />
       <Stack.Screen name="review" />

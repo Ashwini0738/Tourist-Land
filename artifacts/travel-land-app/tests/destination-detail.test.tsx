@@ -10,7 +10,14 @@ const mockToggleFavorite = jest.fn();
 
 jest.mock('@workspace/api-client-react', () => ({
   getGetDestinationQueryKey: (id: string) => [`/api/v1/destinations/${id}`],
+  getListTripsQueryKey: () => ['/api/v1/trips'],
   useGetDestination: jest.fn(),
+  useListTrips: jest.fn(() => ({ data: { items: [] }, isLoading: false })),
+  useAddTripItem: jest.fn(() => ({ mutateAsync: jest.fn() })),
+}));
+
+jest.mock('@tanstack/react-query', () => ({
+  useQueryClient: jest.fn(() => ({ invalidateQueries: jest.fn() })),
 }));
 
 jest.mock('expo-router', () => ({

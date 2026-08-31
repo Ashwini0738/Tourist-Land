@@ -5,6 +5,106 @@
  * Travel and land sourcing REST API
  * OpenAPI spec version: 0.1.0
  */
+export type TripItemEntityType = typeof TripItemEntityType[keyof typeof TripItemEntityType];
+
+
+export const TripItemEntityType = {
+  destination: 'destination',
+  place: 'place',
+  temple: 'temple',
+  attraction: 'attraction',
+  event: 'event',
+  food: 'food',
+  hotel: 'hotel',
+  property: 'property',
+} as const;
+
+export interface TripItem {
+  id: string;
+  entityType: TripItemEntityType;
+  entityId: string;
+  /** @minimum 0 */
+  sortOrder: number;
+  /** @nullable */
+  note: string | null;
+  /** @nullable */
+  name: string | null;
+  /** @nullable */
+  location: string | null;
+  /** @nullable */
+  imageKey: string | null;
+  /** @nullable */
+  route: string | null;
+  available: boolean;
+}
+
+export type TripStatus = typeof TripStatus[keyof typeof TripStatus];
+
+
+export const TripStatus = {
+  active: 'active',
+  archived: 'archived',
+} as const;
+
+export interface Trip {
+  id: string;
+  userId: string;
+  title: string;
+  /** @nullable */
+  startsOn: string | null;
+  /** @nullable */
+  endsOn: string | null;
+  status: TripStatus;
+  items: TripItem[];
+}
+
+export interface TripList {
+  items: Trip[];
+}
+
+export interface TripInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /** @nullable */
+  startsOn?: string | null;
+  /** @nullable */
+  endsOn?: string | null;
+}
+
+export type TripUpdateInput = TripInput;
+
+export type TripItemInputEntityType = typeof TripItemInputEntityType[keyof typeof TripItemInputEntityType];
+
+
+export const TripItemInputEntityType = {
+  destination: 'destination',
+  place: 'place',
+  temple: 'temple',
+  attraction: 'attraction',
+  event: 'event',
+  food: 'food',
+  hotel: 'hotel',
+  property: 'property',
+} as const;
+
+export interface TripItemInput {
+  entityType: TripItemInputEntityType;
+  /** @minLength 1 */
+  entityId: string;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  note?: string | null;
+}
+
+export interface TripReorderInput {
+  itemIds: string[];
+}
+
 export interface HealthStatus {
   status: string;
 }

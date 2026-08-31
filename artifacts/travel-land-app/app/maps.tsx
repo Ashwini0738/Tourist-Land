@@ -29,7 +29,7 @@ import { MapCanvas, MapSkeleton } from '@/features/maps/MapCanvas';
 import { getDirectionsUrl, openDirections } from '@/features/maps/directions';
 import { getMapLocationMessage, useMapLocation } from '@/features/maps/useMapLocation';
 
-type MapCategory = Exclude<ExploreItemType, 'food'>;
+type MapCategory = ExploreItemType;
 type Center = { latitude: number; longitude: number };
 
 const categories: Array<{ id: MapCategory | 'all'; label: string; icon: string }> = [
@@ -39,6 +39,7 @@ const categories: Array<{ id: MapCategory | 'all'; label: string; icon: string }
   { id: 'temple', label: 'Temples', icon: 'sun' },
   { id: 'event', label: 'Events', icon: 'calendar' },
   { id: 'hotel', label: 'Hotels', icon: 'home' },
+  { id: 'food', label: 'Food', icon: 'coffee' },
   { id: 'property', label: 'Land', icon: 'map' },
 ];
 
@@ -258,7 +259,7 @@ export default function MapsScreen() {
   }), [activeCategory, debouncedQuery, location]);
   const searchQuery = useSearchExplore(searchParams);
   const allItems = searchQuery.data?.items ?? [];
-  const mapItems = allItems.filter((item) => item.coordinates && item.type !== 'food');
+  const mapItems = allItems.filter((item) => item.coordinates);
   const selectedItem = mapItems.find((item) => itemKey(item) === selectedKey);
   const locationMessage = getMapLocationMessage(permission, locationError);
 

@@ -2,6 +2,7 @@ import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { getFavoriteKey, useAppState } from '@/context/AppStateContext';
 import { useColors } from '@/hooks/useColors';
 import { properties } from '@/lib/content';
+import { AddToTripButton } from '@/features/trips/AddToTripButton';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -62,6 +63,7 @@ export default function PropertyDetail() {
           <View><Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>LAND SIZE</Text><Text style={[styles.detailValue, { color: colors.foreground }]}>{property.size}</Text></View>
           <View><Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>VERIFICATION</Text><Text style={[styles.detailValue, { color: colors.foreground }]}>{property.verified ? 'Reviewed' : 'Pending'}</Text></View>
         </View>
+        <AddToTripButton entityType="property" entityId={property.id} label={property.title} />
         <Pressable accessibilityRole="button" onPress={() => router.push('/maps')} style={[styles.mapLink, { borderColor: colors.border }]}>
           <Feather name="map" size={17} color={colors.primary} />
           <Text style={[styles.mapLinkText, { color: colors.primary }]}>View location on map</Text>

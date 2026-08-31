@@ -70,12 +70,15 @@ jest.mock('@workspace/api-client-react', () => ({
   getGetUnreadNotificationCountQueryKey: () => ['/api/v1/notifications/unread-count'],
   getSearchExploreQueryKey: (params: unknown) => ['/api/v1/explore/search', params],
   getListFavoritesQueryKey: () => ['/api/v1/favorites'],
+  getListTripsQueryKey: () => ['/api/v1/trips'],
   getListBookingsQueryKey: () => ['/api/v1/bookings'],
   useGetExploreFilters: jest.fn(),
   useListExploreCategories: jest.fn(),
   useSearchExplore: jest.fn(),
   useGetUnreadNotificationCount: jest.fn(),
   useListFavorites: jest.fn(),
+  useListTrips: jest.fn(),
+  useAddTripItem: jest.fn(() => ({ mutateAsync: jest.fn() })),
   useListBookings: jest.fn(),
 }));
 
@@ -334,6 +337,8 @@ beforeEach(() => {
   mockUseGetExploreFilters.mockReturnValue(queryResult());
   mockUseGetUnreadNotificationCount.mockReturnValue(queryResult({ data: { count: 0 } }));
   mockUseListFavorites.mockReturnValue(queryResult({ data: { items: [] } }));
+  const mockApi = require('@workspace/api-client-react') as { useListTrips: jest.Mock };
+  mockApi.useListTrips.mockReturnValue(queryResult({ data: { items: [] } }));
   mockUseListBookings.mockReturnValue(queryResult({ data: { items: [] } }));
 });
 
@@ -497,6 +502,25 @@ describe('mobile web visual contracts', () => {
 
     const empty = renderAtWidth(<SavedScreen />, 375);
     expect(empty.getByText('Your collection is waiting')).toBeTruthy();
+  });
+
+  it('renders server-persisted saved items before local favorite hydration completes', () => {
+    mockUseListFavorites.mockReturnValueOnce(queryResult({
+      data: {
+        items: [{
+          entityType: 'destination',
+          entityId: 'coorg',
+          name: 'Coorg Highlands',
+          location: 'Karnataka, India',
+          imageKey: 'highlands',
+          route: '/destination/coorg',
+          available: true,
+        }],
+      },
+    }));
+    const saved = renderAtWidth(<SavedScreen />, 375);
+    expect(saved.getByText('Coorg Highlands')).toBeTruthy();
+    expect(saved.getByText('Karnataka, India')).toBeTruthy();
   });
 
   it('shows Bookings loading, empty, and error structures', () => {

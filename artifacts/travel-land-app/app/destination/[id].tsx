@@ -1,6 +1,8 @@
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { getFavoriteKey, useAppState } from '@/context/AppStateContext';
 import { getImageSource } from '@/features/home/utils/images';
+import { Gallery } from '@/features/gallery/Gallery';
+import { AddToTripButton } from '@/features/trips/AddToTripButton';
 import { useColors } from '@/hooks/useColors';
 import {
   useGetDestination,
@@ -388,8 +390,7 @@ export default function DestinationDetail() {
       refreshControl={<RefreshControl refreshing={detailQuery.isRefetching} onRefresh={() => void detailQuery.refetch()} tintColor={colors.primary} />}
     >
       <View style={styles.hero}>
-        <Image source={getImageSource(destination.imageKey)} style={styles.heroImage} resizeMode="cover" />
-        <View style={styles.heroShade} />
+        <Gallery imageKeys={[destination.imageKey]} label={destination.name} height={360} />
         <View style={[styles.heroActions, { top: insets.top + 10 }]}>
           <Pressable
             testID="destination-back"
@@ -452,6 +453,7 @@ export default function DestinationDetail() {
             <InfoItem label="COUNTRY" value={destination.country} />
           </View>
         </View>
+        <AddToTripButton entityType="destination" entityId={destination.id} label={destination.name} />
 
         <Section
           title="Places to visit"
