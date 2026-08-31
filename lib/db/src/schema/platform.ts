@@ -429,11 +429,14 @@ export const propertyEnquiries = pgTable("property_enquiries", {
   id: uuid("id").defaultRandom().primaryKey(),
   propertyId: uuid("property_id").references(() => properties.id, { onDelete: "cascade" }).notNull(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "restrict" }).notNull(),
+  idempotencyKey: text("idempotency_key"),
   message: text("message"),
   preferredContactMethod: text("preferred_contact_method"),
   status: text("status").default("new").notNull(),
   ...timestamps,
-});
+}, (table) => [
+  uniqueIndex("property_enquiry_user_idempotency_unique").on(table.userId, table.idempotencyKey),
+]);
 
 export const propertyEnquiryHistory = pgTable(
   "property_enquiry_history",

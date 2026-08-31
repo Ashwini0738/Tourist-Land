@@ -784,6 +784,7 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:

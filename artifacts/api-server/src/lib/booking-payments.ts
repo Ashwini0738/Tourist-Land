@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, lt, or } from "drizzle-orm";
 import Stripe from "stripe";
 import { db, bookings, payments } from "@workspace/db";
 import { logger } from "./logger.ts";
@@ -39,6 +39,10 @@ type BookingPaymentRow = {
   payment: typeof payments.$inferSelect | null;
 };
 
+const checkoutLocks = new Map<string, Promise<unknown>>();
+const checkoutClaimPrefix = "checkout-pending:";
+const checkoutClaimTimeoutMs = 5 * 60 * 1000;
+
 function toMinorUnits(amount: string, currency: string) {
   const value = Number(amount);
   if (!Number.isFinite(value) || value <= 0) throw new BookingConflictError("This booking has an invalid payment amount.");
@@ -68,7 +72,7 @@ async function createBookingPrice(stripe: Stripe, booking: typeof bookings.$infe
   );
 }
 
-export async function startBookingCheckout(
+async function startBookingCheckoutUnlocked(
   userId: string,
   reference: string,
   idempotencyKey: string,
@@ -98,6 +102,12 @@ export async function startBookingCheckout(
   const stripe = dependencies.stripe ?? await getUncachableStripeClient();
   const lookupBooking = dependencies.findBooking ?? findBooking;
   if (row.payment.status === "processing" && row.payment.providerReference) {
+    if (row.payment.providerReference.startsWith(checkoutClaimPrefix)) {
+      const claimAge = Date.now() - row.payment.updatedAt.getTime();
+      if (claimAge < checkoutClaimTimeoutMs) {
+        throw new BookingConflictError("Checkout is already being started. Please retry in a moment.");
+      }
+    }
     let existing: Stripe.Checkout.Session | undefined;
     try {
       existing = await stripe.checkout.sessions.retrieve(row.payment.providerReference);
@@ -115,32 +125,103 @@ export async function startBookingCheckout(
     }
   }
 
+  const shouldClaimPayment = !dependencies.loadBookingPayment;
+  const claimReference = `${checkoutClaimPrefix}${idempotencyKey}`;
+  if (shouldClaimPayment) {
+    const staleClaimBefore = new Date(Date.now() - checkoutClaimTimeoutMs);
+    const [claimed] = await db
+      .update(payments)
+      .set({
+        provider: "stripe",
+        providerReference: claimReference,
+        status: "processing",
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(payments.id, row.payment.id),
+        eq(payments.userId, userId),
+        or(
+          inArray(payments.status, ["unpaid", "failed", "cancelled"]),
+          and(
+            eq(payments.status, "processing"),
+            eq(payments.providerReference, row.payment.providerReference),
+            lt(payments.updatedAt, staleClaimBefore),
+          ),
+        ),
+      ))
+      .returning();
+    if (!claimed) {
+      throw new BookingConflictError("Checkout is already being started. Please retry in a moment.");
+    }
+  }
+
   const price = await createBookingPrice(stripe, row.booking, idempotencyKey);
-  const session = await stripe.checkout.sessions.create(
-    {
-      mode: "payment",
-      line_items: [{ price: price.id, quantity: 1 }],
-      customer_email: row.booking.guestEmail,
-      client_reference_id: row.booking.reference,
-      metadata: { bookingId: row.booking.id, bookingReference: row.booking.reference, userId },
-      payment_intent_data: {
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await stripe.checkout.sessions.create(
+      {
+        mode: "payment",
+        line_items: [{ price: price.id, quantity: 1 }],
+        customer_email: row.booking.guestEmail,
+        client_reference_id: row.booking.reference,
         metadata: { bookingId: row.booking.id, bookingReference: row.booking.reference, userId },
+        payment_intent_data: {
+          metadata: { bookingId: row.booking.id, bookingReference: row.booking.reference, userId },
+        },
+        success_url: appReturnUrl(row.booking.reference, "success"),
+        cancel_url: appReturnUrl(row.booking.reference, "cancel"),
       },
-      success_url: appReturnUrl(row.booking.reference, "success"),
-      cancel_url: appReturnUrl(row.booking.reference, "cancel"),
-    },
-    { idempotencyKey },
-  );
+      { idempotencyKey },
+    );
+  } catch (error) {
+    if (shouldClaimPayment) {
+      await db.update(payments)
+        .set({ providerReference: null, status: "failed", updatedAt: new Date() })
+        .where(and(
+          eq(payments.id, row.payment.id),
+          eq(payments.userId, userId),
+          eq(payments.providerReference, claimReference),
+        ));
+    }
+    throw error;
+  }
   if (!session.url) throw new Error("Stripe did not return a checkout URL.");
 
-  await db
+  const [updatedPayment] = await db
     .update(payments)
     .set({ provider: "stripe", providerReference: session.id, status: "processing", updatedAt: new Date() })
-    .where(and(eq(payments.id, row.payment.id), eq(payments.userId, userId)));
+    .where(and(
+      eq(payments.id, row.payment.id),
+      eq(payments.userId, userId),
+      ...(shouldClaimPayment ? [eq(payments.providerReference, claimReference)] : []),
+    ))
+    .returning();
+  if (shouldClaimPayment && !updatedPayment) {
+    throw new BookingConflictError("Checkout changed before it could be saved. Please refresh your booking.");
+  }
 
   const booking = await lookupBooking(userId, reference);
   if (!booking) throw new BookingNotFoundError("Booking not found.");
   return { checkoutUrl: session.url, booking };
+}
+
+export async function startBookingCheckout(
+  userId: string,
+  reference: string,
+  idempotencyKey: string,
+  dependencies: BookingCheckoutDependencies = {},
+) {
+  const lockKey = `${userId}:${reference}`;
+  const previous = checkoutLocks.get(lockKey) ?? Promise.resolve();
+  const current = previous
+    .catch(() => undefined)
+    .then(() => startBookingCheckoutUnlocked(userId, reference, idempotencyKey, dependencies));
+  checkoutLocks.set(lockKey, current);
+  try {
+    return await current;
+  } finally {
+    if (checkoutLocks.get(lockKey) === current) checkoutLocks.delete(lockKey);
+  }
 }
 
 function eventMetadata(event: Stripe.Event) {

@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Response } from "express";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, or } from "drizzle-orm";
 import {
   db,
   destinations as destinationRecords,
@@ -93,6 +93,11 @@ function parseDemoEnquiryBody(value: unknown): { message: string; preferredConta
   if (typeof body.message !== "string" || body.message.length > 2000) return null;
   if (body.preferredContactMethod !== "email" && body.preferredContactMethod !== "phone") return null;
   return { message: body.message, preferredContactMethod: body.preferredContactMethod };
+}
+
+function parseEnquiryIdempotencyKey(value: string | undefined): string | null {
+  const key = value?.trim();
+  return key && key.length >= 8 && key.length <= 128 ? key : null;
 }
 
 const demoHomeData = {
@@ -402,66 +407,146 @@ export function createCatalogRouter(
   });
 
   router.post("/v1/properties/:id/enquiries", requireAuth, async (req, res): Promise<void> => {
-    if (demoModeEnabled()) {
-      const propertyId = typeof req.params.id === "string" ? req.params.id : req.params.id[0];
-      const body = parseDemoEnquiryBody(req.body);
-      if (!body) {
-        res.status(400).json({ error: { code: "INVALID_INPUT", message: "A message and preferred contact method are required." } });
-        return;
-      }
-      const [property] = await db.select().from(propertyRecords).where(
-        propertyId.startsWith("demo-")
-          ? dbEq(propertyRecords.slug, propertyId)
-          : dbEq(propertyRecords.id, propertyId),
-      );
-      if (!property) {
+    const idempotencyKey = parseEnquiryIdempotencyKey(req.get("Idempotency-Key"));
+    if (!idempotencyKey) {
+      res.status(400).json({ error: { code: "INVALID_INPUT", message: "An Idempotency-Key header between 8 and 128 characters is required to safely retry this enquiry." } });
+      return;
+    }
+    const propertyId = typeof req.params.id === "string" ? req.params.id : req.params.id[0];
+    const body = parseDemoEnquiryBody(req.body);
+    if (!body) {
+      res.status(400).json({ error: { code: "INVALID_INPUT", message: "A message and preferred contact method are required." } });
+      return;
+    }
+
+    const [persistedProperty] = await db.select().from(propertyRecords).where(
+      or(
+        eq(propertyRecords.id, propertyId),
+        eq(propertyRecords.slug, propertyId),
+      ),
+    );
+    if (!persistedProperty) {
+      const staticProperty = properties.find((item) => item.id === propertyId);
+      if (staticProperty) {
+        res.status(503).json({ error: { code: "ENQUIRY_UNAVAILABLE", message: "This development property is not connected to a persistent enquiry service yet. No enquiry was submitted." } });
+      } else {
         res.status(404).json({ error: { code: "NOT_FOUND", message: "Property not found" } });
-        return;
       }
-      const [enquiry] = await db.insert(propertyEnquiries).values({
-        propertyId: property.id,
-        userId: req.localUser!.id,
-        message: body.message,
-        preferredContactMethod: body.preferredContactMethod,
-        status: "new",
-      }).returning();
+      return;
+    }
+
+    const existing = await db.query.propertyEnquiries.findFirst({
+      where: and(
+        eq(propertyEnquiries.userId, req.localUser!.id),
+        eq(propertyEnquiries.idempotencyKey, idempotencyKey),
+      ),
+    });
+    if (existing) {
+      res.status(202).json({
+        id: existing.id,
+        status: existing.status,
+        message: "Your enquiry was already recorded. No duplicate enquiry was created.",
+      });
+      return;
+    }
+
+    if (demoModeEnabled()) {
+      const result = await db.transaction(async (tx) => {
+        const [enquiry] = await tx.insert(propertyEnquiries).values({
+          propertyId: persistedProperty.id,
+          userId: req.localUser!.id,
+          idempotencyKey,
+          message: body.message,
+          preferredContactMethod: body.preferredContactMethod,
+          status: "new",
+        }).onConflictDoNothing({ target: [propertyEnquiries.userId, propertyEnquiries.idempotencyKey] }).returning();
+        if (!enquiry) {
+          const duplicate = await tx.query.propertyEnquiries.findFirst({
+            where: and(
+              eq(propertyEnquiries.userId, req.localUser!.id),
+              eq(propertyEnquiries.idempotencyKey, idempotencyKey),
+            ),
+          });
+          return duplicate ? { enquiry: duplicate, created: false } : null;
+        }
+        await tx.insert(propertyEnquiryHistory).values({
+          enquiryId: enquiry.id,
+          status: "new",
+          note: "Demo enquiry received.",
+          changedBy: req.localUser!.id,
+        });
+        return { enquiry, created: true };
+      });
+      const enquiry = result?.enquiry;
       if (!enquiry) {
         res.status(500).json({ error: { code: "ENQUIRY_CREATE_FAILED", message: "The enquiry could not be recorded." } });
         return;
       }
-      await db.insert(propertyEnquiryHistory).values({
-        enquiryId: enquiry.id,
-        status: "new",
-        note: "Demo enquiry received.",
-        changedBy: req.localUser!.id,
-      });
-      if (property.ownerId) {
-        await createNotification(property.ownerId, {
+      if (result.created && persistedProperty.ownerId) {
+        await createNotification(persistedProperty.ownerId, {
           type: "land_enquiry_updated",
           title: "New property enquiry",
           body: "A traveller sent an enquiry for a demo property.",
           relatedType: "property",
-          relatedId: property.id,
+          relatedId: persistedProperty.id,
           dedupeKey: `demo-enquiry-${enquiry.id}`,
         });
       }
       res.status(202).json({
         id: enquiry.id,
         status: enquiry.status,
-        message: "Your demo enquiry was recorded for local testing. No property transaction has been created.",
+        message: result.created
+          ? "Your demo enquiry was recorded for local testing. No property transaction has been created."
+          : "Your enquiry was already recorded. No duplicate enquiry was created.",
       });
       return;
     }
-    const property = properties.find((item) => item.id === req.params.id);
-    if (!property) {
-      res.status(404).json({ error: { code: "NOT_FOUND", message: "Property not found" } });
+    const result = await db.transaction(async (tx) => {
+      const [enquiry] = await tx.insert(propertyEnquiries).values({
+        propertyId: persistedProperty.id,
+        userId: req.localUser!.id,
+        idempotencyKey,
+        message: body.message,
+        preferredContactMethod: body.preferredContactMethod,
+        status: "new",
+      }).onConflictDoNothing({ target: [propertyEnquiries.userId, propertyEnquiries.idempotencyKey] }).returning();
+      if (!enquiry) {
+        const duplicate = await tx.query.propertyEnquiries.findFirst({
+          where: and(
+            eq(propertyEnquiries.userId, req.localUser!.id),
+            eq(propertyEnquiries.idempotencyKey, idempotencyKey),
+          ),
+        });
+        return duplicate ? { enquiry: duplicate, created: false } : null;
+      }
+      await tx.insert(propertyEnquiryHistory).values({
+        enquiryId: enquiry.id,
+        status: "new",
+        note: "Property enquiry received.",
+        changedBy: req.localUser!.id,
+      });
+      return { enquiry, created: true };
+    });
+    if (!result?.enquiry) {
+      res.status(500).json({ error: { code: "ENQUIRY_CREATE_FAILED", message: "The enquiry could not be recorded." } });
       return;
     }
-    req.log.info({ propertyId: property.id }, "Development property enquiry accepted");
+    if (result.created && persistedProperty.ownerId) {
+      await createNotification(persistedProperty.ownerId, {
+        type: "land_enquiry_updated",
+        title: "New property enquiry",
+        body: "A traveller sent a new property enquiry.",
+        relatedType: "property",
+        relatedId: persistedProperty.id,
+        dedupeKey: `property-enquiry-${result.enquiry.id}`,
+      });
+    }
     res.status(202).json({
-      id: `dev-enquiry-${Date.now()}`,
-      status: "received",
-      message: "A sourcing specialist will follow up after the service is configured.",
+      id: result.enquiry.id,
+      status: result.enquiry.status,
+      message: result.created
+        ? "Your enquiry was recorded. A sourcing specialist will follow up after reviewing it."
+        : "Your enquiry was already recorded. No duplicate enquiry was created.",
     });
   });
 
