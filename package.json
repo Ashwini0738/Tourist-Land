@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
-    "build": "pnpm run validate:workflows && pnpm run typecheck && pnpm -r --if-present run build",
+    "build": "pnpm run validate:workflows && pnpm run typecheck && pnpm --filter @workspace/api-server run build && env PORT=8081 BASE_PATH=/__mockup pnpm --filter @workspace/mockup-sandbox run build && env PORT=22972 BASE_PATH=/admin-portal/ pnpm --filter @workspace/travel-land-admin run build && pnpm --filter @workspace/travel-land-app run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
     "validate:api-contract": "pnpm --filter @workspace/api-spec run codegen:check",
