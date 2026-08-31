@@ -8,6 +8,7 @@ import {
   type TripItemEntityType,
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { radii, spacing } from '@/constants/theme';
@@ -22,11 +23,11 @@ type AddToTripButtonProps = {
 export function AddToTripButton({ entityType, entityId, label, compact = false }: AddToTripButtonProps) {
   const colors = useColors();
   const queryClient = useQueryClient();
-  const tripsQuery = useListTrips({ query: { queryKey: getListTripsQueryKey(), staleTime: 30_000 } });
-  const addTripItem = useAddTripItem();
   const [open, setOpen] = React.useState(false);
   const [working, setWorking] = React.useState<string | null>(null);
   const [message, setMessage] = React.useState<string | null>(null);
+  const tripsQuery = useListTrips({ query: { queryKey: getListTripsQueryKey(), enabled: open, staleTime: 30_000 } });
+  const addTripItem = useAddTripItem();
   const trips = (tripsQuery.data?.items ?? []).filter((trip) => trip.status === 'active');
 
   const add = async (trip: Trip) => {
@@ -62,7 +63,7 @@ export function AddToTripButton({ entityType, entityId, label, compact = false }
             <View style={styles.header}><View><Text style={[styles.kicker, { color: colors.primary }]}>PLAN AHEAD</Text><Text style={[styles.title, { color: colors.foreground }]}>Choose a trip</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Close add to trip dialog" onPress={() => setOpen(false)}><Feather name="x" size={20} color={colors.foreground} /></Pressable></View>
             <Text style={[styles.itemLabel, { color: colors.mutedForeground }]} numberOfLines={2}>{label}</Text>
             {message ? <Text style={[styles.message, { color: message.startsWith('Added') ? colors.primary : colors.destructive }]}>{message}</Text> : null}
-            {tripsQuery.isLoading ? <ActivityIndicator color={colors.primary} /> : trips.length ? trips.map((trip) => <Pressable key={trip.id} testID={`detail-trip-option-${trip.id}`} accessibilityRole="button" disabled={Boolean(working)} onPress={() => void add(trip)} style={[styles.trip, { borderColor: colors.border, backgroundColor: colors.card }]}><View style={styles.tripCopy}><Text style={[styles.tripTitle, { color: colors.foreground }]}>{trip.title}</Text><Text style={[styles.tripMeta, { color: colors.mutedForeground }]}>{trip.items.length} planned item{trip.items.length === 1 ? '' : 's'}</Text></View>{working === trip.id ? <ActivityIndicator color={colors.primary} /> : <Feather name="plus-circle" size={20} color={colors.primary} />}</Pressable>) : <View style={styles.empty}><Feather name="calendar" size={22} color={colors.primary} /><Text style={[styles.emptyTitle, { color: colors.foreground }]}>No active trips yet</Text><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Create one in My Trips, then return here to keep planning.</Text></View>}
+            {tripsQuery.isLoading ? <ActivityIndicator color={colors.primary} /> : tripsQuery.isError ? <View style={styles.empty}><Feather name="alert-circle" size={22} color={colors.destructive} /><Text style={[styles.emptyTitle, { color: colors.foreground }]}>Trips could not load</Text><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Try again, or open My Trips to create a trip directly.</Text><View style={styles.emptyActions}><Pressable accessibilityRole="button" onPress={() => void tripsQuery.refetch()} style={[styles.secondaryAction, { borderColor: colors.border }]}><Text style={[styles.secondaryActionText, { color: colors.primary }]}>Try again</Text></Pressable><Pressable accessibilityRole="button" onPress={() => { setOpen(false); router.push('/trips' as any); }} style={[styles.createAction, { backgroundColor: colors.primary }]}><Text style={[styles.createActionText, { color: colors.primaryForeground }]}>Open My Trips</Text></Pressable></View></View> : trips.length ? trips.map((trip) => <Pressable key={trip.id} testID={`detail-trip-option-${trip.id}`} accessibilityRole="button" disabled={Boolean(working)} onPress={() => void add(trip)} style={[styles.trip, { borderColor: colors.border, backgroundColor: colors.card }]}><View style={styles.tripCopy}><Text style={[styles.tripTitle, { color: colors.foreground }]}>{trip.title}</Text><Text style={[styles.tripMeta, { color: colors.mutedForeground }]}>{trip.items.length} planned item{trip.items.length === 1 ? '' : 's'}</Text></View>{working === trip.id ? <ActivityIndicator color={colors.primary} /> : <Feather name="plus-circle" size={20} color={colors.primary} />}</Pressable>) : <View style={styles.empty}><Feather name="calendar" size={22} color={colors.primary} /><Text style={[styles.emptyTitle, { color: colors.foreground }]}>No active trips yet</Text><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Create one in My Trips, then return here to keep planning.</Text><Pressable accessibilityRole="button" onPress={() => { setOpen(false); router.push('/trips' as any); }} style={[styles.createAction, { backgroundColor: colors.primary }]}><Text style={[styles.createActionText, { color: colors.primaryForeground }]}>Create a trip</Text></Pressable></View>}
           </Pressable>
         </Pressable>
       </Modal>
@@ -89,4 +90,9 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', padding: 20 },
   emptyTitle: { fontSize: 16, fontWeight: '800', marginTop: 9 },
   emptyText: { fontSize: 12, lineHeight: 17, textAlign: 'center', marginTop: 5 },
+  emptyActions: { flexDirection: 'row', gap: 9, marginTop: 15 },
+  secondaryAction: { borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: 14, paddingVertical: 10 },
+  secondaryActionText: { fontSize: 12, fontWeight: '800' },
+  createAction: { borderRadius: radii.pill, paddingHorizontal: 14, paddingVertical: 10, marginTop: 15 },
+  createActionText: { fontSize: 12, fontWeight: '800' },
 });
