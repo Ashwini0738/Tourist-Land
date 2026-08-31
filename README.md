@@ -23,12 +23,18 @@ Useful validation and generation commands:
 ```bash
 pnpm --filter @workspace/api-spec run codegen
 pnpm run validate:api-contract
+pnpm run validate:workflows
 pnpm --filter @workspace/travel-land-app run typecheck
 pnpm --filter @workspace/api-server run typecheck
 pnpm run typecheck
 ```
 
-Before releasing, run `pnpm run validate:api-contract`. The same check runs
+Before releasing, run `pnpm run validate:workflows` and
+`pnpm run validate:api-contract`. The workflow check scans every YAML workflow
+under `.github/workflows/` and reports the workflow path, line, and column for
+syntax or GitHub Actions expression errors.
+
+The API contract check runs
 automatically in GitHub Actions for pull requests and pushes to `main`. It
 regenerates the React API client and Zod schemas from
 `lib/api-spec/openapi.yaml`, then fails if the generated output differs from
