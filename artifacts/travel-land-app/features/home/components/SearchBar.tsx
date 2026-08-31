@@ -37,9 +37,9 @@ export function SearchBar() {
 }
 
 const styles = StyleSheet.create({
-  wrapper: { marginTop: -30, marginHorizontal: spacing.lg, zIndex: 2 },
+  wrapper: { marginTop: spacing.lg, marginHorizontal: spacing.lg, zIndex: 2 },
   label: { fontSize: 10, fontWeight: '800', letterSpacing: 1.35, marginBottom: 9 },
-  search: { minHeight: 64, borderRadius: radii.lg, borderWidth: 1, flexDirection: 'row', alignItems: 'center', paddingLeft: spacing.md, paddingRight: 8, ...elevation.floating },
+  search: { minHeight: 64, borderRadius: radii.lg, borderWidth: 1, flexDirection: 'row', alignItems: 'center', paddingLeft: spacing.md, paddingRight: 8, paddingVertical: 7, ...elevation.floating },
   input: { flex: 1, marginLeft: spacing.sm, fontSize: 14, minHeight: 52 },
   submit: { width: 48, height: 48, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
 });

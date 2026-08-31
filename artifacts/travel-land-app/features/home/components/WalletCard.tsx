@@ -36,11 +36,11 @@ export function WalletCard() {
 
 const styles = StyleSheet.create({
   card: { marginTop: 0, marginHorizontal: spacing.lg, minHeight: 142, borderRadius: radii.lg, overflow: 'hidden', borderWidth: 1, flexDirection: 'row', ...elevation.floating },
-  copy: { flex: 1, padding: spacing.md, paddingRight: 52, justifyContent: 'center' },
+  copy: { flex: 1, minWidth: 0, padding: spacing.md, paddingRight: 24, justifyContent: 'center' },
   kicker: { fontSize: 8, fontWeight: '800', letterSpacing: 1.1 },
   title: { fontSize: 20, lineHeight: 24, fontWeight: '700', letterSpacing: -0.4, marginTop: 7 },
   subtitle: { fontSize: 11, lineHeight: 16, marginTop: 7 },
-  wallet: { width: 96, borderTopRightRadius: radii.lg, borderBottomRightRadius: radii.lg, justifyContent: 'center', alignItems: 'center', padding: spacing.sm, overflow: 'hidden' },
+  wallet: { width: 92, borderTopRightRadius: radii.lg, borderBottomRightRadius: radii.lg, justifyContent: 'center', alignItems: 'center', padding: spacing.sm, overflow: 'hidden' },
   walletText: { fontSize: 11, fontWeight: '800', marginTop: 7 },
-  mapButton: { position: 'absolute', top: '50%', right: 70, width: 54, height: 54, borderRadius: 27, transform: [{ translateY: -27 }], alignItems: 'center', justifyContent: 'center', borderWidth: 4, ...elevation.card },
+  mapButton: { position: 'absolute', top: '50%', right: 66, width: 54, height: 54, borderRadius: 27, transform: [{ translateY: -27 }], alignItems: 'center', justifyContent: 'center', borderWidth: 4, ...elevation.card },
 });
