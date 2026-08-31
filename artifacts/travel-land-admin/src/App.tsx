@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ClerkProvider, SignIn, SignUp, useAuth, useClerk } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
@@ -8,11 +8,6 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AdminShell } from '@/components/admin-shell';
-import {
-  AuditLogsPage, BookingsPage, ContentPage, DashboardPage, DestinationsPage, EventsPage,
-  HotelsPage, LoginPage, NotificationsPage, PaymentsPage, PlacesPage, PropertiesPage,
-  ReviewsPage, RoomsPage, SettingsPage, UsersPage, VendorsPage,
-} from '@/pages/admin-pages';
 import NotFound from '@/pages/not-found';
 import { ShieldAlert } from 'lucide-react';
 import {
@@ -31,6 +26,92 @@ const clerkPubKey = publishableKeyFromHost(
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 const signInPath = `${basePath}/sign-in`;
+
+const AuditLogsPage = lazy(() =>
+  import('@/pages/audit-logs-page').then(({ AuditLogsPage }) => ({
+    default: AuditLogsPage,
+  })),
+);
+const BookingsPage = lazy(() =>
+  import('@/pages/bookings-page').then(({ BookingsPage }) => ({
+    default: BookingsPage,
+  })),
+);
+const ContentPage = lazy(() =>
+  import('@/pages/content-page').then(({ ContentPage }) => ({
+    default: ContentPage,
+  })),
+);
+const DashboardPage = lazy(() =>
+  import('@/pages/dashboard-page').then(({ DashboardPage }) => ({
+    default: DashboardPage,
+  })),
+);
+const DestinationsPage = lazy(() =>
+  import('@/pages/destinations-page').then(({ DestinationsPage }) => ({
+    default: DestinationsPage,
+  })),
+);
+const EventsPage = lazy(() =>
+  import('@/pages/events-page').then(({ EventsPage }) => ({
+    default: EventsPage,
+  })),
+);
+const HotelsPage = lazy(() =>
+  import('@/pages/hotels-page').then(({ HotelsPage }) => ({
+    default: HotelsPage,
+  })),
+);
+const LoginPage = lazy(() =>
+  import('@/pages/login-page').then(({ LoginPage }) => ({
+    default: LoginPage,
+  })),
+);
+const NotificationsPage = lazy(() =>
+  import('@/pages/notifications-page').then(({ NotificationsPage }) => ({
+    default: NotificationsPage,
+  })),
+);
+const PaymentsPage = lazy(() =>
+  import('@/pages/payments-page').then(({ PaymentsPage }) => ({
+    default: PaymentsPage,
+  })),
+);
+const PlacesPage = lazy(() =>
+  import('@/pages/places-page').then(({ PlacesPage }) => ({
+    default: PlacesPage,
+  })),
+);
+const PropertiesPage = lazy(() =>
+  import('@/pages/properties-page').then(({ PropertiesPage }) => ({
+    default: PropertiesPage,
+  })),
+);
+const ReviewsPage = lazy(() =>
+  import('@/pages/reviews-page').then(({ ReviewsPage }) => ({
+    default: ReviewsPage,
+  })),
+);
+const RoomsPage = lazy(() =>
+  import('@/pages/rooms-page').then(({ RoomsPage }) => ({
+    default: RoomsPage,
+  })),
+);
+const SettingsPage = lazy(() =>
+  import('@/pages/settings-page').then(({ SettingsPage }) => ({
+    default: SettingsPage,
+  })),
+);
+const UsersPage = lazy(() =>
+  import('@/pages/users-page').then(({ UsersPage }) => ({
+    default: UsersPage,
+  })),
+);
+const VendorsPage = lazy(() =>
+  import('@/pages/vendors-page').then(({ VendorsPage }) => ({
+    default: VendorsPage,
+  })),
+);
 
 if (!clerkPubKey) {
   throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in .env file');
@@ -200,26 +281,28 @@ function AdminArea() {
 
   return (
     <AdminShell>
-      <Switch>
-        <Route path="/dashboard" component={DashboardPage} />
-        <Route path="/users" component={UsersPage} />
-        <Route path="/vendors" component={VendorsPage} />
-        <Route path="/hotels" component={HotelsPage} />
-        <Route path="/rooms" component={() => <RoomsPage />} />
-        <Route path="/availability" component={() => <RoomsPage availability />} />
-        <Route path="/destinations" component={DestinationsPage} />
-        <Route path="/places" component={PlacesPage} />
-        <Route path="/events" component={EventsPage} />
-        <Route path="/properties" component={PropertiesPage} />
-        <Route path="/bookings" component={BookingsPage} />
-        <Route path="/payments" component={PaymentsPage} />
-        <Route path="/reviews" component={ReviewsPage} />
-        <Route path="/notifications" component={NotificationsPage} />
-        <Route path="/content" component={ContentPage} />
-        <Route path="/audit-logs" component={AuditLogsPage} />
-        <Route path="/settings" component={SettingsPage} />
-        <Route component={NotFound} />
-      </Switch>
+      <Suspense fallback={<LoadingScreen message="Loading workspace view…" />}>
+        <Switch>
+          <Route path="/dashboard" component={DashboardPage} />
+          <Route path="/users" component={UsersPage} />
+          <Route path="/vendors" component={VendorsPage} />
+          <Route path="/hotels" component={HotelsPage} />
+          <Route path="/rooms" component={() => <RoomsPage />} />
+          <Route path="/availability" component={() => <RoomsPage availability />} />
+          <Route path="/destinations" component={DestinationsPage} />
+          <Route path="/places" component={PlacesPage} />
+          <Route path="/events" component={EventsPage} />
+          <Route path="/properties" component={PropertiesPage} />
+          <Route path="/bookings" component={BookingsPage} />
+          <Route path="/payments" component={PaymentsPage} />
+          <Route path="/reviews" component={ReviewsPage} />
+          <Route path="/notifications" component={NotificationsPage} />
+          <Route path="/content" component={ContentPage} />
+          <Route path="/audit-logs" component={AuditLogsPage} />
+          <Route path="/settings" component={SettingsPage} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
     </AdminShell>
   );
 }

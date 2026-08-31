@@ -86,7 +86,7 @@ vi.mock('@/components/admin-shell', () => ({
   AdminShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }));
 
-vi.mock('@/pages/admin-pages', async () => {
+vi.mock('@/pages/audit-logs-page', async () => {
   const React = await vi.importActual<typeof import('react')>('react');
   const { useListAdminAuditLogs } = await vi.importActual<typeof import('@workspace/api-client-react')>('@workspace/api-client-react');
 
@@ -115,27 +115,12 @@ vi.mock('@/pages/admin-pages', async () => {
     );
   }
 
-  const Placeholder = ({ name }: { name: string }) => <div>{name}</div>;
-  return {
-    AuditLogsPage,
-    BookingsPage: () => <Placeholder name="Bookings" />,
-    ContentPage: () => <Placeholder name="Content" />,
-    DashboardPage: () => <Placeholder name="Dashboard" />,
-    DestinationsPage: () => <Placeholder name="Destinations" />,
-    EventsPage: () => <Placeholder name="Events" />,
-    HotelsPage: () => <Placeholder name="Hotels" />,
-    LoginPage: () => <Placeholder name="Login" />,
-    NotificationsPage: () => <Placeholder name="Notifications" />,
-    PaymentsPage: () => <Placeholder name="Payments" />,
-    PlacesPage: () => <Placeholder name="Places" />,
-    PropertiesPage: () => <Placeholder name="Properties" />,
-    ReviewsPage: () => <Placeholder name="Reviews" />,
-    RoomsPage: () => <Placeholder name="Rooms" />,
-    SettingsPage: () => <Placeholder name="Settings" />,
-    UsersPage: () => <Placeholder name="Users" />,
-    VendorsPage: () => <Placeholder name="Vendors" />,
-  };
+  return { AuditLogsPage };
 });
+
+vi.mock('@/pages/login-page', () => ({
+  LoginPage: () => <div>Login</div>,
+}));
 
 describe('admin session recovery', () => {
   let clearQueryCache: ReturnType<typeof vi.spyOn>;
