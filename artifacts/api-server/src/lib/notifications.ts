@@ -20,6 +20,8 @@ export type NotificationInput = {
   dedupeKey?: string | null;
 };
 
+type NotificationExecutor = Pick<typeof db, "insert">;
+
 function payload(row: typeof notifications.$inferSelect) {
   const data = row.data && typeof row.data === "object" && !Array.isArray(row.data)
     ? row.data as Record<string, unknown>
@@ -36,12 +38,16 @@ function payload(row: typeof notifications.$inferSelect) {
   };
 }
 
-export async function createNotification(userId: string, input: NotificationInput) {
+export async function createNotification(
+  userId: string,
+  input: NotificationInput,
+  executor: NotificationExecutor = db,
+) {
   const data = {
     ...(input.relatedType ? { relatedType: input.relatedType } : {}),
     ...(input.relatedId ? { relatedId: input.relatedId } : {}),
   };
-  const [row] = await db
+  const [row] = await executor
     .insert(notifications)
     .values({
       userId,
@@ -55,6 +61,29 @@ export async function createNotification(userId: string, input: NotificationInpu
     .onConflictDoNothing({ target: [notifications.userId, notifications.dedupeKey] })
     .returning();
   return row ? payload(row) : null;
+}
+
+export type PropertyEnquiryPublicStatus = "contacted" | "closed";
+
+export async function createPropertyEnquiryStatusNotification(
+  userId: string,
+  input: {
+    enquiryId: string;
+    propertyId: string;
+    propertyName: string;
+    status: PropertyEnquiryPublicStatus;
+  },
+  executor: NotificationExecutor = db,
+) {
+  const statusLabel = input.status === "contacted" ? "Contacted" : "Closed";
+  return createNotification(userId, {
+    type: "land_enquiry_updated",
+    title: "Property enquiry updated",
+    body: `Your enquiry for ${input.propertyName} is now ${statusLabel}.`,
+    relatedType: "property",
+    relatedId: input.propertyId,
+    dedupeKey: `property-enquiry-status:${input.enquiryId}:${input.status}`,
+  }, executor);
 }
 
 export async function listNotifications(userId: string, page: number, limit: number) {

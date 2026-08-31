@@ -14,6 +14,7 @@ import {
   properties,
   propertyEnquiries,
   propertyEnquiryHistory,
+  notifications,
   roomAvailability,
   userRoles,
   users,
@@ -508,6 +509,13 @@ test("database-backed vendor requests stay isolated by hotel ownership", async (
     assert.equal((contacted.body as { status: string }).status, "contacted");
     assert.deepEqual((contacted.body as { history: Array<{ status: string }> }).history.map((entry) => entry.status), ["new", "contacted"]);
 
+    const contactedNotifications = await db.select().from(notifications).where(eq(notifications.userId, fixture.vendorB));
+    assert.equal(contactedNotifications.length, 1);
+    assert.equal(contactedNotifications[0]?.title, "Property enquiry updated");
+    assert.equal(contactedNotifications[0]?.body, "Your enquiry for Property A is now Contacted.");
+    assert.equal(contactedNotifications[0]?.data && (contactedNotifications[0].data as Record<string, string>).relatedId, fixture.propertyA);
+    assert.doesNotMatch(contactedNotifications[0]?.body ?? "", /Called the customer/);
+
     const closed = await vendorRequest(server.baseUrl, fixture.vendorA, `/v1/vendor/enquiries/${fixture.enquiryA}`, {
       method: "PATCH",
       body: JSON.stringify({ status: "closed" }),
@@ -515,6 +523,19 @@ test("database-backed vendor requests stay isolated by hotel ownership", async (
     assert.equal(closed.status, 200);
     assert.equal((closed.body as { status: string }).status, "closed");
     assert.deepEqual((closed.body as { history: Array<{ status: string }> }).history.map((entry) => entry.status), ["new", "contacted", "closed"]);
+    const closedNotifications = await db.select().from(notifications).where(eq(notifications.userId, fixture.vendorB));
+    assert.deepEqual(closedNotifications.map((notification) => notification.body).sort(), [
+      "Your enquiry for Property A is now Closed.",
+      "Your enquiry for Property A is now Contacted.",
+    ]);
+
+    const duplicateStatus = await vendorRequest(server.baseUrl, fixture.vendorA, `/v1/vendor/enquiries/${fixture.enquiryA}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "closed", note: "A duplicate update must not notify again." }),
+    });
+    assert.equal(duplicateStatus.status, 409);
+    const duplicateNotifications = await db.select().from(notifications).where(eq(notifications.userId, fixture.vendorB));
+    assert.equal(duplicateNotifications.length, 2);
 
     const crossOwnerEnquiry = await vendorRequest(server.baseUrl, fixture.vendorA, `/v1/vendor/enquiries/${fixture.enquiryB}`, {
       method: "PATCH",

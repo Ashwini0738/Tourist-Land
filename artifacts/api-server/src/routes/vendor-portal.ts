@@ -17,6 +17,7 @@ import {
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth.ts";
 import { requireApprovedVendor, requireRole } from "../middlewares/authorization.ts";
+import { createPropertyEnquiryStatusNotification } from "../lib/notifications.ts";
 import { dateRange, isDate, parseInteger, parseNumber, parseString, parseStringArray } from "./vendor-portal-logic.ts";
 
 export { dateRange, isDate, parseInteger, parseNumber, parseString, parseStringArray } from "./vendor-portal-logic.ts";
@@ -779,6 +780,14 @@ vendorPortalRoutes.patch("/v1/vendor/enquiries/:id", async (req, res): Promise<v
       note: note ?? defaultNote[targetStatus],
       changedBy: req.localUser!.id,
     }).returning();
+    if (targetStatus !== "new") {
+      await createPropertyEnquiryStatusNotification(owned.enquiry.userId, {
+        enquiryId: id,
+        propertyId: owned.property.id,
+        propertyName: owned.property.title,
+        status: targetStatus,
+      }, tx);
+    }
     return { updated, history };
   });
   if (!saved) {
