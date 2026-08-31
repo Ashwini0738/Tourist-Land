@@ -7,6 +7,8 @@
     "hello": "tsx ./src/hello.ts",
     "demo:seed": "tsx ./src/demo-seed.ts seed",
     "demo:reset": "tsx ./src/demo-seed.ts reset",
+    "report-export:seed": "tsx ./src/report-export-fixture.ts seed",
+    "report-export:reset": "tsx ./src/report-export-fixture.ts reset",
     "test": "node --import tsx --test ./src/demo-seed.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

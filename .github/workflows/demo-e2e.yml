@@ -149,6 +149,7 @@ jobs:
             exit 1
           fi
           pnpm --filter @workspace/api-server run test:demo-e2e
+          pnpm --filter @workspace/api-server run test:reports-e2e
 
       - name: Collect PostgreSQL service logs after failure
         if: ${{ failure() }}
