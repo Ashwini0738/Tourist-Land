@@ -15,6 +15,7 @@ const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
 const apiRoot = path.resolve(workspaceRoot, "artifacts/api-server");
 const tsxLoader = path.resolve(workspaceRoot, "scripts/node_modules/tsx/dist/loader.mjs");
 const databaseUrl = process.env.DEMO_E2E_DATABASE_URL;
+const demoE2EPhase = process.env.DEMO_E2E_PHASE ?? "journey";
 
 function testEnvironment() {
   if (!databaseUrl) return { skip: "Set DEMO_E2E_DATABASE_URL to a disposable local Postgres database." };
@@ -25,6 +26,13 @@ function testEnvironment() {
     NODE_ENV: "test",
   }, "demo e2e test");
   return {};
+}
+
+function skipUnlessPhase(phase: "startup" | "journey") {
+  if (demoE2EPhase !== phase) {
+    return `This test belongs to the ${phase} phase (set DEMO_E2E_PHASE=${phase}).`;
+  }
+  return testEnvironment().skip;
 }
 
 async function runDemoCommand(action: "seed" | "reset") {
@@ -109,7 +117,19 @@ async function request(
   };
 }
 
-test("seeded traveller, vendor, and admin journeys work end to end", { skip: testEnvironment().skip }, async (t) => {
+test("API startup/import validation", { skip: skipUnlessPhase("startup") }, async (t) => {
+  const { default: app } = await import("../app.ts");
+  assert.equal(typeof app, "function");
+
+  const server = await startTestServer();
+  t.after(() => server.close());
+
+  const health = await request(server.baseUrl, "/healthz");
+  assert.equal(health.response.status, 200, JSON.stringify(health.body));
+  assert.deepEqual(health.body, { status: "ok" });
+});
+
+test("seeded traveller, vendor, and admin journeys work end to end", { skip: skipUnlessPhase("journey") }, async (t) => {
   await runDemoCommand("reset");
   await runDemoCommand("seed");
   await runDemoCommand("seed");
@@ -318,7 +338,7 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: tes
   assert.equal(adminBookings.body.items.length, 3);
 });
 
-test("demo catalogue is absent when demo mode is disabled", { skip: testEnvironment().skip }, async () => {
+test("demo catalogue is absent when demo mode is disabled", { skip: skipUnlessPhase("journey") }, async () => {
   if (!databaseUrl) return;
   const script = `
     import express from "express";
