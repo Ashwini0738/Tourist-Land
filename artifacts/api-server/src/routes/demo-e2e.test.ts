@@ -5,9 +5,10 @@ import http from "node:http";
 import path from "node:path";
 import { promisify } from "node:util";
 import test from "node:test";
+import { eq, inArray } from "drizzle-orm";
 import express from "express";
 import { assertSafeDemoEnvironment } from "@workspace/db/demo-config";
-import { demoIds, demoProperties } from "@workspace/db/seed-data";
+import { demoIds, demoProperties, demoReviews } from "@workspace/db/seed-data";
 
 const execFileAsync = promisify(execFile);
 const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -115,7 +116,11 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: tes
   await runDemoCommand("reset");
   await runDemoCommand("reset");
   await runDemoCommand("seed");
-  t.after(() => runDemoCommand("reset"));
+  let cleanupTemporaryReviews: (() => Promise<void>) | undefined;
+  t.after(async () => {
+    await cleanupTemporaryReviews?.();
+    await runDemoCommand("reset");
+  });
 
   const server = await startTestServer();
   t.after(() => server.close());
@@ -137,12 +142,59 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: tes
 
   const hotel = await request(server.baseUrl, "/v1/hotels/demo-hotel-1");
   assert.equal(hotel.response.status, 200);
-  assert.equal(hotel.body.id, "demo-hotel-1");
+  assert.equal(hotel.body.hotel.id, "demo-hotel-1");
+
+  const { db, pool, reviews } = await import("@workspace/db");
+  const unpublishedReviewIds = {
+    pending: "00000000-0000-4117-8000-000000000001",
+    rejected: "00000000-0000-4117-8000-000000000002",
+    deleted: "00000000-0000-4117-8000-000000000003",
+  };
+  cleanupTemporaryReviews = async () => {
+    await db.delete(reviews).where(inArray(reviews.id, Object.values(unpublishedReviewIds)));
+    await pool.end();
+  };
+  await db.insert(reviews).values([
+    {
+      id: unpublishedReviewIds.pending,
+      userId: demoIds.users.traveller,
+      entityType: "hotel",
+      entityId: demoReviews[0].entityId,
+      rating: 1,
+      title: "Pending review",
+      body: "This review is awaiting moderation.",
+      status: "pending",
+    },
+    {
+      id: unpublishedReviewIds.rejected,
+      userId: demoIds.users.traveller,
+      entityType: "hotel",
+      entityId: demoReviews[0].entityId,
+      rating: 2,
+      title: "Rejected review",
+      body: "This review was rejected by moderation.",
+      status: "rejected",
+    },
+    {
+      id: unpublishedReviewIds.deleted,
+      userId: demoIds.users.traveller,
+      entityType: "hotel",
+      entityId: demoReviews[0].entityId,
+      rating: 3,
+      title: "Deleted review",
+      body: "This review is removed before it can be displayed.",
+      status: "pending",
+    },
+  ]);
+  await db.delete(reviews).where(eq(reviews.id, unpublishedReviewIds.deleted));
 
   const publicReviews = await request(server.baseUrl, "/v1/hotels/demo-hotel-2/reviews");
   assert.equal(publicReviews.response.status, 200, JSON.stringify(publicReviews.body));
   assert.equal(publicReviews.body.reviewCount, 1);
-  assert.equal(publicReviews.body.items[0].entityId, demoIds.hotels[1]);
+  assert.equal(publicReviews.body.ratingAverage, 5);
+  assert.deepEqual(publicReviews.body.items.map((item: any) => item.id), [demoReviews[0].id]);
+  assert.equal(publicReviews.body.items.every((item: any) => item.status === "published"), true);
+  assert.equal(publicReviews.body.items[0].entityId, demoReviews[0].entityId);
   assert.equal(publicReviews.body.items[0].rating, 5);
 
   const availability = await request(
@@ -177,8 +229,19 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: tes
   assert.equal(confirmed.body.booking.status, "confirmed");
   const travellerReviews = await request(server.baseUrl, "/v1/reviews", "demo_traveller");
   assert.equal(travellerReviews.response.status, 200, JSON.stringify(travellerReviews.body));
-  assert.equal(travellerReviews.body.items.length, 1);
-  assert.equal(travellerReviews.body.items[0].bookingReference, "DEMO-CONFIRMED-01");
+  assert.equal(travellerReviews.body.items.length, 3);
+  assert.deepEqual(
+    new Set(travellerReviews.body.items.map((item: any) => item.id)),
+    new Set([demoReviews[0].id, unpublishedReviewIds.pending, unpublishedReviewIds.rejected]),
+  );
+  assert.deepEqual(
+    new Set(travellerReviews.body.items.map((item: any) => item.status)),
+    new Set(["published", "pending", "rejected"]),
+  );
+  assert.equal(
+    travellerReviews.body.items.find((item: any) => item.id === demoReviews[0].id)?.bookingReference,
+    "DEMO-CONFIRMED-01",
+  );
 
   const initialFavorites = await request(server.baseUrl, "/v1/favorites", "demo_traveller");
   assert.equal(initialFavorites.response.status, 200);
