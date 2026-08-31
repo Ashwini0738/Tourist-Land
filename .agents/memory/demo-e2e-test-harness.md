@@ -17,3 +17,14 @@ claims include `sub`, `sid`, and `sts`.
 local `DEMO_E2E_DATABASE_URL`; seed/reset only through the guarded scripts,
 and use the test-only Clerk-shaped adapter rather than bypassing production
 authentication middleware.
+
+CI disposable database names must include `demo` or `test`, because the same
+safety guard validates the `DATABASE_URL` used by the seeded journey and its
+seed/reset subprocesses.
+
+**Why:** A local PostgreSQL service can be safe while still being rejected if
+its otherwise arbitrary database name does not carry the guard's demo/test
+marker.
+
+**How to apply:** Keep the service database name and `DEMO_E2E_DATABASE_URL`
+aligned, and include `demo` or `test` in both.
