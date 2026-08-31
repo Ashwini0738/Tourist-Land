@@ -156,6 +156,17 @@ function serializeAuditRevision(metadata: unknown) {
   };
 }
 
+function auditDestinationJoin() {
+  return sql`
+    ${destinations.id} = CASE
+      WHEN ${adminAuditLogs.entityType} = 'destination'
+        AND ${adminAuditLogs.entityId} ~ '^[0-9a-fA-F-]{36}$'
+      THEN ${adminAuditLogs.entityId}::uuid
+      ELSE NULL
+    END
+  `;
+}
+
 function serializeHotel(hotel: typeof hotels.$inferSelect, owner?: typeof users.$inferSelect | null, roomCount = 0) {
   return {
     id: hotel.id,
@@ -693,7 +704,7 @@ router.get("/v1/admin/audit-logs", async (req, res) => {
     ) : undefined,
   ].filter(Boolean) as any[];
   const where = conditions.length ? and(...conditions) : undefined;
-  const destinationJoin = and(eq(destinations.id, adminAuditLogs.entityId), eq(adminAuditLogs.entityType, "destination"));
+  const destinationJoin = auditDestinationJoin();
   const [rows, totalRows] = await Promise.all([
     db.select({ log: adminAuditLogs, admin: users, destination: destinations })
       .from(adminAuditLogs)
@@ -719,7 +730,7 @@ router.get("/v1/admin/audit-logs/:id", async (req, res) => {
   const row = (await db.select({ log: adminAuditLogs, admin: users, destination: destinations })
     .from(adminAuditLogs)
     .innerJoin(users, eq(adminAuditLogs.adminUserId, users.id))
-    .leftJoin(destinations, and(eq(destinations.id, adminAuditLogs.entityId), eq(adminAuditLogs.entityType, "destination")))
+    .leftJoin(destinations, auditDestinationJoin())
     .where(eq(adminAuditLogs.id, id(req))))[0];
   if (!row) {
     fail(res, 404, "NOT_FOUND", "Audit record not found.");

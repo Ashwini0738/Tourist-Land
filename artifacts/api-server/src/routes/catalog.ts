@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Response } from "express";
-import { and, asc, eq, or } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import {
   db,
   destinations as destinationRecords,
@@ -420,10 +420,9 @@ export function createCatalogRouter(
     }
 
     const [persistedProperty] = await db.select().from(propertyRecords).where(
-      or(
-        eq(propertyRecords.id, propertyId),
-        eq(propertyRecords.slug, propertyId),
-      ),
+      propertyId.startsWith("demo-")
+        ? eq(propertyRecords.slug, propertyId)
+        : eq(propertyRecords.id, propertyId),
     );
     if (!persistedProperty) {
       const staticProperty = properties.find((item) => item.id === propertyId);

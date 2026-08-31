@@ -305,6 +305,28 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
   assert.equal(availability.body.status, "available");
   assert.equal(availability.body.source, "vendor");
   assert.ok(availability.body.items.length >= 1);
+  assert.equal(availability.body.items.find((item: any) => item.id === "demo-room-1-1")?.availableUnits, 4);
+  const overbooked = await request(
+    server.baseUrl,
+    "/v1/bookings",
+    "demo_traveller",
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": "demo-overbooking-floor-1" },
+      body: JSON.stringify({
+        hotelId: "demo-hotel-1",
+        checkIn: "2030-06-10",
+        checkOut: "2030-06-12",
+        adults: 2,
+        children: 0,
+        rooms: 5,
+        items: [{ roomId: "demo-room-1-1", quantity: 5 }],
+        guest: { name: "Demo Traveller", email: "traveller@demo.travel", phone: "+91 9000000001" },
+      }),
+    },
+  );
+  assert.equal(overbooked.response.status, 409, JSON.stringify(overbooked.body));
+  assert.equal(overbooked.body.error?.code, "BOOKING_CONFLICT");
 
   const unauthorizedBookings = await request(server.baseUrl, "/v1/bookings");
   assert.equal(unauthorizedBookings.response.status, 401);
@@ -370,11 +392,26 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
     "demo_traveller",
     {
       method: "POST",
+      headers: { "Idempotency-Key": "demo-property-enquiry-4" },
       body: JSON.stringify({ message: "Can you share the title details?", preferredContactMethod: "email" }),
     },
   );
   assert.equal(enquiry.response.status, 202);
   assert.equal(enquiry.body.status, "new");
+  const duplicateEnquiry = await request(
+    server.baseUrl,
+    `/v1/properties/${demoProperties[3].slug}/enquiries`,
+    "demo_traveller",
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": "demo-property-enquiry-4" },
+      body: JSON.stringify({ message: "This retry must not create another enquiry.", preferredContactMethod: "email" }),
+    },
+  );
+  assert.equal(duplicateEnquiry.response.status, 202);
+  assert.equal(duplicateEnquiry.body.id, enquiry.body.id);
+  assert.equal(duplicateEnquiry.body.status, "new");
+  assert.match(duplicateEnquiry.body.message, /already recorded/i);
 
   const vendorSession = await request(server.baseUrl, "/v1/auth/session", "demo_vendor");
   assert.equal(vendorSession.response.status, 200);
@@ -416,6 +453,14 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
   assert.equal(property.enquiryCount, 1);
   const adminBookings = await request(server.baseUrl, "/v1/admin/bookings", "demo_admin");
   assert.equal(adminBookings.body.items.length, 3);
+  const adminAuditLogs = await request(server.baseUrl, "/v1/admin/audit-logs", "demo_admin");
+  assert.equal(adminAuditLogs.response.status, 200, JSON.stringify(adminAuditLogs.body));
+  assert.ok(adminAuditLogs.body.meta.total >= 2);
+  const reviewAudit = adminAuditLogs.body.items.find((item: any) => item.action === "status_updated" && item.entityType === "review");
+  assert.ok(reviewAudit);
+  const auditDetail = await request(server.baseUrl, `/v1/admin/audit-logs/${reviewAudit.id}`, "demo_admin");
+  assert.equal(auditDetail.response.status, 200, JSON.stringify(auditDetail.body));
+  assert.equal(auditDetail.body.id, reviewAudit.id);
 });
 
 test("demo catalogue is absent when demo mode is disabled", { skip: skipUnlessPhase("journey") }, async () => {

@@ -1,5 +1,5 @@
 import { assertSafeDemoEnvironment } from "@workspace/db/demo-config";
-import { db, pool, users, userRoles, destinations, attractions, foodPlaces, events, hotels, hotelRooms, roomAvailability, properties, propertyEnquiries, propertyEnquiryHistory, bookings, bookingItems, payments, wallets, walletTransactions, reviews, favorites, notifications, featuredContent, vendorProfiles } from "@workspace/db";
+import { db, pool, users, userRoles, destinations, attractions, foodPlaces, events, hotels, hotelRooms, roomAvailability, properties, propertyEnquiries, propertyEnquiryHistory, bookings, bookingItems, payments, wallets, walletTransactions, reviews, favorites, notifications, featuredContent, vendorProfiles, vendorAuditLogs, adminAuditLogs } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import { demoIds, demoDestinations, demoAttractions, demoFoodPlaces, demoEvents, demoHotels, demoRooms, demoAvailability, demoProperties, demoEnquiries, demoEnquiryHistory, demoBookings, demoBookingItems, demoPayments, demoWallets, demoWalletTransactions, demoReviews, demoFavorites, demoNotifications, demoFeaturedContent } from "@workspace/db/seed-data";
 
@@ -44,6 +44,8 @@ export async function resetDemoData() {
     [vendorProfiles, [profile]], [userRoles, roles], [wallets, demoWallets], [users, demoUsers],
   ] as const;
   await db.transaction(async (tx) => {
+    await tx.delete(adminAuditLogs).where(inArray(adminAuditLogs.adminUserId, Object.values(demoIds.users)));
+    await tx.delete(vendorAuditLogs).where(inArray(vendorAuditLogs.vendorId, Object.values(demoIds.users)));
     for (const [table, rows] of deletions) {
       const ids = rows.map((row) => row.id);
       if (ids.length) await tx.delete(table).where(inArray(table.id, ids));
