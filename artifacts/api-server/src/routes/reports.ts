@@ -308,14 +308,15 @@ async function reportForVendor(req: Parameters<RequestHandler>[0], range: Range)
   const catalogIds = ownedHotels.flatMap((row) => row.catalogId ? [row.catalogId] : []);
   const ownedProperties = await db.select({ id: properties.id }).from(properties).where(eq(properties.ownerId, vendorId));
   const propertyIds = ownedProperties.map((row) => row.id);
-  const bookingConditions = [...createdBetween(bookings.createdAt, range), catalogIds.length ? inArray(bookings.hotelCatalogId, catalogIds) : eq(bookings.hotelCatalogId, "__none__"), status ? eq(bookings.status, status) : undefined];
-  const vendorBookingIds = (await db.select({ id: bookings.id }).from(bookings).where(withConditions(bookingConditions))).map((row) => row.id);
-  const vendorPaymentOwnership = vendorBookingIds.length ? inArray(payments.bookingId, vendorBookingIds) : eq(payments.bookingId, "__none__");
+  const bookingOwnershipConditions = [...createdBetween(bookings.createdAt, range), catalogIds.length ? inArray(bookings.hotelCatalogId, catalogIds) : eq(bookings.hotelCatalogId, "__none__")];
+  const bookingConditions = [...bookingOwnershipConditions, status ? eq(bookings.status, status) : undefined];
+  const vendorBookingIds = (await db.select({ id: bookings.id }).from(bookings).where(withConditions(bookingOwnershipConditions))).map((row) => row.id);
+  const vendorPaymentOwnership = vendorBookingIds.length ? inArray(payments.bookingId, vendorBookingIds) : sql<boolean>`false`;
   const paymentConditions = [...createdBetween(payments.createdAt, range), vendorPaymentOwnership, status ? eq(payments.status, status) : undefined];
   const propertyConditions = [...createdBetween(properties.createdAt, range), eq(properties.ownerId, vendorId), status ? eq(properties.status, status) : undefined];
-  const enquiryConditions = [...createdBetween(propertyEnquiries.createdAt, range), propertyIds.length ? inArray(propertyEnquiries.propertyId, propertyIds) : eq(propertyEnquiries.propertyId, "__none__"), status ? eq(propertyEnquiries.status, status) : undefined];
-  const reviewConditions = [...createdBetween(reviews.createdAt, range), hotelIds.length || propertyIds.length ? or(inArray(reviews.entityId, hotelIds.length ? hotelIds : ["__none__"]), inArray(reviews.entityId, propertyIds.length ? propertyIds : ["__none__"])) : eq(reviews.entityId, "__none__"), status ? eq(reviews.status, status) : undefined];
-  const roomConditions = hotelIds.length ? [inArray(hotelRooms.hotelId, hotelIds), ...createdBetween(hotelRooms.createdAt, range)] : [eq(hotelRooms.hotelId, "__none__")];
+  const enquiryConditions = [...createdBetween(propertyEnquiries.createdAt, range), propertyIds.length ? inArray(propertyEnquiries.propertyId, propertyIds) : sql<boolean>`false`, status ? eq(propertyEnquiries.status, status) : undefined];
+  const reviewConditions = [...createdBetween(reviews.createdAt, range), catalogIds.length || propertyIds.length ? or(inArray(reviews.entityId, catalogIds.length ? catalogIds : ["__none__"]), inArray(reviews.entityId, propertyIds.length ? propertyIds : ["__none__"])) : sql<boolean>`false`, status ? eq(reviews.status, status) : undefined];
+  const roomConditions = hotelIds.length ? [inArray(hotelRooms.hotelId, hotelIds), ...createdBetween(hotelRooms.createdAt, range)] : [sql<boolean>`false`];
   const hotelConditions = [...createdBetween(hotels.createdAt, range), eq(hotels.ownerId, vendorId), country ? eq(hotels.country, country) : undefined, status ? eq(hotels.status, status) : undefined];
 
   const [

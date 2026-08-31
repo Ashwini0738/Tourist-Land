@@ -1,6 +1,6 @@
 /** Deterministic, relationally coherent records for the local demo environment. */
 export const demoIds = {
-  users: { traveller: "00000000-0000-4000-8000-000000000001", vendor: "00000000-0000-4000-8000-000000000002", admin: "00000000-0000-4000-8000-000000000003" },
+  users: { traveller: "00000000-0000-4000-8000-000000000001", vendor: "00000000-0000-4000-8000-000000000002", admin: "00000000-0000-4000-8000-000000000003", vendorTwo: "00000000-0000-4000-8000-000000000004" },
   destinations: Array.from({ length: 8 }, (_, i) => `00000000-0000-4000-8100-${String(i + 1).padStart(12, "0")}`),
   hotels: Array.from({ length: 4 }, (_, i) => `00000000-0000-4000-8200-${String(i + 1).padStart(12, "0")}`),
   properties: Array.from({ length: 8 }, (_, i) => `00000000-0000-4000-8300-${String(i + 1).padStart(12, "0")}`),
@@ -63,3 +63,150 @@ export const demoReviews = [{ id: id("111", 1), userId: demoIds.users.traveller,
 export const demoFavorites = [{ id: id("112", 1), userId: demoIds.users.traveller, entityType: "destination", entityId: demoDestinations[0].id }, { id: id("112", 2), userId: demoIds.users.traveller, entityType: "hotel", entityId: demoHotels[0].id }];
 export const demoNotifications = [{ id: id("113", 1), userId: demoIds.users.traveller, type: "booking_confirmed", title: "Booking confirmed", body: "Your demo booking is confirmed.", data: { relatedType: "booking", relatedId: "DEMO-CONFIRMED-01" }, dedupeKey: "demo-booking-confirmed" }, { id: id("113", 2), userId: demoIds.users.vendor, type: "land_enquiry_updated", title: "New enquiry", body: "A traveller sent a demo enquiry.", data: { relatedType: "property", relatedId: demoProperties[0].id }, dedupeKey: "demo-enquiry-1" }];
 export const demoFeaturedContent = [{ id: id("114", 1), entityType: "destination", entityId: demoDestinations[0].id, sortOrder: 1, status: "active", createdBy: demoIds.users.admin }, { id: id("114", 2), entityType: "hotel", entityId: demoHotels[0].id, sortOrder: 2, status: "active", createdBy: demoIds.users.admin }, { id: id("114", 3), entityType: "event", entityId: demoEvents[0].id, sortOrder: 3, status: "active", createdBy: demoIds.users.admin }];
+
+export const demoVendorTwoProfile = {
+  id: "00000000-0000-4000-9100-000000000002",
+  userId: demoIds.users.vendorTwo,
+  businessName: "Demo Highlands Stays",
+  businessType: "hospitality",
+  contactName: "Second Demo Vendor",
+  phone: "+91 9000000004",
+  email: "vendor-two@demo.travel",
+  description: "A second vendor used to verify report isolation.",
+  address: "Demo Mountain Road",
+  city: "Leh",
+  state: "Demo State",
+  country: "Nepal",
+  status: "approved",
+};
+
+export const demoVendorTwoHotels = [{
+  id: "00000000-0000-4000-8200-000000000005",
+  catalogId: "demo-hotel-5",
+  destinationId: demoDestinations[4].id,
+  ownerId: demoIds.users.vendorTwo,
+  name: "Second Vendor Lodge",
+  description: "A second-vendor demo hotel.",
+  propertyType: "hotel",
+  address: "5 Demo Mountain Road",
+  city: "Leh",
+  state: "Demo State",
+  country: "Nepal",
+  postalCode: "44600",
+  contactPhone: "+977 9800000004",
+  contactEmail: "hotel5@demo.travel",
+  amenities: ["wifi"],
+  imageUrls: [],
+  checkInTime: "14:00",
+  checkOutTime: "11:00",
+  status: "published",
+  approvalStatus: "approved",
+}];
+
+export const demoVendorTwoRooms = [{
+  id: "00000000-0000-4000-8300-000000000009",
+  catalogRoomId: "demo-room-5-1",
+  hotelId: demoVendorTwoHotels[0].id,
+  name: "Mountain King",
+  bedType: "king",
+  capacity: 2,
+  totalUnits: 2,
+  nightlyRate: "125",
+  currency: "USD",
+  amenities: ["wifi"],
+  imageUrls: [],
+  status: "active",
+}];
+
+export const demoVendorTwoAvailability = [{
+  id: "00000000-0000-4000-8400-000000000001",
+  roomId: demoVendorTwoRooms[0].id,
+  date: "2030-06-10",
+  availableUnits: 2,
+  priceOverride: null,
+  status: "available",
+}];
+
+export const demoVendorTwoProperties = [{
+  id: "00000000-0000-4000-8300-000000000009",
+  ownerId: demoIds.users.vendorTwo,
+  slug: "demo-property-9",
+  title: "Second Vendor Land",
+  description: "A second-vendor demo property.",
+  propertyType: "land",
+  address: "9 Demo Mountain Estate",
+  areaValue: "9",
+  areaUnit: "acre",
+  askingPrice: "90000",
+  currency: "USD",
+  isVerified: true,
+  status: "published",
+}];
+
+export const demoVendorTwoEnquiries = [{
+  id: "00000000-0000-4000-8500-000000000004",
+  propertyId: demoVendorTwoProperties[0].id,
+  userId: demoIds.users.traveller,
+  message: "Please share the second vendor details.",
+  preferredContactMethod: "email",
+  status: "new",
+}];
+
+export const demoVendorTwoEnquiryHistory = [{
+  id: "00000000-0000-4000-8600-000000000007",
+  enquiryId: demoVendorTwoEnquiries[0].id,
+  status: "new",
+  note: "Second-vendor demo enquiry received.",
+  changedBy: demoIds.users.admin,
+}];
+
+export const demoVendorTwoBookings = [{
+  id: "00000000-0000-4000-8700-000000000004",
+  userId: demoIds.users.traveller,
+  reference: "DEMO-USD-01",
+  idempotencyKey: "demo-booking-usd",
+  hotelCatalogId: demoVendorTwoHotels[0].catalogId,
+  startsOn: "2030-06-10",
+  endsOn: "2030-06-12",
+  adults: 2,
+  children: 0,
+  guestCount: 2,
+  roomCount: 1,
+  guestName: "Demo Traveller",
+  guestEmail: "traveller@demo.travel",
+  guestPhone: "+91 9000000001",
+  totalAmount: "125",
+  currency: "USD",
+  status: "confirmed",
+}];
+
+export const demoVendorTwoBookingItems = [{
+  id: "00000000-0000-4000-8800-000000000004",
+  bookingId: demoVendorTwoBookings[0].id,
+  roomId: demoVendorTwoRooms[0].id,
+  quantity: 1,
+  unitAmount: "125",
+}];
+
+export const demoVendorTwoPayments = [{
+  id: "00000000-0000-4000-8900-000000000004",
+  bookingId: demoVendorTwoBookings[0].id,
+  userId: demoIds.users.traveller,
+  provider: "demo",
+  providerReference: "demo-payment-usd",
+  amount: "125",
+  currency: "USD",
+  status: "paid",
+}];
+
+export const demoVendorTwoReviews = [{
+  id: "00000000-0000-4000-9000-000000000004",
+  userId: demoIds.users.traveller,
+  entityType: "hotel",
+  entityId: demoVendorTwoHotels[0].catalogId,
+  bookingId: demoVendorTwoBookings[0].id,
+  rating: 4,
+  title: "A peaceful stay",
+  body: "A second-vendor demo review.",
+  status: "published",
+}];

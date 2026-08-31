@@ -28,3 +28,15 @@ marker.
 
 **How to apply:** Keep the service database name and `DEMO_E2E_DATABASE_URL`
 aligned, and include `demo` or `test` in both.
+
+The test process must set `DATABASE_URL` from `DEMO_E2E_DATABASE_URL` before
+the first `@workspace/db` import. The database client is initialized at module
+load time, so changing the environment later does not move an already-imported
+pool to the disposable target.
+
+**Why:** The ambient workspace database can have a different schema or data,
+and late environment setup makes the journey appear to fail in authentication
+or unrelated routes.
+
+**How to apply:** Initialize the opt-in test environment at module startup,
+before tests import database-backed route modules or the database package.

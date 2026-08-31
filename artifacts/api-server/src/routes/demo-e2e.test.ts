@@ -8,7 +8,23 @@ import test from "node:test";
 import { and, eq, gte, inArray } from "drizzle-orm";
 import express from "express";
 import { assertSafeDemoEnvironment } from "@workspace/db/demo-config";
-import { demoIds, demoProperties, demoReviews, demoRooms } from "@workspace/db/seed-data";
+import {
+  demoBookings,
+  demoDestinations,
+  demoEnquiries,
+  demoHotels,
+  demoIds,
+  demoPayments,
+  demoProperties,
+  demoReviews,
+  demoRooms,
+  demoVendorTwoBookings,
+  demoVendorTwoEnquiries,
+  demoVendorTwoHotels,
+  demoVendorTwoPayments,
+  demoVendorTwoProperties,
+  demoVendorTwoReviews,
+} from "@workspace/db/seed-data";
 
 const execFileAsync = promisify(execFile);
 const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -16,6 +32,12 @@ const apiRoot = path.resolve(workspaceRoot, "artifacts/api-server");
 const tsxLoader = path.resolve(workspaceRoot, "scripts/node_modules/tsx/dist/loader.mjs");
 const databaseUrl = process.env.DEMO_E2E_DATABASE_URL;
 const demoE2EPhase = process.env.DEMO_E2E_PHASE ?? "journey";
+
+if (databaseUrl) {
+  process.env.DATABASE_URL = databaseUrl;
+  process.env.DEMO_MODE = "true";
+  process.env.NODE_ENV = "test";
+}
 
 function testEnvironment() {
   if (!databaseUrl) return { skip: "Set DEMO_E2E_DATABASE_URL to a disposable local Postgres database." };
@@ -312,6 +334,216 @@ test("concurrent booking retries return one saved booking and payment", { skip: 
   assert.deepEqual(newPayments.map((payment) => payment.bookingId), [createdBookings[0].id]);
 });
 
+test("seeded reports aggregate currencies, filters, and vendor-owned records", { skip: skipUnlessPhase("journey") }, async (t) => {
+  await runDemoCommand("reset");
+  await runDemoCommand("seed");
+
+  process.env.DATABASE_URL = databaseUrl;
+  process.env.DEMO_MODE = "true";
+  process.env.NODE_ENV = "test";
+  const {
+    db,
+    bookings,
+    destinations,
+    hotelRooms,
+    hotels,
+    notifications,
+    payments,
+    properties,
+    propertyEnquiries,
+    reviews,
+    userRoles,
+    users,
+    vendorProfiles,
+    wallets,
+  } = await import("@workspace/db");
+  const primaryBookingIds = demoBookings.map((booking) => booking.id);
+  const secondaryBookingIds = demoVendorTwoBookings.map((booking) => booking.id);
+  const primaryHotelIds = demoHotels.map((hotel) => hotel.id);
+  const secondaryHotelIds = demoVendorTwoHotels.map((hotel) => hotel.id);
+  const primaryPropertyIds = demoProperties.map((property) => property.id);
+  const secondaryPropertyIds = demoVendorTwoProperties.map((property) => property.id);
+  const primaryEnquiryIds = demoEnquiries.map((enquiry) => enquiry.id);
+  const secondaryEnquiryIds = demoVendorTwoEnquiries.map((enquiry) => enquiry.id);
+  const primaryPaymentIds = demoPayments.map((payment) => payment.id);
+  const secondaryPaymentIds = demoVendorTwoPayments.map((payment) => payment.id);
+  const primaryReviewIds = demoReviews.map((review) => review.id);
+  const secondaryReviewIds = demoVendorTwoReviews.map((review) => review.id);
+  const reportDate = new Date("2030-06-10T12:00:00Z");
+  const secondVendorReportDate = new Date("2030-06-11T12:00:00Z");
+
+  await Promise.all([
+    db.update(users).set({ createdAt: reportDate }).where(inArray(users.id, [demoIds.users.traveller, demoIds.users.vendor, demoIds.users.admin])),
+    db.update(users).set({ createdAt: secondVendorReportDate }).where(eq(users.id, demoIds.users.vendorTwo)),
+    db.update(userRoles).set({ createdAt: reportDate }).where(inArray(userRoles.userId, [demoIds.users.traveller, demoIds.users.vendor, demoIds.users.admin])),
+    db.update(userRoles).set({ createdAt: secondVendorReportDate }).where(eq(userRoles.userId, demoIds.users.vendorTwo)),
+    db.update(vendorProfiles).set({ createdAt: reportDate }).where(eq(vendorProfiles.userId, demoIds.users.vendor)),
+    db.update(vendorProfiles).set({ createdAt: secondVendorReportDate }).where(eq(vendorProfiles.userId, demoIds.users.vendorTwo)),
+    db.update(destinations).set({ createdAt: reportDate }).where(inArray(destinations.id, demoDestinations.map((destination) => destination.id))),
+    db.update(hotels).set({ createdAt: reportDate }).where(inArray(hotels.id, primaryHotelIds)),
+    db.update(hotels).set({ createdAt: secondVendorReportDate }).where(inArray(hotels.id, secondaryHotelIds)),
+    db.update(hotelRooms).set({ createdAt: reportDate }).where(inArray(hotelRooms.hotelId, primaryHotelIds)),
+    db.update(hotelRooms).set({ createdAt: secondVendorReportDate }).where(inArray(hotelRooms.hotelId, secondaryHotelIds)),
+    db.update(properties).set({ createdAt: reportDate }).where(inArray(properties.id, primaryPropertyIds)),
+    db.update(properties).set({ createdAt: secondVendorReportDate }).where(inArray(properties.id, secondaryPropertyIds)),
+    db.update(propertyEnquiries).set({ createdAt: reportDate }).where(inArray(propertyEnquiries.id, primaryEnquiryIds)),
+    db.update(propertyEnquiries).set({ createdAt: secondVendorReportDate }).where(inArray(propertyEnquiries.id, secondaryEnquiryIds)),
+    db.update(bookings).set({ createdAt: reportDate }).where(inArray(bookings.id, primaryBookingIds)),
+    db.update(bookings).set({ createdAt: secondVendorReportDate }).where(inArray(bookings.id, secondaryBookingIds)),
+    db.update(payments).set({ createdAt: reportDate }).where(inArray(payments.id, primaryPaymentIds)),
+    db.update(payments).set({ createdAt: secondVendorReportDate }).where(inArray(payments.id, secondaryPaymentIds)),
+    db.update(reviews).set({ createdAt: reportDate }).where(inArray(reviews.id, primaryReviewIds)),
+    db.update(reviews).set({ createdAt: secondVendorReportDate }).where(inArray(reviews.id, secondaryReviewIds)),
+    db.update(notifications).set({ createdAt: reportDate }),
+    db.update(wallets).set({ createdAt: reportDate }),
+  ]);
+
+  t.after(async () => {
+    await runDemoCommand("reset");
+  });
+  const server = await startTestServer();
+  t.after(() => server.close());
+  const range = "?from=2030-06-10&to=2030-06-11&limit=100";
+
+  const admin = await request(server.baseUrl, `/v1/admin/reports${range}`, "demo_admin");
+  assert.equal(admin.response.status, 200, JSON.stringify(admin.body));
+  assert.equal(admin.body.role, "admin");
+  assert.equal(admin.body.source, "database");
+  assert.equal(admin.body.provenance, "demo");
+  assert.deepEqual(admin.body.range, { from: "2030-06-10", to: "2030-06-11" });
+  assert.deepEqual(admin.body.kpis, {
+    users: 4,
+    vendors: 2,
+    hotels: 5,
+    destinations: 8,
+    properties: 9,
+    bookings: 4,
+    enquiries: 4,
+    reviews: 2,
+    notifications: 2,
+    payments: 4,
+    paidPayments: 2,
+    averageRating: 4.5,
+    wallets: 2,
+  });
+  assert.deepEqual(admin.body.currencies.bookings, [
+    { currency: "INR", amount: 45600, records: 3 },
+    { currency: "USD", amount: 125, records: 1 },
+  ]);
+  assert.deepEqual(admin.body.currencies.payments, [
+    { currency: "INR", amount: 45600, records: 3 },
+    { currency: "USD", amount: 125, records: 1 },
+  ]);
+  assert.deepEqual(
+    admin.body.tables.bookings.map((row: any) => row.reference).sort(),
+    ["DEMO-CANCELLED-01", "DEMO-CONFIRMED-01", "DEMO-PENDING-01", "DEMO-USD-01"].sort(),
+  );
+  assert.deepEqual(
+    admin.body.tables.payments.map((row: any) => row.bookingReference).sort(),
+    ["DEMO-CANCELLED-01", "DEMO-CONFIRMED-01", "DEMO-PENDING-01", "DEMO-USD-01"].sort(),
+  );
+
+  const india = await request(server.baseUrl, `/v1/admin/reports${range}&country=India`, "demo_admin");
+  assert.equal(india.response.status, 200, JSON.stringify(india.body));
+  assert.equal(india.body.filters.country, "India");
+  assert.equal(india.body.kpis.hotels, 4);
+  assert.equal(india.body.kpis.bookings, 3);
+  assert.deepEqual(
+    india.body.tables.bookings.map((row: any) => row.reference).sort(),
+    ["DEMO-CANCELLED-01", "DEMO-CONFIRMED-01", "DEMO-PENDING-01"].sort(),
+  );
+
+  const nepal = await request(server.baseUrl, `/v1/admin/reports${range}&country=Nepal`, "demo_admin");
+  assert.equal(nepal.response.status, 200, JSON.stringify(nepal.body));
+  assert.equal(nepal.body.kpis.hotels, 1);
+  assert.equal(nepal.body.kpis.bookings, 1);
+  assert.deepEqual(nepal.body.tables.bookings.map((row: any) => row.reference), ["DEMO-USD-01"]);
+
+  const paid = await request(server.baseUrl, `/v1/admin/reports${range}&status=paid`, "demo_admin");
+  assert.equal(paid.response.status, 200, JSON.stringify(paid.body));
+  assert.equal(paid.body.kpis.bookings, 0);
+  assert.equal(paid.body.kpis.payments, 2);
+  assert.deepEqual(
+    paid.body.tables.payments.map((row: any) => row.bookingReference).sort(),
+    ["DEMO-CONFIRMED-01", "DEMO-USD-01"],
+  );
+
+  const vendor = await request(server.baseUrl, `/v1/vendor/reports${range}`, "demo_vendor");
+  assert.equal(vendor.response.status, 200, JSON.stringify(vendor.body));
+  assert.equal(vendor.body.role, "vendor");
+  assert.equal(vendor.body.kpis.hotels, 4);
+  assert.equal(vendor.body.kpis.rooms, 8);
+  assert.equal(vendor.body.kpis.properties, 8);
+  assert.equal(vendor.body.kpis.bookings, 3);
+  assert.equal(vendor.body.kpis.enquiries, 3);
+  assert.equal(vendor.body.kpis.reviews, 1);
+  assert.equal(vendor.body.kpis.payments, 3);
+  assert.deepEqual(vendor.body.currencies.bookings, [{ currency: "INR", amount: 45600, records: 3 }]);
+  assert.deepEqual(vendor.body.currencies.payments, [{ currency: "INR", amount: 45600, records: 3 }]);
+  assert.deepEqual(
+    vendor.body.tables.bookings.map((row: any) => row.reference).sort(),
+    ["DEMO-CANCELLED-01", "DEMO-CONFIRMED-01", "DEMO-PENDING-01"].sort(),
+  );
+  assert.deepEqual(vendor.body.tables.properties.map((row: any) => row.id).sort(), primaryPropertyIds.sort());
+  assert.deepEqual(vendor.body.tables.enquiries.map((row: any) => row.id).sort(), primaryEnquiryIds.sort());
+  assert.deepEqual(vendor.body.breakdowns.reviewRatings, [{ rating: 5, count: 1 }]);
+  assert.equal(vendor.body.tables.bookings.some((row: any) => row.reference === "DEMO-USD-01"), false);
+  assert.equal(vendor.body.tables.payments.some((row: any) => row.bookingReference === "DEMO-USD-01"), false);
+
+  const vendorPaid = await request(server.baseUrl, `/v1/vendor/reports${range}&status=paid`, "demo_vendor");
+  assert.equal(vendorPaid.response.status, 200, JSON.stringify(vendorPaid.body));
+  assert.equal(vendorPaid.body.kpis.bookings, 0);
+  assert.equal(vendorPaid.body.kpis.payments, 1);
+  assert.deepEqual(vendorPaid.body.tables.payments.map((row: any) => row.bookingReference), ["DEMO-CONFIRMED-01"]);
+
+  const vendorTwo = await request(server.baseUrl, `/v1/vendor/reports${range}`, "demo_vendor_two");
+  assert.equal(vendorTwo.response.status, 200, JSON.stringify(vendorTwo.body));
+  assert.equal(vendorTwo.body.kpis.hotels, 1);
+  assert.equal(vendorTwo.body.kpis.rooms, 1);
+  assert.equal(vendorTwo.body.kpis.properties, 1);
+  assert.equal(vendorTwo.body.kpis.bookings, 1);
+  assert.equal(vendorTwo.body.kpis.enquiries, 1);
+  assert.equal(vendorTwo.body.kpis.reviews, 1);
+  assert.equal(vendorTwo.body.kpis.payments, 1);
+  assert.deepEqual(vendorTwo.body.currencies.bookings, [{ currency: "USD", amount: 125, records: 1 }]);
+  assert.deepEqual(vendorTwo.body.currencies.payments, [{ currency: "USD", amount: 125, records: 1 }]);
+  assert.deepEqual(vendorTwo.body.tables.bookings.map((row: any) => row.reference), ["DEMO-USD-01"]);
+  assert.deepEqual(vendorTwo.body.tables.properties.map((row: any) => row.id), secondaryPropertyIds);
+  assert.deepEqual(vendorTwo.body.tables.enquiries.map((row: any) => row.id), secondaryEnquiryIds);
+  assert.deepEqual(vendorTwo.body.breakdowns.reviewRatings, [{ rating: 4, count: 1 }]);
+  assert.equal(vendorTwo.body.tables.bookings.some((row: any) => row.reference === "DEMO-CONFIRMED-01"), false);
+  assert.equal(vendorTwo.body.tables.payments.some((row: any) => row.bookingReference === "DEMO-CONFIRMED-01"), false);
+
+  const vendorTwoIndia = await request(server.baseUrl, `/v1/vendor/reports${range}&country=India`, "demo_vendor_two");
+  assert.equal(vendorTwoIndia.response.status, 200, JSON.stringify(vendorTwoIndia.body));
+  assert.equal(vendorTwoIndia.body.kpis.hotels, 0);
+  assert.equal(vendorTwoIndia.body.kpis.bookings, 0);
+  assert.equal(vendorTwoIndia.body.kpis.payments, 0);
+  assert.equal(vendorTwoIndia.body.tables.bookings.length, 0);
+
+  const empty = await request(server.baseUrl, "/v1/admin/reports?from=2031-01-01&to=2031-01-02", "demo_admin");
+  assert.equal(empty.response.status, 200, JSON.stringify(empty.body));
+  assert.deepEqual(empty.body.kpis, {
+    users: 0,
+    vendors: 0,
+    hotels: 0,
+    destinations: 0,
+    properties: 0,
+    bookings: 0,
+    enquiries: 0,
+    reviews: 0,
+    notifications: 0,
+    payments: 0,
+    paidPayments: 0,
+    averageRating: 0,
+    wallets: 0,
+  });
+  assert.equal(empty.body.tables.bookings.length, 0);
+  assert.equal(empty.body.tables.payments.length, 0);
+  assert.equal(empty.body.trends.length, 2);
+  assert.ok(empty.body.trends.every((row: any) => row.bookings === 0 && row.payments === 0 && row.enquiries === 0 && row.reviews === 0));
+});
+
 test("API startup/import validation", { skip: skipUnlessPhase("startup") }, async (t) => {
   const { default: app } = await import("../app.ts");
   assert.equal(typeof app, "function");
@@ -352,7 +584,7 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
 
   const travellerEnquiries = await request(server.baseUrl, "/v1/me/enquiries", "demo_traveller");
   assert.equal(travellerEnquiries.response.status, 200, JSON.stringify(travellerEnquiries.body));
-  assert.equal(travellerEnquiries.body.items.length, 3);
+  assert.equal(travellerEnquiries.body.items.length, 4);
   assert.deepEqual(
     Object.keys(travellerEnquiries.body.items[0]).sort(),
     ["createdAt", "history", "id", "property", "status"],
@@ -566,7 +798,7 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
   assert.equal(bookings.response.status, 200);
   assert.deepEqual(
     bookings.body.items.map((item: any) => item.reference).sort(),
-    ["DEMO-CANCELLED-01", "DEMO-CONFIRMED-01", "DEMO-PENDING-01"],
+    ["DEMO-CANCELLED-01", "DEMO-CONFIRMED-01", "DEMO-PENDING-01", "DEMO-USD-01"],
   );
   const confirmed = await request(server.baseUrl, "/v1/bookings/DEMO-CONFIRMED-01", "demo_traveller");
   assert.equal(confirmed.response.status, 200);
@@ -574,10 +806,10 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
   assert.equal(confirmed.body.booking.status, "confirmed");
   const travellerReviews = await request(server.baseUrl, "/v1/reviews", "demo_traveller");
   assert.equal(travellerReviews.response.status, 200, JSON.stringify(travellerReviews.body));
-  assert.equal(travellerReviews.body.items.length, 3);
+  assert.equal(travellerReviews.body.items.length, 4);
   assert.deepEqual(
     new Set(travellerReviews.body.items.map((item: any) => item.id)),
-    new Set([demoReviews[0].id, unpublishedReviewIds.pending, unpublishedReviewIds.rejected]),
+    new Set([demoReviews[0].id, demoVendorTwoReviews[0].id, unpublishedReviewIds.pending, unpublishedReviewIds.rejected]),
   );
   assert.deepEqual(
     new Set(travellerReviews.body.items.map((item: any) => item.status)),
@@ -708,18 +940,18 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
   assert.equal(adminMe.body.id, demoIds.users.admin);
   assert.equal(adminMe.body.role, "admin");
   const adminDashboard = await request(server.baseUrl, "/v1/admin/dashboard", "demo_admin");
-  assert.equal(adminDashboard.body.users?.total, 3, JSON.stringify(adminDashboard.body));
-  assert.equal(adminDashboard.body.vendors.approved, 1);
-  assert.equal(adminDashboard.body.hotels.total, 4);
-  assert.equal(adminDashboard.body.bookings.total, 3);
+  assert.equal(adminDashboard.body.users?.total, 4, JSON.stringify(adminDashboard.body));
+  assert.equal(adminDashboard.body.vendors.approved, 2);
+  assert.equal(adminDashboard.body.hotels.total, 5);
+  assert.equal(adminDashboard.body.bookings.total, 4);
   const adminHotels = await request(server.baseUrl, "/v1/admin/hotels", "demo_admin");
-  assert.equal(adminHotels.body.items.length, 4);
+  assert.equal(adminHotels.body.items.length, 5);
   const adminProperties = await request(server.baseUrl, "/v1/admin/properties", "demo_admin");
-  assert.equal(adminProperties.body.items.length, 8);
+  assert.equal(adminProperties.body.items.length, 9);
   const property = adminProperties.body.items.find((item: any) => item.id === demoProperties[3].id);
   assert.equal(property.enquiryCount, 1);
   const adminBookings = await request(server.baseUrl, "/v1/admin/bookings", "demo_admin");
-  assert.equal(adminBookings.body.items.length, 3);
+  assert.equal(adminBookings.body.items.length, 4);
   const adminAuditLogs = await request(server.baseUrl, "/v1/admin/audit-logs", "demo_admin");
   assert.equal(adminAuditLogs.response.status, 200, JSON.stringify(adminAuditLogs.body));
   assert.ok(adminAuditLogs.body.meta.total >= 2);
