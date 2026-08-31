@@ -1,0 +1,1467 @@
+# DEVELOPMENT TASK — PREMIUM UI/UX REDESIGN + ENGAGING NAVIGATION
+
+Continue development of the existing **Travel & Land** application.
+
+## PRIMARY OBJECTIVE
+
+Upgrade the complete application into a **premium, modern, visually attractive and highly user-friendly travel experience**.
+
+The app combines:
+
+1. Travel discovery
+2. Hotels and stays
+3. Destinations
+4. Maps
+5. Bookings
+6. Wallet
+7. Land/property discovery
+8. Land sourcing enquiries
+
+The application should feel like a **premium travel + discovery platform**, not like an ordinary business CRUD application.
+
+The design must make users want to:
+
+* Explore
+* Scroll
+* Discover
+* Save places
+* Open destination details
+* Book stays
+* Explore land opportunities
+
+---
+
+# IMPORTANT
+
+Do NOT rebuild application functionality.
+
+Do NOT break:
+
+* Authentication
+* User login
+* Vendor login
+* Admin login
+* Fingerprint/Face ID
+* Device authentication
+* Home
+* Explore
+* Hotels
+* Availability
+* Booking
+* Payment
+* Wallet
+* Maps
+* Land
+* Properties
+* Enquiries
+* Vendor Portal
+* Admin Portal
+* Notifications
+* Favorites
+* Reviews
+* APIs
+* Database
+
+This task is primarily a **UI/UX enhancement and navigation experience improvement**.
+
+Preserve all existing API contracts and business logic.
+
+---
+
+# 1. DESIGN DIRECTION
+
+Use a premium travel visual language.
+
+Desired feeling:
+
+**Modern + Premium + Warm + Adventurous + Trustworthy**
+
+Avoid:
+
+* Generic dashboards
+* Excessive boxes
+* Flat boring lists
+* Too many buttons
+* Dense forms
+* Default React/HTML styling
+* Overuse of gradients
+* Excessive animations
+* Cluttered screens
+
+The design should feel inspired by high-quality modern travel applications while remaining an original design.
+
+Do NOT copy another application's exact UI.
+
+---
+
+# 2. DESIGN SYSTEM
+
+Create a centralized design system.
+
+Define:
+
+### Colors
+
+Primary:
+
+Deep travel navy
+
+Secondary:
+
+Warm natural/earth tones
+
+Accent:
+
+Premium travel accent
+
+Background:
+
+Light warm neutral / clean white
+
+Dark surfaces:
+
+Deep navy
+
+Ensure sufficient contrast and accessibility.
+
+Do not use dozens of unrelated colors.
+
+---
+
+# 3. TYPOGRAPHY
+
+Create a clear hierarchy:
+
+### Display
+
+Large destination/travel headlines.
+
+### Heading
+
+Section titles.
+
+### Body
+
+Readable descriptions.
+
+### Caption
+
+Metadata.
+
+### Price
+
+Strong visual emphasis.
+
+Use consistent:
+
+* Font sizes
+* Font weights
+* Line heights
+* Letter spacing
+
+Avoid excessive bold text.
+
+---
+
+# 4. SPACING SYSTEM
+
+Create consistent spacing tokens.
+
+Use predictable:
+
+* Small
+* Medium
+* Large
+* Extra-large
+
+spacing.
+
+The application should feel spacious rather than crowded.
+
+---
+
+# 5. BORDER RADIUS
+
+Use modern rounded surfaces.
+
+Recommended:
+
+* Cards: medium/large radius
+* Buttons: rounded
+* Search: pill/rounded
+* Images: rounded corners
+* Bottom sheets: large top radius
+
+Keep radius consistent across the application.
+
+---
+
+# 6. SHADOWS
+
+Use subtle depth.
+
+Avoid heavy shadows.
+
+Use elevation primarily for:
+
+* Floating cards
+* Bottom sheets
+* Important actions
+* Navigation elements
+
+---
+
+# 7. ICON SYSTEM
+
+Fix and standardize all icons.
+
+IMPORTANT:
+
+The previous Expo Go issue with icons showing as unknown symbols must NOT return.
+
+Use a reliable icon library already compatible with the current Expo/React Native setup.
+
+Verify:
+
+* Android
+* iOS
+* Mobile Web
+
+Every icon must render correctly.
+
+Never use unsupported icon glyphs.
+
+---
+
+# 8. HOME EXPERIENCE
+
+Make Home the most visually engaging screen.
+
+Suggested structure:
+
+### Header
+
+Large personalized greeting.
+
+Example:
+
+"Good morning, Ashwini"
+
+Below:
+
+"Where will you explore today?"
+
+Location displayed elegantly.
+
+Notification/profile icons as clean circular actions.
+
+---
+
+# 9. HERO EXPERIENCE
+
+Create a visually strong hero/inspiration area.
+
+Use:
+
+Large destination imagery
+
+Overlay:
+
+"Explore something unforgettable"
+
+CTA:
+
+"Discover now"
+
+Use imagery as a major part of the travel experience.
+
+Do not overcrowd the hero.
+
+---
+
+# 10. SEARCH EXPERIENCE
+
+Make search prominent.
+
+Use:
+
+"Where do you want to go?"
+
+Search bar with:
+
+* Search icon
+* Location-aware behavior
+* Rounded design
+* Large touch target
+
+When tapped:
+
+Open an attractive search/explore experience.
+
+---
+
+# 11. QUICK ACTIONS
+
+Redesign the six Home actions.
+
+Current:
+
+* Explore
+* Destinations
+* Hotels
+* Maps
+* Bookings
+* Land
+
+Use:
+
+Icon + short label
+
+with visually consistent circular/rounded containers.
+
+Avoid making all six look like generic buttons.
+
+---
+
+# 12. DESTINATION CARDS
+
+Make destination discovery visually exciting.
+
+Use:
+
+Large image
+
+Overlay or below image:
+
+Destination name
+
+Short description
+
+Optional:
+
+"Explore"
+
+Favorite icon
+
+Cards should feel immersive.
+
+Support horizontal swipe/scroll.
+
+---
+
+# 13. FEATURED DESTINATION
+
+Create one larger featured destination card.
+
+Example:
+
+"Discover Coorg"
+
+Image
+
+Short story
+
+"Explore destination"
+
+This should visually break the page from repetitive card layouts.
+
+---
+
+# 14. HOTELS / STAYS
+
+Make hotel cards premium.
+
+Display:
+
+Image
+
+Hotel name
+
+Location
+
+Rating
+
+Price
+
+"View stay"
+
+Favorite icon
+
+Avoid excessive text.
+
+Use visual hierarchy:
+
+Hotel name
+
+★★★★★ 4.8
+
+₹X,XXX/night
+
+---
+
+# 15. LAND OPPORTUNITIES
+
+Land should have its own visual identity while still belonging to the Travel & Land brand.
+
+Create a section such as:
+
+**Explore Land Opportunities**
+
+Cards:
+
+Image
+
+Property name
+
+Location
+
+Area
+
+Price
+
+"View property"
+
+Use subtle earth/nature styling.
+
+Do NOT make land look like a generic real-estate website.
+
+It should feel connected to the travel/discovery experience.
+
+---
+
+# 16. EVENTS
+
+Make events visually engaging.
+
+Use:
+
+Date badge
+
+Event image
+
+Event title
+
+Location
+
+Short description
+
+CTA
+
+Example:
+
+"Explore Event"
+
+---
+
+# 17. POPULAR PLACES
+
+Use horizontal discovery cards.
+
+Include:
+
+* Image
+* Place name
+* Destination
+* Category
+
+Make the user want to swipe through the section.
+
+---
+
+# 18. SECTION HEADERS
+
+Every Home section should have:
+
+Section title
+
+Optional short description
+
+"See all"
+
+Do not create unnecessary headers.
+
+Example:
+
+**Popular destinations**
+
+"Places worth discovering"
+
+See all →
+
+---
+
+# 19. BOTTOM NAVIGATION
+
+Keep:
+
+1. Home
+2. Explore
+3. Bookings
+4. Land
+5. Profile
+
+Make the center Bookings action visually distinctive but not oversized.
+
+Navigation should clearly show:
+
+* Active tab
+* Inactive tab
+* Icon
+* Label
+
+Ensure accessibility.
+
+---
+
+# 20. EXPLORE SCREEN
+
+Make Explore feel like a discovery engine.
+
+Top:
+
+Large search
+
+Then:
+
+Categories
+
+Examples:
+
+* Destinations
+* Hotels
+* Places
+* Events
+* Land
+
+Then:
+
+Trending
+
+Recommended
+
+Popular nearby
+
+Use cards and horizontal discovery sections instead of one giant list.
+
+---
+
+# 21. DESTINATION DETAILS
+
+Create an immersive destination page.
+
+Top:
+
+Large image / image gallery
+
+Overlay:
+
+Back
+
+Favorite
+
+Share
+
+Then:
+
+Destination name
+
+Location
+
+Description
+
+---
+
+Sections:
+
+Top places
+
+Things to do
+
+Events
+
+Hotels
+
+Food
+
+Nearby attractions
+
+Map
+
+Use sticky/floating CTA where appropriate.
+
+---
+
+# 22. HOTEL DETAILS
+
+Make hotel details premium.
+
+Hero:
+
+Large hotel image
+
+Favorite
+
+Back
+
+Share
+
+Then:
+
+Hotel name
+
+Location
+
+Rating
+
+Price
+
+Description
+
+Amenities
+
+Room options
+
+Availability
+
+CTA:
+
+"Choose room"
+
+Keep the primary action easy to find.
+
+---
+
+# 23. ROOM SELECTION
+
+Make room selection easy.
+
+Each room card:
+
+Room image
+
+Room name
+
+Capacity
+
+Amenities
+
+Price
+
+Availability
+
+CTA:
+
+"Select"
+
+Avoid complicated forms.
+
+---
+
+# 24. BOOKING EXPERIENCE
+
+The booking flow should feel simple and trustworthy.
+
+Flow:
+
+Hotel
+
+→ Dates
+
+→ Room
+
+→ Guest details
+
+→ Summary
+
+→ Payment
+
+→ Confirmation
+
+Use a visible progress indicator.
+
+Example:
+
+1 Stay
+
+2 Guests
+
+3 Payment
+
+4 Done
+
+---
+
+# 25. BOOKING SUMMARY
+
+Create strong visual price hierarchy.
+
+Show:
+
+Hotel
+
+Room
+
+Dates
+
+Guests
+
+Base price
+
+Taxes/fees
+
+Discount where applicable
+
+Wallet credit where applicable
+
+Total
+
+Primary:
+
+"Continue to payment"
+
+---
+
+# 26. BOOKING CONFIRMATION
+
+Create a visually satisfying success screen.
+
+Show:
+
+✓ Booking confirmed
+
+Booking reference
+
+Hotel
+
+Dates
+
+Guest
+
+Total
+
+Actions:
+
+"View booking"
+
+"Back to Home"
+
+Do not create fake confirmation information.
+
+---
+
+# 27. WALLET
+
+Make Wallet visually premium.
+
+Use a large wallet/card area.
+
+Display actual balance when available.
+
+If unavailable:
+
+"Balance unavailable"
+
+Do NOT create fake balances.
+
+Transaction history should use:
+
+* Credit
+* Debit
+* Refund
+
+with clear visual differentiation.
+
+---
+
+# 28. LAND PROPERTY DETAILS
+
+Use immersive property imagery.
+
+Hero image
+
+Property title
+
+Location
+
+Area
+
+Price
+
+Property type
+
+Then:
+
+Overview
+
+Location
+
+Development information
+
+Nearby places
+
+Gallery
+
+Enquiry CTA
+
+Primary button:
+
+"Enquire Now"
+
+---
+
+# 29. LAND ENQUIRY
+
+Make the enquiry form extremely simple.
+
+Do not show 20 fields at once.
+
+Use grouped sections:
+
+### About you
+
+Name
+
+Phone
+
+Email
+
+### Your requirement
+
+Message
+
+Budget
+
+Preferred callback
+
+### Visit
+
+Preferred site visit
+
+Then:
+
+"Submit enquiry"
+
+Show clear success feedback.
+
+---
+
+# 30. USER PROFILE
+
+Create a clean profile experience.
+
+Header:
+
+Profile image/avatar
+
+Name
+
+Email
+
+Then grouped menu:
+
+My Bookings
+
+Favorites
+
+Land Enquiries
+
+Wallet
+
+Notifications
+
+Security
+
+Biometric Settings
+
+Change PIN/device settings if applicable
+
+Logout
+
+Do not create unnecessary dashboard cards.
+
+---
+
+# 31. FAVORITES
+
+Create a visually attractive saved-items screen.
+
+Tabs/categories:
+
+* Destinations
+* Hotels
+* Land
+
+Empty state should be friendly.
+
+Example:
+
+"Nothing saved yet"
+
+"Start exploring and save places you love."
+
+CTA:
+
+"Explore now"
+
+---
+
+# 32. NOTIFICATIONS
+
+Create a clean notification timeline.
+
+Group by:
+
+Today
+
+Earlier
+
+Each item:
+
+Icon
+
+Title
+
+Message
+
+Time
+
+Unread indicator
+
+Support:
+
+Mark as read
+
+Mark all as read
+
+---
+
+# 33. LOADING EXPERIENCE
+
+Use attractive skeleton loaders.
+
+Avoid:
+
+Blank white screens
+
+Spinners covering the entire page
+
+Flashing layouts
+
+Layout jumps
+
+Every major screen should have a stable skeleton structure.
+
+---
+
+# 34. EMPTY STATES
+
+Create friendly empty states.
+
+Examples:
+
+No bookings:
+
+"Your next adventure starts here."
+
+CTA:
+
+"Explore stays"
+
+No favorites:
+
+"Save places you love."
+
+No land enquiries:
+
+"No property enquiries yet."
+
+Avoid technical messages.
+
+---
+
+# 35. ERROR STATES
+
+Errors should be user-friendly.
+
+Instead of:
+
+"API 500"
+
+show:
+
+"Something went wrong"
+
+"Please try again."
+
+Button:
+
+"Retry"
+
+Keep technical details out of normal user-facing UI.
+
+---
+
+# 36. ANIMATIONS
+
+Add subtle animations where they improve UX.
+
+Examples:
+
+* Card press
+* Favorite heart animation
+* Screen transition
+* Bottom sheet
+* Search expansion
+* Skeleton shimmer
+* Booking success animation
+
+Animations must be:
+
+* Fast
+* Subtle
+* Purposeful
+
+Avoid excessive motion.
+
+Respect reduced-motion accessibility where supported.
+
+---
+
+# 37. INTERACTION FEEDBACK
+
+Every important action should provide feedback.
+
+Examples:
+
+Favorite:
+
+Heart animation
+
+Booking:
+
+Loading state
+
+Success:
+
+Confirmation
+
+Error:
+
+Retry
+
+Form:
+
+Inline validation
+
+Button:
+
+Pressed state
+
+---
+
+# 38. TOUCH TARGETS
+
+Ensure mobile controls are comfortable.
+
+Minimum practical touch target:
+
+~44x44 px
+
+Especially:
+
+* Icons
+* Favorite
+* Back
+* Close
+* Bottom navigation
+* Buttons
+
+---
+
+# 39. RESPONSIVE DESIGN
+
+The same design system must work across:
+
+### Android
+
+### iOS
+
+### Mobile Web
+
+### Desktop Web
+
+Do not simply stretch mobile layouts onto desktop.
+
+Adapt layouts intelligently.
+
+---
+
+# 40. VENDOR PORTAL DESIGN
+
+The Vendor Portal should use the same brand system but have a more operational interface.
+
+Use:
+
+* Dashboard cards
+* Tables
+* Status badges
+* Forms
+* Charts only where meaningful
+
+Keep it clean and professional.
+
+Do not make Vendor Portal visually identical to the traveller experience.
+
+---
+
+# 41. ADMIN PORTAL DESIGN
+
+Admin Portal should be:
+
+Professional
+
+Clear
+
+Efficient
+
+Use:
+
+* Sidebar
+* Tables
+* Filters
+* Status badges
+* Search
+* Pagination
+* Detail panels
+
+Avoid excessive decoration.
+
+The traveller app should be inspirational.
+
+Admin/Vendor portals should be operational.
+
+---
+
+# 42. FORMS
+
+Improve all forms across the application.
+
+Requirements:
+
+* Clear labels
+* Helpful placeholders
+* Inline validation
+* Error messages
+* Required indicators
+* Proper keyboard types
+* Date pickers
+* Dropdowns/selectors
+* Accessible controls
+
+Do not rely only on placeholder text as labels.
+
+---
+
+# 43. SEARCH & FILTER UX
+
+Make filters easy to use.
+
+On mobile:
+
+Use bottom-sheet filters.
+
+Example:
+
+Filters
+
+Location
+
+Category
+
+Price
+
+Rating
+
+Apply filters
+
+Clear all
+
+Do not force users through multiple pages just to filter results.
+
+---
+
+# 44. IMAGE EXPERIENCE
+
+Images are a major part of this application.
+
+Use:
+
+* Proper aspect ratios
+* Rounded corners
+* Image placeholders
+* Loading states
+* Graceful fallback images
+* Image galleries
+
+Avoid stretched images.
+
+Avoid broken-image icons.
+
+---
+
+# 45. DEMO DATA VISUAL DESIGN
+
+When demo data is enabled:
+
+Show a subtle:
+
+"Demo Data"
+
+indicator.
+
+Do NOT add ugly labels to every card.
+
+A single global indicator is preferred.
+
+---
+
+# 46. ACCESSIBILITY
+
+Ensure:
+
+* Good contrast
+* Screen-reader labels
+* Accessible buttons
+* Accessible icons
+* Proper form labels
+* Keyboard support on web
+* Reduced-motion consideration
+* Large enough touch targets
+
+---
+
+# 47. PERFORMANCE
+
+Do not sacrifice performance for design.
+
+Avoid:
+
+* Huge unoptimized images
+* Excessive animations
+* Rendering hundreds of cards
+* Nested unnecessary scroll views
+
+Use:
+
+* Lazy lists
+* Image optimization
+* Memoization where useful
+* Pagination
+* Proper caching
+
+---
+
+# 48. NAVIGATION EXPERIENCE
+
+Review the entire navigation architecture.
+
+The user should always understand:
+
+* Where they are
+* Where they came from
+* Where they can go next
+
+Use:
+
+* Back navigation
+* Breadcrumbs on web where appropriate
+* Clear page titles
+* Consistent tab navigation
+* Deep-link-safe routes
+
+Do not introduce navigation loops.
+
+---
+
+# 49. IMPORTANT — PRESERVE CURRENT LOGIN
+
+The login/security flow is already completed.
+
+DO NOT modify:
+
+* Clerk authentication
+* OTP
+* Device authentication
+* Fingerprint
+* Face ID
+* Session handling
+* Role routing
+
+Only visually improve authentication screens if needed.
+
+---
+
+# 50. TESTING
+
+After the redesign verify:
+
+1. Login
+2. User Home
+3. Explore
+4. Destination
+5. Maps
+6. Hotels
+7. Availability
+8. Room selection
+9. Booking
+10. Payment
+11. Confirmation
+12. Wallet
+13. Favorites
+14. Notifications
+15. Land
+16. Property details
+17. Enquiry
+18. My enquiries
+19. Vendor dashboard
+20. Vendor hotel management
+21. Vendor room management
+22. Vendor availability
+23. Vendor bookings
+24. Vendor properties
+25. Vendor enquiries
+26. Admin dashboard
+27. Admin users
+28. Admin vendors
+29. Admin hotels
+30. Admin destinations
+31. Admin properties
+32. Admin bookings
+33. Admin reviews
+
+---
+
+# 51. PLATFORM VALIDATION
+
+Verify visual and functional behavior on:
+
+### Android / Expo Go
+
+Check:
+
+* Icons
+* Fonts
+* Images
+* Navigation
+* Animations
+* Touch targets
+* Bottom navigation
+
+### iOS
+
+Check:
+
+* Safe areas
+* Navigation
+* Face ID
+* Scrolling
+* Keyboard
+* Bottom navigation
+
+### Mobile Web
+
+Check:
+
+* Responsive layout
+* Navigation
+* Search
+* Forms
+* Images
+
+### Desktop Web
+
+Check:
+
+* Admin
+* Vendor
+* Traveller responsive experience
+
+---
+
+# 52. DO NOT CHANGE BUSINESS LOGIC
+
+This is critical.
+
+Do NOT:
+
+* Replace APIs
+* Remove authentication
+* Remove role checks
+* Remove database validation
+* Replace real data with hardcoded frontend arrays
+* Add fake balances
+* Add fake bookings
+* Add fake payments
+* Add fake property verification
+* Bypass authorization
+
+The goal is:
+
+**Better experience + same functionality + stronger usability.**
+
+---
+
+# 53. FINAL REPORT
+
+Report:
+
+1. Design system created
+2. Color/typography system
+3. Navigation improvements
+4. Home redesign
+5. Explore redesign
+6. Destination redesign
+7. Hotel redesign
+8. Booking UX improvements
+9. Wallet redesign
+10. Land redesign
+11. Favorites redesign
+12. Notifications redesign
+13. Profile redesign
+14. Vendor UI improvements
+15. Admin UI improvements
+16. Loading states
+17. Empty states
+18. Error states
+19. Animations
+20. Accessibility improvements
+21. Icon compatibility verification
+22. Android verification
+23. iOS verification
+24. Mobile web verification
+25. Desktop verification
+26. Tests passing
+27. Any remaining UX issues
+28. Recommended next task
+
+IMPORTANT:
+
+Do not move to another major feature until the redesigned core user journey has been tested:
+
+Home
+→ Explore
+→ Destination
+→ Hotel
+→ Availability
+→ Room
+→ Booking
+→ Payment
+→ Confirmation
+
+and:
+
+Home
+→ Land
+→ Property
+→ Enquiry
+→ My Enquiries
