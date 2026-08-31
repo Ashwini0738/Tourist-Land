@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Travel &amp; Land — Performance &amp; Testing Report</title>
+  <style>
+    :root {
+      --ink: #152238;
+      --muted: #5f6f82;
+      --line: #d9e1ea;
+      --soft: #f4f7fa;
+      --navy: #12304a;
+      --teal: #0b7c78;
+      --green: #18794e;
+      --green-bg: #e9f7ef;
+      --amber: #9a6500;
+      --amber-bg: #fff7df;
+      --red: #a33a3a;
+      --red-bg: #fff0f0;
+    }
+    * { box-sizing: border-box; }
+    @page { size: A4; margin: 15mm 14mm 16mm; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #eef2f6;
+      font: 14px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      max-width: 1120px;
+      margin: 28px auto;
+      background: #fff;
+      box-shadow: 0 12px 36px rgba(21, 34, 56, .10);
+    }
+    .cover {
+      padding: 58px 64px 52px;
+      color: #fff;
+      background: linear-gradient(135deg, #102d47 0%, #14566a 60%, #0d8179 100%);
+    }
+    .eyebrow {
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 750;
+      opacity: .78;
+    }
+    h1 { margin: 18px 0 10px; max-width: 760px; font-size: 42px; line-height: 1.08; letter-spacing: -.035em; }
+    .cover p { max-width: 760px; margin: 0; color: #dceef0; font-size: 17px; }
+    .meta { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 38px; color: #c8e1e3; font-size: 12px; }
+    .content { padding: 42px 64px 58px; }
+    h2 { margin: 38px 0 14px; padding-bottom: 8px; border-bottom: 2px solid var(--line); font-size: 24px; letter-spacing: -.02em; }
+    h2:first-child { margin-top: 0; }
+    h3 { margin: 24px 0 10px; color: var(--navy); font-size: 17px; }
+    p { margin: 8px 0 13px; }
+    .lede { color: var(--muted); font-size: 16px; }
+    .notice {
+      margin: 18px 0 22px; padding: 14px 16px; border-left: 4px solid var(--teal);
+      background: #edf8f7; color: #24565a;
+    }
+    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0 26px; }
+    .card { padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+    .card strong { display: block; color: var(--navy); font-size: 27px; line-height: 1; }
+    .card span { display: block; margin-top: 7px; color: var(--muted); font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0 22px; font-size: 12px; }
+    th, td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--navy); background: #f0f4f8; font-size: 11px; letter-spacing: .035em; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+    .route { white-space: nowrap; color: var(--navy); font-weight: 650; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .04em; }
+    .pass { color: var(--green); background: var(--green-bg); }
+    .blocked { color: var(--amber); background: var(--amber-bg); }
+    .fail { color: var(--red); background: var(--red-bg); }
+    .small { color: var(--muted); font-size: 12px; }
+    ul { margin: 8px 0 16px; padding-left: 20px; }
+    li { margin: 5px 0; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+    code { padding: 1px 4px; border-radius: 4px; background: #edf1f5; font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    @media (max-width: 760px) {
+      main { margin: 0; box-shadow: none; }
+      .cover, .content { padding: 32px 22px; }
+      h1 { font-size: 34px; }
+      .cards { grid-template-columns: repeat(2, 1fr); }
+      .two-col { grid-template-columns: 1fr; gap: 8px; }
+      table { display: block; overflow-x: auto; }
+    }
+    @media print {
+      body { background: #fff; }
+      main { margin: 0; box-shadow: none; }
+      .cover { padding: 38px 44px; }
+      .content { padding: 30px 44px 42px; }
+      h2, h3 { break-after: avoid; }
+      table { break-inside: auto; }
+      tr { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header class="cover">
+    <div class="eyebrow">Travel &amp; Land · Quality Assurance</div>
+    <h1>Performance &amp; Testing Report</h1>
+    <p>Page-by-page verification of the Expo mobile application, web admin portal, API services, builds, data integrity, and known acceptance limits.</p>
+    <div class="meta">
+      <span><strong>Report date:</strong> 31 August 2026</span>
+      <span><strong>Environment:</strong> local development and disposable PostgreSQL</span>
+      <span><strong>Scope:</strong> mobile, web admin, API, and release checks</span>
+    </div>
+  </header>
+
+  <section class="content">
+    <h2>1. Executive summary</h2>
+    <p class="lede">The local baseline is stable. Automated mobile, admin, API, type, contract, build, and workflow checks passed. The complete enquiry/vendor journey was validated against a freshly applied disposable PostgreSQL schema. Native-device, live-provider, and production checks remain explicitly blocked rather than inferred from mocks.</p>
+    <div class="cards">
+      <div class="card"><strong>87</strong><span>mobile tests passed across 18 suites</span></div>
+      <div class="card"><strong>15</strong><span>web admin tests passed across 2 files</span></div>
+      <div class="card"><strong>77</strong><span>API tests passed with zero failures</span></div>
+      <div class="card"><strong>32</strong><span>public tables verified in disposable schema</span></div>
+    </div>
+    <div class="notice"><strong>Interpretation rule:</strong> PASS means local code, route, component, API, or deterministic structural evidence. BLOCKED means meaningful acceptance requires a real device, controlled external provider, production database, or published environment. No live price, availability, payment, supplier confirmation, ownership, or coordinate result was fabricated.</div>
+
+    <h2>2. Performance evidence</h2>
+    <p>Available performance evidence is build- and bundle-based. The current suite does not claim real-device page-load timings, network latency, throughput, or production Core Web Vitals.</p>
+    <table>
+      <thead><tr><th>Area</th><th>Result</th><th>Measured evidence</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr><td>Expo static build</td><td><span class="badge pass">PASS</span></td><td>iOS and Android bundles/manifests downloaded successfully; 32 unique assets copied.</td><td>Release-style JavaScript packaging succeeds for both platforms.</td></tr>
+        <tr><td>Web admin production build</td><td><span class="badge pass">PASS</span></td><td>Vite build completed; main entry 465.99 kB raw / 140.87 kB gzip; CSS 114.29 kB raw / 18.60 kB gzip.</td><td>Route chunks are split; a bundle-size warning remains for the main entry.</td></tr>
+        <tr><td>API production build</td><td><span class="badge pass">PASS</span></td><td>API bundle built successfully; <code>dist/index.mjs</code> is 3.6 MB.</td><td>Build is functional; bundle size should be monitored before broad rollout.</td></tr>
+        <tr><td>Type and declaration build</td><td><span class="badge pass">PASS</span></td><td>Workspace libraries, mobile, admin, API, mockup sandbox, and scripts typechecked.</td><td>No static type errors in the validated workspace.</td></tr>
+        <tr><td>Dependency compatibility</td><td><span class="badge pass">PASS</span></td><td><code>expo install --check</code> reported dependencies up to date.</td><td>Installed Expo dependency versions are internally compatible.</td></tr>
+        <tr><td>Workflow startup</td><td><span class="badge pass">PASS</span></td><td>API rebuilt and restarted; migrations finished; server listened on port 8080 without startup errors.</td><td>Server starts cleanly in the configured development workflow.</td></tr>
+      </tbody>
+    </table>
+    <h3>Performance and accessibility safeguards</h3>
+    <ul>
+      <li>Mobile tab/layout checks cover representative web widths and larger text.</li>
+      <li>Admin checks cover keyboard focus, focus-visible states, reduced motion, table overflow, and responsive layouts.</li>
+      <li>Property enquiry controls use explicit roles, selected state, alert semantics, bounded input, and disabled pending state.</li>
+      <li>API retries are bounded where configured; enquiry submission uses a stable idempotency key to avoid duplicate records.</li>
+    </ul>
+
+    <h2>3. Test-suite results</h2>
+    <table>
+      <thead><tr><th>Suite/check</th><th>Status</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Mobile Jest</td><td><span class="badge pass">PASS</span></td><td>18 suites, 87 tests, 0 failures.</td></tr>
+        <tr><td>Web admin Vitest</td><td><span class="badge pass">PASS</span></td><td>2 test files, 15 tests, 0 failures.</td></tr>
+        <tr><td>API Node test suite</td><td><span class="badge pass">PASS</span></td><td>77 tests, 0 failures, 0 skipped in the final general run.</td></tr>
+        <tr><td>Disposable demo journey</td><td><span class="badge pass">PASS</span></td><td>Journey passed against a fresh schema; startup/import phase passed separately. Covers concurrent booking protection, seeded traveller/vendor/admin roles, duplicate enquiry idempotency, invalid and unpublished properties, and demo-off behavior.</td></tr>
+        <tr><td>Schema verification</td><td><span class="badge pass">PASS</span></td><td>Fresh disposable database applied through Drizzle. Required tables, columns, indexes, foreign keys, and check constraints verified.</td></tr>
+        <tr><td>OpenAPI contract generation</td><td><span class="badge pass">PASS</span></td><td>Generated clients and Zod schemas regenerated and validated; shared declarations built successfully.</td></tr>
+        <tr><td>Workflow validation</td><td><span class="badge pass">PASS</span></td><td>Actionlint and the demo failure-classifier check passed.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. Mobile application — page-by-page matrix</h2>
+    <p class="small">All routes below compile against the Expo app. “Blocked” notes are limitations of the acceptance environment, not failed local tests.</p>
+    <table>
+      <thead><tr><th>Page / route</th><th>Status</th><th>Testing and performance evidence</th></tr></thead>
+      <tbody>
+        <tr><td class="route">/ and /(tabs)</td><td><span class="badge pass">PASS</span></td><td>Role/auth redirect structure typechecked; tab regression suite passes.</td></tr>
+        <tr><td class="route">/splash</td><td><span class="badge pass">PASS</span></td><td>Route compiles; auth initialization is covered by context/routing tests.</td></tr>
+        <tr><td class="route">/login</td><td><span class="badge pass">PASS</span></td><td>Clerk route compiles; live OTP/provider delivery is blocked.</td></tr>
+        <tr><td class="route">/verify</td><td><span class="badge pass">PASS</span></td><td>Route compiles; live OTP acceptance is blocked.</td></tr>
+        <tr><td class="route">/biometric</td><td><span class="badge pass">PASS</span></td><td>Mocked biometric setup tests pass; native hardware is blocked.</td></tr>
+        <tr><td class="route">/biometric-login</td><td><span class="badge pass">PASS</span></td><td>Mocked unlock tests pass; native hardware is blocked.</td></tr>
+        <tr><td class="route">/vendor-application</td><td><span class="badge pass">PASS</span></td><td>Route and API validation compile; live invitation email is blocked.</td></tr>
+        <tr><td class="route">/(tabs)/index</td><td><span class="badge pass">PASS</span></td><td>Home component tests pass.</td></tr>
+        <tr><td class="route">/(tabs)/explore</td><td><span class="badge pass">PASS</span></td><td>Search/filter pure tests and visual route tests pass.</td></tr>
+        <tr><td class="route">/(tabs)/bookings</td><td><span class="badge pass">PASS</span></td><td>Route compiles and uses the owned booking API.</td></tr>
+        <tr><td class="route">/(tabs)/land</td><td><span class="badge pass">PASS</span></td><td>Visual route test passes; persisted-provider acceptance is blocked.</td></tr>
+        <tr><td class="route">/(tabs)/saved</td><td><span class="badge pass">PASS</span></td><td>Route compiles; full collection completeness is tracked separately.</td></tr>
+        <tr><td class="route">/(tabs)/profile</td><td><span class="badge pass">PASS</span></td><td>Route compiles and role-routing tests pass.</td></tr>
+        <tr><td class="route">/destination/[id]</td><td><span class="badge pass">PASS</span></td><td>Focused detail tests include missing-data behavior.</td></tr>
+        <tr><td class="route">/place/[id]</td><td><span class="badge pass">PASS</span></td><td>Route compiles; catalog API contract generated.</td></tr>
+        <tr><td class="route">/event/[id]</td><td><span class="badge pass">PASS</span></td><td>Route compiles; catalog API contract generated.</td></tr>
+        <tr><td class="route">/food/[id]</td><td><span class="badge pass">PASS</span></td><td>Route compiles; catalog API contract generated.</td></tr>
+        <tr><td class="route">/maps</td><td><span class="badge pass">PASS</span></td><td>Web/location fallback tests pass; native GPS prompts and map-app launch are blocked.</td></tr>
+        <tr><td class="route">/hotels</td><td><span class="badge pass">PASS</span></td><td>Route compiles; API hotel-search tests pass.</td></tr>
+        <tr><td class="route">/hotel/[id]</td><td><span class="badge pass">PASS</span></td><td>Route compiles; API detail/rooms tests pass.</td></tr>
+        <tr><td class="route">/hotel/availability</td><td><span class="badge pass">PASS</span></td><td>Loading/error/empty/selection states compile; API availability tests pass.</td></tr>
+        <tr><td class="route">/booking</td><td><span class="badge pass">PASS</span></td><td>Duplicate taps disabled; idempotent API create and validation tests pass.</td></tr>
+        <tr><td class="route">/booking/[reference]</td><td><span class="badge pass">PASS</span></td><td>Owned read/cancel/checkout flow compiles; live Stripe acceptance is blocked.</td></tr>
+        <tr><td class="route">/notifications</td><td><span class="badge pass">PASS</span></td><td>Expo Go-safe import path; remote push on a development build is blocked.</td></tr>
+        <tr><td class="route">/reviews</td><td><span class="badge pass">PASS</span></td><td>Route compiles; API moderation/visibility tests pass.</td></tr>
+        <tr><td class="route">/review</td><td><span class="badge pass">PASS</span></td><td>Route compiles; eligibility remains server-owned.</td></tr>
+        <tr><td class="route">/wallet</td><td><span class="badge pass">PASS</span></td><td>Route compiles; no unsupported settlement or payout claims.</td></tr>
+        <tr><td class="route">/property/[id]</td><td><span class="badge pass">PASS</span></td><td>Unknown/deep-link fallback fixed; unsupported title/access claims removed.</td></tr>
+        <tr><td class="route">/property-enquiry</td><td><span class="badge pass">PASS</span></td><td>Real API submission, validation, idempotency, pending/error states, and duplicate-tap protection pass.</td></tr>
+        <tr><td class="route">/vendor and /vendor/index</td><td><span class="badge pass">PASS</span></td><td>Protected dashboard route compiles.</td></tr>
+        <tr><td class="route">/vendor/hotels</td><td><span class="badge pass">PASS</span></td><td>Route compiles; ownership API tests pass.</td></tr>
+        <tr><td class="route">/vendor/rooms</td><td><span class="badge pass">PASS</span></td><td>Route compiles; ownership API tests pass.</td></tr>
+        <tr><td class="route">/vendor/availability</td><td><span class="badge pass">PASS</span></td><td>Route compiles; inventory constraints and reservation floors tested.</td></tr>
+        <tr><td class="route">/vendor/bookings</td><td><span class="badge pass">PASS</span></td><td>Route compiles; server query is owner-scoped.</td></tr>
+        <tr><td class="route">/vendor/listings</td><td><span class="badge pass">PASS</span></td><td>Route compiles; role/ownership guard is server-side.</td></tr>
+        <tr><td class="route">/vendor/profile</td><td><span class="badge pass">PASS</span></td><td>Route compiles.</td></tr>
+        <tr><td class="route">/vendor/enquiries</td><td><span class="badge pass">PASS</span></td><td>Disposable-database list/detail/status flow, ownership isolation, valid/invalid transitions, duplicate protection, and push-failure resilience pass.</td></tr>
+        <tr><td class="route">/admin and /admin/index</td><td><span class="badge pass">PASS</span></td><td>Protected mobile namespace compiles.</td></tr>
+        <tr><td class="route">/admin/users</td><td><span class="badge pass">PASS</span></td><td>Route tests pass.</td></tr>
+        <tr><td class="route">/admin/vendors</td><td><span class="badge pass">PASS</span></td><td>Focused component tests pass.</td></tr>
+        <tr><td class="route">/admin/listings</td><td><span class="badge pass">PASS</span></td><td>Route compiles.</td></tr>
+        <tr><td class="route">/admin/profile</td><td><span class="badge pass">PASS</span></td><td>Route compiles.</td></tr>
+        <tr><td class="route">/admin/content</td><td><span class="badge fail">FAIL</span></td><td>Informational placeholder; operational content management exists in the web admin portal.</td></tr>
+        <tr><td class="route">/admin/settings</td><td><span class="badge fail">FAIL</span></td><td>Informational placeholder; operational settings exist in the web admin portal.</td></tr>
+        <tr><td class="route">/+not-found</td><td><span class="badge pass">PASS</span></td><td>Route compiles.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>5. Web admin — page-by-page matrix</h2>
+    <table>
+      <thead><tr><th>Page / route</th><th>Status</th><th>Testing and performance evidence</th></tr></thead>
+      <tbody>
+        <tr><td class="route">/, /login, /sign-in/*, /sign-up/*</td><td><span class="badge pass">PASS</span></td><td>Clerk routing and access-state tests pass; live provider is blocked.</td></tr>
+        <tr><td class="route">/dashboard</td><td><span class="badge pass">PASS</span></td><td>Role gate and server-backed metrics tested.</td></tr>
+        <tr><td class="route">/users</td><td><span class="badge pass">PASS</span></td><td>Admin route authorization matrix passes.</td></tr>
+        <tr><td class="route">/vendors</td><td><span class="badge pass">PASS</span></td><td>Admin route authorization matrix passes.</td></tr>
+        <tr><td class="route">/hotels</td><td><span class="badge pass">PASS</span></td><td>Admin route authorization matrix passes.</td></tr>
+        <tr><td class="route">/rooms</td><td><span class="badge pass">PASS</span></td><td>Admin route authorization matrix passes.</td></tr>
+        <tr><td class="route">/availability</td><td><span class="badge pass">PASS</span></td><td>Admin route authorization matrix passes.</td></tr>
+        <tr><td class="route">/destinations</td><td><span class="badge pass">PASS</span></td><td>Dialog/status behavior and admin authorization tests pass.</td></tr>
+        <tr><td class="route">/places</td><td><span class="badge pass">PASS</span></td><td>Admin route authorization matrix passes.</td></tr>
+        <tr><td class="route">/events</td><td><span class="badge pass">PASS</span></td><td>Admin route authorization matrix passes.</td></tr>
+        <tr><td class="route">/properties</td><td><span class="badge pass">PASS</span></td><td>Admin route authorization matrix passes.</td></tr>
+        <tr><td class="route">/bookings</td><td><span class="badge pass">PASS</span></td><td>Admin route authorization matrix passes.</td></tr>
+        <tr><td class="route">/payments</td><td><span class="badge pass">PASS</span></td><td>Read-only provider-backed view compiles and is covered by admin routes.</td></tr>
+        <tr><td class="route">/reviews</td><td><span class="badge pass">PASS</span></td><td>Moderation route and status validation tests pass.</td></tr>
+        <tr><td class="route">/notifications</td><td><span class="badge pass">PASS</span></td><td>Server-backed announcement validation passes.</td></tr>
+        <tr><td class="route">/content</td><td><span class="badge pass">PASS</span></td><td>Generated contract and page build pass.</td></tr>
+        <tr><td class="route">/audit-logs</td><td><span class="badge pass">PASS</span></td><td>Read-only audit routes and tests pass.</td></tr>
+        <tr><td class="route">/settings</td><td><span class="badge pass">PASS</span></td><td>Page build passes; unsupported settings are not fabricated.</td></tr>
+        <tr><td class="route">fallback 404</td><td><span class="badge pass">PASS</span></td><td>NotFound component is present in the routed error boundary.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>6. API surface — page-supporting services</h2>
+    <table>
+      <thead><tr><th>Surface</th><th>Status</th><th>Testing evidence</th></tr></thead>
+      <tbody>
+        <tr><td class="route">Health and catalog</td><td><span class="badge pass">PASS</span></td><td>Health, home, destinations, properties, hotel, place/event/food catalog routes and generated response schemas pass.</td></tr>
+        <tr><td class="route">Explore</td><td><span class="badge pass">PASS</span></td><td>Filtering, pagination, category/location filters, honest distances, and provider isolation pass.</td></tr>
+        <tr><td class="route">Properties and enquiries</td><td><span class="badge pass">PASS</span></td><td>Unauthenticated/invalid/unpublished rejection, persistent idempotency, transactional history, ownership, status lifecycle, and notification reads pass on disposable PostgreSQL.</td></tr>
+        <tr><td class="route">Hotels and availability</td><td><span class="badge pass">PASS</span></td><td>Search, detail, rooms, nearby, date/capacity validation, reservation subtraction, and fail-closed provider behavior pass.</td></tr>
+        <tr><td class="route">Bookings and checkout</td><td><span class="badge pass">PASS</span></td><td>Validation, ownership, idempotency, inventory locks, payment states, and cancellation pass; live Stripe remains blocked.</td></tr>
+        <tr><td class="route">Favorites, reviews, notifications</td><td><span class="badge pass">PASS</span></td><td>Entity resolution, ownership, moderation visibility, read state, push-token boundaries, and no-fallback behavior pass.</td></tr>
+        <tr><td class="route">Auth and user</td><td><span class="badge pass">PASS</span></td><td>Clerk authority, session, refresh/logout, user profile, and role tests pass; live provider remains blocked.</td></tr>
+        <tr><td class="route">Vendor portal</td><td><span class="badge pass">PASS</span></td><td>Onboarding, profile, hotels, rooms, inventory, bookings, listings, enquiries, owner isolation, and validation pass.</td></tr>
+        <tr><td class="route">Admin portal</td><td><span class="badge pass">PASS</span></td><td>Authorization, catalog operations, featured content, transitions, audit transaction behavior, bookings, payments, reviews, notifications, and logs pass.</td></tr>
+        <tr><td class="route">Malformed/unhandled requests</td><td><span class="badge pass">PASS</span></td><td>Safe JSON 400/500 responses and unmatched-route behavior pass without internal details.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>7. Defects resolved in this QA cycle</h2>
+    <ul>
+      <li>Prevented competing Stripe checkout sessions during simultaneous requests.</li>
+      <li>Replaced the property enquiry screen’s false success state with real validated API persistence and stable retry behavior.</li>
+      <li>Removed fabricated enquiry receipts when persistence is unavailable.</li>
+      <li>Added user-scoped persistent enquiry idempotency and transactional history creation.</li>
+      <li>Added safe JSON handling for malformed request bodies and unhandled route failures.</li>
+      <li>Fixed unknown property IDs reaching UUID comparisons and returning database errors.</li>
+      <li>Restricted persisted property detail and enquiry flows to published properties.</li>
+      <li>Subtracted active reservations from configured availability and rechecked each booking night under lock.</li>
+      <li>Fixed catalog room IDs being compared to UUID columns.</li>
+      <li>Fixed admin hotel status audit metadata so omitted fields are not recorded as null.</li>
+    </ul>
+
+    <h2>8. Explicitly blocked acceptance</h2>
+    <table>
+      <thead><tr><th>Area</th><th>Why it is blocked</th></tr></thead>
+      <tbody>
+        <tr><td>Face ID, Touch ID, Android biometrics/device passcode</td><td>Requires real native hardware or simulator/device settings; browser and Jest mocks are insufficient.</td></tr>
+        <tr><td>GPS prompts, revoked permission, disabled services, map-app launch</td><td>Requires native OS permission/settings flows and physical or simulator devices.</td></tr>
+        <tr><td>Android Expo Go remote push</td><td>Expo Go SDK 53+ limitation; requires a development build.</td></tr>
+        <tr><td>Live payment and webhook acceptance</td><td>Requires controlled Stripe test execution, webhook delivery, and declined-card recovery.</td></tr>
+        <tr><td>Email delivery acceptance/retry</td><td>Requires controlled Resend delivery and inbox access. A disposable run observed HTTP 400; booking state remained persisted and the delivery failure was logged separately.</td></tr>
+        <tr><td>Supplier reservation confirmation/outage</td><td>No managed inventory provider is connected.</td></tr>
+        <tr><td>Production schema and data</td><td>No published deployment or production database was used; the verified schema was isolated to a disposable local database.</td></tr>
+        <tr><td>Real-network and regional acceptance</td><td>3G/4G restoration, cross-region latency, locale/currency/timezone, and FX behavior require device/network/provider conditions not available in this run.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>9. Release recommendation</h2>
+    <p><strong>Local release candidate:</strong> ready for continued staging work. The automated baseline and disposable database journey are green.</p>
+    <p><strong>Production release:</strong> do not treat this report as production acceptance. Complete the blocked device, provider, staging/production schema, and real-network checks before making production claims.</p>
+    <div class="footer">Source evidence: <code>docs/qa/QA_REPORT.md</code> and <code>docs/qa/ROUTE_MATRIX.md</code>. This report is generated from the verified local QA snapshot dated 31 August 2026.</div>
+  </section>
+</main>
+</body>
+</html>
