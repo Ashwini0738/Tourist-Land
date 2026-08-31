@@ -219,6 +219,15 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
   ]);
   await db.delete(reviews).where(eq(reviews.id, unpublishedReviewIds.deleted));
 
+  const hotelBeforeModeration = await request(server.baseUrl, "/v1/hotels/demo-hotel-2");
+  assert.equal(hotelBeforeModeration.response.status, 200, JSON.stringify(hotelBeforeModeration.body));
+  assert.equal(hotelBeforeModeration.body.hotel.rating, 4);
+  assert.equal(hotelBeforeModeration.body.hotel.ratingLabel, "Demo guest note · 4.0");
+  const hotelCardsBeforeModeration = await request(server.baseUrl, "/v1/hotels?q=demo%20hotel%202");
+  assert.equal(hotelCardsBeforeModeration.response.status, 200, JSON.stringify(hotelCardsBeforeModeration.body));
+  assert.equal(hotelCardsBeforeModeration.body.items[0]?.rating, 4);
+  assert.equal(hotelCardsBeforeModeration.body.items[0]?.ratingLabel, "Demo guest note · 4.0");
+
   const publicReviews = await request(server.baseUrl, "/v1/hotels/demo-hotel-2/reviews");
   assert.equal(publicReviews.response.status, 200, JSON.stringify(publicReviews.body));
   assert.equal(publicReviews.body.reviewCount, 2);
@@ -249,6 +258,12 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
   assert.equal(afterRejection.body.reviewCount, 1);
   assert.equal(afterRejection.body.ratingAverage, 5);
   assert.deepEqual(afterRejection.body.items.map((item: any) => item.id), [demoReviews[0].id]);
+  const hotelAfterRejection = await request(server.baseUrl, "/v1/hotels/demo-hotel-2");
+  assert.equal(hotelAfterRejection.body.hotel.rating, 5);
+  assert.equal(hotelAfterRejection.body.hotel.ratingLabel, "Demo guest note · 5.0");
+  const hotelCardsAfterRejection = await request(server.baseUrl, "/v1/hotels?q=demo%20hotel%202");
+  assert.equal(hotelCardsAfterRejection.body.items[0]?.rating, 5);
+  assert.equal(hotelCardsAfterRejection.body.items[0]?.ratingLabel, "Demo guest note · 5.0");
 
   const republishModeratedReview = await request(
     server.baseUrl,
@@ -274,6 +289,12 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: ski
     afterRepublish.body.items.find((item: any) => item.id === unpublishedReviewIds.moderated)?.rating,
     3,
   );
+  const hotelAfterRepublish = await request(server.baseUrl, "/v1/hotels/demo-hotel-2");
+  assert.equal(hotelAfterRepublish.body.hotel.rating, 4);
+  assert.equal(hotelAfterRepublish.body.hotel.ratingLabel, "Demo guest note · 4.0");
+  const hotelCardsAfterRepublish = await request(server.baseUrl, "/v1/hotels?q=demo%20hotel%202");
+  assert.equal(hotelCardsAfterRepublish.body.items[0]?.rating, 4);
+  assert.equal(hotelCardsAfterRepublish.body.items[0]?.ratingLabel, "Demo guest note · 4.0");
   await db.delete(reviews).where(eq(reviews.id, unpublishedReviewIds.moderated));
 
   const availability = await request(

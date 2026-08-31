@@ -1,7 +1,8 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { db, bookings, payments, reviews, users } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth.ts";
+import { getPublishedHotelReviewAggregate } from "../lib/hotel-review-aggregate.ts";
 import { getHotelCatalogRecord } from "./hotel-catalog.ts";
 
 const reviewsRouter: IRouter = Router();
@@ -40,7 +41,7 @@ reviewsRouter.get("/v1/hotels/:hotelId/reviews", async (req, res): Promise<void>
   const page = Math.max(1, Math.min(10_000, Number(req.query.page) || 1));
   const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 10));
   const offset = (page - 1) * limit;
-  const [rows, [summary]] = await Promise.all([
+  const [rows, aggregate] = await Promise.all([
     db.select({ review: reviews, user: users })
       .from(reviews)
       .leftJoin(users, eq(users.id, reviews.userId))
@@ -48,18 +49,15 @@ reviewsRouter.get("/v1/hotels/:hotelId/reviews", async (req, res): Promise<void>
       .orderBy(desc(reviews.createdAt))
       .limit(limit)
       .offset(offset),
-    db.select({
-      count: sql<number>`count(*)`,
-      average: sql<number | null>`avg(${reviews.rating})`,
-    }).from(reviews).where(and(eq(reviews.entityType, "hotel"), eq(reviews.entityId, hotelId), eq(reviews.status, "published"))),
+    getPublishedHotelReviewAggregate(hotelId),
   ]);
-  const count = Number(summary?.count ?? 0);
+  const count = aggregate?.reviewCount ?? 0;
   res.json({
     items: rows.map(({ review, user }) => ({
       ...reviewPayload(review, user?.displayName ?? null),
       bookingReference: null,
     })),
-    ratingAverage: summary?.average == null ? null : Number(Number(summary.average).toFixed(1)),
+    ratingAverage: aggregate?.ratingAverage ?? null,
     reviewCount: count,
     page,
     limit,

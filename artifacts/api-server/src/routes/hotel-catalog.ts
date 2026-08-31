@@ -1,6 +1,10 @@
 import { destinations, hotels as catalogHotels, nearby, homeNotice } from "./catalog-data.ts";
 import { developmentInventoryProvenance, type InventoryProvenance } from "./hotel-inventory-policy.ts";
 import { demoModeEnabled } from "../lib/demo-mode.ts";
+import {
+  getPublishedHotelReviewAggregates,
+  type PublishedHotelReviewAggregate,
+} from "../lib/hotel-review-aggregate.ts";
 import { db, hotelRooms as hotelRoomRecords, hotels as hotelRecords } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { demoHotels } from "@workspace/db/seed-data";
@@ -103,7 +107,11 @@ function destinationName(destinationId: string) {
   return destinations.find((destination) => destination.id === destinationId)?.name ?? "";
 }
 
-export function toHotelSummary(hotel: HotelCatalogRecord): HotelSummary {
+export function toHotelSummary(hotel: HotelCatalogRecord, aggregate?: PublishedHotelReviewAggregate): HotelSummary {
+  const rating = aggregate?.ratingAverage ?? parseRating(hotel.ratingLabel);
+  const ratingLabel = aggregate
+    ? `${hotel.ratingLabel.split("·", 1)[0]?.trim() || "Guest rating"} · ${rating.toFixed(1)}`
+    : hotel.ratingLabel;
   return {
     id: hotel.id,
     name: hotel.name,
@@ -111,8 +119,8 @@ export function toHotelSummary(hotel: HotelCatalogRecord): HotelSummary {
     summary: hotel.summary,
     destinationId: hotel.destinationId,
     hotelType: hotel.hotelType,
-    rating: parseRating(hotel.ratingLabel),
-    ratingLabel: hotel.ratingLabel,
+    rating,
+    ratingLabel,
     priceValue: parsePrice(hotel.priceLabel),
     priceLabel: hotel.priceLabel,
     imageKey: hotel.imageKey,
@@ -194,14 +202,15 @@ export function parseHotelSearchInput(rawQuery: Record<string, unknown>): HotelS
   };
 }
 
-export function searchHotelCatalog(input: HotelSearchInput) {
+export async function searchHotelCatalog(input: HotelSearchInput) {
   const origin = input.latitude !== undefined && input.longitude !== undefined
     ? { latitude: input.latitude, longitude: input.longitude }
     : undefined;
   const query = input.q;
+  const aggregates = await getPublishedHotelReviewAggregates(hotels.map((hotel) => hotel.id));
   const filtered = hotels
     .map((hotel): HotelWithDistance => {
-      const summary = toHotelSummary(hotel);
+      const summary = toHotelSummary(hotel, aggregates.get(hotel.id));
       const coordinates = (hotel as unknown as HotelCatalogRecord).coordinates;
       const distanceKm = origin && coordinates ? calculateDistanceKm(origin, coordinates) : undefined;
       return distanceKm === undefined ? summary : { ...summary, distanceKm };
@@ -246,11 +255,12 @@ export function getHotelCatalogRecord(id: string) {
   return hotels.find((hotel) => hotel.id === id);
 }
 
-export function getHotelDetail(id: string) {
+export async function getHotelDetail(id: string) {
   const hotel = getHotelCatalogRecord(id);
   if (!hotel) return null;
+  const aggregate = await getPublishedHotelReviewAggregates([hotel.id]);
   return {
-    hotel: toHotelSummary(hotel),
+    hotel: toHotelSummary(hotel, aggregate.get(hotel.id)),
     description: hotel.summary,
     address: hotel.address,
     checkInTime: hotel.checkInTime,
