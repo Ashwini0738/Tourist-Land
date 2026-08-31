@@ -76,3 +76,11 @@ jobs:
 
       - name: Run seeded API journey
         run: pnpm --filter @workspace/api-server run test:demo-e2e
+
+      - name: Collect PostgreSQL service logs after failure
+        if: ${{ failure() }}
+        run: |
+          echo "::group::PostgreSQL service logs (supplemental infrastructure diagnostics)"
+          echo "The failed step above remains the primary application or test result."
+          docker logs "${{ job.services.postgres.id }}" 2>&1 || true
+          echo "::endgroup::"
