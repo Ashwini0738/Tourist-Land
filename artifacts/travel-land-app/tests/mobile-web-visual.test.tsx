@@ -97,42 +97,56 @@ jest.mock('expo-router', () => {
         tabBarStyle: object;
         tabBarItemStyle: object;
         tabBarLabelStyle: object;
+        tabBarLabelPosition?: string;
       };
       children: React.ReactNode;
-    }) => (
-      <MockView testID="web-tab-bar" style={screenOptions.tabBarStyle}>
-        {MockReact.Children.toArray(children)
-          .filter((screen: React.ReactNode) => screen && (screen as React.ReactElement<{ options?: { href?: string | null } }>).props.options?.href !== null)
-          .map((screen: React.ReactNode) => {
-            const element = screen as React.ReactElement<{
-              name: string;
-              options?: {
-                title?: string;
-                tabBarLabel?: string;
-                tabBarIcon?: (props: { color: string; focused: boolean }) => React.ReactNode;
-              };
-            }>;
-            const options = element.props.options ?? {};
-            const focused = element.props.name === 'index';
-            const color = focused
-              ? screenOptions.tabBarActiveTintColor
-              : screenOptions.tabBarInactiveTintColor;
-            return (
-              <MockView
-                key={element.props.name}
-                testID={`web-tab-${element.props.name}`}
-                style={screenOptions.tabBarItemStyle}
-                accessibilityState={{ selected: focused }}
+    }) => {
+      const tabs = MockReact.Children.toArray(children)
+        .filter((screen: React.ReactNode) => screen && (screen as React.ReactElement<{ options?: { href?: string | null } }>).props.options?.href !== null)
+        .map((screen: React.ReactNode) => {
+          const element = screen as React.ReactElement<{
+            name: string;
+            options?: {
+              title?: string;
+              tabBarLabel?: string;
+              tabBarIcon?: (props: { color: string; focused: boolean }) => React.ReactNode;
+            };
+          }>;
+          const options = element.props.options ?? {};
+          const focused = element.props.name === 'index';
+          const color = focused
+            ? screenOptions.tabBarActiveTintColor
+            : screenOptions.tabBarInactiveTintColor;
+          return (
+            <MockView
+              key={element.props.name}
+              testID={`web-tab-${element.props.name}`}
+              style={screenOptions.tabBarItemStyle}
+              accessibilityState={{ selected: focused }}
+              accessibilityRole="tab"
+            >
+              {options.tabBarIcon?.({ color, focused })}
+              <MockText
+                testID={`web-tab-label-${element.props.name}`}
+                style={screenOptions.tabBarLabelStyle}
               >
-                {options.tabBarIcon?.({ color, focused })}
-                <MockText style={screenOptions.tabBarLabelStyle}>
-                  {options.tabBarLabel ?? options.title}
-                </MockText>
-              </MockView>
-            );
-          })}
-      </MockView>
-    ),
+                {options.tabBarLabel ?? options.title}
+              </MockText>
+            </MockView>
+          );
+        });
+
+      return (
+        <>
+          <MockView testID="web-tab-bar" style={screenOptions.tabBarStyle}>
+            {tabs}
+          </MockView>
+          <MockText testID="web-tab-label-position">
+            {screenOptions.tabBarLabelPosition}
+          </MockText>
+        </>
+      );
+    },
   };
 });
 
@@ -249,6 +263,56 @@ const queryResult = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+const primaryTabs = [
+  ['index', 'Home', 'home'],
+  ['explore', 'Explore', 'compass'],
+  ['bookings', 'Bookings', 'calendar'],
+  ['land', 'Land', 'map'],
+  ['profile', 'Profile', 'user'],
+] as const;
+
+function assertTabContract(condition: unknown, message: string): asserts condition {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
+
+function expectUsableWebTab(
+  screen: ReturnType<typeof render>,
+  width: number,
+  name: string,
+  label: string,
+  icon: string,
+) {
+  const tab = screen.getByTestId(`web-tab-${name}`);
+  const itemStyle = StyleSheet.flatten(tab.props.style);
+  const availableItemWidth = width / primaryTabs.length;
+
+  assertTabContract(tab.props.accessibilityRole === 'tab', `${label} tab lost its touch target role`);
+  assertTabContract(itemStyle.flex === 1, `${label} tab no longer participates in equal-width layout`);
+  assertTabContract(
+    itemStyle.minHeight >= 64,
+    `${label} tab touch target collapsed below the 64px mobile-web minimum`,
+  );
+  assertTabContract(
+    itemStyle.minWidth >= 56,
+    `${label} tab touch target collapsed below the 56px mobile-web minimum`,
+  );
+  assertTabContract(
+    itemStyle.paddingHorizontal >= 2,
+    `${label} tab lost the horizontal breathing room needed to keep its label readable`,
+  );
+  assertTabContract(
+    availableItemWidth >= 56,
+    `${label} tab only has ${availableItemWidth}px at ${width}px; five primary tabs would no longer fit the minimum width`,
+  );
+  assertTabContract(
+    screen.getByTestId(`web-tab-label-${name}`).props.children === label,
+    `${label} tab label is missing or clipped`,
+  );
+  assertTabContract(screen.getByTestId(`platform-icon-${icon}`), `${label} tab icon is missing`);
+}
+
 beforeAll(() => {
   Object.defineProperty(Platform, 'OS', { configurable: true, get: () => 'web' });
 });
@@ -287,32 +351,19 @@ describe('mobile web visual contracts', () => {
     expect(tabBarStyle.paddingTop).toBe(8);
     expect(tabBarStyle.paddingBottom).toBe(12);
 
-    const tabs = [
-      ['index', 'Home', 'home'],
-      ['explore', 'Explore', 'compass'],
-      ['bookings', 'Bookings', 'calendar'],
-      ['land', 'Land', 'map'],
-      ['profile', 'Profile', 'user'],
-    ] as const;
-
-    for (const [name, label, icon] of tabs) {
-      const tab = screen.getByTestId(`web-tab-${name}`);
-      const itemStyle = StyleSheet.flatten(tab.props.style);
-      expect(itemStyle.flex).toBe(1);
-      expect(itemStyle.minHeight).toBeGreaterThanOrEqual(64);
-      expect(itemStyle.minWidth).toBeGreaterThanOrEqual(56);
-      expect(itemStyle.paddingHorizontal).toBeGreaterThanOrEqual(2);
-      expect(screen.getByText(label)).toBeTruthy();
-      expect(screen.getByTestId(`platform-icon-${icon}`)).toBeTruthy();
-    }
-
-    const labelStyle = StyleSheet.flatten(
-      screen.getByText('Bookings').props.style,
+    const renderedTabs = screen.getByTestId('web-tab-bar').props.children;
+    assertTabContract(
+      Array.isArray(renderedTabs) && renderedTabs.length === primaryTabs.length,
+      `Expo Router changed the tab layout and removed a primary destination (expected ${primaryTabs.length}, got ${Array.isArray(renderedTabs) ? renderedTabs.length : 0})`,
     );
-    expect(labelStyle.fontSize).toBe(11);
-    expect(labelStyle.lineHeight).toBeUndefined();
-    expect(labelStyle.flexShrink).toBe(1);
-    expect(labelStyle.textAlign).toBe('center');
+    assertTabContract(
+      screen.getByTestId('web-tab-bar').props.accessibilityRole === undefined,
+      'Expo Router changed the web tab bar landmark semantics',
+    );
+
+    for (const [name, label, icon] of primaryTabs) {
+      expectUsableWebTab(screen, width, name, label, icon);
+    }
 
     expect(screen.getByTestId('web-tab-index').props.accessibilityState).toEqual({ selected: true });
     expect(screen.getByTestId('web-tab-bookings').props.accessibilityState).toEqual({ selected: false });
@@ -320,32 +371,60 @@ describe('mobile web visual contracts', () => {
     expect(screen.getByTestId('platform-icon-calendar').props.color).toBe(mockColors.mutedForeground);
   });
 
-  it('keeps every primary label readable when web text is scaled', () => {
+  it('pins the supported Expo Router web tab-label contract', () => {
+    const appPackage = require('../package.json') as {
+      devDependencies?: { 'expo-router'?: string };
+    };
+    const installedExpoRouter = require('expo-router/package.json') as { version: string };
+
+    assertTabContract(
+      appPackage.devDependencies?.['expo-router'] === '~6.0.24',
+      'The visual contract must declare the supported Expo Router 6.0 release line (~6.0.24)',
+    );
+    assertTabContract(
+      installedExpoRouter.version === '6.0.24',
+      `The visual contract is not running against the Expo Router version declared by the app (found ${installedExpoRouter.version})`,
+    );
+  });
+
+  it('keeps web labels below icons and readable when text is scaled', () => {
     const screen = renderAtWidth(<TabLayout />, 320);
-    const labels = ['Home', 'Explore', 'Bookings', 'Land', 'Profile'];
     const tabBar = screen.getByTestId('web-tab-bar');
     const tabBarStyle = StyleSheet.flatten(tabBar.props.style);
 
-    expect(tabBarStyle.minHeight).toBeGreaterThanOrEqual(96);
-    expect(tabBarStyle.height).toBeGreaterThanOrEqual(96);
+    assertTabContract(
+      tabBarStyle.minHeight >= 96,
+      'Web tab bar height collapsed and can clip scaled labels',
+    );
+    assertTabContract(
+      tabBarStyle.height >= 96,
+      'Web tab bar height collapsed and can clip scaled labels',
+    );
+    assertTabContract(
+      screen.getByTestId('web-tab-label-position').props.children === 'below-icon',
+      'Expo Router changed the web tab label position and may place labels beside or over icons',
+    );
+    const renderedTabs = screen.getByTestId('web-tab-bar').props.children;
+    assertTabContract(
+      Array.isArray(renderedTabs) && renderedTabs.length === primaryTabs.length,
+      `Expo Router stopped rendering one or more primary web tabs (expected ${primaryTabs.length}, got ${Array.isArray(renderedTabs) ? renderedTabs.length : 0})`,
+    );
 
-    for (const label of labels) {
-      const text = screen.getByText(label);
+    for (const [name, label, icon] of primaryTabs) {
+      expectUsableWebTab(screen, 320, name, label, icon);
+      const text = screen.getByTestId(`web-tab-label-${name}`);
       const style = StyleSheet.flatten(text.props.style);
       const fontSizeAtLargerScale = style.fontSize * 1.5;
 
-      expect(text.props.children).toBe(label);
-      expect(style.flexShrink).toBe(1);
-      expect(style.textAlign).toBe('center');
-      expect(style.lineHeight).toBeUndefined();
-      expect(fontSizeAtLargerScale).toBeGreaterThan(style.fontSize);
+      assertTabContract(style.fontSize > 0, `${label} label has no readable base font size`);
+      assertTabContract(style.flexShrink === 1, `${label} label cannot shrink or wrap after text scaling`);
+      assertTabContract(style.textAlign === 'center', `${label} label is not centered and may be visually clipped`);
+      assertTabContract(style.lineHeight === undefined, `${label} label has a fixed line height that can clip scaled text`);
+      assertTabContract(fontSizeAtLargerScale > style.fontSize, `${label} label did not preserve text growth at 150%`);
     }
 
-    for (const name of ['index', 'explore', 'bookings', 'land', 'profile']) {
-      const itemStyle = StyleSheet.flatten(screen.getByTestId(`web-tab-${name}`).props.style);
-      expect(itemStyle.minHeight).toBeGreaterThanOrEqual(64);
-      expect(itemStyle.minWidth).toBeGreaterThanOrEqual(56);
-    }
+    expect(screen.getByTestId('web-tab-index').props.accessibilityState).toEqual({ selected: true });
+    expect(screen.getByTestId('web-tab-bookings').props.accessibilityState).toEqual({ selected: false });
   });
 
   it.each([375, 768])('keeps the shared hierarchy intact at %ipx', async (width) => {

@@ -732,7 +732,7 @@ importers:
         specifier: ~19.0.8
         version: 19.0.8(expo@54.0.37)
       expo-router:
-        specifier: ~6.0.17
+        specifier: ~6.0.24
         version: 6.0.24(d2d0131e9870e7d84f794af695cc1804)
       expo-splash-screen:
         specifier: ~31.0.12

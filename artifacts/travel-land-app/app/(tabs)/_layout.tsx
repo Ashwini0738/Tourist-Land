@@ -59,6 +59,7 @@ function ClassicTabLayout() {
         tabBarLabelStyle: {
           ...(isWeb ? webTabLabel : { fontSize: 10, fontWeight: '700', marginTop: 2 }),
         },
+        tabBarLabelPosition: isWeb ? 'below-icon' : undefined,
         tabBarBackground: () =>
           isIOS ? (
             <BlurView
