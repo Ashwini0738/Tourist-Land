@@ -1895,6 +1895,15 @@ export const CreatePropertyEnquiryParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const createPropertyEnquiryHeaderIdempotencyKeyMin = 8;
+export const createPropertyEnquiryHeaderIdempotencyKeyMax = 128;
+
+
+
+export const CreatePropertyEnquiryHeader = zod.object({
+  "Idempotency-Key": zod.string().min(createPropertyEnquiryHeaderIdempotencyKeyMin).max(createPropertyEnquiryHeaderIdempotencyKeyMax).describe('Client-generated key reused when safely retrying the same create request.')
+})
+
 export const createPropertyEnquiryBodyMessageMax = 2000;
 
 

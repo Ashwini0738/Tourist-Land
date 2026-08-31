@@ -129,6 +129,13 @@ async function startBookingCheckoutUnlocked(
   const claimReference = `${checkoutClaimPrefix}${idempotencyKey}`;
   if (shouldClaimPayment) {
     const staleClaimBefore = new Date(Date.now() - checkoutClaimTimeoutMs);
+    const staleClaim = row.payment.providerReference?.startsWith(checkoutClaimPrefix)
+      ? and(
+          eq(payments.status, "processing"),
+          eq(payments.providerReference, row.payment.providerReference),
+          lt(payments.updatedAt, staleClaimBefore),
+        )
+      : undefined;
     const [claimed] = await db
       .update(payments)
       .set({
@@ -142,11 +149,7 @@ async function startBookingCheckoutUnlocked(
         eq(payments.userId, userId),
         or(
           inArray(payments.status, ["unpaid", "failed", "cancelled"]),
-          and(
-            eq(payments.status, "processing"),
-            eq(payments.providerReference, row.payment.providerReference),
-            lt(payments.updatedAt, staleClaimBefore),
-          ),
+          ...(staleClaim ? [staleClaim] : []),
         ),
       ))
       .returning();
@@ -155,9 +158,9 @@ async function startBookingCheckoutUnlocked(
     }
   }
 
-  const price = await createBookingPrice(stripe, row.booking, idempotencyKey);
   let session: Stripe.Checkout.Session;
   try {
+    const price = await createBookingPrice(stripe, row.booking, idempotencyKey);
     session = await stripe.checkout.sessions.create(
       {
         mode: "payment",
@@ -185,7 +188,18 @@ async function startBookingCheckoutUnlocked(
     }
     throw error;
   }
-  if (!session.url) throw new Error("Stripe did not return a checkout URL.");
+  if (!session.url) {
+    if (shouldClaimPayment) {
+      await db.update(payments)
+        .set({ providerReference: null, status: "failed", updatedAt: new Date() })
+        .where(and(
+          eq(payments.id, row.payment.id),
+          eq(payments.userId, userId),
+          eq(payments.providerReference, claimReference),
+        ));
+    }
+    throw new Error("Stripe did not return a checkout URL.");
+  }
 
   const [updatedPayment] = await db
     .update(payments)

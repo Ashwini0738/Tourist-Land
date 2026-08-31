@@ -123,6 +123,7 @@ function renderRoutes() {
       <Stack.Screen name="admin" options={{ headerShown: false }} />
       <Stack.Screen name="destination/[id]" />
       <Stack.Screen name="property/[id]" />
+      <Stack.Screen name="property-enquiry" />
       <Stack.Screen name="booking" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="reviews" />

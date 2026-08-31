@@ -297,7 +297,7 @@ function ClerkProviderWithRoutes() {
       localization={{
         signIn: {
           start: {
-            title: 'Northstar operations',
+            title: 'Travel & Land operations',
             subtitle: 'Sign in to access the administrator console',
           },
         },
