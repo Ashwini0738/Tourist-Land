@@ -329,7 +329,7 @@ export const bookings = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     userId: uuid("user_id").references(() => users.id, { onDelete: "restrict" }).notNull(),
     reference: text("reference").notNull().unique(),
-    idempotencyKey: text("idempotency_key").unique(),
+    idempotencyKey: text("idempotency_key"),
     hotelCatalogId: text("hotel_catalog_id").notNull(),
     startsOn: date("starts_on").notNull(),
     endsOn: date("ends_on").notNull(),
@@ -346,6 +346,7 @@ export const bookings = pgTable(
     ...timestamps,
   },
   (table) => [
+    uniqueIndex("booking_user_idempotency_unique").on(table.userId, table.idempotencyKey),
     check("booking_status_valid", sql`${table.status} in ('pending_payment', 'confirmed', 'cancelled')`),
   ],
 );

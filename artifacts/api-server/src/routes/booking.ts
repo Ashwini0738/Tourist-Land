@@ -192,6 +192,7 @@ export async function createUserBooking(userId: string, input: BookingRequest, i
   const pricing = calculateBookingPricing(input, rooms);
 
   const result = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`${userId}:${idempotencyKey}`}))`);
     const existing = await tx.select({ booking: bookings }).from(bookings)
       .where(and(eq(bookings.userId, userId), eq(bookings.idempotencyKey, idempotencyKey)));
     if (existing[0]) {
@@ -266,8 +267,18 @@ export async function createUserBooking(userId: string, input: BookingRequest, i
       totalAmount: String(pricing.total),
       currency: pricing.currency,
       status: "pending_payment",
-    }).returning();
-    if (!booking) throw new Error("Booking creation did not return a booking.");
+    }).onConflictDoNothing({ target: [bookings.userId, bookings.idempotencyKey] }).returning();
+    if (!booking) {
+      const duplicate = await tx.select({ booking: bookings }).from(bookings)
+        .where(and(eq(bookings.userId, userId), eq(bookings.idempotencyKey, idempotencyKey)));
+      if (duplicate[0]) {
+        const saved = await getBookingRows(tx, userId, duplicate[0].booking.reference);
+        const payload = groupBookingRows(saved);
+        if (!payload) throw new BookingNotFoundError("The previous booking could not be loaded.");
+        return { booking: payload, created: false };
+      }
+      throw new Error("Booking creation did not return a booking.");
+    }
 
     const persistedRooms = await tx.select().from(hotelRooms)
       .where(sql`${hotelRooms.catalogRoomId} in (${sql.join(rooms.map((room) => sql`${room.id}`), sql`, `)})`);

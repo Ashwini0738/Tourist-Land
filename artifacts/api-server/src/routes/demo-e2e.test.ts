@@ -229,6 +229,89 @@ test("simultaneous bookings cannot oversell the final available room", { skip: s
   assert.deepEqual(newPayments.map((payment) => payment.bookingId), createdBookingIds);
 });
 
+test("concurrent booking retries return one saved booking and payment", { skip: skipUnlessPhase("journey") }, async (t) => {
+  await runDemoCommand("reset");
+  await runDemoCommand("seed");
+
+  const { db, bookingItems, bookings, notifications, payments } = await import("@workspace/db");
+  const bookingKey = "demo-concurrent-booking-retry";
+  const testStartedAt = new Date();
+  const server = await startTestServer();
+  t.after(() => server.close());
+  t.after(async () => {
+    const createdBookings = await db.select({
+      id: bookings.id,
+      reference: bookings.reference,
+    }).from(bookings).where(eq(bookings.idempotencyKey, bookingKey));
+    const createdBookingIds = createdBookings.map((booking) => booking.id);
+    if (createdBookingIds.length) {
+      const generatedNotifications = await db.select({ id: notifications.id, data: notifications.data })
+        .from(notifications)
+        .where(eq(notifications.userId, demoIds.users.traveller));
+      const notificationIds = generatedNotifications
+        .filter((notification) => (
+          notification.data
+          && typeof notification.data === "object"
+          && !Array.isArray(notification.data)
+          && createdBookings.some((booking) => (
+            (notification.data as Record<string, unknown>).relatedId === booking.reference
+          ))
+        ))
+        .map((notification) => notification.id);
+      if (notificationIds.length) await db.delete(notifications).where(inArray(notifications.id, notificationIds));
+      await db.delete(payments).where(inArray(payments.bookingId, createdBookingIds));
+      await db.delete(bookingItems).where(inArray(bookingItems.bookingId, createdBookingIds));
+      await db.delete(bookings).where(inArray(bookings.id, createdBookingIds));
+    }
+    await runDemoCommand("reset");
+  });
+
+  const bookingBody = {
+    hotelId: "demo-hotel-1",
+    checkIn: "2030-06-10",
+    checkOut: "2030-06-12",
+    adults: 2,
+    children: 0,
+    rooms: 1,
+    items: [{ roomId: demoRooms[0].catalogRoomId, quantity: 1 }],
+    guest: { name: "Demo Traveller", email: "traveller@demo.travel", phone: "+91 9000000001" },
+  };
+  const results = await Promise.all([1, 2].map(() => request(
+    server.baseUrl,
+    "/v1/bookings",
+    "demo_traveller",
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": bookingKey },
+      body: JSON.stringify(bookingBody),
+    },
+  )));
+
+  assert.deepEqual(
+    results.map((result) => result.response.status),
+    [201, 201],
+    JSON.stringify(results.map((result) => result.body)),
+  );
+  assert.deepEqual(results[0].body, results[1].body);
+
+  const createdBookings = await db.select({ id: bookings.id })
+    .from(bookings).where(eq(bookings.idempotencyKey, bookingKey));
+  assert.equal(createdBookings.length, 1);
+
+  const createdItems = await db.select({ bookingId: bookingItems.bookingId })
+    .from(bookingItems).where(eq(bookingItems.bookingId, createdBookings[0].id));
+  assert.equal(createdItems.length, 1);
+
+  const newPayments = await db.select({ bookingId: payments.bookingId })
+    .from(payments)
+    .where(and(
+      eq(payments.userId, demoIds.users.traveller),
+      eq(payments.provider, "stripe"),
+      gte(payments.createdAt, testStartedAt),
+    ));
+  assert.deepEqual(newPayments.map((payment) => payment.bookingId), [createdBookings[0].id]);
+});
+
 test("API startup/import validation", { skip: skipUnlessPhase("startup") }, async (t) => {
   const { default: app } = await import("../app.ts");
   assert.equal(typeof app, "function");
