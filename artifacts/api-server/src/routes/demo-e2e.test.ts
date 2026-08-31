@@ -5,10 +5,10 @@ import http from "node:http";
 import path from "node:path";
 import { promisify } from "node:util";
 import test from "node:test";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, gte, inArray } from "drizzle-orm";
 import express from "express";
 import { assertSafeDemoEnvironment } from "@workspace/db/demo-config";
-import { demoIds, demoProperties, demoReviews } from "@workspace/db/seed-data";
+import { demoIds, demoProperties, demoReviews, demoRooms } from "@workspace/db/seed-data";
 
 const execFileAsync = promisify(execFile);
 const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -116,6 +116,118 @@ async function request(
     body: text ? JSON.parse(text) as Record<string, any> : {},
   };
 }
+
+test("simultaneous bookings cannot oversell the final available room", { skip: skipUnlessPhase("journey") }, async (t) => {
+  await runDemoCommand("reset");
+  await runDemoCommand("seed");
+
+  const { db, bookingItems, bookings, notifications, payments, roomAvailability } = await import("@workspace/db");
+  const room = demoRooms[0];
+  const bookingKeys = ["demo-concurrent-booking-a", "demo-concurrent-booking-b"];
+  const checkIn = "2030-06-10";
+  const checkOut = "2030-06-12";
+  const testStartedAt = new Date();
+
+  await db.update(roomAvailability)
+    .set({ availableUnits: 2 })
+    .where(and(
+      eq(roomAvailability.roomId, room.id),
+      inArray(roomAvailability.date, [checkIn, "2030-06-11"]),
+    ));
+
+  const server = await startTestServer();
+  t.after(() => server.close());
+  t.after(async () => {
+    const createdBookings = await db.select({
+      id: bookings.id,
+      reference: bookings.reference,
+      idempotencyKey: bookings.idempotencyKey,
+    }).from(bookings).where(inArray(bookings.idempotencyKey, bookingKeys));
+    const createdBookingIds = createdBookings.map((booking) => booking.id);
+    if (createdBookingIds.length) {
+      await db.delete(payments).where(inArray(payments.bookingId, createdBookingIds));
+      await db.delete(bookingItems).where(inArray(bookingItems.bookingId, createdBookingIds));
+      await db.delete(bookings).where(inArray(bookings.id, createdBookingIds));
+      const generatedNotifications = await db.select({ id: notifications.id, data: notifications.data })
+        .from(notifications)
+        .where(eq(notifications.userId, demoIds.users.traveller));
+      const notificationIds = generatedNotifications
+        .filter((notification) => (
+          notification.data
+          && typeof notification.data === "object"
+          && !Array.isArray(notification.data)
+          && createdBookings.some((booking) => (
+            (notification.data as Record<string, unknown>).relatedId === booking.reference
+          ))
+        ))
+        .map((notification) => notification.id);
+      if (notificationIds.length) await db.delete(notifications).where(inArray(notifications.id, notificationIds));
+    }
+    await runDemoCommand("reset");
+  });
+
+  const availability = await request(
+    server.baseUrl,
+    `/v1/hotels/demo-hotel-1/availability?checkIn=${checkIn}&checkOut=${checkOut}&adults=2&children=0&rooms=1`,
+  );
+  assert.equal(availability.response.status, 200, JSON.stringify(availability.body));
+  assert.equal(
+    availability.body.items.find((item: any) => item.id === room.catalogRoomId)?.availableUnits,
+    1,
+  );
+
+  const bookingBody = {
+    hotelId: "demo-hotel-1",
+    checkIn,
+    checkOut,
+    adults: 2,
+    children: 0,
+    rooms: 1,
+    items: [{ roomId: room.catalogRoomId, quantity: 1 }],
+    guest: { name: "Demo Traveller", email: "traveller@demo.travel", phone: "+91 9000000001" },
+  };
+  const results = await Promise.all(bookingKeys.map((idempotencyKey) => request(
+    server.baseUrl,
+    "/v1/bookings",
+    "demo_traveller",
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": idempotencyKey },
+      body: JSON.stringify(bookingBody),
+    },
+  )));
+
+  assert.deepEqual(
+    results.map((result) => result.response.status).sort((a, b) => a - b),
+    [201, 409],
+    JSON.stringify(results.map((result) => result.body)),
+  );
+  const winnerIndex = results.findIndex((result) => result.response.status === 201);
+  const loser = results.find((result) => result.response.status === 409);
+  assert.notEqual(winnerIndex, -1);
+  assert.equal(loser?.body.error?.code, "BOOKING_CONFLICT");
+  assert.match(loser?.body.error?.message ?? "", /no longer available/i);
+
+  const createdBookings = await db.select({
+    id: bookings.id,
+    idempotencyKey: bookings.idempotencyKey,
+  }).from(bookings).where(inArray(bookings.idempotencyKey, bookingKeys));
+  assert.equal(createdBookings.length, 1);
+  assert.equal(createdBookings[0].idempotencyKey, bookingKeys[winnerIndex]);
+
+  const createdBookingIds = createdBookings.map((booking) => booking.id);
+  const createdItems = await db.select({ bookingId: bookingItems.bookingId })
+    .from(bookingItems).where(inArray(bookingItems.bookingId, createdBookingIds));
+  assert.deepEqual(createdItems.map((item) => item.bookingId), createdBookingIds);
+  const newPayments = await db.select({ bookingId: payments.bookingId })
+    .from(payments)
+    .where(and(
+      eq(payments.userId, demoIds.users.traveller),
+      eq(payments.provider, "stripe"),
+      gte(payments.createdAt, testStartedAt),
+    ));
+  assert.deepEqual(newPayments.map((payment) => payment.bookingId), createdBookingIds);
+});
 
 test("API startup/import validation", { skip: skipUnlessPhase("startup") }, async (t) => {
   const { default: app } = await import("../app.ts");
