@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   container: { marginTop: spacing.xl, marginBottom: spacing.md },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginHorizontal: spacing.lg, marginBottom: spacing.md },
   kicker: { fontSize: 8, fontWeight: '800', letterSpacing: 1.25, marginBottom: 5 },
-  title: { fontSize: 20, lineHeight: 25, fontWeight: '700', letterSpacing: -0.3 },
+  title: { fontSize: 21, lineHeight: 26, fontWeight: '700', letterSpacing: -0.4 },
   viewAll: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 },
   viewAllText: { fontSize: 11, fontWeight: '800' },
   arrow: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

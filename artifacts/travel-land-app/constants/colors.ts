@@ -55,6 +55,10 @@ const colors = {
     success: '#2d8063',
     warning: '#b66e2c',
     overlay: 'rgba(16,45,58,0.58)',
+    gradientStart: '#143f4a',
+    gradientEnd: '#2f806f',
+    gradientWarm: '#d9825b',
+    gradientSoft: '#eef4ee',
   },
 
   dark: {
@@ -82,6 +86,10 @@ const colors = {
     success: '#8fc4b2',
     warning: '#e7b76b',
     overlay: 'rgba(5,18,25,0.68)',
+    gradientStart: '#183b46',
+    gradientEnd: '#437b6d',
+    gradientWarm: '#b96f54',
+    gradientSoft: '#203c42',
   },
 
   radius: 14,

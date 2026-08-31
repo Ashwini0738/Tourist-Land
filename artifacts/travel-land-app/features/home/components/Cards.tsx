@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, Image, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { useColors } from '@/hooks/useColors';
@@ -15,7 +16,11 @@ export function BannerCard({ item }: { item: Banner }) {
       style={{ width: 300, height: 196, borderRadius: radii.lg, overflow: 'hidden', ...elevation.card }}
     >
       <Image source={getImageSource(item.imageKey)} style={{ ...StyleSheet.absoluteFillObject, width: undefined, height: undefined }} />
-      <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(16,45,58,0.45)' }} />
+      <LinearGradient
+        pointerEvents="none"
+        colors={['rgba(16,45,58,0.04)', 'rgba(16,45,58,0.82)']}
+        style={StyleSheet.absoluteFill}
+      />
       <View style={{ position: 'absolute', top: 20, left: 20 }}>
         <Text style={{ color: '#fff', fontSize: 24, fontWeight: '700' }}>{item.title}</Text>
         <Text style={{ color: '#EAB308', fontSize: 13, fontWeight: '700', marginTop: 4 }}>{item.subtitle}</Text>
@@ -35,6 +40,7 @@ export function DestinationCard({ item, isFavorite, toggleFavorite }: { item: De
       style={{ width: 232, height: 276, borderRadius: radii.lg, overflow: 'hidden', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, ...elevation.card }}
     >
       <Image source={getImageSource(item.imageKey)} style={{ width: '100%', height: 140 }} />
+      <LinearGradient pointerEvents="none" colors={['transparent', 'rgba(16,45,58,0.28)']} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 140 }} />
       <Pressable accessibilityRole="button" accessibilityLabel={`${isFavorite ? 'Remove' : 'Add'} ${item.name} ${isFavorite ? 'from' : 'to'} favorites`} onPress={(event) => { event.stopPropagation(); toggleFavorite(); }} style={{ position: 'absolute', top: 12, right: 12, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(16,45,58,0.68)', alignItems: 'center', justifyContent: 'center' }}>
         <Feather name="heart" size={16} color={isFavorite ? colors.destructive : '#fff'} fill={isFavorite ? colors.destructive : 'transparent'} />
       </Pressable>
@@ -59,6 +65,7 @@ export function PlaceCard({ item, isFavorite, toggleFavorite }: { item: Place, i
       style={{ width: 232, borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: spacing.sm, ...elevation.card }}
     >
       <Image source={getImageSource(item.imageKey)} style={{ width: '100%', height: 120, borderRadius: 12 }} />
+      <LinearGradient pointerEvents="none" colors={['transparent', 'rgba(16,45,58,0.24)']} style={{ position: 'absolute', top: spacing.sm, left: spacing.sm, right: spacing.sm, height: 120, borderRadius: 12 }} />
       <Pressable accessibilityRole="button" accessibilityLabel={`${isFavorite ? 'Remove' : 'Add'} ${item.name} ${isFavorite ? 'from' : 'to'} favorites`} onPress={(event) => { event.stopPropagation(); toggleFavorite(); }} style={{ position: 'absolute', top: 20, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(16,45,58,0.68)', alignItems: 'center', justifyContent: 'center' }}>
         <Feather name="heart" size={16} color={isFavorite ? colors.destructive : '#fff'} fill={isFavorite ? colors.destructive : 'transparent'} />
       </Pressable>

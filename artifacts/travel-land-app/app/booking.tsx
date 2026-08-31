@@ -8,6 +8,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { elevation } from '@/constants/theme';
 
 type RoomSelection = { roomId: string; quantity: number };
 
@@ -180,21 +181,21 @@ function SummaryRow({ label, value, colors }: { label: string; value: string; co
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20 },
+  content: { paddingHorizontal: 20, paddingBottom: 18 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 26 },
   headerTitle: { fontSize: 15, fontWeight: '700' },
   kicker: { fontSize: 10, fontWeight: '700', letterSpacing: 1.4, marginBottom: 8 },
   title: { fontSize: 29, lineHeight: 35, fontWeight: '700', letterSpacing: -0.7 },
   subtitle: { fontSize: 13, lineHeight: 19, marginTop: 8, marginBottom: 18 },
-  hotelCard: { borderWidth: 1, borderRadius: 18, padding: 11, flexDirection: 'row', marginBottom: 25 },
+  hotelCard: { borderWidth: 1, borderRadius: 20, padding: 11, flexDirection: 'row', marginBottom: 25, ...elevation.card },
   hotelImage: { width: 82, height: 82, borderRadius: 13 },
   hotelCopy: { flex: 1, marginLeft: 12, justifyContent: 'center' },
   hotelName: { fontSize: 16, fontWeight: '700' },
   hotelLocation: { fontSize: 11, marginTop: 5 },
   hotelStay: { fontSize: 11, fontWeight: '700', marginTop: 8 },
-  sectionLabel: { fontSize: 14, fontWeight: '800', marginBottom: 10 },
-  input: { height: 52, borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, fontSize: 14, marginBottom: 10 },
-  summary: { borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 13 },
+  sectionLabel: { fontSize: 14, fontWeight: '800', marginBottom: 10, marginTop: 4 },
+  input: { height: 54, borderWidth: 1, borderRadius: 16, paddingHorizontal: 14, fontSize: 14, marginBottom: 10 },
+  summary: { borderWidth: 1, borderRadius: 20, padding: 17, marginBottom: 13, ...elevation.card },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   summaryLabel: { fontSize: 12 },
   summaryValue: { fontSize: 12, fontWeight: '700', textAlign: 'right', flex: 1, marginLeft: 15 },

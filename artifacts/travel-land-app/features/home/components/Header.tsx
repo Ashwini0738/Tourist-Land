@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,7 +26,12 @@ export function Header() {
   const firstName = user?.firstName || 'Explorer';
 
   return (
-    <View style={styles.header}>
+    <LinearGradient
+      colors={[colors.light.navy, '#1e5961', colors.light.navy]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.header}
+    >
       <View style={[styles.topRow, { paddingTop: insets.top + spacing.md }]}>
         <View style={styles.brand}>
           <View style={styles.brandMark}><Text style={styles.brandMarkText}>T</Text></View>
@@ -58,15 +64,15 @@ export function Header() {
         <Text style={styles.name}>{firstName}</Text>
         <Text style={styles.prompt}>Where will you explore today?</Text>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { backgroundColor: colors.light.navy, paddingHorizontal: spacing.lg, paddingBottom: 44, borderBottomLeftRadius: radii.xl, borderBottomRightRadius: radii.xl },
+  header: { paddingHorizontal: spacing.lg, paddingBottom: 44, borderBottomLeftRadius: radii.xl, borderBottomRightRadius: radii.xl, overflow: 'hidden' },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  brandMark: { width: 32, height: 32, borderRadius: 11, backgroundColor: colors.light.accent, alignItems: 'center', justifyContent: 'center' },
+  brandMark: { width: 36, height: 36, borderRadius: 13, backgroundColor: colors.light.accent, alignItems: 'center', justifyContent: 'center' },
   brandMarkText: { color: colors.light.accentForeground, fontSize: 18, fontWeight: '800' },
   brandName: { color: '#fff', fontSize: 10, fontWeight: '800', letterSpacing: 1.25 },
   brandCaption: { color: 'rgba(255,255,255,0.48)', fontSize: 7, fontWeight: '700', letterSpacing: 0.7, marginTop: 3 },

@@ -3,6 +3,7 @@ import { useAuth, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 
@@ -124,6 +125,11 @@ export default function LoginScreen() {
 
   return (
       <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 16 }]}>
+        <LinearGradient pointerEvents="none" colors={[colors.gradientSoft, 'transparent']} style={styles.orb} />
+        <View style={styles.brandRow}>
+          <View style={[styles.brandMark, { backgroundColor: colors.accent }]}><Text style={[styles.brandMarkText, { color: colors.accentForeground }]}>T</Text></View>
+          <Text style={[styles.brandName, { color: colors.primary }]}>TRAVEL & LAND</Text>
+        </View>
         <View style={styles.copy}>
           <Text style={[styles.kicker, { color: colors.primary }]}>{isNew ? 'JOIN THE JOURNEY' : 'WELCOME BACK'}</Text>
           <Text style={[styles.title, { color: colors.foreground }]}>{isNew ? 'Start exploring.' : 'Your next chapter\nstarts here.'}</Text>
@@ -147,14 +153,19 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 24 },
-  copy: { marginTop: 32 },
+  container: { flex: 1, paddingHorizontal: 24, overflow: 'hidden' },
+  orb: { position: 'absolute', width: 300, height: 300, borderRadius: 150, top: -190, right: -90, opacity: 0.9 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  brandMark: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  brandMarkText: { fontSize: 17, fontWeight: '800' },
+  brandName: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
+  copy: { marginTop: 42 },
   kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 8 },
   title: { fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { fontSize: 15, lineHeight: 22, marginTop: 12, marginBottom: 32 },
-  input: { height: 56, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, fontSize: 15 },
+  input: { height: 58, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, fontSize: 15 },
   error: { fontSize: 13, lineHeight: 18, marginTop: 12 },
-  button: { height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  button: { height: 58, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, ...({ shadowColor: '#143f4a', shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 7 }, elevation: 5 }) },
   buttonText: { fontSize: 16, fontWeight: '700' },
   secondary: { alignItems: 'center', marginTop: 24 },
   secondaryText: { fontSize: 14, fontWeight: '600' },
