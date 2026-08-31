@@ -31,8 +31,14 @@ function ClassicTabLayout() {
           paddingTop: 8,
           paddingBottom: isWeb ? 10 : 8,
         },
-        tabBarItemStyle: { minHeight: 58 },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 2 },
+        tabBarItemStyle: { flex: 1, minHeight: 58, minWidth: 0 },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '700',
+          marginTop: 2,
+          flexShrink: 1,
+          textAlign: 'center',
+        },
         tabBarBackground: () =>
           isIOS ? (
             <BlurView

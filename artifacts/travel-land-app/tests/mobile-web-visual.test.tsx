@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth, useClerk, useUser } from '@clerk/expo';
@@ -11,6 +11,7 @@ import SavedScreen from '@/app/(tabs)/saved';
 import BookingsScreen from '@/app/(tabs)/bookings';
 import LandScreen from '@/app/(tabs)/land';
 import ProfileScreen from '@/app/(tabs)/profile';
+import TabLayout from '@/app/(tabs)/_layout';
 
 const mockUseSearchExplore = useSearchExplore as jest.Mock;
 const mockUseListExploreCategories = useListExploreCategories as jest.Mock;
@@ -50,6 +51,15 @@ jest.mock('@clerk/expo', () => ({
   useUser: jest.fn(),
 }));
 
+jest.mock('@/context/AuthSecurityContext', () => ({
+  useAuthSecurity: jest.fn(() => ({
+    isReady: true,
+    isUnlocked: true,
+    biometricsEnabled: false,
+    deviceAuthSetupComplete: true,
+  })),
+}));
+
 jest.mock('@workspace/api-client-react', () => ({
   getListHomeFeaturedQueryKey: () => ['/api/v1/home/featured'],
   getListHomeDestinationsQueryKey: () => ['/api/v1/home/destinations'],
@@ -69,10 +79,62 @@ jest.mock('@workspace/api-client-react', () => ({
   useListBookings: jest.fn(),
 }));
 
-jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), replace: jest.fn() },
-  useLocalSearchParams: jest.fn(() => ({})),
-}));
+jest.mock('expo-router', () => {
+  const MockReact = require('react');
+  const { View: MockView, Text: MockText } = require('react-native');
+
+  return {
+    router: { push: jest.fn(), replace: jest.fn() },
+    useLocalSearchParams: jest.fn(() => ({})),
+    Redirect: () => null,
+    Tabs: ({
+      screenOptions,
+      children,
+    }: {
+      screenOptions: {
+        tabBarActiveTintColor: string;
+        tabBarInactiveTintColor: string;
+        tabBarStyle: object;
+        tabBarItemStyle: object;
+        tabBarLabelStyle: object;
+      };
+      children: React.ReactNode;
+    }) => (
+      <MockView testID="web-tab-bar" style={screenOptions.tabBarStyle}>
+        {MockReact.Children.toArray(children)
+          .filter((screen: React.ReactNode) => screen && (screen as React.ReactElement<{ options?: { href?: string | null } }>).props.options?.href !== null)
+          .map((screen: React.ReactNode) => {
+            const element = screen as React.ReactElement<{
+              name: string;
+              options?: {
+                title?: string;
+                tabBarLabel?: string;
+                tabBarIcon?: (props: { color: string; focused: boolean }) => React.ReactNode;
+              };
+            }>;
+            const options = element.props.options ?? {};
+            const focused = element.props.name === 'index';
+            const color = focused
+              ? screenOptions.tabBarActiveTintColor
+              : screenOptions.tabBarInactiveTintColor;
+            return (
+              <MockView
+                key={element.props.name}
+                testID={`web-tab-${element.props.name}`}
+                style={screenOptions.tabBarItemStyle}
+                accessibilityState={{ selected: focused }}
+              >
+                {options.tabBarIcon?.({ color, focused })}
+                <MockText style={screenOptions.tabBarLabelStyle}>
+                  {options.tabBarLabel ?? options.title}
+                </MockText>
+              </MockView>
+            );
+          })}
+      </MockView>
+    ),
+  };
+});
 
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -98,7 +160,11 @@ jest.mock('@/context/RoleContext', () => ({
 }));
 
 jest.mock('@/components/PlatformIcon', () => ({
-  PlatformIcon: ({ name }: { name: string }) => require('react').createElement(require('react-native').Text, null, name),
+  PlatformIcon: ({ name, color }: { name: string; color?: string }) => require('react').createElement(
+    require('react-native').Text,
+    { testID: `platform-icon-${name}`, color },
+    name,
+  ),
 }));
 
 jest.mock('@/features/home/components/Header', () => ({
@@ -160,7 +226,9 @@ function renderAtWidth(element: React.ReactElement, width: number) {
       insets: { top: 0, right: 0, bottom: 0, left: 0 },
       frame: { x: 0, y: 0, width, height: 800 },
     }}>
-      {element}
+      <View testID={`web-frame-${width}`} style={{ width, height: 800 }}>
+        {element}
+      </View>
     </SafeAreaProvider>,
   );
 }
@@ -206,6 +274,42 @@ beforeEach(() => {
 });
 
 describe('mobile web visual contracts', () => {
+  it.each([375, 768])('keeps the shared tab bar usable at %ipx', (width) => {
+    const screen = renderAtWidth(<TabLayout />, width);
+    const frame = screen.getByTestId(`web-frame-${width}`);
+    const frameStyle = StyleSheet.flatten(frame.props.style);
+    expect(frameStyle.width).toBe(width);
+
+    const tabBar = screen.getByTestId('web-tab-bar');
+    const tabBarStyle = StyleSheet.flatten(tabBar.props.style);
+    expect(tabBarStyle.height).toBe(84);
+    expect(tabBarStyle.paddingTop).toBe(8);
+    expect(tabBarStyle.paddingBottom).toBe(10);
+
+    const tabs = [
+      ['index', 'Home', 'home'],
+      ['explore', 'Explore', 'compass'],
+      ['bookings', 'Bookings', 'calendar'],
+      ['land', 'Land', 'map'],
+      ['profile', 'Profile', 'user'],
+    ] as const;
+
+    for (const [name, label, icon] of tabs) {
+      const tab = screen.getByTestId(`web-tab-${name}`);
+      const itemStyle = StyleSheet.flatten(tab.props.style);
+      expect(itemStyle.flex).toBe(1);
+      expect(itemStyle.minHeight).toBeGreaterThanOrEqual(58);
+      expect(itemStyle.minWidth).toBe(0);
+      expect(screen.getByText(label)).toBeTruthy();
+      expect(screen.getByTestId(`platform-icon-${icon}`)).toBeTruthy();
+    }
+
+    expect(screen.getByTestId('web-tab-index').props.accessibilityState).toEqual({ selected: true });
+    expect(screen.getByTestId('web-tab-bookings').props.accessibilityState).toEqual({ selected: false });
+    expect(screen.getByTestId('platform-icon-home').props.color).toBe(mockColors.primary);
+    expect(screen.getByTestId('platform-icon-calendar').props.color).toBe(mockColors.mutedForeground);
+  });
+
   it.each([375, 768])('keeps the shared hierarchy intact at %ipx', async (width) => {
     const home = renderAtWidth(<HomeScreen />, width);
     expect(home.getByTestId('home-scroll-view')).toBeTruthy();
