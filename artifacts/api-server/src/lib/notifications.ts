@@ -1,5 +1,6 @@
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, notifications, pushTokens } from "@workspace/db";
+import { logger } from "./logger.ts";
 
 export type NotificationType =
   | "booking_created"
@@ -65,6 +66,54 @@ export async function createNotification(
 
 export type PropertyEnquiryPublicStatus = "contacted" | "closed";
 
+type PropertyEnquiryPushMessage = {
+  to: string;
+  title: string;
+  body: string;
+  data: {
+    propertyName: string;
+    status: PropertyEnquiryPublicStatus;
+  };
+};
+
+const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+const EXPO_PUSH_BATCH_SIZE = 100;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+async function sendExpoPushBatch(messages: PropertyEnquiryPushMessage[]) {
+  const response = await fetch(EXPO_PUSH_URL, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Accept-encoding": "gzip, deflate",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(messages),
+  });
+
+  let responseBody: unknown = null;
+  try {
+    responseBody = await response.json();
+  } catch {
+    // The status code is enough to classify an invalid provider response.
+  }
+
+  if (!response.ok) {
+    throw new Error(`Expo push provider returned HTTP ${response.status}.`);
+  }
+
+  const tickets = isRecord(responseBody) && Array.isArray(responseBody.data)
+    ? responseBody.data
+    : [];
+  const rejected = tickets.filter((ticket) => isRecord(ticket) && ticket.status === "error").length;
+  if (rejected > 0) {
+    logger.warn({ rejected, attempted: messages.length }, "Expo push provider rejected notification tickets");
+  }
+}
+
 export async function createPropertyEnquiryStatusNotification(
   userId: string,
   input: {
@@ -84,6 +133,49 @@ export async function createPropertyEnquiryStatusNotification(
     relatedId: input.propertyId,
     dedupeKey: `property-enquiry-status:${input.enquiryId}:${input.status}`,
   }, executor);
+}
+
+export async function sendPropertyEnquiryStatusPush(
+  userId: string,
+  input: {
+    propertyName: string;
+    status: PropertyEnquiryPublicStatus;
+  },
+) {
+  try {
+    const rows = await db
+      .select({ token: pushTokens.token })
+      .from(pushTokens)
+      .where(and(
+        eq(pushTokens.userId, userId),
+        inArray(pushTokens.platform, ["android", "ios"]),
+        isNull(pushTokens.revokedAt),
+      ));
+    if (!rows.length) return { attempted: 0 };
+
+    const messages = rows.map(({ token }): PropertyEnquiryPushMessage => ({
+      to: token,
+      title: "Property enquiry updated",
+      body: `Your enquiry for ${input.propertyName} is now ${input.status === "contacted" ? "Contacted" : "Closed"}.`,
+      data: {
+        propertyName: input.propertyName,
+        status: input.status,
+      },
+    }));
+
+    for (let start = 0; start < messages.length; start += EXPO_PUSH_BATCH_SIZE) {
+      const batch = messages.slice(start, start + EXPO_PUSH_BATCH_SIZE);
+      try {
+        await sendExpoPushBatch(batch);
+      } catch (error) {
+        logger.warn({ err: error, attempted: batch.length }, "Expo push delivery failed");
+      }
+    }
+    return { attempted: messages.length };
+  } catch (error) {
+    logger.warn({ err: error, userId }, "Could not load registered push tokens");
+    return { attempted: 0 };
+  }
 }
 
 export async function listNotifications(userId: string, page: number, limit: number) {

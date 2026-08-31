@@ -17,7 +17,10 @@ import {
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth.ts";
 import { requireApprovedVendor, requireRole } from "../middlewares/authorization.ts";
-import { createPropertyEnquiryStatusNotification } from "../lib/notifications.ts";
+import {
+  createPropertyEnquiryStatusNotification,
+  sendPropertyEnquiryStatusPush,
+} from "../lib/notifications.ts";
 import { dateRange, isDate, parseInteger, parseNumber, parseString, parseStringArray } from "./vendor-portal-logic.ts";
 
 export { dateRange, isDate, parseInteger, parseNumber, parseString, parseStringArray } from "./vendor-portal-logic.ts";
@@ -757,6 +760,10 @@ vendorPortalRoutes.patch("/v1/vendor/enquiries/:id", async (req, res): Promise<v
     sendError(res, 409, "ENQUIRY_STATE_INVALID", `An enquiry in ${currentStatus} status can only move to ${ENQUIRY_NEXT_STATUS[currentStatus] ?? "no further status"}.`);
     return;
   }
+  if (targetStatus === "new") {
+    sendError(res, 409, "ENQUIRY_STATE_INVALID", "An enquiry can only move to a public update status.");
+    return;
+  }
   const note = body?.note === undefined ? null : parseString(body.note, 500, true);
   if (note === undefined) {
     sendError(res, 400, "INVALID_ENQUIRY_NOTE", "The status note must be 500 characters or fewer.");
@@ -780,19 +787,23 @@ vendorPortalRoutes.patch("/v1/vendor/enquiries/:id", async (req, res): Promise<v
       note: note ?? defaultNote[targetStatus],
       changedBy: req.localUser!.id,
     }).returning();
-    if (targetStatus !== "new") {
-      await createPropertyEnquiryStatusNotification(owned.enquiry.userId, {
-        enquiryId: id,
-        propertyId: owned.property.id,
-        propertyName: owned.property.title,
-        status: targetStatus,
-      }, tx);
-    }
-    return { updated, history };
+    const notification = await createPropertyEnquiryStatusNotification(owned.enquiry.userId, {
+      enquiryId: id,
+      propertyId: owned.property.id,
+      propertyName: owned.property.title,
+      status: targetStatus,
+    }, tx);
+    return { updated, history, notification };
   });
   if (!saved) {
     sendError(res, 409, "ENQUIRY_STATE_INVALID", "The enquiry changed before this update could be saved.");
     return;
+  }
+  if (saved.notification) {
+    await sendPropertyEnquiryStatusPush(owned.enquiry.userId, {
+      propertyName: owned.property.title,
+      status: targetStatus,
+    });
   }
   const history = await enquiryHistory([id]);
   res.json(serializeVendorEnquiry(saved.updated, owned.property, owned.customer, history.get(id) ?? [saved.history]));
