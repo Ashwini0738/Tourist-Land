@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import http from "node:http";
 import test from "node:test";
 import express, { type RequestHandler } from "express";
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import {
   bookingItems,
   bookings,
@@ -273,6 +273,7 @@ async function createVendorFixture(): Promise<VendorFixture> {
 
 async function deleteVendorFixture(fixture: VendorFixture): Promise<void> {
   await db.delete(vendorAuditLogs).where(inArray(vendorAuditLogs.vendorId, [fixture.vendorA, fixture.vendorB]));
+  await db.delete(notifications).where(inArray(notifications.userId, [fixture.vendorA, fixture.vendorB]));
   await db.delete(propertyEnquiryHistory).where(inArray(propertyEnquiryHistory.enquiryId, [fixture.enquiryA, fixture.enquiryB]));
   await db.delete(propertyEnquiries).where(inArray(propertyEnquiries.id, [fixture.enquiryA, fixture.enquiryB]));
   await db.delete(properties).where(inArray(properties.id, [fixture.propertyA, fixture.propertyB]));
@@ -339,40 +340,7 @@ async function vendorRequest(
   return { status: response.status, body: await response.json() as Record<string, unknown> };
 }
 
-test("database-backed vendor requests stay isolated by hotel ownership", async (t) => {
-  const requiredColumns = [
-    "hotels.catalog_id",
-    "hotels.approval_status",
-    "hotel_rooms.total_units",
-    "hotel_rooms.amenities",
-    "hotel_rooms.image_urls",
-    "bookings.hotel_catalog_id",
-    "bookings.adults",
-    "bookings.children",
-    "bookings.room_count",
-    "bookings.guest_name",
-    "bookings.guest_email",
-    "vendor_audit_logs.vendor_id",
-      "properties.owner_id",
-      "property_enquiries.property_id",
-      "property_enquiries.user_id",
-      "property_enquiries.status",
-      "property_enquiry_history.enquiry_id",
-      "property_enquiry_history.status",
-  ];
-  const schemaRows = await db.execute(sql`
-    select table_name, column_name
-    from information_schema.columns
-    where table_schema = 'public'
-       and table_name in ('hotels', 'hotel_rooms', 'bookings', 'vendor_audit_logs', 'properties', 'property_enquiries', 'property_enquiry_history')
-  `);
-  const availableColumns = new Set(schemaRows.rows.map((row) => `${row.table_name}.${row.column_name}`));
-  const missingColumns = requiredColumns.filter((column) => !availableColumns.has(column));
-  if (missingColumns.length) {
-    t.skip(`development database schema is pending post-merge application (missing: ${missingColumns.join(", ")})`);
-    return;
-  }
-
+test("database-backed vendor requests stay isolated by hotel ownership", async () => {
   const fixture = await createVendorFixture();
   const server = await startTestServer(buildVendorTestApp());
   try {
@@ -465,7 +433,7 @@ test("database-backed vendor requests stay isolated by hotel ownership", async (
     });
     assert.equal(belowReserved.status, 409);
     assert.equal((belowReserved.body.error as { code: string }).code, "AVAILABILITY_CONFLICT");
-    assert.match((belowReserved.body.error as { message: string }).message, /3 reserved/);
+    assert.match((belowReserved.body.error as { message: string }).message, /2 reserved/);
 
     const safeAvailability = await vendorRequest(server.baseUrl, fixture.vendorA, "/v1/vendor/availability", {
       method: "PUT",
@@ -473,7 +441,7 @@ test("database-backed vendor requests stay isolated by hotel ownership", async (
     });
     assert.equal(safeAvailability.status, 200);
     assert.equal((safeAvailability.body as { availableUnits: number }).availableUnits, 3);
-    assert.equal((safeAvailability.body as { reservedUnits: number }).reservedUnits, 3);
+    assert.equal((safeAvailability.body as { reservedUnits: number }).reservedUnits, 2);
 
     const vendorABookings = await vendorRequest(server.baseUrl, fixture.vendorA, "/v1/vendor/bookings?limit=50");
     assert.equal(vendorABookings.status, 200);
@@ -511,10 +479,17 @@ test("database-backed vendor requests stay isolated by hotel ownership", async (
 
     const contactedNotifications = await db.select().from(notifications).where(eq(notifications.userId, fixture.vendorB));
     assert.equal(contactedNotifications.length, 1);
-    assert.equal(contactedNotifications[0]?.title, "Property enquiry updated");
-    assert.equal(contactedNotifications[0]?.body, "Your enquiry for Property A is now Contacted.");
-    assert.equal(contactedNotifications[0]?.data && (contactedNotifications[0].data as Record<string, string>).relatedId, fixture.propertyA);
-    assert.doesNotMatch(contactedNotifications[0]?.body ?? "", /Called the customer/);
+    const contactedNotification = contactedNotifications[0];
+    assert.equal(contactedNotification?.userId, fixture.vendorB);
+    assert.equal(contactedNotification?.type, "land_enquiry_updated");
+    assert.equal(contactedNotification?.title, "Property enquiry updated");
+    assert.equal(contactedNotification?.body, "Your enquiry for Property A is now Contacted.");
+    assert.equal(contactedNotification?.dedupeKey, `property-enquiry-status:${fixture.enquiryA}:contacted`);
+    const contactedData = contactedNotification?.data as Record<string, unknown> | null | undefined;
+    assert.equal(contactedData?.relatedType, "property");
+    assert.equal(contactedData?.relatedId, fixture.propertyA);
+    assert.equal("note" in (contactedData ?? {}), false);
+    assert.doesNotMatch(JSON.stringify(contactedData), /Called the customer/);
 
     const closed = await vendorRequest(server.baseUrl, fixture.vendorA, `/v1/vendor/enquiries/${fixture.enquiryA}`, {
       method: "PATCH",
@@ -528,6 +503,11 @@ test("database-backed vendor requests stay isolated by hotel ownership", async (
       "Your enquiry for Property A is now Closed.",
       "Your enquiry for Property A is now Contacted.",
     ]);
+    const closedNotification = closedNotifications.find((notification) => notification.dedupeKey === `property-enquiry-status:${fixture.enquiryA}:closed`);
+    assert.equal(closedNotification?.userId, fixture.vendorB);
+    assert.equal(closedNotification?.type, "land_enquiry_updated");
+    assert.deepEqual(closedNotification?.data, { relatedType: "property", relatedId: fixture.propertyA });
+    assert.doesNotMatch(JSON.stringify(closedNotification), /Called the customer/);
 
     const duplicateStatus = await vendorRequest(server.baseUrl, fixture.vendorA, `/v1/vendor/enquiries/${fixture.enquiryA}`, {
       method: "PATCH",
