@@ -139,6 +139,12 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: tes
   assert.equal(hotel.response.status, 200);
   assert.equal(hotel.body.id, "demo-hotel-1");
 
+  const publicReviews = await request(server.baseUrl, "/v1/hotels/demo-hotel-2/reviews");
+  assert.equal(publicReviews.response.status, 200, JSON.stringify(publicReviews.body));
+  assert.equal(publicReviews.body.reviewCount, 1);
+  assert.equal(publicReviews.body.items[0].entityId, demoIds.hotels[1]);
+  assert.equal(publicReviews.body.items[0].rating, 5);
+
   const availability = await request(
     server.baseUrl,
     "/v1/hotels/demo-hotel-1/availability?checkIn=2030-06-10&checkOut=2030-06-12&adults=2&children=0&rooms=1",
@@ -169,6 +175,10 @@ test("seeded traveller, vendor, and admin journeys work end to end", { skip: tes
   assert.equal(confirmed.response.status, 200);
   assert.equal(confirmed.body.booking.paymentStatus, "paid");
   assert.equal(confirmed.body.booking.status, "confirmed");
+  const travellerReviews = await request(server.baseUrl, "/v1/reviews", "demo_traveller");
+  assert.equal(travellerReviews.response.status, 200, JSON.stringify(travellerReviews.body));
+  assert.equal(travellerReviews.body.items.length, 1);
+  assert.equal(travellerReviews.body.items[0].bookingReference, "DEMO-CONFIRMED-01");
 
   const initialFavorites = await request(server.baseUrl, "/v1/favorites", "demo_traveller");
   assert.equal(initialFavorites.response.status, 200);
