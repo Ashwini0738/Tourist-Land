@@ -23,7 +23,7 @@ const groups = [
   [notifications, demoNotifications], [featuredContent, demoFeaturedContent],
 ] as const;
 
-async function seed() {
+export async function seedDemoData() {
   assertSafeDemoEnvironment(process.env, "demo seed");
   await db.transaction(async (tx) => {
     for (const [table, rows] of groups) {
@@ -33,7 +33,7 @@ async function seed() {
   console.log("Demo dataset seeded (idempotent).");
 }
 
-async function reset() {
+export async function resetDemoData() {
   assertSafeDemoEnvironment(process.env, "demo reset");
   // Delete children first; every predicate is limited to deterministic demo IDs.
   const deletions = [
@@ -52,11 +52,13 @@ async function reset() {
   console.log("Demo dataset reset.");
 }
 
-const action = process.argv[2] ?? "seed";
-try {
-  if (action === "reset") await reset();
-  else if (action === "seed") await seed();
-  else throw new Error(`Unknown demo command: ${action}. Use seed or reset.`);
-} finally {
-  await pool.end();
+if (process.argv[1]?.endsWith("/demo-seed.ts") || process.argv[1]?.endsWith("/demo-seed.js")) {
+  const action = process.argv[2] ?? "seed";
+  try {
+    if (action === "reset") await resetDemoData();
+    else if (action === "seed") await seedDemoData();
+    else throw new Error(`Unknown demo command: ${action}. Use seed or reset.`);
+  } finally {
+    await pool.end();
+  }
 }

@@ -19,6 +19,21 @@ records. Both commands refuse production, a disabled demo mode, malformed
 URLs, remote hosts, and databases without a `demo`/`test` name. The reset
 operation deletes dependent records first and is safe to repeat.
 
+To exercise the seeded traveller, vendor, and admin journeys against a
+disposable database after applying the schema, run the opt-in API test:
+
+```sh
+DEMO_E2E_DATABASE_URL=postgres://localhost/travel_land_demo_test \
+  DATABASE_URL=postgres://localhost/travel_land_demo_test \
+  pnpm --filter @workspace/db run push
+DEMO_E2E_DATABASE_URL=postgres://localhost/travel_land_demo_test \
+  pnpm --filter @workspace/api-server run test:demo-e2e
+```
+
+The test seeds twice, resets twice, seeds again, validates the HTTP journeys,
+and resets in teardown. It also starts a separate process with `DEMO_MODE=false`
+to verify demo catalogue IDs are not exposed when the feature is disabled.
+
 Demo users are local database records only. No Clerk accounts or passwords
 are created. Their `clerkUserId` values (`demo_traveller`, `demo_vendor`, and
 `demo_admin`) are stable mapping keys for local development; applications

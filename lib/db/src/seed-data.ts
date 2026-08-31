@@ -16,7 +16,7 @@ export const demoDestinations = demoIds.destinations.map((id, i) => ({
 }));
 export const demoAttractions = demoDestinations.map((d, i) => ({ id: id("101", i + 1), destinationId: d.id, name: `${d.name} ${i >= 4 ? "Temple" : "Heritage Walk"}`, description: "A demo attraction for exploring the catalogue.", address: `Central ${d.name}`, status: "active" }));
 export const demoFoodPlaces = demoDestinations.slice(0, 4).map((d, i) => ({ id: id("102", i + 1), destinationId: d.id, name: `${d.name} Table`, cuisine: "Regional Indian", address: `Market Road, ${d.name}`, priceLevel: 2, status: "active" }));
-export const demoEvents = demoIds.events.map((eventId, i) => ({ id: eventId, destinationId: demoDestinations[i].id, name: `Demo Festival ${i + 1}`, description: "A future event in the demo calendar.", startsAt: `2030-07-${String(i + 10).padStart(2, "0")}T10:00:00Z`, endsAt: `2030-07-${String(i + 10).padStart(2, "0")}T18:00:00Z`, status: "scheduled" }));
+export const demoEvents = demoIds.events.map((eventId, i) => ({ id: eventId, destinationId: demoDestinations[i].id, name: `Demo Festival ${i + 1}`, description: "A future event in the demo calendar.", startsAt: new Date(`2030-07-${String(i + 10).padStart(2, "0")}T10:00:00Z`), endsAt: new Date(`2030-07-${String(i + 10).padStart(2, "0")}T18:00:00Z`), status: "scheduled" }));
 
 export const demoHotels = demoIds.hotels.map((hotelId, i) => ({
   id: hotelId, catalogId: `demo-hotel-${i + 1}`, destinationId: demoDestinations[i].id, ownerId: demoIds.users.vendor,

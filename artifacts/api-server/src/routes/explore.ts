@@ -299,7 +299,7 @@ const seededDemoIndex: ExploreItem[] = [
     category: "Event",
     imageKey: index % 2 ? "highlands" : "coastline",
     destinationId: demoDestinations[index].slug,
-    dateLabel: item.startsAt,
+    dateLabel: item.startsAt.toISOString(),
     popularity: 80 - index,
     rating: 4.5,
   })),
