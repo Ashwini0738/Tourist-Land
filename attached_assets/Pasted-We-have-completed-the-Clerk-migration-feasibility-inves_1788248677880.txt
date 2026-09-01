@@ -1,0 +1,61 @@
+We have completed the Clerk migration feasibility investigation.
+
+The conclusion is:
+
+* Replit-managed Clerk cannot be transferred to an independently managed Clerk application.
+* Existing Replit-managed Clerk user IDs cannot be assumed to remain unchanged.
+* Existing production users and sessions must NOT be migrated yet.
+* We need phone SMS OTP authentication.
+* Existing email authentication and biometric/device unlock are already working and must remain intact.
+
+For this step ONLY, prepare the project for an isolated DEVELOPMENT authentication environment using an independently managed Clerk development application.
+
+IMPORTANT:
+Do NOT modify production authentication.
+Do NOT remove or disable Replit-managed Clerk.
+Do NOT migrate users.
+Do NOT change the production database.
+Do NOT change biometric code.
+Do NOT implement phone OTP yet.
+Do NOT create custom OTP.
+Do NOT create a second authentication system.
+
+First determine exactly what configuration is required to connect the application to a separate Clerk DEVELOPMENT instance.
+
+Provide:
+
+1. Required Clerk development configuration:
+
+   * Email authentication
+   * Email verification
+   * Phone authentication
+   * Phone verification
+   * SMS OTP
+   * India (+91) SMS country configuration
+
+2. Required development environment variables.
+
+3. Which existing variables represent:
+
+   * Replit-managed Clerk
+   * Mobile public Clerk key
+   * API Clerk secret
+   * Admin Clerk public key
+
+4. How development and production Clerk configurations can be kept completely separate.
+
+5. How the Expo development build, API development environment, and admin development environment will identify the development Clerk instance.
+
+6. Confirm that production users and production sessions will remain untouched.
+
+7. Confirm that the existing email OTP and biometric implementation can continue to work with the development Clerk instance.
+
+Do NOT change any files yet.
+
+Do NOT create the Clerk application automatically.
+
+Do NOT ask me to paste secret keys into chat.
+
+At the end provide a precise manual setup checklist for the Clerk dashboard and a separate list of application changes that will eventually be required.
+
+STOP after the plan.
