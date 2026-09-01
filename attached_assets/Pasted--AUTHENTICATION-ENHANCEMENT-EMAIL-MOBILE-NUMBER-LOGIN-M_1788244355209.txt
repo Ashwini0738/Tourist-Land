@@ -1,0 +1,922 @@
+# AUTHENTICATION ENHANCEMENT — EMAIL + MOBILE NUMBER LOGIN
+
+Modify the existing Travel & Land authentication system to support BOTH:
+
+1. Email authentication
+2. Mobile number authentication
+
+Do NOT replace the existing authentication architecture.
+
+The application currently uses Clerk.
+
+Use Clerk as the single source of truth for authentication, verification, sessions, and user identity.
+
+Do NOT create a separate custom authentication database or duplicate authentication system.
+
+---
+
+# 1. REQUIRED LOGIN OPTIONS
+
+On the initial authentication screen, provide two clear options:
+
+📧 Continue with Email
+
+📱 Continue with Mobile Number
+
+The design should be premium, attractive, and consistent with the existing Travel & Land visual design.
+
+Allow the user to switch between the two methods easily.
+
+---
+
+# 2. NEW USER REGISTRATION
+
+For a new user, support:
+
+## Email registration
+
+User enters:
+
+Email
+
+↓
+
+Email OTP
+
+↓
+
+Verify OTP
+
+↓
+
+Create/complete Clerk account
+
+OR
+
+## Mobile registration
+
+User enters:
+
+Country
+
+Mobile number
+
+↓
+
+SMS OTP
+
+↓
+
+Verify OTP
+
+↓
+
+Create/complete Clerk account
+
+Do not require the user to register using both email AND mobile number unless Clerk configuration/business rules require it.
+
+The user should be able to choose either authentication method.
+
+---
+
+# 3. RETURNING USER LOGIN
+
+If the user has already completed authentication and enabled device authentication:
+
+Open app
+
+↓
+
+Fingerprint / Face ID / Device Lock
+
+↓
+
+Restore existing authenticated Clerk session
+
+↓
+
+Home
+
+Do NOT show:
+
+Email OTP
+
+Mobile OTP
+
+Email/password
+
+PIN creation
+
+on every app launch.
+
+This is extremely important.
+
+---
+
+# 4. FALLBACK AUTHENTICATION
+
+If biometric/device authentication is unavailable or the user chooses another login method:
+
+Allow:
+
+Email → OTP
+
+OR
+
+Mobile → OTP
+
+Then restore the existing Clerk session.
+
+Do not force biometric enrollment again if it was already configured.
+
+---
+
+# 5. DEVICE AUTHENTICATION
+
+After the FIRST successful email or mobile verification:
+
+Offer:
+
+"Secure your account"
+
+Options:
+
+✓ Fingerprint
+
+✓ Face ID
+
+✓ Device Lock / Passcode
+
+Use the existing secure device authentication implementation.
+
+Do NOT store biometric information.
+
+Do NOT create a second application-specific PIN.
+
+The phone's native device lock/biometric system should remain the security mechanism.
+
+---
+
+# 6. EXISTING USER COMPATIBILITY
+
+Existing users who registered with email must continue to work.
+
+Do not break:
+
+* Existing Clerk users
+* Existing sessions
+* Existing user IDs
+* Existing roles
+* User profile data
+* Vendor accounts
+* Admin accounts
+* Existing protected routes
+
+Existing users should be able to add a verified phone number later from Profile/Security if desired.
+
+Similarly, phone-authenticated users should be able to add a verified email later if desired.
+
+---
+
+# 7. PROFILE CONTACT MANAGEMENT
+
+Add a secure section:
+
+Profile
+
+→ Account & Security
+
+→ Contact Information
+
+Display:
+
+📧 Email
+
+📱 Mobile
+
+Each should show:
+
+Verified ✓
+
+or
+
+Not verified
+
+Allow the user to add/verify the missing contact method.
+
+Do not expose sensitive information unnecessarily.
+
+---
+
+# 8. PHONE NUMBER INPUT
+
+Create a proper mobile-number input.
+
+Include:
+
+Country selector
+
+Country calling code
+
+Phone number field
+
+Example:
+
+🇮🇳 +91
+
+9876543210
+
+Normalize the number into E.164 format before sending it to Clerk.
+
+Do not accept malformed numbers.
+
+Show user-friendly validation:
+
+"Enter a valid mobile number."
+
+Do not display raw Clerk/API errors.
+
+---
+
+# 9. OTP SCREEN
+
+Create a reusable OTP verification screen for both:
+
+Email OTP
+
+SMS OTP
+
+Show:
+
+"Enter the 6-digit code"
+
+For example:
+
+---
+
+Display:
+
+"Code sent to +91 ******3210"
+
+or
+
+"Code sent to a***@example.com"
+
+Provide:
+
+Verify
+
+Resend Code
+
+Change Email/Number
+
+Resend cooldown
+
+Loading state
+
+Invalid-code message
+
+Expired-code message
+
+Rate-limit message
+
+Network-error message
+
+Do not expose raw backend errors.
+
+---
+
+# 10. OTP SECURITY
+
+Use Clerk's verification mechanisms.
+
+Do NOT:
+
+* Store OTPs
+* Generate OTPs locally
+* Log OTPs
+* Store OTPs in AsyncStorage
+* Store OTPs in application state longer than necessary
+* Create a custom SMS authentication backend
+
+Respect Clerk's verification and resend limits.
+
+---
+
+# 11. SIGN-IN USER ENUMERATION
+
+Do not reveal whether an account exists in a way that creates an unnecessary user-enumeration vulnerability.
+
+Use appropriate generic messaging where required.
+
+Examples:
+
+"Unable to continue. Check your details and try again."
+
+instead of:
+
+"This phone number belongs to an account."
+
+---
+
+# 12. ROLE HANDLING
+
+The authentication method must NOT determine role.
+
+Roles remain:
+
+USER
+
+VENDOR
+
+ADMIN
+
+After Clerk authentication:
+
+↓
+
+Load authenticated user
+
+↓
+
+Resolve role from the existing role system
+
+↓
+
+Route to:
+
+User Home
+
+Vendor Dashboard
+
+Admin Dashboard
+
+Do not allow a user to select "Admin" or "Vendor" from the login screen.
+
+Do not trust a role supplied by the mobile client.
+
+---
+
+# 13. AUTHENTICATION STATE MACHINE
+
+Audit and simplify the current authentication state.
+
+Use states similar to:
+
+INITIALIZING
+
+DEVICE_UNLOCK_REQUIRED
+
+AUTHENTICATION_REQUIRED
+
+EMAIL_AUTH
+
+PHONE_AUTH
+
+OTP_VERIFICATION
+
+AUTHENTICATED
+
+SESSION_RESTORE
+
+ERROR
+
+Do not create repeated authentication loops.
+
+---
+
+# 14. PREVENT THE EXISTING BLINKING/LOOP ISSUE
+
+The application previously had:
+
+Skip for now
+
+→ loading
+
+→ screen blinking
+
+→ browser asking to wait/close
+
+and repeated authentication initialization.
+
+Do not reintroduce this.
+
+Ensure authentication initialization happens once.
+
+Do not repeatedly:
+
+initialize Clerk
+
+check session
+
+redirect
+
+initialize biometric
+
+redirect
+
+check session again
+
+The app must settle into one stable authentication state.
+
+---
+
+# 15. APP REOPEN BEHAVIOR
+
+Test:
+
+User registers with email
+
+→ verifies email
+
+→ enables fingerprint
+
+→ closes app
+
+→ reopens app
+
+Expected:
+
+Fingerprint
+
+→ Home
+
+NOT:
+
+Fingerprint
+
+→ Email
+
+→ OTP
+
+→ PIN
+
+---
+
+Test:
+
+User registers with phone
+
+→ verifies phone
+
+→ enables fingerprint
+
+→ closes app
+
+→ reopens app
+
+Expected:
+
+Fingerprint
+
+→ Home
+
+NOT:
+
+Fingerprint
+
+→ Mobile OTP
+
+---
+
+# 16. SESSION EXPIRY
+
+If the Clerk session genuinely expires:
+
+Device unlock
+
+↓
+
+Detect invalid/expired session
+
+↓
+
+Authentication screen
+
+↓
+
+Email OTP OR Mobile OTP
+
+↓
+
+New authenticated session
+
+↓
+
+Home
+
+Do not silently treat an expired session as a valid session.
+
+---
+
+# 17. LOGOUT
+
+Logout must clear the authenticated session correctly.
+
+After logout:
+
+App
+
+↓
+
+Authentication screen
+
+↓
+
+Email OR Mobile
+
+The application must NOT automatically unlock into the previous account.
+
+If device credentials are stored for convenience, they must not bypass Clerk authentication after explicit logout.
+
+---
+
+# 18. MULTIPLE USERS ON SAME DEVICE
+
+Test:
+
+User A
+
+→ Login
+
+→ Logout
+
+User B
+
+→ Login
+
+Verify:
+
+User B sees User B's:
+
+Home
+
+Saved
+
+Trips
+
+Bookings
+
+Wallet
+
+Notifications
+
+Profile
+
+and never User A's private data.
+
+Clear or scope any local device state correctly.
+
+---
+
+# 19. VENDOR AND ADMIN
+
+Verify email/mobile authentication also works for:
+
+Vendor
+
+Admin
+
+But preserve existing role-based routing and authorization.
+
+Do not weaken admin/vendor security to make phone login easier.
+
+---
+
+# 20. WEB + ANDROID + IOS
+
+Support:
+
+Android
+
+iOS
+
+Mobile Web
+
+Desktop Web where applicable.
+
+Do not introduce a native-only authentication implementation that breaks web.
+
+Use the existing Expo/Clerk architecture appropriately.
+
+Verify the chosen Clerk approach is compatible with the current Expo setup.
+
+---
+
+# 21. CLERK DASHBOARD REQUIREMENTS
+
+Document exactly what needs to be enabled in Clerk Dashboard.
+
+Verify:
+
+Email sign-up
+
+Email sign-in
+
+Email verification code
+
+Phone sign-up
+
+Phone sign-in
+
+Phone verification
+
+SMS configuration
+
+Allowed countries / SMS settings
+
+Session settings
+
+MFA settings if currently enabled
+
+Do not modify Clerk Dashboard settings blindly.
+
+If a required Clerk Dashboard setting cannot be changed from Replit, clearly tell me exactly what I need to change manually.
+
+---
+
+# 22. TESTING
+
+Create/extend tests for:
+
+Email registration
+
+Email OTP
+
+Email login
+
+Phone registration
+
+Phone OTP
+
+Phone login
+
+Invalid email
+
+Invalid phone
+
+Invalid OTP
+
+Expired OTP
+
+Resend cooldown
+
+Network failure
+
+Session restoration
+
+Biometric unlock
+
+Device-lock fallback
+
+Logout
+
+Session expiry
+
+User role routing
+
+Vendor login
+
+Admin login
+
+Multiple accounts
+
+---
+
+# 23. END-TO-END TEST
+
+Test this exact flow:
+
+### EMAIL USER
+
+Install/open app
+
+↓
+
+Email
+
+↓
+
+OTP
+
+↓
+
+Account created
+
+↓
+
+Device authentication setup
+
+↓
+
+Home
+
+↓
+
+Close app
+
+↓
+
+Reopen
+
+↓
+
+Fingerprint/Face ID/device lock
+
+↓
+
+Home
+
+---
+
+### PHONE USER
+
+Install/open app
+
+↓
+
+Mobile number
+
+↓
+
+SMS OTP
+
+↓
+
+Account created
+
+↓
+
+Device authentication setup
+
+↓
+
+Home
+
+↓
+
+Close app
+
+↓
+
+Reopen
+
+↓
+
+Fingerprint/Face ID/device lock
+
+↓
+
+Home
+
+---
+
+# 24. DO NOT BREAK EXISTING FEATURES
+
+After implementation verify:
+
+Home
+
+Explore
+
+Destinations
+
+Hotels
+
+Rooms
+
+Availability
+
+Bookings
+
+Payments
+
+Wallet
+
+Land
+
+Properties
+
+Favorites
+
+My Trips
+
+Notifications
+
+Admin
+
+Vendor
+
+Reports
+
+still work.
+
+---
+
+# 25. FINAL REPORT
+
+Return:
+
+### Authentication
+
+PASS / PARTIAL / FAIL
+
+### Email registration
+
+PASS / FAIL
+
+### Email login
+
+PASS / FAIL
+
+### Mobile registration
+
+PASS / FAIL
+
+### Mobile login
+
+PASS / FAIL
+
+### OTP
+
+PASS / FAIL
+
+### Device unlock
+
+PASS / FAIL
+
+### Session restoration
+
+PASS / FAIL
+
+### Logout
+
+PASS / FAIL
+
+### Session expiry
+
+PASS / FAIL
+
+### User role routing
+
+PASS / FAIL
+
+### Vendor
+
+PASS / FAIL
+
+### Admin
+
+PASS / FAIL
+
+### Android
+
+PASS / FAIL / BLOCKED
+
+### iOS
+
+PASS / FAIL / BLOCKED
+
+### Web
+
+PASS / FAIL
+
+### Tests
+
+Passed:
+
+Failed:
+
+Blocked:
+
+### Clerk Dashboard changes required
+
+List exact settings that must be enabled manually.
+
+### Remaining issues
+
+List every issue instead of hiding it.
+
+IMPORTANT:
+
+Do not replace the current working Clerk authentication with a custom authentication system.
+
+Do not create duplicate users.
+
+Do not create a custom OTP system.
+
+Do not force both email and phone verification unless explicitly required.
+
+The final experience should be:
+
+FIRST TIME:
+
+Email OR Mobile → OTP → Device Authentication Setup → Home
+
+RETURNING:
+
+Fingerprint / Face ID / Device Lock → Home
+
+FALLBACK:
+
+Email OR Mobile → OTP → Home
