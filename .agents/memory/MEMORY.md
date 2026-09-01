@@ -15,5 +15,6 @@
 - [Public hotel review identifiers](public-hotel-review-identifiers.md) — review entity IDs use catalog IDs shared by hotel routes and bookings, not internal UUIDs.
 - [Mobile-web visual checks](mobile-web-visual-checks.md) — use DOM contracts at representative web frames; keep native location, biometric, and map behavior out of this layer.
 - [Expo Go push limitation](expo-go-notifications.md) — lazy-load expo-notifications because SDK 53+ Expo Go can throw at module import time on Android.
+- [Expo Go native compatibility](expo-go-native-compatibility.md) — avoid third-party native modules not bundled by Expo Go in the root import graph; prefer built-in React Native fallbacks.
 - [Expo static build cleanup](expo-static-build-cleanup.md) — static Expo builds can remove assets from older tracked build snapshots; restore stale snapshots before finishing.
 - [Playwright on Nix](playwright-nix-runtime.md) — headless Chromium needs explicit Nix shared libraries; keep downloaded browser binaries outside the repository.
