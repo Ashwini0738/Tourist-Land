@@ -146,6 +146,41 @@ describe('login validation', () => {
       });
     });
   });
+
+  it('explains when the password is rejected after a reset', async () => {
+    const signIn = createSignIn();
+    signIn.password.mockResolvedValueOnce({
+      error: { code: 'form_password_incorrect' },
+    });
+    mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+    const screen = render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByTestId('login-email'), 'ashwini0738@gmail.com');
+    fireEvent.changeText(screen.getByTestId('login-password'), 'new-password');
+    fireEvent.press(screen.getByTestId('login-continue'));
+
+    await waitFor(() => {
+      expect(screen.getByText('The password was not accepted. If you just reset it, enter the new password and check that the email matches the account.')).toBeTruthy();
+    });
+    expect(screen.queryByText('We could not sign you in. Please check your details and try again.')).toBeNull();
+  });
+
+  it('explains when the sign-in email is not found', async () => {
+    const signIn = createSignIn();
+    signIn.password.mockResolvedValueOnce({
+      error: { code: 'form_identifier_not_found' },
+    });
+    mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+    const screen = render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByTestId('login-email'), 'missing@example.com');
+    fireEvent.changeText(screen.getByTestId('login-password'), 'new-password');
+    fireEvent.press(screen.getByTestId('login-continue'));
+
+    await waitFor(() => {
+      expect(screen.getByText('No account was found for this email. Check the address or use the same account and environment where you reset the password.')).toBeTruthy();
+    });
+  });
 });
 
 describe('forgot password flow', () => {
@@ -218,7 +253,7 @@ describe('forgot password flow', () => {
     fireEvent.press(screen.getByTestId('password-reset-submit-email'));
 
     await waitFor(() => {
-      expect(screen.getByText('Those sign-in details were not recognized. Check them and try again.')).toBeTruthy();
+      expect(screen.getByText('No account was found for this email. Check the address or use the same account and environment where you reset the password.')).toBeTruthy();
     });
     expect(screen.queryByText('internal provider details')).toBeNull();
   });

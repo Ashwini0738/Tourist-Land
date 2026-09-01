@@ -90,8 +90,11 @@ export function authErrorMessage(error: unknown, fallback: string) {
   if (includesCode(codes, 'session_expired', 'reset_expired', 'password_reset_expired')) {
     return 'This password reset session has expired. Start the reset again and request a new code.';
   }
-  if (includesCode(codes, 'form_password_incorrect', 'form_identifier_not_found')) {
-    return 'Those sign-in details were not recognized. Check them and try again.';
+  if (includesCode(codes, 'form_password_incorrect', 'password_incorrect')) {
+    return 'The password was not accepted. If you just reset it, enter the new password and check that the email matches the account.';
+  }
+  if (includesCode(codes, 'form_identifier_not_found', 'identifier_not_found')) {
+    return 'No account was found for this email. Check the address or use the same account and environment where you reset the password.';
   }
   if (codes.some((code) => code.includes('password'))) {
     return safePasswordMessage(details) ?? 'Your new password does not meet the account requirements. Choose a different password and try again.';
