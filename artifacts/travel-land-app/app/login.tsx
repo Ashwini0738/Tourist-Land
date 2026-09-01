@@ -60,7 +60,10 @@ function authErrorMessage(error: unknown, fallback: string) {
   if (code.includes('verification_code_expired') || code.includes('code_expired')) {
     return 'That verification code has expired. Request a new code and try again.';
   }
-  return clerkError?.longMessage || clerkError?.message || fallback;
+  if (code.includes('form_password_incorrect') || code.includes('form_identifier_not_found')) {
+    return 'Those sign-in details were not recognized. Check them and try again.';
+  }
+  return fallback;
 }
 
 export default function LoginScreen() {
@@ -79,83 +82,109 @@ export default function LoginScreen() {
   const [message, setMessage] = useState('');
   const [signInVerificationMethod, setSignInVerificationMethod] = useState<SignInVerificationMethod>(null);
   const [signInCode, setSignInCode] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
-  const loading = !isLoaded || signInStatus === 'fetching' || signUpStatus === 'fetching';
+  const loading = !isLoaded || signInStatus === 'fetching' || signUpStatus === 'fetching' || isSubmitting || isResending;
   const normalizedPhone = normalizePhoneNumber(countryCode, phone);
 
   const submit = async () => {
+    if (isSubmitting) return;
     setMessage('');
-    if (isNew) {
-      const { error } = await signUp.password({ emailAddress: email.trim(), password });
-      if (error) return setMessage(authErrorMessage(error, 'We could not create that account. Please review your email and password and try again.'));
-      const verification = await signUp.verifications.sendEmailCode();
-      if (verification.error) return setMessage(authErrorMessage(verification.error, 'We could not send the verification email. Please check the address and try again.'));
-      router.push('/verify');
-      return;
-    }
-
-    if (authMethod === 'phone') {
-      if (!normalizedPhone) {
-        setMessage('Enter a valid phone number with its country code and try again.');
+    setIsSubmitting(true);
+    try {
+      if (isNew) {
+        const { error } = await signUp.password({ emailAddress: email.trim(), password });
+        if (error) return setMessage(authErrorMessage(error, 'We could not create that account. Please review your email and password and try again.'));
+        const verification = await signUp.verifications.sendEmailCode();
+        if (verification.error) return setMessage(authErrorMessage(verification.error, 'We could not send the verification email. Please check the address and try again.'));
+        router.push('/verify');
         return;
       }
 
-      const { error } = await signIn.create({ identifier: normalizedPhone });
-      if (error) return setMessage(authErrorMessage(error, 'We could not start phone sign in. Please check your number and try again.'));
+      if (authMethod === 'phone') {
+        if (!normalizedPhone) {
+          setMessage('Enter a valid phone number with its country code and try again.');
+          return;
+        }
 
-      const phoneFactor = signIn.supportedFirstFactors?.find((factor) => factor.strategy === 'phone_code');
-      if (!phoneFactor) {
-        return setMessage('Phone sign in is not enabled for this account. Try email sign in instead.');
+        const { error } = await signIn.create({ identifier: normalizedPhone });
+        if (error) return setMessage(authErrorMessage(error, 'We could not start phone sign in. Please check your number and try again.'));
+
+        const phoneFactor = signIn.supportedFirstFactors?.find((factor) => factor.strategy === 'phone_code');
+        if (!phoneFactor) {
+          return setMessage('Phone sign in is not enabled for this account. Try email sign in instead.');
+        }
+
+        const verification = await signIn.phoneCode.sendCode();
+        if (verification.error) {
+          return setMessage(authErrorMessage(verification.error, 'We could not send a verification code. Please try again.'));
+        }
+        setSignInCode('');
+        setSignInVerificationMethod('phone');
+        return;
       }
 
-      const verification = await signIn.phoneCode.sendCode();
-      if (verification.error) {
-        return setMessage(authErrorMessage(verification.error, 'We could not send a verification code. Please try again.'));
+      const { error } = await signIn.password({ emailAddress: email.trim(), password });
+      if (error) return setMessage(authErrorMessage(error, 'We could not sign you in. Please check your details and try again.'));
+      if (signIn.status === 'needs_second_factor' || signIn.status === 'needs_client_trust') {
+        const emailFactor = signIn.supportedSecondFactors?.find((factor) => factor.strategy === 'email_code');
+        if (!emailFactor) {
+          return setMessage('This account requires an additional sign-in method that is not available in this app.');
+        }
+        const verification = await signIn.mfa.sendEmailCode();
+        if (verification.error) {
+          return setMessage(authErrorMessage(verification.error, 'We could not send the sign-in verification code. Please try again.'));
+        }
+        setSignInCode('');
+        setSignInVerificationMethod('email');
+        return;
       }
-      setSignInCode('');
-      setSignInVerificationMethod('phone');
-      return;
+      if (signIn.status !== 'complete') return setMessage('This sign-in needs another verification step. Please restart sign in and try again.');
+      await signIn.finalize({});
+      router.replace('/(tabs)');
+    } catch (error) {
+      setMessage(authErrorMessage(error, isNew ? 'We could not create your account. Please try again.' : 'We could not complete sign in. Please try again.'));
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const { error } = await signIn.password({ emailAddress: email.trim(), password });
-    if (error) return setMessage(authErrorMessage(error, 'We could not sign you in. Please check your details and try again.'));
-    if (signIn.status === 'needs_second_factor' || signIn.status === 'needs_client_trust') {
-      const emailFactor = signIn.supportedSecondFactors?.find((factor) => factor.strategy === 'email_code');
-      if (!emailFactor) {
-        return setMessage('This account requires an additional sign-in method that is not available in this app.');
-      }
-      const verification = await signIn.mfa.sendEmailCode();
-      if (verification.error) {
-        return setMessage(authErrorMessage(verification.error, 'We could not send the sign-in verification code. Please try again.'));
-      }
-      setSignInCode('');
-      setSignInVerificationMethod('email');
-      return;
-    }
-    if (signIn.status !== 'complete') return setMessage('This sign-in needs another verification step. Please restart sign in and try again.');
-    await signIn.finalize({});
-    router.replace('/(tabs)');
   };
 
   const verifySignInCode = async () => {
+    if (isSubmitting) return;
     setMessage('');
-    const { error } = signInVerificationMethod === 'phone'
-      ? await signIn.phoneCode.verifyCode({ code: signInCode })
-      : await signIn.mfa.verifyEmailCode({ code: signInCode });
-    if (error) return setMessage(authErrorMessage(error, 'That verification code did not work. Please try again.'));
-    if (signIn.status !== 'complete') return setMessage('The code was accepted, but sign in is not complete yet. Please try again.');
-    await signIn.finalize({ navigate: () => router.replace('/(tabs)') });
+    setIsSubmitting(true);
+    try {
+      const { error } = signInVerificationMethod === 'phone'
+        ? await signIn.phoneCode.verifyCode({ code: signInCode })
+        : await signIn.mfa.verifyEmailCode({ code: signInCode });
+      if (error) return setMessage(authErrorMessage(error, 'That verification code did not work. Please try again.'));
+      if (signIn.status !== 'complete') return setMessage('The code was accepted, but sign in is not complete yet. Please try again.');
+      await signIn.finalize({ navigate: () => router.replace('/(tabs)') });
+    } catch (error) {
+      setMessage(authErrorMessage(error, 'We could not verify that code. Please try again.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resendSignInCode = async () => {
+    if (isResending) return;
     setMessage('');
-    const { error } = signInVerificationMethod === 'phone'
-      ? await signIn.phoneCode.sendCode()
-      : await signIn.mfa.sendEmailCode();
-    if (error) {
+    setIsResending(true);
+    try {
+      const { error } = signInVerificationMethod === 'phone'
+        ? await signIn.phoneCode.sendCode()
+        : await signIn.mfa.sendEmailCode();
+      if (error) {
+        setMessage(authErrorMessage(error, 'We could not send a new code. Please try again.'));
+      } else {
+        setMessage('A new verification code was sent.');
+      }
+    } catch (error) {
       setMessage(authErrorMessage(error, 'We could not send a new code. Please try again.'));
-    } else {
-      setMessage('A new verification code was sent.');
+    } finally {
+      setIsResending(false);
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -20,7 +20,7 @@ import { RoleProvider, useRole } from '@/context/RoleContext';
 import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl, setUnauthorizedHandler } from '@workspace/api-client-react';
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { roleHome, unauthorizedHome } from '@/features/role/roleRouting';
 
@@ -33,12 +33,73 @@ if (domain) setBaseUrl(`https://${domain}`);
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
+function RoleResolutionError({ onRetry }: { onRetry: () => Promise<unknown> }) {
+  const colors = useColors();
+  const { signOut } = useClerk();
+  const router = useRouter();
+  const [action, setAction] = useState<'retrying' | 'signing-out' | null>(null);
+  const [message, setMessage] = useState('');
+
+  const retry = async () => {
+    if (action) return;
+    setAction('retrying');
+    setMessage('');
+    try {
+      await onRetry();
+    } catch {
+      setMessage('We could not refresh your access yet. Please try again.');
+    } finally {
+      setAction(null);
+    }
+  };
+
+  const leave = async () => {
+    if (action) return;
+    setAction('signing-out');
+    setMessage('');
+    try {
+      await signOut();
+      router.replace('/login');
+    } catch {
+      setMessage('We could not sign you out. Please try again.');
+      setAction(null);
+    }
+  };
+
+  return (
+    <View style={[styles.roleErrorOverlay, { backgroundColor: colors.background }]}>
+      <Text style={[styles.roleErrorKicker, { color: colors.primary }]}>ACCESS CHECK</Text>
+      <Text style={[styles.roleErrorTitle, { color: colors.foreground }]}>We could not verify your access.</Text>
+      <Text style={[styles.roleErrorText, { color: colors.mutedForeground }]}>
+        Your secure session is still protected, but your Travel & Land role could not be loaded. Try again or sign out safely.
+      </Text>
+      {!!message && <Text style={[styles.roleErrorMessage, { color: colors.destructive }]}>{message}</Text>}
+      <Pressable
+        accessibilityRole="button"
+        disabled={Boolean(action)}
+        onPress={() => void retry()}
+        style={[styles.roleErrorButton, { backgroundColor: colors.primary }]}
+      >
+        {action === 'retrying' ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={[styles.roleErrorButtonText, { color: colors.primaryForeground }]}>Try again</Text>}
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        disabled={Boolean(action)}
+        onPress={() => void leave()}
+        style={[styles.roleErrorSecondary, { borderColor: colors.border }]}
+      >
+        {action === 'signing-out' ? <ActivityIndicator color={colors.primary} /> : <Text style={[styles.roleErrorSecondaryText, { color: colors.primary }]}>Sign out and return to login</Text>}
+      </Pressable>
+    </View>
+  );
+}
+
 function RootLayoutNav() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { signOut } = useClerk();
   const router = useRouter();
   const { isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete } = useAuthSecurity();
-  const { role, isReady: roleReady, isLoading: roleLoading, isError: roleError } = useRole();
+  const { role, isReady: roleReady, isLoading: roleLoading, isError: roleError, refetch: refetchRole } = useRole();
   const colors = useColors();
   const segments = useSegments();
   const route = segments[0];
@@ -105,7 +166,14 @@ function RootLayoutNav() {
     router,
   ]);
 
-  return renderRoutes();
+  const showRoleError = Boolean(isSignedIn && isReady && isUnlocked && roleError);
+
+  return (
+    <View style={styles.root}>
+      {renderRoutes()}
+      {showRoleError && <RoleResolutionError onRetry={refetchRole} />}
+    </View>
+  );
 }
 
 function renderRoutes() {
@@ -177,4 +245,25 @@ export default function RootLayout() {
     </ClerkProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  roleErrorOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+  },
+  roleErrorKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 8 },
+  roleErrorTitle: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
+  roleErrorText: { fontSize: 15, lineHeight: 22, marginTop: 12 },
+  roleErrorMessage: { fontSize: 13, lineHeight: 18, marginTop: 16 },
+  roleErrorButton: { minHeight: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginTop: 28 },
+  roleErrorButtonText: { fontSize: 16, fontWeight: '700' },
+  roleErrorSecondary: { minHeight: 54, borderWidth: 1, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
+  roleErrorSecondaryText: { fontSize: 14, fontWeight: '700' },
+});
 
