@@ -108,7 +108,7 @@ function RootLayoutNav() {
   const lockedSessionRoutes = ['verify', 'biometric', 'biometric-login'];
 
   useEffect(() => {
-    setAuthTokenGetter(Platform.OS === 'web' ? null : () => getToken());
+    setAuthTokenGetter(() => getToken());
     setUnauthorizedHandler(async () => {
       await signOut();
       router.replace('/login');
