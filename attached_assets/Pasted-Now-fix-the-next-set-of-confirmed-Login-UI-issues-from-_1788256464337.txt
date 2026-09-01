@@ -1,0 +1,194 @@
+Now fix the next set of **confirmed Login UI issues** from the completed login audit.
+
+IMPORTANT:
+
+* Do NOT implement Email OTP.
+* Do NOT implement Phone OTP.
+* Do NOT change Clerk configuration.
+* Do NOT migrate Clerk.
+* Do NOT create a custom authentication system.
+* Do NOT change backend authentication.
+* Do NOT change database schema.
+* Do NOT modify role authorization.
+* Do NOT modify biometric/passcode authentication.
+* Do NOT make unrelated UI changes.
+
+The previous authentication error-handling fix is already passing:
+
+* 19 test suites
+* 94 tests
+* TypeScript
+* Expo/Metro
+
+The live Clerk login test is blocked only because no safe Clerk test account/device interaction is available. Do not try to work around that.
+
+Fix ONLY these confirmed Login issues:
+
+## 1. FORGOT PASSWORD
+
+The audit confirmed there is currently no forgot-password flow.
+
+Add a "Forgot password?" action to the existing email/password login screen.
+
+Use the EXISTING Clerk password recovery APIs supported by the installed @clerk/expo version.
+
+Before coding:
+
+* Inspect the installed Clerk package/types.
+* Use only APIs actually supported by the installed version.
+* Do not invent Clerk methods.
+
+Expected flow:
+
+Login
+→ Forgot password
+→ Enter/confirm email
+→ Clerk password reset flow
+→ Email verification code/link as supported by Clerk
+→ New password
+→ Password reset completed
+→ Return to Login
+→ User can sign in normally
+
+Handle:
+
+* invalid email
+* unknown account
+* Clerk errors
+* network errors
+* loading state
+* retry
+* back to login
+
+Never expose internal Clerk errors.
+
+Do not log passwords, verification codes, tokens, or secrets.
+
+## 2. EMAIL FIELD VALIDATION
+
+Add local validation to the existing email/password login form.
+
+Email should:
+
+* be required
+* have a sensible email format check
+* show a clear user-facing validation message
+* prevent submission when invalid
+
+Do not make the validation excessively restrictive.
+
+Clerk remains the authoritative authentication system.
+
+## 3. PASSWORD FIELD VALIDATION
+
+For LOGIN:
+
+* password must be non-empty
+* do not impose a new password-strength policy that could reject existing valid Clerk passwords
+* allow Clerk to remain authoritative for password validity
+
+For RESET PASSWORD:
+
+* enforce the minimum password requirements required by the actual Clerk configuration/API
+* show a clear validation message
+* never display the password value in errors/logs
+
+## 4. KEYBOARD-SAFE LOGIN UI
+
+The audit confirmed the login screen currently uses a plain View.
+
+Make the login screen keyboard-safe on native devices.
+
+Use the existing React Native/Expo-compatible approach, such as:
+
+* KeyboardAvoidingView
+* ScrollView where appropriate
+* keyboard dismissal behavior
+
+Requirements:
+
+* email/password fields remain accessible when keyboard is open
+* Login/Forgot Password controls remain reachable
+* no unnecessary UI redesign
+* preserve existing styling and layout
+
+## 5. PRESERVE EXISTING LOGIN METHODS
+
+Do NOT remove or break:
+
+* Email/password login
+* Existing Phone login flow
+* Existing MFA flow
+* Signup
+* Email verification
+* Clerk session activation
+* Role routing
+* Existing error handling
+* Existing resend handling
+
+## 6. TESTS
+
+Add/update tests for:
+
+### Login validation
+
+* empty email
+* invalid email
+* empty password
+* valid email/password input
+
+### Forgot password
+
+* forgot-password navigation
+* valid recovery flow UI states
+* invalid email
+* Clerk rejected recovery request
+* network/rejected promise
+* loading state
+* return to login
+
+### Regression
+
+Run the existing full mobile test suite.
+
+Run:
+
+* TypeScript
+* tests
+* Expo doctor if configured
+* Expo/Metro startup
+
+Do NOT claim real Clerk password reset success unless an actual Clerk test account was available.
+
+## REQUIRED FINAL REPORT
+
+### FIXED
+
+* Forgot password UI: PASS/FAIL
+* Clerk reset API integration: PASS/FAIL
+* Email validation: PASS/FAIL
+* Password validation: PASS/FAIL
+* Keyboard-safe layout: PASS/FAIL
+
+### REGRESSION
+
+* Existing email/password login code path: PASS/FAIL
+* Existing phone login code path: PASS/FAIL
+* Signup: PASS/FAIL
+* Email verification: PASS/FAIL
+* MFA: PASS/FAIL
+* Role routing: PASS/FAIL
+* Biometric/passcode: PASS/FAIL
+* TypeScript: PASS/FAIL
+* Test suite: PASS/FAIL
+* Expo/Metro: PASS/FAIL
+
+### FILES CHANGED
+
+List every changed file and why.
+
+### LIVE TEST LIMITATION
+
+Clearly state if Clerk password reset could not be live-tested because no safe test account/device was available.
+
+Do not implement OTP in this task.

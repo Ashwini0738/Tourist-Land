@@ -1,4 +1,4 @@
-import { Platform, ScrollView, ScrollViewProps } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, ScrollViewProps } from 'react-native';
 
 type Props = ScrollViewProps & {
   bottomOffset?: number;
@@ -20,5 +20,19 @@ export function KeyboardAwareScrollViewCompat({
       </ScrollView>
     );
   }
-  return <ScrollView keyboardShouldPersistTaps={keyboardShouldPersistTaps} {...props}>{children}</ScrollView>;
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+      style={{ flex: 1 }}
+    >
+      <ScrollView
+        keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+        keyboardDismissMode="on-drag"
+        {...props}
+      >
+        {children}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
 }

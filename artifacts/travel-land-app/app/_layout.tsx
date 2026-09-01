@@ -233,9 +233,9 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <AppStateProvider>
             <RoleProvider>
-              <GestureHandlerRootView>
-                <RootLayoutNav />
-              </GestureHandlerRootView>
+                <GestureHandlerRootView style={styles.gestureRoot}>
+                  <RootLayoutNav />
+                </GestureHandlerRootView>
             </RoleProvider>
             </AppStateProvider>
           </QueryClientProvider>
@@ -248,6 +248,7 @@ export default function RootLayout() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  gestureRoot: { flex: 1 },
   roleErrorOverlay: {
     position: 'absolute',
     top: 0,

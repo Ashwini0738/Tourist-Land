@@ -1,4 +1,7 @@
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
+import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
+import { PasswordResetFlow } from '@/features/auth/PasswordResetFlow';
+import { authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
 import { useAuth, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -6,12 +9,6 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
-
-type ClerkErrorLike = {
-  code?: string;
-  message?: string;
-  longMessage?: string;
-};
 
 type AuthMethod = 'email' | 'phone';
 type SignInVerificationMethod = 'email' | 'phone' | null;
@@ -28,42 +25,6 @@ function normalizePhoneNumber(countryCodeInput: string, phoneInput: string) {
 
   if (digits.length < 8 || digits.length > 15) return null;
   return `+${digits}`;
-}
-
-function authErrorMessage(error: unknown, fallback: string) {
-  const clerkError = error as ClerkErrorLike | null;
-  const code = clerkError?.code?.toLowerCase() ?? '';
-  if (code.includes('identifier_exists')) {
-    return 'An account with this email already exists. Switch to sign in instead.';
-  }
-  if (code.includes('password_pwned') || code.includes('password_compromised')) {
-    return 'Choose a different password. This one has appeared in a known security breach.';
-  }
-  if (code.includes('password_length') || code.includes('password') && code.includes('length')) {
-    return 'Choose a longer password that meets the account security requirements.';
-  }
-  if (code.includes('captcha') || code.includes('bot')) {
-    return 'The security check could not be completed. Refresh the page and try again.';
-  }
-  if (code.includes('too_many') || code.includes('rate_limit')) {
-    return 'Too many attempts. Please wait a few minutes and try again.';
-  }
-  if (code.includes('email_address_invalid') || code.includes('invalid_email')) {
-    return 'Enter a valid email address and try again.';
-  }
-  if (code.includes('phone_number_invalid') || code.includes('invalid_phone')) {
-    return 'Enter a valid phone number in international format and try again.';
-  }
-  if (code.includes('verification_code_invalid') || code.includes('invalid_code') || code.includes('incorrect_code')) {
-    return 'That verification code is incorrect. Check the code and try again.';
-  }
-  if (code.includes('verification_code_expired') || code.includes('code_expired')) {
-    return 'That verification code has expired. Request a new code and try again.';
-  }
-  if (code.includes('form_password_incorrect') || code.includes('form_identifier_not_found')) {
-    return 'Those sign-in details were not recognized. Check them and try again.';
-  }
-  return fallback;
 }
 
 export default function LoginScreen() {
@@ -84,6 +45,7 @@ export default function LoginScreen() {
   const [signInCode, setSignInCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
 
   const loading = !isLoaded || signInStatus === 'fetching' || signUpStatus === 'fetching' || isSubmitting || isResending;
   const normalizedPhone = normalizePhoneNumber(countryCode, phone);
@@ -91,6 +53,17 @@ export default function LoginScreen() {
   const submit = async () => {
     if (isSubmitting) return;
     setMessage('');
+    if (isNew || authMethod === 'email') {
+      const emailMessage = emailValidationMessage(email);
+      if (emailMessage) {
+        setMessage(emailMessage);
+        return;
+      }
+      if (!password.trim()) {
+        setMessage(isNew ? 'Password is required.' : 'Enter your password.');
+        return;
+      }
+    }
     setIsSubmitting(true);
     try {
       if (isNew) {
@@ -188,10 +161,37 @@ export default function LoginScreen() {
     }
   };
 
+  if (showPasswordReset) {
+    return (
+      <PasswordResetFlow
+        signIn={signIn}
+        initialEmail={email}
+        onBackToLogin={() => {
+          signIn.reset();
+          setShowPasswordReset(false);
+          setMessage('');
+        }}
+        onCompleted={() => {
+          signIn.reset();
+          setShowPasswordReset(false);
+          setPassword('');
+          setMessage('Your password was reset. Sign in with your new password.');
+        }}
+      />
+    );
+  }
+
   if (signInVerificationMethod) {
     const isPhoneVerification = signInVerificationMethod === 'phone';
     return (
-      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 16 }]}>
+      <KeyboardAwareScrollViewCompat
+        testID="sign-in-verification-scroll-view"
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 16 }]}
+        bottomOffset={72}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+      >
         <Pressable testID="login-code-back" onPress={() => { signIn.reset(); setSignInVerificationMethod(null); setSignInCode(''); setMessage(''); }} style={{ padding: 8, marginLeft: -8, alignSelf: 'flex-start' }}>
           <Feather name="arrow-left" size={24} color={colors.foreground} />
         </Pressable>
@@ -220,12 +220,19 @@ export default function LoginScreen() {
             <Text style={[styles.secondaryText, { color: colors.primary }]}>Use a different {isPhoneVerification ? 'phone number' : 'email address'}</Text>
           </Pressable>
         </View>
-      </View>
+      </KeyboardAwareScrollViewCompat>
     );
   }
 
   return (
-      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 16 }]}>
+      <KeyboardAwareScrollViewCompat
+        testID="login-scroll-view"
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 16 }]}
+        bottomOffset={72}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+      >
         <LinearGradient pointerEvents="none" colors={[colors.gradientSoft, 'transparent']} style={styles.orb} />
         <View style={styles.brandRow}>
           <View style={[styles.brandMark, { backgroundColor: colors.accent }]}><Text style={[styles.brandMarkText, { color: colors.accentForeground }]}>T</Text></View>
@@ -271,12 +278,17 @@ export default function LoginScreen() {
             </View>
           ) : (
             <>
-              <TextInput value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
-              <TextInput value={password} onChangeText={setPassword} autoCapitalize="none" secureTextEntry placeholder="Password" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card, marginTop: 16 }]} />
+              <TextInput testID="login-email" value={email} onChangeText={(value) => { setEmail(value); setMessage(''); }} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
+              <TextInput testID="login-password" value={password} onChangeText={(value) => { setPassword(value); setMessage(''); }} autoCapitalize="none" secureTextEntry autoComplete={isNew ? 'new-password' : 'current-password'} placeholder="Password" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card, marginTop: 16 }]} />
+              {!isNew && (
+                <Pressable testID="forgot-password" onPress={() => { setMessage(''); setShowPasswordReset(true); }} style={styles.forgotPassword}>
+                  <Text style={[styles.secondaryText, { color: colors.primary }]}>Forgot password?</Text>
+                </Pressable>
+              )}
             </>
           )}
           {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
-          <Pressable testID="login-continue" disabled={(authMethod === 'email' ? !email || !password : !normalizedPhone) || loading} onPress={submit} style={[styles.button, { backgroundColor: (authMethod === 'email' ? email && password : normalizedPhone) && !loading ? '#064E3B' : colors.muted, marginTop: 24 }]}>
+          <Pressable testID="login-continue" disabled={(authMethod === 'phone' && !normalizedPhone) || loading} onPress={() => void submit()} style={[styles.button, { backgroundColor: (authMethod === 'email' ? email.trim() && password.trim() : normalizedPhone) && !loading ? colors.primary : colors.muted, marginTop: 24 }]}>
             {loading ? <ActivityIndicator color="#fff" /> : <><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Create account' : 'Sign in'}</Text><Feather name="arrow-right" size={17} color="#fff" /></>}
           </Pressable>
           <Pressable onPress={() => { setNew(!isNew); setAuthMethod('email'); setMessage(''); }} style={styles.secondary}>
@@ -287,7 +299,7 @@ export default function LoginScreen() {
           </Pressable>
           {isNew && <View nativeID="clerk-captcha" />}
         </View>
-      </View>
+      </KeyboardAwareScrollViewCompat>
     );
 }
 
@@ -314,6 +326,7 @@ const styles = StyleSheet.create({
   buttonText: { fontSize: 16, fontWeight: '700' },
   secondary: { alignItems: 'center', marginTop: 24 },
   secondaryText: { fontSize: 14, fontWeight: '600' },
+  forgotPassword: { alignSelf: 'flex-end', marginTop: 12, paddingVertical: 4 },
   vendorLink: { alignItems: 'center', marginTop: 28, paddingVertical: 8 },
   vendorLinkText: { fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
 });
