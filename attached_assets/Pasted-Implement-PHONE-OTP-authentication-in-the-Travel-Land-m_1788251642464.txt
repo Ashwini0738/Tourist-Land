@@ -1,0 +1,253 @@
+Implement PHONE OTP authentication in the Travel & Land mobile app using the existing external Clerk DEVELOPMENT environment.
+
+IMPORTANT: This is DEVELOPMENT ONLY.
+
+DO NOT:
+- Modify production Clerk configuration.
+- Modify or remove the existing Replit-managed Clerk production authentication.
+- Change the database schema.
+- Create a custom OTP system.
+- Create any custom SMS API/provider.
+- Store OTP codes in the database.
+- Create a second authentication system.
+- Modify or redesign biometric/device authentication.
+- Break or remove the existing email OTP authentication.
+- Change the existing API authentication/session architecture.
+
+CURRENT WORKING FLOWS THAT MUST REMAIN UNCHANGED:
+
+EMAIL:
+Email/password → Email verification OTP → Clerk session → existing biometric/device unlock → App
+
+BIOMETRIC:
+Clerk session → existing biometric/device unlock → App
+
+NEW FLOW TO ADD:
+
+PHONE:
+Phone number → Clerk SMS OTP → Clerk session → existing biometric/device unlock → App
+
+IMPLEMENTATION REQUIREMENTS:
+
+1. First inspect the existing mobile authentication implementation in:
+   - artifacts/travel-land-app/app/login.tsx
+   - artifacts/travel-land-app/app/verify.tsx
+   - artifacts/travel-land-app/app/_layout.tsx
+   - artifacts/travel-land-app/context/AuthSecurityContext.tsx
+   - artifacts/travel-land-app/app/biometric.tsx
+   - artifacts/travel-land-app/app/biometric-login.tsx
+
+2. Do not rewrite the authentication architecture.
+
+3. Add an authentication method selector to the existing mobile login screen:
+   - Email
+   - Phone
+
+4. EMAIL mode:
+   - Keep the existing email/password authentication exactly as it currently works.
+   - Do not replace the existing email OTP flow.
+   - Do not change email verification behavior.
+
+5. PHONE mode:
+   - Display a phone number input.
+   - Support country code selection or an appropriate country-code input.
+   - Normalize the phone number to E.164 format before sending it to Clerk.
+   - Example format:
+     +91XXXXXXXXXX
+   - Do not store or send an OTP through our own API.
+
+6. PHONE SIGN-IN:
+   Implement Clerk's supported phone-code authentication flow.
+
+   The expected flow is:
+
+   User enters phone number
+       ↓
+   Clerk phone sign-in
+       ↓
+   Clerk sends SMS verification code
+       ↓
+   User enters OTP
+       ↓
+   Clerk verifies OTP
+       ↓
+   Clerk session becomes active
+       ↓
+   Existing biometric/device-unlock flow
+       ↓
+   App
+
+7. PHONE SIGN-UP:
+   If the current Clerk Development configuration supports phone sign-up, implement the corresponding Clerk phone sign-up flow.
+
+   Do not make phone-only account provisioning assumptions.
+
+   IMPORTANT:
+   The existing API currently expects a primary email for local-user provisioning.
+
+   Therefore, inspect the existing provisioning logic before enabling phone-only signup.
+
+   If phone-only signup would cause ACCOUNT_EMAIL_REQUIRED or duplicate-user problems, DO NOT work around it with a custom authentication system.
+
+   Instead, keep phone authentication limited to the supported development scenario and report the exact limitation.
+
+8. OTP SCREEN:
+   Reuse the existing OTP UI pattern where practical.
+
+   The phone OTP screen must provide:
+   - 6-digit OTP input
+   - Verify button
+   - Resend SMS option
+   - Loading state
+   - Invalid OTP error
+   - Expired OTP error
+   - Rate-limit/error handling
+   - Back/change phone number option
+
+9. TEST NUMBER:
+
+   Use ONLY the Clerk Development test phone number configured/documented for this development environment.
+
+   DO NOT use a real user's phone number.
+
+   DO NOT hard-code the test phone number into production code.
+
+   DO NOT hard-code a test OTP into application code.
+
+   If Clerk provides a predefined test OTP for the configured test phone number, use that only for development verification.
+
+10. CLERK:
+    Use the existing Clerk Expo SDK already installed in the project.
+
+    Do not install another authentication provider.
+
+    Do not introduce Supabase/Auth0/Firebase/custom JWT authentication.
+
+11. SESSION:
+    After successful phone OTP verification, use the normal Clerk session.
+
+    Do not create an application session.
+
+    Do not create a custom JWT.
+
+    Do not store OTP/session secrets locally.
+
+12. BIOMETRIC:
+    After phone OTP successfully creates the Clerk session, pass through the EXISTING biometric/device-unlock routing.
+
+    Do not modify:
+    - AuthSecurityContext
+    - biometric.tsx
+    - biometric-login.tsx
+
+    unless a very small routing adjustment is absolutely required.
+
+    If a routing adjustment is required, explain it before changing it.
+
+13. API:
+    The API must continue receiving the normal Clerk bearer token.
+
+    Do not create a phone OTP API endpoint.
+
+    Do not change requireAuth into a custom phone authentication system.
+
+14. DATABASE:
+    Do not modify the database schema in this task.
+
+    Do not add OTP tables.
+
+    Do not add OTP verification tables.
+
+    Do not change users.clerk_user_id.
+
+    Do not change users.email requirements.
+
+15. DEVELOPMENT ENVIRONMENT:
+    Verify that the mobile app is using:
+
+    TRAVEL_LAND_AUTH_TARGET=external-development
+
+    and the external Clerk development publishable key.
+
+    Do not use production Clerk keys.
+
+16. ERROR HANDLING:
+    Handle Clerk errors gracefully, including:
+    - invalid phone number
+    - invalid OTP
+    - expired OTP
+    - too many attempts
+    - SMS delivery failure
+    - phone number already registered
+    - unsupported phone authentication state
+    - missing verification factor
+
+17. TESTING:
+
+    Test these scenarios:
+
+    TEST 1:
+    Existing email login still works.
+
+    TEST 2:
+    Existing email OTP verification still works.
+
+    TEST 3:
+    Phone login screen can be selected.
+
+    TEST 4:
+    Clerk accepts the development test phone number.
+
+    TEST 5:
+    Clerk sends/accepts the development SMS verification code according to Clerk's test-number behavior.
+
+    TEST 6:
+    Correct phone OTP creates a Clerk session.
+
+    TEST 7:
+    Incorrect phone OTP is rejected.
+
+    TEST 8:
+    Resend OTP works according to Clerk's development behavior.
+
+    TEST 9:
+    Successful phone authentication reaches the existing biometric/device-unlock flow.
+
+    TEST 10:
+    Existing biometric authentication continues working.
+
+    TEST 11:
+    API requests continue using the Clerk bearer token.
+
+    TEST 12:
+    Logout continues using Clerk.
+
+18. BEFORE MODIFYING FILES:
+
+    First inspect the current implementation and identify the minimum files that must change.
+
+    Do not make unrelated refactoring.
+
+19. AFTER IMPLEMENTATION:
+
+    Report:
+
+    A. Files changed
+    B. Files not changed
+    C. Exact Clerk APIs used for phone authentication
+    D. How the test phone number was tested
+    E. Whether phone OTP successfully created a Clerk session
+    F. Whether biometric/device unlock remained unchanged
+    G. Whether email OTP remained unchanged
+    H. Whether API authentication remained unchanged
+    I. Any limitation caused by the current required-email provisioning
+    J. Any remaining issue
+
+IMPORTANT FINAL RULE:
+
+If Clerk's phone test-number behavior or phone authentication API differs from the assumptions above, STOP and report the exact Clerk limitation instead of inventing a workaround.
+
+Do not modify production.
+Do not create custom OTP.
+Do not change database.
+Do not redesign biometric authentication.
