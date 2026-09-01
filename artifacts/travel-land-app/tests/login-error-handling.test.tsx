@@ -273,6 +273,36 @@ describe('forgot password flow', () => {
     await waitFor(() => expect(screen.getByText('Choose a longer password that meets the account security requirements.')).toBeTruthy());
   });
 
+  it('shows a useful message for an unrecognized Clerk password-policy code', async () => {
+    const signIn = createSignIn();
+    signIn.resetPasswordEmailCode.verifyCode.mockImplementation(async () => {
+      signIn.status = 'needs_new_password';
+      return { error: null };
+    });
+    signIn.resetPasswordEmailCode.submitPassword.mockResolvedValueOnce({
+      error: { code: 'form_password_not_strong_enough' },
+    });
+    mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+    const screen = render(<LoginScreen />);
+
+    fireEvent.press(screen.getByTestId('forgot-password'));
+    fireEvent.changeText(screen.getByTestId('password-reset-email'), 'traveller@example.com');
+    fireEvent.press(screen.getByTestId('password-reset-submit-email'));
+    await waitFor(() => expect(screen.getByTestId('password-reset-code')).toBeTruthy());
+    fireEvent.changeText(screen.getByTestId('password-reset-code'), '123456');
+    fireEvent.press(screen.getByTestId('password-reset-submit-code'));
+    await waitFor(() => expect(screen.getByTestId('password-reset-new-password')).toBeTruthy());
+
+    fireEvent.changeText(screen.getByTestId('password-reset-new-password'), 'not-strong-enough');
+    fireEvent.changeText(screen.getByTestId('password-reset-confirm-password'), 'not-strong-enough');
+    fireEvent.press(screen.getByTestId('password-reset-submit-password'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Choose a stronger password with a mix of letters, numbers, and symbols.')).toBeTruthy();
+    });
+    expect(screen.queryByText('We could not reset your password. Please try again.')).toBeNull();
+  });
+
   it('handles a rejected recovery promise and resets loading', async () => {
     const signIn = createSignIn();
     signIn.create.mockRejectedValueOnce(new Error('network internals'));
