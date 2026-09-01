@@ -147,10 +147,10 @@ describe('login validation', () => {
     });
   });
 
-  it('explains when the password is rejected after a reset', async () => {
+  it('explains Clerk combined credential rejection after a reset', async () => {
     const signIn = createSignIn();
     signIn.password.mockResolvedValueOnce({
-      error: { code: 'form_password_incorrect' },
+      error: { code: 'form_password_or_identifier_incorrect' },
     });
     mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
     const screen = render(<LoginScreen />);
@@ -160,7 +160,7 @@ describe('login validation', () => {
     fireEvent.press(screen.getByTestId('login-continue'));
 
     await waitFor(() => {
-      expect(screen.getByText('The password was not accepted. If you just reset it, enter the new password and check that the email matches the account.')).toBeTruthy();
+      expect(screen.getByText('The email or password was not accepted. If you just reset the password, use the new password and make sure this is the same account and environment.')).toBeTruthy();
     });
     expect(screen.queryByText('We could not sign you in. Please check your details and try again.')).toBeNull();
   });

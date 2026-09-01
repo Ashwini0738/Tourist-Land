@@ -90,6 +90,9 @@ export function authErrorMessage(error: unknown, fallback: string) {
   if (includesCode(codes, 'session_expired', 'reset_expired', 'password_reset_expired')) {
     return 'This password reset session has expired. Start the reset again and request a new code.';
   }
+  if (includesCode(codes, 'form_password_or_identifier_incorrect', 'password_or_identifier_incorrect')) {
+    return 'The email or password was not accepted. If you just reset the password, use the new password and make sure this is the same account and environment.';
+  }
   if (includesCode(codes, 'form_password_incorrect', 'password_incorrect')) {
     return 'The password was not accepted. If you just reset it, enter the new password and check that the email matches the account.';
   }
