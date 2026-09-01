@@ -1,4 +1,4 @@
-import { clerkClient } from "@clerk/express";
+import { clerkClient } from "./clerkConfig.ts";
 import type { PrimaryRole } from "./roles";
 
 export type ExistingClerkUser = {

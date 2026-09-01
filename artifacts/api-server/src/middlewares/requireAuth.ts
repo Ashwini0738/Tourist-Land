@@ -1,7 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
-import { clerkClient, getAuth } from "@clerk/express";
+import { getAuth } from "@clerk/express";
 import { db, userRoles, users } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { clerkClient } from "../lib/clerkConfig.ts";
 import {
   configuredAdminClerkUserIds,
   normalizeAccountStatus,

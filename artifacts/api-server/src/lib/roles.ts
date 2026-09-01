@@ -41,8 +41,12 @@ export function normalizeAccountStatus(value: string): AccountStatus {
 }
 
 export function configuredAdminClerkUserIds(): Set<string> {
+  const variableName =
+    process.env.TRAVEL_LAND_AUTH_TARGET === "external-development"
+      ? "TRAVEL_LAND_DEV_ADMIN_CLERK_USER_IDS"
+      : "TRAVEL_LAND_ADMIN_CLERK_USER_IDS";
   return new Set(
-    (process.env.TRAVEL_LAND_ADMIN_CLERK_USER_IDS ?? "")
+    (process.env[variableName] ?? "")
       .split(",")
       .map((value) => value.trim())
       .filter(Boolean),

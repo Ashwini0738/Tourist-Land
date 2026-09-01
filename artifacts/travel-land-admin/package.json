@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --config vite.config.ts --host 0.0.0.0",
+    "dev": "if [ \"$TRAVEL_LAND_AUTH_TARGET\" != \"external-development\" ]; then echo 'TRAVEL_LAND_AUTH_TARGET must be external-development for the admin development app.' >&2; exit 1; fi; if [ -z \"$TRAVEL_LAND_DEV_CLERK_PUBLISHABLE_KEY\" ]; then echo 'TRAVEL_LAND_DEV_CLERK_PUBLISHABLE_KEY is required for the admin development app.' >&2; exit 1; fi; NODE_ENV=development VITE_TRAVEL_LAND_AUTH_TARGET=$TRAVEL_LAND_AUTH_TARGET VITE_TRAVEL_LAND_DEV_CLERK_PUBLISHABLE_KEY=$TRAVEL_LAND_DEV_CLERK_PUBLISHABLE_KEY VITE_CLERK_PROXY_URL= vite --config vite.config.ts --host 0.0.0.0",
     "build": "vite build --config vite.config.ts",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "test": "vitest run --config vitest.config.ts",

@@ -19,9 +19,18 @@ import {
 } from 'wouter';
 
 const queryClient = new QueryClient();
+const clerkAuthTarget = import.meta.env.VITE_TRAVEL_LAND_AUTH_TARGET;
+const isExternalDevelopment = clerkAuthTarget === 'external-development';
+if (import.meta.env.DEV && !isExternalDevelopment) {
+  throw new Error(
+    'VITE_TRAVEL_LAND_AUTH_TARGET must be external-development for the admin development app.',
+  );
+}
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+  isExternalDevelopment
+    ? import.meta.env.VITE_TRAVEL_LAND_DEV_CLERK_PUBLISHABLE_KEY
+    : import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
 );
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -119,7 +128,11 @@ const VendorsPage = lazy(() =>
 );
 
 if (!clerkPubKey) {
-  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in .env file');
+  throw new Error(
+    isExternalDevelopment
+      ? 'Missing VITE_TRAVEL_LAND_DEV_CLERK_PUBLISHABLE_KEY for the external development Clerk instance.'
+      : 'Missing VITE_CLERK_PUBLISHABLE_KEY in .env file',
+  );
 }
 
 const clerkAppearance = {

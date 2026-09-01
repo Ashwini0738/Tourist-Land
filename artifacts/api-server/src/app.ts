@@ -5,6 +5,12 @@ import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import {
+  clerkAuthTarget,
+  clerkClient,
+  clerkPublishableKey,
+  EXTERNAL_DEVELOPMENT_AUTH_TARGET,
+} from "./lib/clerkConfig";
 import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./middlewares/clerkProxyMiddleware";
 import { WebhookHandlers } from "./webhookHandlers";
 import { apiErrorHandler } from "./middlewares/errorHandler";
@@ -48,7 +54,14 @@ app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(cors({ credentials: true, origin: true }));
 app.use(
   clerkMiddleware((req) => ({
-    publishableKey: publishableKeyFromHost(getClerkProxyHost(req) ?? "", process.env.CLERK_PUBLISHABLE_KEY),
+    clerkClient,
+    publishableKey:
+      clerkAuthTarget === EXTERNAL_DEVELOPMENT_AUTH_TARGET
+        ? clerkPublishableKey
+        : publishableKeyFromHost(
+            getClerkProxyHost(req) ?? "",
+            clerkPublishableKey,
+          ),
   })),
 );
 app.use(express.json());
