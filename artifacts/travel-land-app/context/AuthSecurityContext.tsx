@@ -1,12 +1,15 @@
 import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '@clerk/expo';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
+type SecurityError = 'SECURE_STORAGE_UNAVAILABLE';
 type SecurityContextValue = {
   isReady: boolean;
   isUnlocked: boolean;
   biometricsEnabled: boolean;
   deviceAuthSetupComplete: boolean;
+  securityError: SecurityError | null;
+  retrySecurityState: () => Promise<void>;
   unlock: () => Promise<void>;
   lock: () => Promise<void>;
   setBiometricsEnabled: (enabled: boolean) => Promise<void>;
@@ -24,26 +27,32 @@ export function AuthSecurityProvider({ children }: { children: React.ReactNode }
   const [biometricsEnabled, setBiometrics] = useState(false);
   const [deviceAuthSetupComplete, setDeviceAuthSetupCompleteState] = useState(false);
   const [isUnlocked, setUnlocked] = useState(false);
+  const [securityError, setSecurityError] = useState<SecurityError | null>(null);
+  const loadGeneration = useRef(0);
 
   const storageKey = useCallback((key: string) => `${key}.${userId ?? 'signed-out'}`, [userId]);
 
-  useEffect(() => {
-    let active = true;
+  const readSecurityState = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    const isCurrent = () => loadGeneration.current === generation;
     setReady(false);
     setUnlocked(false);
+    setSecurityError(null);
     if (!isSignedIn || !userId) {
+      if (!isCurrent()) return;
       setBiometrics(false);
       setDeviceAuthSetupCompleteState(false);
       setReady(true);
-      return () => { active = false; };
+      return;
     }
-    Promise.all([
-      SecureStore.getItemAsync(storageKey(BIOMETRICS)),
-      SecureStore.getItemAsync(storageKey(SETUP_COMPLETE)),
-      SecureStore.getItemAsync(storageKey(LEGACY_HAS_PIN)),
-    ])
-      .then(async ([biometrics, setupComplete, legacyPin]) => {
-        if (!active) return;
+
+    try {
+      const [biometrics, setupComplete, legacyPin] = await Promise.all([
+        SecureStore.getItemAsync(storageKey(BIOMETRICS)),
+        SecureStore.getItemAsync(storageKey(SETUP_COMPLETE)),
+        SecureStore.getItemAsync(storageKey(LEGACY_HAS_PIN)),
+      ]);
+      if (!isCurrent()) return;
         const enabled = biometrics === 'true';
         const hasCompletedSetup = setupComplete === 'true' || biometrics !== null || legacyPin === 'true';
         setBiometrics(enabled);
@@ -52,18 +61,29 @@ export function AuthSecurityProvider({ children }: { children: React.ReactNode }
         if (hasCompletedSetup && setupComplete !== 'true') {
           await SecureStore.setItemAsync(storageKey(SETUP_COMPLETE), 'true');
         }
+        if (!isCurrent()) return;
         await SecureStore.deleteItemAsync(storageKey(LEGACY_HAS_PIN));
         setReady(true);
-      })
-      .catch(() => {
-        if (!active) return;
-        setBiometrics(false);
-        setDeviceAuthSetupCompleteState(true);
-        setUnlocked(true);
-        setReady(true);
-      });
-    return () => { active = false; };
+    } catch {
+      if (!isCurrent()) return;
+      setBiometrics(false);
+      setDeviceAuthSetupCompleteState(false);
+      setUnlocked(false);
+      setSecurityError('SECURE_STORAGE_UNAVAILABLE');
+      setReady(true);
+    }
   }, [isSignedIn, storageKey, userId]);
+
+  useEffect(() => {
+    void readSecurityState();
+    return () => {
+      loadGeneration.current += 1;
+    };
+  }, [readSecurityState]);
+
+  const retrySecurityState = useCallback(async () => {
+    await readSecurityState();
+  }, [readSecurityState]);
 
   const setBiometricsEnabled = useCallback(async (enabled: boolean) => {
     setBiometrics(enabled);
@@ -76,7 +96,7 @@ export function AuthSecurityProvider({ children }: { children: React.ReactNode }
   const unlock = useCallback(async () => setUnlocked(true), []);
   const lock = useCallback(async () => setUnlocked(false), []);
 
-  return <SecurityContext.Provider value={{ isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete, unlock, lock, setBiometricsEnabled, setDeviceAuthSetupComplete }}>{children}</SecurityContext.Provider>;
+  return <SecurityContext.Provider value={{ isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete, securityError, retrySecurityState, unlock, lock, setBiometricsEnabled, setDeviceAuthSetupComplete }}>{children}</SecurityContext.Provider>;
 }
 
 export function useAuthSecurity() {

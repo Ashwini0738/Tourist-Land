@@ -23,6 +23,7 @@ import { setAuthTokenGetter, setBaseUrl, setUnauthorizedHandler } from '@workspa
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { roleHome, unauthorizedHome } from '@/features/role/roleRouting';
+import { SecureStorageRecovery } from '@/components/SecureStorageRecovery';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -98,7 +99,7 @@ function RootLayoutNav() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { signOut } = useClerk();
   const router = useRouter();
-  const { isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete } = useAuthSecurity();
+  const { isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete, securityError, retrySecurityState } = useAuthSecurity();
   const { role, isReady: roleReady, isLoading: roleLoading, isError: roleError, refetch: refetchRole } = useRole();
   const colors = useColors();
   const segments = useSegments();
@@ -125,6 +126,8 @@ function RootLayoutNav() {
       if (route && !publicRoutes.includes(route)) router.replace('/login');
       return;
     }
+
+    if (securityError === 'SECURE_STORAGE_UNAVAILABLE') return;
 
     if (!isReady) return;
 
@@ -164,14 +167,17 @@ function RootLayoutNav() {
     roleReady,
     route,
     router,
+    securityError,
   ]);
 
   const showRoleError = Boolean(isSignedIn && isReady && isUnlocked && roleError);
+  const showSecureStorageRecovery = Boolean(isSignedIn && securityError === 'SECURE_STORAGE_UNAVAILABLE');
 
   return (
     <View style={styles.root}>
       {renderRoutes()}
       {showRoleError && <RoleResolutionError onRetry={refetchRole} />}
+      {showSecureStorageRecovery && <SecureStorageRecovery onRetry={retrySecurityState} />}
     </View>
   );
 }

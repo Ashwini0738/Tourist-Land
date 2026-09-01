@@ -1,6 +1,6 @@
 import React from 'react';
-import { Text } from 'react-native';
-import { render, waitFor } from '@testing-library/react-native';
+import { Pressable, Text } from 'react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { AuthSecurityProvider, useAuthSecurity } from './AuthSecurityContext';
 import * as SecureStore from 'expo-secure-store';
 
@@ -17,8 +17,13 @@ jest.mock('expo-secure-store', () => ({
 const { useAuth } = jest.requireMock('@clerk/expo') as { useAuth: jest.Mock };
 
 function SecurityState() {
-  const { isReady, deviceAuthSetupComplete, biometricsEnabled, isUnlocked } = useAuthSecurity();
-  return <Text>{`${isReady}:${deviceAuthSetupComplete}:${biometricsEnabled}:${isUnlocked}`}</Text>;
+  const { isReady, deviceAuthSetupComplete, biometricsEnabled, isUnlocked, securityError, retrySecurityState } = useAuthSecurity();
+  return (
+    <>
+      <Text>{`${isReady}:${deviceAuthSetupComplete}:${biometricsEnabled}:${isUnlocked}:${securityError ?? 'none'}`}</Text>
+      <Pressable testID="security-retry" onPress={() => void retrySecurityState()} />
+    </>
+  );
 }
 
 describe('AuthSecurityProvider', () => {
@@ -42,7 +47,7 @@ describe('AuthSecurityProvider', () => {
       </AuthSecurityProvider>,
     );
 
-    await waitFor(() => expect(result.getByText('true:false:false:false')).toBeTruthy());
+    await waitFor(() => expect(result.getByText('true:false:false:false:none')).toBeTruthy());
     expect(SecureStore.getItemAsync).toHaveBeenCalledTimes(3);
   });
 
@@ -59,7 +64,7 @@ describe('AuthSecurityProvider', () => {
       </AuthSecurityProvider>,
     );
 
-    await waitFor(() => expect(result.getByText('true:true:false:true')).toBeTruthy());
+    await waitFor(() => expect(result.getByText('true:true:false:true:none')).toBeTruthy());
   });
 
   it('restores enabled device authentication as locked until native auth succeeds', async () => {
@@ -75,6 +80,55 @@ describe('AuthSecurityProvider', () => {
       </AuthSecurityProvider>,
     );
 
-    await waitFor(() => expect(result.getByText('true:true:true:false')).toBeTruthy());
+    await waitFor(() => expect(result.getByText('true:true:true:false:none')).toBeTruthy());
+  });
+
+  it('fails closed when SecureStore cannot be read', async () => {
+    (SecureStore.getItemAsync as jest.Mock).mockRejectedValue(new Error('native storage details'));
+
+    const result = render(
+      <AuthSecurityProvider>
+        <SecurityState />
+      </AuthSecurityProvider>,
+    );
+
+    await waitFor(() => expect(result.getByText('true:false:false:false:SECURE_STORAGE_UNAVAILABLE')).toBeTruthy());
+    expect(result.queryByText('native storage details')).toBeNull();
+  });
+
+  it('recovers after a SecureStore retry succeeds', async () => {
+    let readAttempts = 0;
+    (SecureStore.getItemAsync as jest.Mock).mockImplementation(() => {
+      readAttempts += 1;
+      return readAttempts <= 3 ? Promise.reject(new Error('temporary storage failure')) : Promise.resolve(null);
+    });
+
+    const result = render(
+      <AuthSecurityProvider>
+        <SecurityState />
+      </AuthSecurityProvider>,
+    );
+
+    await waitFor(() => expect(result.getByText('true:false:false:false:SECURE_STORAGE_UNAVAILABLE')).toBeTruthy());
+    fireEvent.press(result.getByTestId('security-retry'));
+
+    await waitFor(() => expect(result.getByText('true:false:false:false:none')).toBeTruthy());
+    expect(readAttempts).toBe(6);
+  });
+
+  it('stays locked when repeated SecureStore retries fail', async () => {
+    (SecureStore.getItemAsync as jest.Mock).mockRejectedValue(new Error('persistent storage failure'));
+
+    const result = render(
+      <AuthSecurityProvider>
+        <SecurityState />
+      </AuthSecurityProvider>,
+    );
+
+    await waitFor(() => expect(result.getByText('true:false:false:false:SECURE_STORAGE_UNAVAILABLE')).toBeTruthy());
+    fireEvent.press(result.getByTestId('security-retry'));
+
+    await waitFor(() => expect(result.getByText('true:false:false:false:SECURE_STORAGE_UNAVAILABLE')).toBeTruthy());
+    expect(result.queryByText('persistent storage failure')).toBeNull();
   });
 });
