@@ -2,7 +2,6 @@ import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
 import { useSignIn } from '@clerk/expo';
-import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,7 +17,7 @@ type PasswordResetFlowProps = {
   onCompleted: () => void;
 };
 
-function resetPasswordValidationMessage(signIn: SignInResource, password: string, confirmation: string) {
+function resetPasswordValidationMessage(password: string, confirmation: string) {
   if (!password) return 'New password is required.';
   if (password !== confirmation) return 'Passwords do not match.';
   // The installed Future API does not expose local password metadata. Clerk's
@@ -124,7 +123,7 @@ export function PasswordResetFlow({
   const submitNewPassword = async () => {
     if (isSubmitting) return;
     setMessage('');
-    const validationMessage = resetPasswordValidationMessage(signIn, newPassword, confirmation);
+    const validationMessage = resetPasswordValidationMessage(newPassword, confirmation);
     if (validationMessage) {
       setMessage(validationMessage);
       return;
