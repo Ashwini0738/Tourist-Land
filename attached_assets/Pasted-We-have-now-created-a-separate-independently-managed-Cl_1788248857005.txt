@@ -1,0 +1,92 @@
+We have now created a separate independently managed Clerk DEVELOPMENT application.
+
+IMPORTANT:
+This is DEVELOPMENT ONLY.
+
+The existing Replit-managed Clerk remains the production authentication provider and must NOT be changed.
+
+For this step, configure ONLY the development environment to use the external Clerk development instance.
+
+Do NOT implement phone OTP yet.
+
+Do NOT modify the database.
+
+Do NOT migrate users.
+
+Do NOT modify biometric authentication.
+
+Do NOT modify the production Clerk configuration.
+
+Do NOT overwrite the existing production Clerk environment variables.
+
+Do NOT create a custom OTP system.
+
+Do NOT create a second authentication system.
+
+Use separate development environment variables for the external Clerk instance.
+
+Required development configuration:
+
+* External Clerk development publishable key
+* External Clerk development secret key
+* Explicit development authentication target
+* Separate development admin Clerk user ID configuration
+
+Requirements:
+
+1. Add the development variables using secure environment/secrets configuration.
+
+2. The external Clerk development secret key must remain server-side only.
+
+3. The external Clerk development publishable key may be exposed to the Expo/Vite development builds as appropriate.
+
+4. Configure the development Expo mobile app to use the external Clerk development publishable key.
+
+5. Configure the development API server to use the matching external Clerk development key pair.
+
+6. Configure the development admin portal to use the external Clerk development publishable key.
+
+7. Make provider selection explicit.
+
+There must NOT be a fallback such as:
+
+development external key → production Replit-managed key
+
+If the development external key is missing, fail clearly rather than silently connecting to production.
+
+8. Keep production configuration completely unchanged.
+
+9. Verify that all three development surfaces use the same external Clerk development instance:
+
+Expo mobile → External Clerk DEV
+API server → External Clerk DEV
+Admin portal → External Clerk DEV
+
+10. Do NOT implement phone authentication in this step.
+
+11. Do NOT change the existing email OTP implementation.
+
+12. Do NOT change biometric/device-unlock implementation.
+
+13. Do NOT migrate or import any users.
+
+After implementation:
+
+* Start the development API.
+* Start the development mobile application.
+* Start the development admin portal.
+* Verify the applications connect to the external Clerk DEVELOPMENT instance.
+* Verify the current production configuration remains untouched.
+* Verify no production Clerk user/session/database is accessed.
+
+Finally report:
+
+A. Files changed
+B. Development environment variables added (names only, NEVER values)
+C. Production variables confirmed unchanged
+D. Clerk instance used by Expo
+E. Clerk instance used by API
+F. Clerk instance used by Admin
+G. Any errors or blockers
+
+STOP after this configuration step.
