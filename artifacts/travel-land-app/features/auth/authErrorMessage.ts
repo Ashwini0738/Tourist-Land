@@ -101,6 +101,9 @@ export function authErrorMessage(error: unknown, fallback: string) {
   if (includesCode(codes, 'verification_code_expired', 'code_expired')) {
     return 'That verification code has expired. Request a new code and try again.';
   }
+  if (includesCode(codes, 'session_exists')) {
+    return 'You are already signed in. Opening your account.';
+  }
   if (includesCode(codes, 'session_expired', 'reset_expired', 'password_reset_expired')) {
     return 'This password reset session has expired. Start the reset again and request a new code.';
   }

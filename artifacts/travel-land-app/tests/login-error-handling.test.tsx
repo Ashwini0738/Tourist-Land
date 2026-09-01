@@ -147,6 +147,29 @@ describe('login validation', () => {
     });
   });
 
+  it('redirects a restored Clerk session away from login', async () => {
+    mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: true });
+    render(<LoginScreen />);
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/(tabs)'));
+  });
+
+  it('redirects when Clerk reports an existing session during sign in', async () => {
+    const signIn = createSignIn();
+    signIn.password.mockResolvedValueOnce({
+      error: { code: 'session_exists' },
+    });
+    mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+    const screen = render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByTestId('login-email'), 'ashwini0738@gmail.com');
+    fireEvent.changeText(screen.getByTestId('login-password'), 'new-password');
+    fireEvent.press(screen.getByTestId('login-continue'));
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/(tabs)'));
+    expect(screen.queryByText('You are already signed in. Opening your account.')).toBeNull();
+  });
+
   it('explains Clerk combined credential rejection after a reset', async () => {
     const signIn = createSignIn();
     signIn.password.mockResolvedValueOnce({
