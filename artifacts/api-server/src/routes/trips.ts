@@ -91,18 +91,43 @@ router.post("/v1/trips/:id/items", async (req, res): Promise<void> => {
   if (!getFavoriteCatalogItem(parsed.data.entityType, parsed.data.entityId)) {
     res.status(404).json({ error: { code: "NOT_FOUND", message: "That catalog item is not available." } }); return;
   }
-  const existing = await db.select().from(tripItems).where(eq(tripItems.tripId, trip.id));
-  const [item] = await db.insert(tripItems)
-    .values({ ...parsed.data, tripId: trip.id, sortOrder: existing.length })
-    .onConflictDoNothing({
-      target: [tripItems.tripId, tripItems.entityType, tripItems.entityId],
-    })
-    .returning();
-  if (!item) {
+  const outcome = await db.transaction(async (tx) => {
+    const [trip] = await tx
+      .select()
+      .from(trips)
+      .where(and(eq(trips.id, tripId.data), eq(trips.userId, req.localUser!.id)))
+      .for("update");
+    if (!trip) return { type: "not-found" as const };
+    if (trip.status === "archived") return { type: "archived" as const };
+
+    const existing = await tx
+      .select({ id: tripItems.id })
+      .from(tripItems)
+      .where(eq(tripItems.tripId, trip.id));
+    const [item] = await tx
+      .insert(tripItems)
+      .values({ ...parsed.data, tripId: trip.id, sortOrder: existing.length })
+      .onConflictDoNothing({
+        target: [tripItems.tripId, tripItems.entityType, tripItems.entityId],
+      })
+      .returning();
+    return item
+      ? { type: "created" as const, item }
+      : { type: "duplicate" as const };
+  });
+  if (outcome.type === "not-found") {
+    res.status(404).json({ error: { code: "NOT_FOUND", message: "Trip not found" } });
+    return;
+  }
+  if (outcome.type === "archived") {
+    res.status(409).json({ error: { code: "CONFLICT", message: "Archived trips cannot be changed" } });
+    return;
+  }
+  if (outcome.type === "duplicate") {
     res.status(409).json({ error: { code: "CONFLICT", message: "That item is already in this trip." } });
     return;
   }
-  res.status(201).json(serializeItem(item));
+  res.status(201).json(serializeItem(outcome.item));
 });
 
 router.delete("/v1/trips/:tripId/items/:itemId", async (req, res): Promise<void> => {

@@ -265,6 +265,100 @@ test(
 );
 
 test(
+  "simultaneous saves assign stable trip item order",
+  { skip: skipUnlessPhase("journey") },
+  async (t) => {
+    await runDemoCommand("reset");
+    await runDemoCommand("seed");
+
+    const server = await startTestServer();
+    t.after(() => server.close());
+
+    const { db, tripItems, trips } = await import("@workspace/db");
+    const tripTitle = "Concurrent itinerary order journey";
+    t.after(async () => {
+      await db
+        .delete(trips)
+        .where(
+          and(
+            eq(trips.userId, demoIds.users.traveller),
+            eq(trips.title, tripTitle),
+          ),
+        );
+      await runDemoCommand("reset");
+    });
+
+    const created = await request(server.baseUrl, "/v1/trips", "demo_traveller", {
+      method: "POST",
+      body: JSON.stringify({ title: tripTitle }),
+    });
+    assert.equal(created.response.status, 201, JSON.stringify(created.body));
+
+    const tripId = created.body.id;
+    const saves = await Promise.all(
+      ["demo-destination-1", "demo-destination-2"].map((entityId) =>
+        request(
+          server.baseUrl,
+          `/v1/trips/${tripId}/items`,
+          "demo_traveller",
+          {
+            method: "POST",
+            body: JSON.stringify({ entityType: "destination", entityId }),
+          },
+        ),
+      ),
+    );
+    assert.deepEqual(
+      saves.map(({ response }) => response.status).sort(),
+      [201, 201],
+    );
+
+    const persisted = await request(server.baseUrl, "/v1/trips", "demo_traveller");
+    assert.equal(persisted.response.status, 200, JSON.stringify(persisted.body));
+    const persistedTrip = persisted.body.items.find(
+      (trip: any) => trip.id === tripId,
+    );
+    assert.ok(persistedTrip);
+    assert.deepEqual(
+      persistedTrip.items.map((item: any) => item.entityId),
+      persistedTrip.items
+        .slice()
+        .sort((left: any, right: any) => left.sortOrder - right.sortOrder)
+        .map((item: any) => item.entityId),
+    );
+    assert.deepEqual(
+      persistedTrip.items.map((item: any) => item.sortOrder),
+      [0, 1],
+    );
+    assert.deepEqual(
+      new Set(persistedTrip.items.map((item: any) => item.entityId)),
+      new Set(["demo-destination-1", "demo-destination-2"]),
+    );
+
+    const persistedAgain = await request(
+      server.baseUrl,
+      "/v1/trips",
+      "demo_traveller",
+    );
+    const persistedTripAgain = persistedAgain.body.items.find(
+      (trip: any) => trip.id === tripId,
+    );
+    assert.deepEqual(persistedTripAgain?.items, persistedTrip.items);
+
+    const rows = await db
+      .select()
+      .from(tripItems)
+      .where(eq(tripItems.tripId, tripId));
+    assert.equal(rows.length, 2);
+    assert.equal(new Set(rows.map((row) => row.entityId)).size, 2);
+    assert.deepEqual(
+      rows.map((row) => row.sortOrder).sort((left, right) => left - right),
+      [0, 1],
+    );
+  },
+);
+
+test(
   "simultaneous bookings cannot oversell the final available room",
   { skip: skipUnlessPhase("journey") },
   async (t) => {
