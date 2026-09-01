@@ -18,6 +18,22 @@ function includesCode(codes: string[], ...needles: string[]) {
   return needles.some((needle) => codes.some((code) => code.includes(needle)));
 }
 
+export function authErrorCodes(error: unknown) {
+  return errorDetails(error)
+    .map((detail) => (typeof detail.code === 'string' ? detail.code.toLowerCase() : ''))
+    .filter(Boolean);
+}
+
+function safeClerkLongMessage(details: ClerkErrorLike[]) {
+  const candidate = details
+    .map((detail) => detail.longMessage)
+    .find((value): value is string => typeof value === 'string');
+  if (!candidate) return null;
+
+  const message = candidate.trim().replace(/\s+/g, ' ');
+  return message.length > 0 && message.length <= 240 ? message : null;
+}
+
 function safePasswordMessage(details: ClerkErrorLike[]) {
   const candidate = details
     .map((detail) => detail.longMessage ?? detail.message)
@@ -38,9 +54,7 @@ function safePasswordMessage(details: ClerkErrorLike[]) {
 
 export function authErrorMessage(error: unknown, fallback: string) {
   const details = errorDetails(error);
-  const codes = details
-    .map((detail) => (typeof detail.code === 'string' ? detail.code.toLowerCase() : ''))
-    .filter(Boolean);
+  const codes = authErrorCodes(error);
 
   if (includesCode(codes, 'identifier_exists')) {
     return 'An account with this email already exists. Switch to sign in instead.';
@@ -102,7 +116,7 @@ export function authErrorMessage(error: unknown, fallback: string) {
   if (codes.some((code) => code.includes('password'))) {
     return safePasswordMessage(details) ?? 'Your new password does not meet the account requirements. Choose a different password and try again.';
   }
-  return fallback;
+  return safeClerkLongMessage(details) ?? fallback;
 }
 
 export function emailValidationMessage(email: string) {

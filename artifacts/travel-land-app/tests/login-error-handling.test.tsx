@@ -181,6 +181,28 @@ describe('login validation', () => {
       expect(screen.getByText('No account was found for this email. Check the address or use the same account and environment where you reset the password.')).toBeTruthy();
     });
   });
+
+  it('shows Clerk user-safe guidance for an otherwise unknown sign-in error', async () => {
+    const signIn = createSignIn();
+    signIn.password.mockResolvedValueOnce({
+      error: {
+        code: 'future_sign_in_rejection',
+        message: 'developer-only provider details',
+        longMessage: 'Password sign-in is not available for this account. Use another sign-in method.',
+      },
+    });
+    mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+    const screen = render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+    fireEvent.changeText(screen.getByTestId('login-password'), 'new-password');
+    fireEvent.press(screen.getByTestId('login-continue'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Password sign-in is not available for this account. Use another sign-in method.')).toBeTruthy();
+    });
+    expect(screen.queryByText('developer-only provider details')).toBeNull();
+  });
 });
 
 describe('forgot password flow', () => {

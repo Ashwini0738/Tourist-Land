@@ -1,7 +1,7 @@
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { PasswordResetFlow } from '@/features/auth/PasswordResetFlow';
-import { authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
+import { authErrorCodes, authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
 import { useAuth, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -99,7 +99,14 @@ export default function LoginScreen() {
       }
 
       const { error } = await signIn.password({ emailAddress: email.trim(), password });
-      if (error) return setMessage(authErrorMessage(error, 'We could not sign you in. Please check your details and try again.'));
+      if (error) {
+        if (__DEV__) {
+          console.warn('[auth] Password sign-in rejected', {
+            codes: authErrorCodes(error).length ? authErrorCodes(error) : ['unknown'],
+          });
+        }
+        return setMessage(authErrorMessage(error, 'We could not sign you in. Please check your details and try again.'));
+      }
       if (signIn.status === 'needs_second_factor' || signIn.status === 'needs_client_trust') {
         const emailFactor = signIn.supportedSecondFactors?.find((factor) => factor.strategy === 'email_code');
         if (!emailFactor) {
