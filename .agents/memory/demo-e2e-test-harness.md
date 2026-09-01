@@ -40,3 +40,14 @@ or unrelated routes.
 
 **How to apply:** Initialize the opt-in test environment at module startup,
 before tests import database-backed route modules or the database package.
+
+Seeded booking journeys can log non-fatal email-delivery failures from the
+Resend side effect even when the booking and persistence assertions pass.
+
+**Why:** Booking creation intentionally isolates notification delivery from
+the saved booking state, and disposable environments may not accept the demo
+recipient configuration.
+
+**How to apply:** Treat these delivery logs as a separate integration warning;
+use the test result and assertions to judge the database-backed journey unless
+the task specifically covers email delivery.

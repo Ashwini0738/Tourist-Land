@@ -92,7 +92,16 @@ router.post("/v1/trips/:id/items", async (req, res): Promise<void> => {
     res.status(404).json({ error: { code: "NOT_FOUND", message: "That catalog item is not available." } }); return;
   }
   const existing = await db.select().from(tripItems).where(eq(tripItems.tripId, trip.id));
-  const [item] = await db.insert(tripItems).values({ ...parsed.data, tripId: trip.id, sortOrder: existing.length }).returning();
+  const [item] = await db.insert(tripItems)
+    .values({ ...parsed.data, tripId: trip.id, sortOrder: existing.length })
+    .onConflictDoNothing({
+      target: [tripItems.tripId, tripItems.entityType, tripItems.entityId],
+    })
+    .returning();
+  if (!item) {
+    res.status(409).json({ error: { code: "CONFLICT", message: "That item is already in this trip." } });
+    return;
+  }
   res.status(201).json(serializeItem(item));
 });
 

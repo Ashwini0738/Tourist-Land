@@ -168,6 +168,103 @@ async function request(
 }
 
 test(
+  "authenticated travellers can create trips and persist catalog items without duplicates",
+  { skip: skipUnlessPhase("journey") },
+  async (t) => {
+    await runDemoCommand("reset");
+    await runDemoCommand("seed");
+
+    const server = await startTestServer();
+    t.after(() => server.close());
+
+    const { db, tripItems, trips } = await import("@workspace/db");
+    const tripTitle = "Demo persistence journey";
+    t.after(async () => {
+      await db
+        .delete(trips)
+        .where(
+          and(
+            eq(trips.userId, demoIds.users.traveller),
+            eq(trips.title, tripTitle),
+          ),
+        );
+      await runDemoCommand("reset");
+    });
+
+    const created = await request(server.baseUrl, "/v1/trips", "demo_traveller", {
+      method: "POST",
+      body: JSON.stringify({
+        title: tripTitle,
+        startsOn: "2030-06-10",
+        endsOn: "2030-06-12",
+      }),
+    });
+    assert.equal(created.response.status, 201, JSON.stringify(created.body));
+    assert.equal(created.body.title, tripTitle);
+    assert.equal(created.body.status, "active");
+    assert.deepEqual(created.body.items, []);
+
+    const listed = await request(
+      server.baseUrl,
+      "/v1/trips",
+      "demo_traveller",
+    );
+    assert.equal(listed.response.status, 200, JSON.stringify(listed.body));
+    const selectedTrip = listed.body.items.find(
+      (trip: any) => trip.id === created.body.id,
+    );
+    assert.ok(selectedTrip);
+    assert.equal(selectedTrip.items.length, 0);
+
+    const itemBody = {
+      entityType: "destination",
+      entityId: "demo-destination-1",
+      note: "Add this to the itinerary.",
+    };
+    const added = await request(
+      server.baseUrl,
+      `/v1/trips/${selectedTrip.id}/items`,
+      "demo_traveller",
+      { method: "POST", body: JSON.stringify(itemBody) },
+    );
+    assert.equal(added.response.status, 201, JSON.stringify(added.body));
+    assert.equal(added.body.entityType, itemBody.entityType);
+    assert.equal(added.body.entityId, itemBody.entityId);
+    assert.equal(added.body.name, "Konkan Coast");
+
+    const duplicate = await request(
+      server.baseUrl,
+      `/v1/trips/${selectedTrip.id}/items`,
+      "demo_traveller",
+      { method: "POST", body: JSON.stringify(itemBody) },
+    );
+    assert.equal(duplicate.response.status, 409, JSON.stringify(duplicate.body));
+    assert.equal(duplicate.body.error?.code, "CONFLICT");
+
+    const persisted = await request(
+      server.baseUrl,
+      "/v1/trips",
+      "demo_traveller",
+    );
+    assert.equal(persisted.response.status, 200, JSON.stringify(persisted.body));
+    const persistedTrip = persisted.body.items.find(
+      (trip: any) => trip.id === selectedTrip.id,
+    );
+    assert.ok(persistedTrip);
+    assert.equal(persistedTrip.items.length, 1);
+    assert.equal(persistedTrip.items[0].id, added.body.id);
+    assert.equal(persistedTrip.items[0].sortOrder, 0);
+
+    const rows = await db
+      .select()
+      .from(tripItems)
+      .where(eq(tripItems.tripId, selectedTrip.id));
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].entityId, itemBody.entityId);
+  },
+);
+
+test(
   "simultaneous bookings cannot oversell the final available room",
   { skip: skipUnlessPhase("journey") },
   async (t) => {
