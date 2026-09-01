@@ -1,0 +1,182 @@
+Now perform a **LIVE LOGIN FLOW TEST ONLY** using the existing development/test account and the application's current authentication implementation.
+
+IMPORTANT:
+
+* Do NOT modify code before testing.
+* Do NOT implement Email OTP.
+* Do NOT implement Phone OTP.
+* Do NOT change Clerk configuration.
+* Do NOT change environment variables or secrets.
+* Do NOT create any new authentication system.
+* Do NOT create or modify user accounts.
+* Do NOT ask me to provide or expose a password, OTP, Clerk token, API key, or secret in the chat.
+* Use only an already configured safe development/test account if one is available through the existing project/test setup.
+
+The previous fix has already passed:
+
+* 19 mobile test suites
+* 94 tests
+* TypeScript
+* Expo/Metro
+* role-routing tests
+* biometric/passcode tests
+
+Now I need actual runtime verification of the current login flow.
+
+## TEST 1 — EMAIL/PASSWORD LOGIN
+
+Test the existing email/password login flow.
+
+Verify:
+
+1. Login screen opens.
+2. Email field accepts input.
+3. Password field accepts input.
+4. Login button works.
+5. Clerk authentication request is made.
+6. Successful authentication creates/activates a Clerk session.
+7. User is not immediately redirected back to Login.
+8. `/v1/me` succeeds.
+9. Correct role is resolved.
+10. User reaches the correct authenticated home screen.
+
+Record the result as:
+
+EMAIL/PASSWORD LOGIN:
+PASS / FAIL / BLOCKED
+
+If blocked, provide the exact error.
+
+## TEST 2 — INVALID LOGIN
+
+Using safe test conditions, verify an invalid login is handled correctly.
+
+Check:
+
+* Invalid credentials
+* Clerk error displayed
+* No application crash
+* Loading state resets
+* User remains on login
+* No unhandled promise rejection
+
+Do not expose the actual credentials in the report.
+
+## TEST 3 — SESSION
+
+After successful login verify:
+
+* Clerk session exists.
+* Authenticated state remains stable.
+* Navigate between screens.
+* Return to the home screen.
+* No unexpected logout.
+* No repeated login redirect.
+
+## TEST 4 — LOGOUT
+
+Use the existing logout functionality.
+
+Verify:
+
+Logout
+→ Clerk session ends
+→ app returns to Login
+→ protected screens cannot be accessed
+
+## TEST 5 — ROLE ROUTING
+
+Using the available safe test account, verify its actual role.
+
+If separate safe development accounts already exist, test:
+
+* Traveller
+* Vendor
+* Admin
+
+Do NOT create accounts.
+
+Verify each account reaches the correct area and cannot access unauthorized role areas.
+
+## TEST 6 — API AUTHENTICATION
+
+After successful login, verify an authenticated API request.
+
+Check:
+
+Clerk session
+→ token
+→ API request
+→ `/v1/me`
+→ authenticated response
+
+If `/v1/me` fails, capture:
+
+* HTTP status
+* safe error message
+* whether it is a Clerk authentication issue
+* whether it is an API/network issue
+* whether role resolution is affected
+
+Do not expose tokens.
+
+## TEST 7 — RETURNING USER / DEVICE SECURITY
+
+If the existing development environment allows it, test:
+
+Login
+→ authenticated session
+→ close/reopen app
+→ session restoration
+→ existing biometric/passcode flow
+
+Do not claim this passed if only mocked tests were executed.
+
+## IMPORTANT WEB/NATIVE DISTINCTION
+
+Clearly identify whether each test was performed on:
+
+* Expo Web
+* Android
+* iOS
+
+Do not assume web behavior proves native behavior.
+
+## REQUIRED FINAL REPORT
+
+Return exactly:
+
+### LIVE LOGIN TEST
+
+| Test                 | Platform | Result               | Error |
+| -------------------- | -------- | -------------------- | ----- |
+| Login screen         |          | PASS/FAIL            |       |
+| Valid email/password |          | PASS/FAIL/BLOCKED    |       |
+| Invalid credentials  |          | PASS/FAIL            |       |
+| Clerk session        |          | PASS/FAIL            |       |
+| `/v1/me`             |          | PASS/FAIL            |       |
+| Role routing         |          | PASS/FAIL            |       |
+| Logout               |          | PASS/FAIL            |       |
+| Protected API        |          | PASS/FAIL            |       |
+| Session restoration  |          | PASS/FAIL/NOT TESTED |       |
+| Biometric/passcode   |          | PASS/FAIL/NOT TESTED |       |
+
+### BLOCKING ERROR
+
+If anything failed:
+
+1. Exact error
+2. Screen
+3. File/function involved
+4. HTTP status if applicable
+5. Root cause
+6. Whether it blocks login
+7. Recommended fix
+
+### IMPORTANT
+
+Do NOT fix any failures in this task.
+
+If a test fails, STOP after collecting enough diagnostic information and report it.
+
+I will review the result and provide the next fix prompt separately.
