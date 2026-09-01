@@ -48,7 +48,7 @@ export const vendorProfiles = pgTable(
   "vendor_profiles",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull().unique(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull().unique("vendor_profiles_user_id_key"),
     businessName: text("business_name").notNull(),
     businessType: text("business_type").notNull(),
     contactName: text("contact_name").notNull(),
