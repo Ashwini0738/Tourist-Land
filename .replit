@@ -46,7 +46,7 @@ packages = ["actionlint", "glib", "nss", "nspr", "atk", "at-spi2-atk", "cups", "
 [userenv]
 
 [userenv.shared]
-TRAVEL_LAND_EMAIL_FROM = "swiftland@thebluefaith.com"
+TRAVEL_LAND_EMAIL_FROM = "zentourist@thebluefaith.com"
 
 [userenv.development]
 TRAVEL_LAND_AUTH_TARGET = "external-development"
