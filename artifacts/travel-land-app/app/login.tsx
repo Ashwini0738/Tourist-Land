@@ -2,7 +2,7 @@ import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { PasswordResetFlow } from '@/features/auth/PasswordResetFlow';
 import { authErrorCodes, authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
-import { useAuth, useClerk, useSignIn, useSignUp } from '@clerk/expo';
+import { useAuth, useClerk, useSessionList, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -33,7 +33,8 @@ export default function LoginScreen() {
   const { signIn, fetchStatus: signInStatus } = useSignIn();
   const { signUp, fetchStatus: signUpStatus } = useSignUp();
   const { setActive } = useClerk();
-  const { isLoaded } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
+  const { sessions, isLoaded: sessionsLoaded } = useSessionList();
 
   const [isNew, setNew] = useState(false);
   const [email, setEmail] = useState('');
@@ -52,7 +53,7 @@ export default function LoginScreen() {
   const normalizedPhone = normalizePhoneNumber(countryCode, phone);
 
   const submit = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || isSignedIn) return;
     setMessage('');
     if (isNew || authMethod === 'email') {
       const emailMessage = emailValidationMessage(email);
@@ -103,10 +104,18 @@ export default function LoginScreen() {
       if (error) {
         if (authErrorCodes(error).some((code) => code.includes('session_exists'))) {
           const existingSessionId = signIn.existingSession?.sessionId;
-          if (!existingSessionId) {
-            return setMessage('Your account already has a session on this device, but it could not be opened. Please restart the app and try again.');
+          const requestedEmail = email.trim().toLowerCase();
+          const usableSession = sessions?.find((session) => {
+            if (session.status !== 'active' || !session.user) return false;
+            if (existingSessionId && session.id === existingSessionId) return true;
+            return session.user.emailAddresses.some(
+              (address) => address.emailAddress.trim().toLowerCase() === requestedEmail,
+            );
+          });
+          if (!sessionsLoaded || !usableSession) {
+            return setMessage('Clerk reported an existing session, but no usable local session is available for this account. Please sign out of the existing account and try again.');
           }
-          await setActive({ session: existingSessionId });
+          await setActive({ session: usableSession.id });
           return;
         }
         if (__DEV__) {
