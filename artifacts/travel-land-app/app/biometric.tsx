@@ -48,7 +48,6 @@ export default function BiometricScreen() {
       }
       await setDeviceAuthSetupComplete(true);
       await unlock();
-      router.replace('/(tabs)');
     } catch {
       setMessage('Device security setup could not be completed. Please try again.');
     } finally {
@@ -64,7 +63,6 @@ export default function BiometricScreen() {
       await setBiometricsEnabled(false);
       await setDeviceAuthSetupComplete(true);
       await unlock();
-      router.replace('/(tabs)');
     } catch {
       setMessage('We could not save this device preference. Please try again.');
     } finally {

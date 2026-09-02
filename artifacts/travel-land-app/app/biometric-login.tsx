@@ -1,5 +1,4 @@
 import * as LocalAuthentication from 'expo-local-authentication';
-import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,7 +26,6 @@ export default function BiometricLoginScreen() {
       });
       if (!r.success) return setMessage('Device authentication was cancelled or unsuccessful. Try again to use your device security.');
       await unlock();
-      router.replace('/(tabs)');
     } catch {
       setMessage('Device authentication could not be completed. Try again.');
     } finally {

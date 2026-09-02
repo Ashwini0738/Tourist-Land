@@ -1,19 +1,14 @@
 import { useAuth } from '@clerk/expo';
-import { Redirect, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import React from 'react';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
 import { useRole } from '@/context/RoleContext';
 
 export default function AdminLayout() {
   const { isSignedIn } = useAuth();
-  const { isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete } = useAuthSecurity();
+  const { isReady, isUnlocked, deviceAuthSetupComplete } = useAuthSecurity();
   const { role, isReady: roleReady } = useRole();
-  if (!isSignedIn) return <Redirect href="/login" />;
-  if (!isReady) return null;
-  if (!deviceAuthSetupComplete) return <Redirect href="/biometric" />;
-  if (biometricsEnabled && !isUnlocked) return <Redirect href="/biometric-login" />;
-  if (!roleReady) return null;
-  if (role !== 'admin') return <Redirect href={role === 'vendor' ? '/vendor' : '/(tabs)'} />;
+  if (!isSignedIn || !isReady || !deviceAuthSetupComplete || !isUnlocked || !roleReady || role !== 'admin') return null;
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />

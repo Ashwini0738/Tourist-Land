@@ -4,7 +4,7 @@ import { PasswordResetFlow } from '@/features/auth/PasswordResetFlow';
 import { authErrorCodes, authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
 import { useAuth, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,7 +32,7 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { signIn, fetchStatus: signInStatus } = useSignIn();
   const { signUp, fetchStatus: signUpStatus } = useSignUp();
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded } = useAuth();
 
   const [isNew, setNew] = useState(false);
   const [email, setEmail] = useState('');
@@ -49,12 +49,6 @@ export default function LoginScreen() {
 
   const loading = !isLoaded || signInStatus === 'fetching' || signUpStatus === 'fetching' || isSubmitting || isResending;
   const normalizedPhone = normalizePhoneNumber(countryCode, phone);
-
-  useEffect(() => {
-    if (isLoaded && isSignedIn && !showPasswordReset && !signInVerificationMethod) {
-      router.replace('/(tabs)');
-    }
-  }, [isLoaded, isSignedIn, showPasswordReset, signInVerificationMethod]);
 
   const submit = async () => {
     if (isSubmitting) return;
@@ -107,7 +101,6 @@ export default function LoginScreen() {
       const { error } = await signIn.password({ emailAddress: email.trim(), password });
       if (error) {
         if (authErrorCodes(error).some((code) => code.includes('session_exists'))) {
-          router.replace('/(tabs)');
           return;
         }
         if (__DEV__) {
@@ -132,7 +125,6 @@ export default function LoginScreen() {
       }
       if (signIn.status !== 'complete') return setMessage('This sign-in needs another verification step. Please restart sign in and try again.');
       await signIn.finalize({});
-      router.replace('/(tabs)');
     } catch (error) {
       setMessage(authErrorMessage(error, isNew ? 'We could not create your account. Please try again.' : 'We could not complete sign in. Please try again.'));
     } finally {
@@ -150,7 +142,7 @@ export default function LoginScreen() {
         : await signIn.mfa.verifyEmailCode({ code: signInCode });
       if (error) return setMessage(authErrorMessage(error, 'That verification code did not work. Please try again.'));
       if (signIn.status !== 'complete') return setMessage('The code was accepted, but sign in is not complete yet. Please try again.');
-      await signIn.finalize({ navigate: () => router.replace('/(tabs)') });
+      await signIn.finalize({});
     } catch (error) {
       setMessage(authErrorMessage(error, 'We could not verify that code. Please try again.'));
     } finally {

@@ -144,17 +144,12 @@ describe('login validation', () => {
         emailAddress: 'traveller@example.com',
         password: 'not-a-real-password',
       });
+      expect(signIn.finalize).toHaveBeenCalledWith({});
     });
+    expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('redirects a restored Clerk session away from login', async () => {
-    mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: true });
-    render(<LoginScreen />);
-
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/(tabs)'));
-  });
-
-  it('redirects when Clerk reports an existing session during sign in', async () => {
+  it('leaves an existing-session destination to the root navigation state machine', async () => {
     const signIn = createSignIn();
     signIn.password.mockResolvedValueOnce({
       error: { code: 'session_exists' },
@@ -166,8 +161,8 @@ describe('login validation', () => {
     fireEvent.changeText(screen.getByTestId('login-password'), 'new-password');
     fireEvent.press(screen.getByTestId('login-continue'));
 
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/(tabs)'));
-    expect(screen.queryByText('You are already signed in. Opening your account.')).toBeNull();
+    await waitFor(() => expect(signIn.password).toHaveBeenCalled());
+    expect(router.replace).not.toHaveBeenCalled();
   });
 
   it('explains Clerk combined credential rejection after a reset', async () => {
@@ -483,6 +478,18 @@ describe('login exception handling', () => {
 });
 
 describe('signup verification exception handling', () => {
+  it('finalizes verified email without choosing an authenticated destination', async () => {
+    const signUp = createSignUp();
+    mockUseSignUp.mockReturnValue({ signUp, fetchStatus: 'idle' });
+    const screen = render(<VerifyScreen />);
+
+    fireEvent.changeText(screen.getByTestId('verification-code'), '123456');
+    fireEvent.press(screen.getByText('Verify email'));
+
+    await waitFor(() => expect(signUp.finalize).toHaveBeenCalledWith({}));
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
   it('handles rejected verification and allows retry', async () => {
     const signUp = createSignUp();
     signUp.verifications.verifyEmailCode.mockRejectedValueOnce(new Error('verification internals'));

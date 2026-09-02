@@ -42,7 +42,7 @@ describe('biometric login', () => {
     (LocalAuthentication.authenticateAsync as jest.Mock).mockResolvedValue({ success: true });
   });
 
-  it('unlocks and opens Home after successful native authentication', async () => {
+  it('unlocks after successful native authentication for root navigation', async () => {
     render(<BiometricLoginScreen />);
 
     await waitFor(() => {
@@ -52,7 +52,7 @@ describe('biometric login', () => {
         disableDeviceFallback: false,
       });
       expect(unlock).toHaveBeenCalledTimes(1);
-      expect(router.replace).toHaveBeenCalledWith('/(tabs)');
+      expect(router.replace).not.toHaveBeenCalled();
     });
   });
 
@@ -73,7 +73,8 @@ describe('biometric login', () => {
     fireEvent.press(getByText('Try device authentication again'));
     await waitFor(() => {
       expect(LocalAuthentication.authenticateAsync).toHaveBeenCalledTimes(2);
-      expect(router.replace).toHaveBeenCalledWith('/(tabs)');
+        expect(unlock).toHaveBeenCalledTimes(1);
     });
+      expect(router.replace).not.toHaveBeenCalled();
   });
 });

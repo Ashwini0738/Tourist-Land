@@ -4,10 +4,9 @@ import { useColors } from '@/hooks/useColors';
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
-import { Redirect } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
-import { radii, spacing } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 
 const webTabBar = {
   height: 96,
@@ -136,10 +135,7 @@ function ClassicTabLayout() {
 
 export default function TabLayout() {
   const { isSignedIn } = useAuth();
-  const { isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete } = useAuthSecurity();
-  if (!isSignedIn) return <Redirect href="/login" />;
-  if (!isReady) return null;
-  if (!isUnlocked && !deviceAuthSetupComplete) return <Redirect href="/biometric" />;
-  if (!isUnlocked && biometricsEnabled) return <Redirect href="/biometric-login" />;
+  const { isReady, isUnlocked, deviceAuthSetupComplete } = useAuthSecurity();
+  if (!isSignedIn || !isReady || !deviceAuthSetupComplete || !isUnlocked) return null;
   return <ClassicTabLayout />;
 }

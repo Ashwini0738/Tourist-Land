@@ -22,7 +22,7 @@ import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl, setUnauthorizedHandler } from '@workspace/api-client-react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
-import { roleHome, unauthorizedHome } from '@/features/role/roleRouting';
+import { resolveAuthenticatedNavigation } from '@/features/auth/authenticatedNavigation';
 import { SecureStorageRecovery } from '@/components/SecureStorageRecovery';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -104,8 +104,6 @@ function RootLayoutNav() {
   const colors = useColors();
   const segments = useSegments();
   const route = segments[0];
-  const publicRoutes = ['splash', 'login', 'verify', 'vendor-application'];
-  const lockedSessionRoutes = ['verify', 'biometric', 'biometric-login'];
 
   useEffect(() => {
     setAuthTokenGetter(() => getToken());
@@ -120,40 +118,21 @@ function RootLayoutNav() {
   }, [getToken, router, signOut]);
 
   useEffect(() => {
-    if (!isLoaded) return;
-
-    if (!isSignedIn) {
-      if (route && !publicRoutes.includes(route)) router.replace('/login');
-      return;
-    }
-
-    if (securityError === 'SECURE_STORAGE_UNAVAILABLE') return;
-
-    if (!isReady) return;
-
-    if (!deviceAuthSetupComplete) {
-      if (route !== 'biometric') router.replace('/biometric');
-      return;
-    }
-
-    if (biometricsEnabled && !isUnlocked) {
-      if (route !== 'biometric-login') router.replace('/biometric-login');
-      return;
-    }
-
-    if (!isUnlocked || roleLoading || (!roleReady && !roleError) || roleError || !role) return;
-
-    if (publicRoutes.includes(route ?? '') || lockedSessionRoutes.includes(route ?? '')) {
-      router.replace(roleHome(role));
-      return;
-    }
-
-    const redirectedHome = role !== 'user' || route === 'vendor' || route === 'admin'
-      ? unauthorizedHome(role, route)
-      : null;
-    if (redirectedHome && redirectedHome !== `/${route}`) {
-      router.replace(redirectedHome);
-    }
+    const target = resolveAuthenticatedNavigation({
+      isLoaded,
+      isSignedIn: Boolean(isSignedIn),
+      route,
+      isReady,
+      isUnlocked,
+      biometricsEnabled,
+      deviceAuthSetupComplete,
+      securityError,
+      role,
+      roleReady,
+      roleLoading,
+      roleError,
+    });
+    if (target) router.replace(target);
   }, [
     biometricsEnabled,
     deviceAuthSetupComplete,

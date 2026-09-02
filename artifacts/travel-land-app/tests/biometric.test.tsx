@@ -44,7 +44,7 @@ describe('biometric setup', () => {
     (useAuthSecurity as jest.Mock).mockReturnValue({ setBiometricsEnabled, setDeviceAuthSetupComplete, unlock });
   });
 
-  it('persists skip, unlocks the current Clerk session, and navigates once', async () => {
+  it('persists skip and unlocks the current Clerk session for root navigation', async () => {
     const { getByText } = render(<BiometricScreen />);
 
     fireEvent.press(getByText('Skip for now'));
@@ -53,7 +53,7 @@ describe('biometric setup', () => {
       expect(setBiometricsEnabled).toHaveBeenCalledWith(false);
       expect(setDeviceAuthSetupComplete).toHaveBeenCalledWith(true);
       expect(unlock).toHaveBeenCalledTimes(1);
-      expect(router.replace).toHaveBeenCalledWith('/(tabs)');
+      expect(router.replace).not.toHaveBeenCalled();
     });
   });
 
@@ -69,6 +69,7 @@ describe('biometric setup', () => {
 
     expect(setBiometricsEnabled).toHaveBeenCalledTimes(1);
     resolveSave?.();
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/(tabs)'));
+    await waitFor(() => expect(unlock).toHaveBeenCalledTimes(1));
+    expect(router.replace).not.toHaveBeenCalled();
   });
 });

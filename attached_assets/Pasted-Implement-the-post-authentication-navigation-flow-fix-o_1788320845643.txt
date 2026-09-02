@@ -1,0 +1,117 @@
+Implement the **post-authentication navigation flow fix only** for the Tourism app.
+
+### Goal
+
+After successful authentication, the app must NOT directly force the user to Home before the device-security state has been evaluated.
+
+The required flow is:
+
+**Email/password login**
+`Login → Clerk sign-in → finalize session → root auth/security routing → biometric setup OR biometric unlock → role resolution → correct Home`
+
+**Email verification**
+`Email verification → signUp.finalize() → root auth/security routing → biometric setup OR biometric unlock → role resolution → correct Home`
+
+For a first-time authenticated user:
+
+`Successful authentication → /biometric → Enable/Skip → /(tabs)`
+
+For an existing user with biometric/device security enabled:
+
+`Successful authentication → /biometric-login → successful unlock → /(tabs)`
+
+For an existing user with device security disabled:
+
+`Successful authentication → /(tabs)`
+
+For SecureStore failure:
+
+`Successful authentication → SECURE_STORAGE_UNAVAILABLE recovery state`
+and **never directly to Home**.
+
+### Required implementation
+
+1. Inspect the existing:
+
+   * `artifacts/travel-land-app/app/login.tsx`
+   * `artifacts/travel-land-app/app/verify.tsx`
+   * `artifacts/travel-land-app/app/_layout.tsx`
+   * `artifacts/travel-land-app/app/(tabs)/_layout.tsx`
+   * `artifacts/travel-land-app/context/AuthSecurityContext.tsx`
+   * `artifacts/travel-land-app/context/RoleContext.tsx`
+   * biometric setup/unlock screens
+
+2. Remove the premature direct post-auth navigation from `login.tsx` and `verify.tsx` **only where it conflicts with the root security/role navigation state machine**.
+
+3. Make the root authenticated navigation state machine the single authority for deciding whether the authenticated user goes to:
+
+   * `/biometric`
+   * `/biometric-login`
+   * `/(tabs)`
+   * `/vendor`
+   * `/admin`
+   * SecureStore recovery
+
+4. Do NOT create a second authentication system.
+
+5. Do NOT change Clerk configuration.
+
+6. Do NOT change email/password authentication.
+
+7. Do NOT implement SMS OTP or phone signup in this task.
+
+8. Do NOT remove the existing biometric/passcode functionality.
+
+9. Preserve the existing:
+
+   * Clerk session finalization
+   * SecureStore fail-closed behavior
+   * existing-session restoration
+   * traveller/vendor/admin role protection
+   * forgot-password flow
+   * email verification flow
+
+10. Fix the role-routing weakness identified in the audit so that an authenticated vendor/admin cannot be permanently forced into `/(tabs)` simply because login/verification completed there.
+
+### Important
+
+Do NOT redesign the authentication architecture.
+
+Make the **smallest possible code change** needed to make root navigation authoritative after authentication.
+
+### Tests
+
+Add/update focused tests for these exact cases:
+
+1. Successful email/password authentication → first-time user → `/biometric`
+2. Successful email verification → first-time user → `/biometric`
+3. Existing device-security-enabled user → `/biometric-login`
+4. Existing device-security-disabled user → `/(tabs)`
+5. SecureStore unavailable → recovery state, never Home
+6. Vendor → vendor destination
+7. Admin → admin destination
+8. Traveller → `/(tabs)`
+9. Existing session restoration still works
+10. Failed/cancelled biometric authentication does not reach Home
+
+Run the complete existing test suite plus TypeScript/build checks.
+
+### Do not claim the live login works
+
+We do not currently have a safe real Clerk test account available in this task. Clearly separate:
+
+* automated/static verification
+* live-device verification
+
+### Final response
+
+Report:
+
+1. Exact files changed
+2. What navigation logic changed
+3. Before → after flow
+4. Test results
+5. TypeScript/build results
+6. Any remaining issue that requires real-device testing
+
+Do not make unrelated changes.
