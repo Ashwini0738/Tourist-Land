@@ -4,13 +4,16 @@ A cross-platform travel discovery, booking, and verified land-sourcing applicati
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- Replit manages the app through the artifact workflows `artifacts/travel-land-app: expo`, `artifacts/travel-land-admin: web`, `artifacts/api-server: API Server`, and `artifacts/mockup-sandbox: Component Preview Server`.
+- `pnpm --filter @workspace/api-server run dev` — run the API server outside its managed workflow
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run validate:workflows` — lint all GitHub Actions workflow YAML and expressions
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Development authentication requires `TRAVEL_LAND_AUTH_TARGET=external-development`, `TRAVEL_LAND_DEV_CLERK_PUBLISHABLE_KEY`, `TRAVEL_LAND_DEV_CLERK_SECRET_KEY`, and `TRAVEL_LAND_DEV_ADMIN_CLERK_USER_IDS`.
+- The API also requires the Replit Stripe integration because payment synchronization and managed webhook registration run during startup.
+- `DATABASE_URL` and the PostgreSQL connection variables are supplied by Replit's built-in database.
 
 ## Stack
 
