@@ -50,3 +50,4 @@ TRAVEL_LAND_EMAIL_FROM = "swiftland@thebluefaith.com"
 
 [userenv.development]
 TRAVEL_LAND_AUTH_TARGET = "external-development"
+TRAVEL_LAND_DEV_ADMIN_CLERK_USER_IDS = "user_3IicnWf1kMfTJHADrE3GFHl1kI7"
