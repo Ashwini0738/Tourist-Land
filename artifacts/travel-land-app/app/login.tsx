@@ -2,7 +2,7 @@ import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { PasswordResetFlow } from '@/features/auth/PasswordResetFlow';
 import { authErrorCodes, authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
-import { useAuth, useSignIn, useSignUp } from '@clerk/expo';
+import { useAuth, useClerk, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -32,6 +32,7 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { signIn, fetchStatus: signInStatus } = useSignIn();
   const { signUp, fetchStatus: signUpStatus } = useSignUp();
+  const { setActive } = useClerk();
   const { isLoaded } = useAuth();
 
   const [isNew, setNew] = useState(false);
@@ -101,6 +102,11 @@ export default function LoginScreen() {
       const { error } = await signIn.password({ emailAddress: email.trim(), password });
       if (error) {
         if (authErrorCodes(error).some((code) => code.includes('session_exists'))) {
+          const existingSessionId = signIn.existingSession?.sessionId;
+          if (!existingSessionId) {
+            return setMessage('Your account already has a session on this device, but it could not be opened. Please restart the app and try again.');
+          }
+          await setActive({ session: existingSessionId });
           return;
         }
         if (__DEV__) {
@@ -124,7 +130,10 @@ export default function LoginScreen() {
         return;
       }
       if (signIn.status !== 'complete') return setMessage('This sign-in needs another verification step. Please restart sign in and try again.');
-      await signIn.finalize({});
+      const finalization = await signIn.finalize({});
+      if (finalization?.error) {
+        setMessage(authErrorMessage(finalization.error, 'We could not complete sign in. Please try again.'));
+      }
     } catch (error) {
       setMessage(authErrorMessage(error, isNew ? 'We could not create your account. Please try again.' : 'We could not complete sign in. Please try again.'));
     } finally {
@@ -142,7 +151,10 @@ export default function LoginScreen() {
         : await signIn.mfa.verifyEmailCode({ code: signInCode });
       if (error) return setMessage(authErrorMessage(error, 'That verification code did not work. Please try again.'));
       if (signIn.status !== 'complete') return setMessage('The code was accepted, but sign in is not complete yet. Please try again.');
-      await signIn.finalize({});
+      const finalization = await signIn.finalize({});
+      if (finalization?.error) {
+        setMessage(authErrorMessage(finalization.error, 'We could not complete sign in. Please try again.'));
+      }
     } catch (error) {
       setMessage(authErrorMessage(error, 'We could not verify that code. Please try again.'));
     } finally {
@@ -298,7 +310,7 @@ export default function LoginScreen() {
           )}
           {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
           <Pressable testID="login-continue" disabled={(authMethod === 'phone' && !normalizedPhone) || loading} onPress={() => void submit()} style={[styles.button, { backgroundColor: (authMethod === 'email' ? email.trim() && password.trim() : normalizedPhone) && !loading ? colors.primary : colors.muted, marginTop: 24 }]}>
-            {loading ? <ActivityIndicator color="#fff" /> : <><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Create account' : 'Sign in'}</Text><Feather name="arrow-right" size={17} color="#fff" /></>}
+            {loading ? <><ActivityIndicator color="#fff" /><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Creating account...' : authMethod === 'phone' ? 'Sending code...' : 'Signing in...'}</Text></> : <><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Create account' : 'Sign in'}</Text><Feather name="arrow-right" size={17} color="#fff" /></>}
           </Pressable>
           <Pressable onPress={() => { setNew(!isNew); setAuthMethod('email'); setMessage(''); }} style={styles.secondary}>
             <Text style={[styles.secondaryText, { color: colors.primary }]}>{isNew ? 'Already have an account? Sign in' : 'New here? Create an account'}</Text>

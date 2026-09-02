@@ -1,12 +1,13 @@
 import React from 'react';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
-import { useAuth, useSignIn, useSignUp } from '@clerk/expo';
+import { useAuth, useClerk, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import LoginScreen from '../app/login';
 import VerifyScreen from '../app/verify';
 
 jest.mock('@clerk/expo', () => ({
   useAuth: jest.fn(),
+  useClerk: jest.fn(),
   useSignIn: jest.fn(),
   useSignUp: jest.fn(),
 }));
@@ -45,12 +46,15 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 const mockUseAuth = useAuth as jest.Mock;
+const mockUseClerk = useClerk as jest.Mock;
 const mockUseSignIn = useSignIn as jest.Mock;
 const mockUseSignUp = useSignUp as jest.Mock;
+const setActive = jest.fn().mockResolvedValue(undefined);
 
 function createSignIn() {
   return {
     status: 'complete',
+    existingSession: undefined as { sessionId: string } | undefined,
     supportedFirstFactors: [{ strategy: 'phone_code' }],
     supportedSecondFactors: [{ strategy: 'email_code' }],
     password: jest.fn().mockResolvedValue({ error: null }),
@@ -68,7 +72,7 @@ function createSignIn() {
       verifyCode: jest.fn().mockResolvedValue({ error: null }),
       submitPassword: jest.fn().mockResolvedValue({ error: null }),
     },
-    finalize: jest.fn().mockResolvedValue(undefined),
+    finalize: jest.fn().mockResolvedValue({ error: null }),
     reset: jest.fn(),
   };
 }
@@ -88,6 +92,7 @@ function createSignUp() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseAuth.mockReturnValue({ isLoaded: true });
+  mockUseClerk.mockReturnValue({ setActive });
   mockUseSignIn.mockReturnValue({ signIn: createSignIn(), fetchStatus: 'idle' });
   mockUseSignUp.mockReturnValue({ signUp: createSignUp(), fetchStatus: 'idle' });
 });
@@ -149,8 +154,9 @@ describe('login validation', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('leaves an existing-session destination to the root navigation state machine', async () => {
+  it('activates an existing Clerk session and leaves navigation to the root state machine', async () => {
     const signIn = createSignIn();
+    signIn.existingSession = { sessionId: 'sess_existing' };
     signIn.password.mockResolvedValueOnce({
       error: { code: 'session_exists' },
     });
@@ -161,8 +167,51 @@ describe('login validation', () => {
     fireEvent.changeText(screen.getByTestId('login-password'), 'new-password');
     fireEvent.press(screen.getByTestId('login-continue'));
 
-    await waitFor(() => expect(signIn.password).toHaveBeenCalled());
+    await waitFor(() => expect(setActive).toHaveBeenCalledWith({ session: 'sess_existing' }));
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('shows an error when Clerk reports an existing session without an activatable session ID', async () => {
+    const signIn = createSignIn();
+    signIn.password.mockResolvedValueOnce({
+      error: { code: 'session_exists' },
+    });
+    mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+    const screen = render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+    fireEvent.changeText(screen.getByTestId('login-password'), 'not-a-real-password');
+    fireEvent.press(screen.getByTestId('login-continue'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Your account already has a session on this device, but it could not be opened. Please restart the app and try again.')).toBeTruthy();
+    });
+  });
+
+  it('shows an explicit loading state while Clerk sign-in is pending', async () => {
+    const signIn = createSignIn();
+    let resolvePassword: ((value: { error: { code: string } }) => void) | undefined;
+    signIn.password.mockReturnValueOnce(new Promise((resolve) => {
+      resolvePassword = resolve;
+    }));
+    mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+    const screen = render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+    fireEvent.changeText(screen.getByTestId('login-password'), 'not-a-real-password');
+    fireEvent.press(screen.getByTestId('login-continue'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Signing in...')).toBeTruthy();
+      expect(screen.getByTestId('login-continue').props.accessibilityState).toEqual(
+        expect.objectContaining({ disabled: true }),
+      );
+    });
+
+    await act(async () => {
+      resolvePassword?.({ error: { code: 'form_password_or_identifier_incorrect' } });
+    });
+    await waitFor(() => expect(screen.getByText('Sign in')).toBeTruthy());
   });
 
   it('explains Clerk combined credential rejection after a reset', async () => {
@@ -463,6 +512,24 @@ describe('login exception handling', () => {
   it('handles a rejected sign-in finalization without navigating', async () => {
     const signIn = createSignIn();
     signIn.finalize.mockRejectedValueOnce(new Error('finalize internals'));
+    mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+    const screen = render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText('Email address'), 'traveller@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'not-a-real-password');
+    fireEvent.press(screen.getByTestId('login-continue'));
+
+    await waitFor(() => {
+      expect(screen.getByText('We could not complete sign in. Please try again.')).toBeTruthy();
+    });
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('shows a Clerk finalization error returned without throwing', async () => {
+    const signIn = createSignIn();
+    signIn.finalize.mockResolvedValueOnce({
+      error: { code: 'session_activation_failed' },
+    });
     mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
     const screen = render(<LoginScreen />);
 
