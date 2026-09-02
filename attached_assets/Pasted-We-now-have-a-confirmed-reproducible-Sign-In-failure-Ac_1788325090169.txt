@@ -1,0 +1,177 @@
+We now have a confirmed reproducible Sign In failure.
+
+### Actual runtime error
+
+After entering valid email/password and tapping Sign In:
+
+> "Your account already has a session on this device. but it could not be opened. Please restart the app and try again."
+
+This happens in BOTH:
+
+* Replit Preview
+* Physical Android device
+
+I have already:
+
+* closed the app
+* cleared/restarted the session
+* closed Expo
+* reopened Expo
+* retried Sign In
+
+The same error remains.
+
+### Important
+
+Do NOT make another speculative authentication change.
+
+Perform a **READ-ONLY diagnostic investigation first** and identify the exact Clerk session-state problem.
+
+### Trace this exact path
+
+Inspect the current code in:
+
+* `artifacts/travel-land-app/app/login.tsx`
+* Clerk `useSignIn()` implementation
+* `artifacts/travel-land-app/app/_layout.tsx`
+* `artifacts/travel-land-app/context/AuthSecurityContext.tsx`
+* any Clerk provider/session bootstrap code
+* token/session cache code
+* any `setActive()` calls
+* any existing session restoration logic
+
+Trace:
+
+`signIn.password()`
+
+→ returned status
+
+→ `existingSessionId`
+
+→ `setActive({ session: existingSessionId })`
+
+→ Clerk active session
+
+→ root navigation
+
+### Determine the exact problem
+
+Specifically verify:
+
+1. What value does `signIn.password()` return when it reports `session_exists`?
+
+2. Is `existingSessionId` actually a valid Clerk session ID?
+
+3. Is the app calling:
+
+`setActive({ session: existingSessionId })`
+
+with the correct value/type?
+
+4. Does the Clerk SDK in the installed version actually support activating that returned session this way?
+
+5. Does `session_exists` mean the user needs to use the already-existing active session rather than calling `setActive()` with `existingSessionId`?
+
+6. Is the existing session expired/revoked/invalid?
+
+7. Is there already an active Clerk session available through the Clerk session object?
+
+8. Is the login flow incorrectly calling `signIn.password()` when the user is already signed in?
+
+9. Is the app's token/session cache restoring a different or stale session?
+
+10. Is there any interaction between:
+
+* Clerk session restoration
+* `signIn.password()`
+* `setActive()`
+* SecureStore
+* Expo reload
+* root navigation?
+
+### Add temporary development diagnostics if necessary
+
+You may add temporary SAFE diagnostics, but do not expose secrets.
+
+Allowed:
+
+* sign-in status
+* whether `existingSessionId` exists
+* session ID shape such as prefix/length only, if safe
+* whether `setActive()` was called
+* whether `setActive()` succeeded/failed
+* whether Clerk currently reports an active session
+* `isLoaded`
+* `isSignedIn`
+* current route
+
+DO NOT log:
+
+* password
+* email
+* OTP
+* Clerk token
+* JWT
+* API key
+* secret
+* complete session/token contents
+
+### Also inspect Clerk package version
+
+Identify the exact installed Clerk Expo/React Native package and version.
+
+Compare the current implementation against the API contract for that installed version.
+
+Do not upgrade/downgrade Clerk as part of this diagnostic.
+
+### Critical distinction
+
+Determine whether this is:
+
+A. `session_exists` is being handled incorrectly
+
+B. `existingSessionId` is invalid/stale
+
+C. an already-active session exists and should be reused
+
+D. Clerk session restoration is creating a stale session
+
+E. `setActive()` is being called incorrectly
+
+F. another session/cache/bootstrap issue
+
+G. something else — explain exactly what
+
+### Do NOT change yet
+
+Do not modify:
+
+* authentication architecture
+* Clerk configuration
+* SMS OTP
+* email verification
+* biometric flow
+* SecureStore
+* role routing
+* backend authentication
+* password recovery
+
+Do not implement a workaround until the exact cause is identified.
+
+### Required final report
+
+Return:
+
+1. Exact Clerk package/version
+2. Exact `signIn.password()` result/state for the failing path
+3. Whether `existingSessionId` is valid
+4. Whether an active Clerk session already exists
+5. Result of `setActive()`
+6. Exact root cause
+7. Relevant file + line references
+8. Smallest safe fix that should be made
+9. Files that would need modification
+
+**Do not implement the fix in this task.**
+
+This is a diagnostic task only. I will review the root cause before authorizing the code change.
