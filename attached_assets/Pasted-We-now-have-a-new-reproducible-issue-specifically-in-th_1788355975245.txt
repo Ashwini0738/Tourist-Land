@@ -1,0 +1,206 @@
+We now have a new reproducible issue specifically in the **email verification flow** after migrating the project ZIP into a new Replit account.
+
+### Actual behavior
+
+The current flow is:
+
+`Email + password`
+→ `Sign In`
+→ `Email verification code`
+→ `Verify & Continue`
+
+When I enter the correct verification code:
+
+* First tap on **Verify & Continue**: nothing visibly happens.
+* Second tap: Clerk displays/our app displays **"You are already signed in, opening your account"**.
+* After that, the app remains stuck on the verification page and does not proceed to biometric setup or Home.
+
+This happens in the migrated project.
+
+### IMPORTANT
+
+Perform a **READ-ONLY diagnosis only**.
+
+Do NOT modify any files yet.
+
+Do NOT change Clerk configuration.
+
+Do NOT change authentication architecture.
+
+Do NOT change biometric/SecureStore/root navigation.
+
+I want the exact root cause before authorizing a fix.
+
+### Inspect these files
+
+* `artifacts/travel-land-app/app/verify.tsx`
+* `artifacts/travel-land-app/app/login.tsx`
+* `artifacts/travel-land-app/app/_layout.tsx`
+* `artifacts/travel-land-app/context/AuthSecurityContext.tsx`
+* `artifacts/travel-land-app/context/RoleContext.tsx`
+* `artifacts/travel-land-app/features/auth/authenticatedNavigation.ts`
+* Clerk Provider/session initialization
+* any existing Clerk session/token cache code
+
+Also inspect the current verification tests.
+
+### Trace the exact verification sequence
+
+Trace:
+
+`Verify & Continue pressed`
+
+→ validation
+
+→ loading state
+
+→ `signUp` state
+
+→ verification code verification call
+
+→ verification result/status
+
+→ `signUp.finalize(...)`
+
+→ Clerk active session
+
+→ `isSignedIn`
+
+→ root navigation state machine
+
+→ biometric setup/unlock
+
+→ role resolution
+
+→ Home
+
+### Specifically determine
+
+1. Is the first button press actually reaching the verification handler?
+
+2. Does the first verification call succeed?
+
+3. What does Clerk return after the first successful verification?
+
+4. Is `signUp.verification` still available after the first attempt?
+
+5. Does `signUp.finalize()` run?
+
+6. If `signUp.finalize()` runs, does it successfully establish an active Clerk session?
+
+7. Does `signUp.finalize()` return an error object without throwing?
+
+8. Is the code currently ignoring a returned `{ error }` result?
+
+9. Is the second tap entering a different branch because Clerk is already signed in?
+
+10. Is the verification screen checking `isSignedIn` correctly?
+
+11. Does the verification screen navigate after successful finalization?
+
+12. Has the previous root-authoritative navigation change accidentally left `verify.tsx` waiting for a condition that never changes?
+
+13. Is the `signUp` object becoming invalid/cleared after the first verification attempt?
+
+14. Is there an effect or navigation guard that redirects/re-renders the verification screen before the successful state is processed?
+
+15. Is there any difference between:
+
+* first verification press
+* second verification press
+
+that explains the "already signed in" message?
+
+### Check Clerk SDK contract
+
+The project currently uses:
+
+* `@clerk/expo` 4.6.0
+* `@clerk/clerk-js` 6.30.1
+* `@clerk/react` 6.14.7
+* `@clerk/shared` 4.30.1
+
+Verify the installed Clerk API contract for:
+
+* email verification
+* `signUp.verification.emailCode.verify(...)`
+* `signUp.finalize(...)`
+* `isSignedIn`
+* active session handling
+
+Do not upgrade or downgrade packages.
+
+### Safe runtime diagnostics
+
+If necessary, add temporary development-only diagnostics ONLY for diagnosis.
+
+Allowed:
+
+* button pressed
+* verification started
+* verification result/status
+* whether verification is complete
+* whether `signUp.finalize()` started/completed
+* whether Clerk reports signed in
+* whether an active session exists
+* current route
+* loading state
+* caught error code/message, provided it contains no secrets
+
+DO NOT log:
+
+* email
+* password
+* verification code
+* Clerk token
+* JWT
+* session token
+* API key
+* secret
+
+### Critical requirement
+
+Do not infer that the first tap failed merely because the UI does not change.
+
+We need to determine whether:
+
+A. the first tap never fires
+
+B. verification call succeeds but UI state is not updated
+
+C. verification succeeds and finalize succeeds, but navigation does not occur
+
+D. finalize succeeds but returns an error object that is ignored
+
+E. Clerk session becomes active but `verify.tsx` remains mounted
+
+F. second tap detects an already-active session because the first tap actually succeeded
+
+G. `signUp` state becomes invalid after the first attempt
+
+H. root navigation/security state is blocking the transition
+
+I. another issue — explain exactly
+
+### Do not implement a fix
+
+This task is diagnosis only.
+
+No files should be modified.
+
+### Final report
+
+Return:
+
+1. Exact installed Clerk versions
+2. Exact first-tap execution path
+3. Verification result/status
+4. Whether `signUp.finalize()` executes
+5. Whether Clerk becomes signed in
+6. Whether an active session exists after first tap
+7. What happens differently on the second tap
+8. Exact root cause
+9. Relevant file + line references
+10. Smallest safe fix that should be implemented
+11. Exact files that would need modification
+12. Confirmation that **NO FILES WERE CHANGED**
