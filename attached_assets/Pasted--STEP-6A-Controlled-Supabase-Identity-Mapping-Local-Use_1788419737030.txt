@@ -1,0 +1,290 @@
+## STEP 6A — Controlled Supabase Identity Mapping / Local User Provisioning
+
+Implement **only Step 6A: controlled Supabase identity mapping/provisioning** for the existing tourism application.
+
+### Objective
+
+Supabase Auth is now the authentication provider for the mobile email/password flow, but the application still uses the existing PostgreSQL `users.id` as the internal ownership/authorization identity.
+
+The required identity chain is:
+
+`Supabase auth.users.id`
+→ `users.auth_user_id`
+→ existing `users.id`
+
+Do NOT replace or regenerate `users.id`.
+
+The API must continue running in `dual` authentication mode during this migration.
+
+---
+
+## 1. AUDIT FIRST — DO NOT MODIFY CODE YET
+
+Before making changes, inspect and report:
+
+* Current `users` schema and constraints
+* Existing user registration/provisioning logic
+* Existing Clerk user provisioning
+* Existing `clerk_user_id` usage
+* Existing invitation/provisioning logic
+* Any `/me`, profile, registration, or user-creation endpoints
+* How roles are currently assigned
+* How ownership is determined for bookings, favorites, reviews, wallet, enquiries, etc.
+* All places where `users.id` is used as an application foreign key
+* Any existing unique constraints involving email, Clerk ID, or the new `auth_user_id`
+
+Do not infer business rules that are not present in the code.
+
+After the audit, implement the safest mapping design consistent with the existing architecture.
+
+---
+
+## 2. SECURITY RULES — MUST NOT BE VIOLATED
+
+### Never:
+
+* Match an existing local user to Supabase solely by email.
+* Automatically transfer ownership based on matching email.
+* Allow the mobile client to directly provide/set `auth_user_id`.
+* Allow the client to provide another user's local `users.id` for mapping.
+* Create fake Supabase identities.
+* Decode or trust unverified JWT claims.
+* Change an existing `users.id`.
+* Reassign bookings, favorites, reviews, wallet records, enquiries, or other ownership records.
+* Automatically delete `clerk_user_id`.
+* Remove Clerk.
+* Switch the API from `dual` to `supabase`.
+* Modify phone/SMS OTP.
+* Modify Clerk MFA.
+* Modify biometric behavior.
+* Modify admin authentication.
+* Modify password recovery.
+* Modify OpenAPI/generated clients unless absolutely required by an existing endpoint contract and explicitly reported first.
+
+---
+
+## 3. DEFINE TWO SAFE CASES
+
+The implementation must distinguish between:
+
+### Case A — New Supabase user
+
+If the product's existing registration model allows creation of a new application user:
+
+1. Verify the Supabase JWT server-side.
+2. Obtain the verified Supabase `sub`.
+3. Create the local application user transactionally.
+4. Set:
+
+`users.auth_user_id = verified Supabase auth.users.id`
+
+5. Preserve the newly generated local `users.id`.
+6. Apply only the role/default fields that the existing registration flow already permits.
+7. Never accept role/permission escalation from the mobile client.
+8. Return the existing application identity.
+
+If the existing application requires an invitation or approval before a local user can be created, DO NOT bypass that rule. Instead stop and report the required business flow.
+
+### Case B — Existing local user
+
+Do NOT automatically map an existing local user using email.
+
+An existing local user must only be linked when there is an explicit trusted proof of ownership/linkage supported by the current application architecture.
+
+Prefer an authenticated migration/linking flow using the existing trusted Clerk identity/session if the current system supports it.
+
+If the existing architecture does not contain a safe proof mechanism, DO NOT invent one.
+
+Instead implement the infrastructure needed to support an explicit mapping operation and clearly report what additional approval/UI/business step is required.
+
+---
+
+## 4. MAPPING INVARIANTS
+
+Enforce these invariants server-side:
+
+* `auth_user_id` must reference exactly one local user.
+* One local user cannot have multiple Supabase identities.
+* One Supabase identity cannot map to multiple local users.
+* Existing `users.id` never changes.
+* Existing `clerk_user_id` remains untouched during migration.
+* A local user already linked to a different Supabase identity must reject another mapping.
+* A Supabase identity already linked to another local user must reject reassignment.
+* Email collisions must be rejected rather than silently resolved.
+* Mapping must be transactional.
+* Failed mapping must leave the database unchanged.
+
+Use the existing database constraints where possible and add only the minimum necessary constraint/index if required.
+
+---
+
+## 5. AUTHORIZATION
+
+The mapping/provisioning operation must occur server-side after authentication has already been verified by the existing API authentication boundary.
+
+Do not trust:
+
+* `sub` supplied in request body
+* `userId` supplied by client
+* `auth_user_id` supplied by client
+* role supplied by client
+* email supplied by client as proof of identity
+
+The verified identity attached by the existing authentication middleware must be the authority.
+
+For Supabase:
+
+`verifiedExternalIdentity.externalUserId`
+
+must be the source of truth.
+
+---
+
+## 6. EXISTING CLERK USERS
+
+Do not migrate Clerk identities automatically.
+
+Keep:
+
+`users.clerk_user_id`
+
+during the rollback/migration window.
+
+If a safe Clerk → Supabase linkage is possible using an existing trusted authenticated flow, document it and implement only if the current architecture already supports that proof.
+
+Otherwise report:
+
+* what prevents automatic linking
+* what exact user/admin action is required
+* what database change would occur after approval
+
+Do not guess.
+
+---
+
+## 7. API BEHAVIOR
+
+Ensure that after successful Supabase authentication:
+
+1. Supabase JWT is verified.
+2. `auth_user_id` resolves to local `users.id`.
+3. Existing authorization continues to use local `users.id`.
+4. `/v1/me` or equivalent current-user behavior returns the correct local user.
+5. Existing ownership checks continue using local `users.id`.
+
+If a valid Supabase user is not mapped and automatic provisioning is not allowed by the existing business rules:
+
+Return a stable, explicit application error/state such as:
+
+`ACCOUNT_NOT_LINKED`
+
+Do not retry indefinitely.
+
+Do not silently create or match a local account.
+
+---
+
+## 8. TESTS — REQUIRED
+
+Add focused automated tests covering at minimum:
+
+### New user
+
+* verified Supabase identity creates local user when allowed
+* `auth_user_id` is populated correctly
+* local `users.id` is preserved
+* default role rules are respected
+* client cannot choose another role
+
+### Existing user
+
+* safe explicit mapping succeeds
+* email-only mapping is rejected
+* unauthorized mapping is rejected
+* mapping to another user's local ID is rejected
+* existing Clerk identity is not overwritten
+
+### Duplicate/conflict cases
+
+* duplicate `auth_user_id` rejected
+* local user already mapped rejected
+* Supabase identity already mapped rejected
+* Clerk/Supabase identity conflict handled safely
+* email collision does not cause automatic reassignment
+
+### Transaction safety
+
+* partial provisioning rolls back
+* failed mapping leaves database unchanged
+
+### Authorization
+
+* Supabase-authenticated `/me` resolves to the correct existing `users.id`
+* application ownership remains tied to local `users.id`
+* no booking/favorite/review/wallet ownership changes occur
+
+---
+
+## 9. DO NOT MODIFY THESE AREAS IN THIS STEP
+
+Leave unchanged:
+
+* Clerk phone/SMS OTP
+* Clerk MFA
+* biometric/device-unlock implementation
+* admin authentication
+* invitations unless the audit proves provisioning cannot work without a minimal change
+* password reset
+* payment/Stripe
+* bookings
+* favorites
+* reviews
+* wallet
+* notifications
+* Maps
+* Hotels
+* OpenAPI/generated clients
+* production configuration
+* real Supabase credentials
+
+---
+
+## 10. VALIDATION
+
+Run:
+
+* focused identity/provisioning tests
+* existing API auth tests
+* existing mobile auth tests
+* TypeScript typecheck
+* API build
+* lint/static checks
+* `git diff --check`
+
+Also perform a static audit confirming there is:
+
+* no email-only Supabase→local mapping
+* no client-controlled `auth_user_id`
+* no change to `users.id`
+* no ownership reassignment
+* no Clerk removal
+* no migration of phone/MFA/biometrics
+
+Remember that the development database currently may not have the application schema applied. Do not claim database integration tests passed if the required tables are unavailable.
+
+### IMPORTANT
+
+Do not proceed into Step 7 (phone/SMS OTP migration).
+
+If the existing business rules do not provide enough information to safely determine how an existing user should be linked, **stop at the design/audit boundary and report the exact missing business decision instead of inventing a mapping rule.**
+
+At the end, provide:
+
+1. Files inspected
+2. Files changed
+3. Exact mapping/provisioning behavior implemented
+4. Security protections
+5. Tests and results
+6. Any database/schema limitations
+7. Any unresolved business decision
+8. Confirmation that Clerk phone/MFA/biometric/admin flows remain unchanged
