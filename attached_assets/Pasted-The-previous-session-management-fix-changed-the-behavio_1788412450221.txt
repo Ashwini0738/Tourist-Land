@@ -1,0 +1,125 @@
+The previous session-management fix changed the behavior, but email/password sign-in now fails with only the generic message:
+
+“We could not complete sign in. Please try again”
+
+Do NOT make another broad authentication rewrite yet.
+
+The immediate goal is to expose and identify the EXACT Clerk error that is being swallowed.
+
+Please inspect the current `login.tsx` email/password flow and trace the complete sequence:
+
+email/password submit
+→ fresh-session cleanup
+→ `signIn.create()` / equivalent
+→ password attempt
+→ MFA decision
+→ finalization
+→ session retrieval
+→ `setActive()` / session activation
+→ navigation
+
+### 1. Find where the generic error is generated
+
+Locate the exact code that produces:
+
+“We could not complete sign in. Please try again”
+
+Determine which exception/error is being caught there.
+
+### 2. Log the actual Clerk error
+
+Temporarily add safe development-only diagnostic logging around EVERY Clerk operation in the email/password path.
+
+For each failure capture only non-sensitive information such as:
+
+* Clerk error code
+* error name
+* error message
+* error status
+* error type
+* error longMessage if available
+* operation that failed
+* current sign-in status/state
+* whether an active session exists
+* whether the operation was first attempt or stale-session retry
+
+DO NOT log:
+
+* password
+* OTP
+* access tokens
+* session tokens
+* cookies
+* authorization headers
+* API keys
+* personal credentials
+
+### 3. Do not hide the original error
+
+The current catch block must not convert every Clerk exception into the same generic error.
+
+For development, preserve/log the original Clerk error before converting it to the user-friendly message.
+
+If appropriate, temporarily show a development diagnostic such as:
+
+`[DEV] Clerk sign-in failed: <code>`
+
+while keeping production UX user-friendly.
+
+### 4. Verify the new cleanup logic
+
+Pay special attention to this sequence:
+
+1. User taps Email/Password sign in.
+2. Code signs out/clears existing sessions.
+3. Code calls `signIn.create()`.
+
+Make sure the cleanup operation is NOT invalidating the Clerk client/sign-in state required by the subsequent `signIn.create()`.
+
+Also verify that cleanup is not throwing an exception which is then being caught by the outer generic sign-in handler.
+
+### 5. Verify Clerk API usage
+
+Check the actual Clerk SDK version installed in this project and confirm that all session/sign-in methods currently used are valid for that exact version.
+
+Do not assume method behavior from documentation for another SDK version.
+
+### 6. Test with NO existing session
+
+Create a clean test case:
+
+* no active Clerk session
+* no stale local session
+* email/password login
+* valid credentials
+
+If this fails, report the exact Clerk error.
+
+Then separately test:
+
+* existing valid session
+* stale session
+* MFA-required account
+
+### 7. IMPORTANT
+
+Do not modify biometric login.
+Do not modify startup session restoration.
+Do not modify the OTP/MFA flow unless the diagnostic proves the failure is inside MFA.
+Do not create custom authentication.
+Do not remove the fresh-session policy.
+
+For this step, the priority is diagnosis, not another rewrite.
+
+At the end report:
+
+1. EXACT Clerk error code
+2. EXACT operation that failed
+3. Whether failure occurs before or after `signIn.create()`
+4. Whether failure occurs before or after password verification
+5. Whether failure occurs during MFA
+6. Whether failure occurs during final session activation
+7. Whether the new session cleanup itself is causing the failure
+8. Minimal fix required
+
+Do not tell me “tests pass” unless you also reproduce the actual email/password login path that currently shows the generic error.
