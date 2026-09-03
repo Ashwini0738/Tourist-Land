@@ -13,6 +13,21 @@ import { useColors } from '@/hooks/useColors';
 type AuthMethod = 'email' | 'phone';
 type SignInVerificationMethod = 'email' | 'phone' | null;
 
+function authErrorDiagnostic(error: unknown) {
+  const source = error && typeof error === 'object' ? error as Record<string, unknown> : {};
+  const errors = Array.isArray(source.errors) ? source.errors : [];
+  const first = errors[0] && typeof errors[0] === 'object'
+    ? errors[0] as Record<string, unknown>
+    : source;
+  return {
+    code: typeof first.code === 'string' ? first.code : null,
+    name: typeof first.name === 'string' ? first.name : typeof source.name === 'string' ? source.name : null,
+    status: typeof source.status === 'number' ? source.status : null,
+    message: typeof first.message === 'string' ? first.message : null,
+    longMessage: typeof first.longMessage === 'string' ? first.longMessage : null,
+  };
+}
+
 function normalizePhoneNumber(countryCodeInput: string, phoneInput: string) {
   const phone = phoneInput.trim();
   const countryCode = countryCodeInput.trim();
@@ -113,6 +128,15 @@ export default function LoginScreen() {
 
   const submit = async () => {
     if (isSubmitting) return;
+    if (__DEV__) {
+      console.info('[auth] Email/password submit started', {
+        authMethod,
+        isLoaded,
+        isSignedIn: Boolean(isSignedIn),
+        signInStatus,
+        signUpStatus,
+      });
+    }
     setMessage('');
     if (isNew || authMethod === 'email') {
       const emailMessage = emailValidationMessage(email);
@@ -159,15 +183,17 @@ export default function LoginScreen() {
         return;
       }
 
+      if (__DEV__) console.info('[auth] Starting fresh password session cleanup');
       const { error } = await startFreshPasswordSignIn();
       if (error) {
         if (__DEV__) {
           console.warn('[auth] Password sign-in rejected', {
-            codes: authErrorCodes(error).length ? authErrorCodes(error) : ['unknown'],
+            ...authErrorDiagnostic(error),
           });
         }
         return setMessage(authErrorMessage(error, 'We could not sign you in. Please check your details and try again.'));
       }
+      if (__DEV__) console.info('[auth] Password verification completed', { signInStatus: signIn.status });
       if (signIn.status === 'needs_second_factor' || signIn.status === 'needs_client_trust') {
         const emailFactor = signIn.supportedSecondFactors?.find((factor) => factor.strategy === 'email_code');
         if (!emailFactor) {
@@ -179,11 +205,14 @@ export default function LoginScreen() {
         }
         setSignInCode('');
         setSignInVerificationMethod('email');
+        if (__DEV__) console.info('[auth] MFA email verification started');
         return;
       }
       if (signIn.status !== 'complete') return setMessage('This sign-in needs another verification step. Please restart sign in and try again.');
-      await finalizeAndVerifyActiveSession();
+      const sessionReady = await finalizeAndVerifyActiveSession();
+      if (__DEV__) console.info('[auth] Password session finalization finished', { sessionReady });
     } catch (error) {
+      if (__DEV__) console.warn('[auth] Email/password submit threw', authErrorDiagnostic(error));
       setMessage(authErrorMessage(error, isNew ? 'We could not create your account. Please try again.' : 'We could not complete sign in. Please try again.'));
     } finally {
       setIsSubmitting(false);
