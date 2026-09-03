@@ -114,3 +114,21 @@ test("dual mode rejects a token rejected by both trusted verifiers", async () =>
     AuthenticationRejectedError,
   );
 });
+
+test("dual mode does not hide an internal Clerk verification failure", async () => {
+  let supabaseAttempts = 0;
+  await assert.rejects(
+    () => verifyDualProviderRequest(
+      {} as import("express").Request,
+      () => {
+        throw new Error("Clerk verifier unavailable");
+      },
+      () => {
+        supabaseAttempts += 1;
+        return { provider: "supabase", externalUserId: "supabase-user-1" };
+      },
+    ),
+    /Clerk verifier unavailable/,
+  );
+  assert.equal(supabaseAttempts, 0);
+});

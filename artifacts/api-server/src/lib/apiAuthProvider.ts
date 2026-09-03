@@ -59,9 +59,7 @@ export async function verifyDualProviderRequest(
   try {
     return await clerkVerifier(req);
   } catch (clerkError) {
-    if (clerkError instanceof Error && clerkError.name !== "AuthenticationRejectedError") {
-      throw clerkError;
-    }
+    if (!(clerkError instanceof AuthenticationRejectedError)) throw clerkError;
     return supabaseVerifier(req);
   }
 }
