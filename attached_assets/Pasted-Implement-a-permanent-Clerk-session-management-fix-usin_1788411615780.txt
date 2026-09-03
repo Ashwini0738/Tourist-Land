@@ -1,0 +1,161 @@
+Implement a permanent Clerk session-management fix using the following authentication policy.
+
+CURRENT PROBLEM:
+After entering valid email/password credentials, Clerk sometimes reports:
+
+“Clerk reported an existing session, but no usable local session is available for this account. Please sign out of the existing account and try again.”
+
+I want the authentication flow redesigned so stale previous sessions can never interfere with a fresh email/password login, while biometric login can continue using an existing valid session.
+
+DO NOT replace Clerk.
+DO NOT create a custom authentication system.
+DO NOT remove MFA/OTP.
+DO NOT change unrelated application functionality.
+
+AUTHENTICATION POLICY:
+
+A) EMAIL + PASSWORD LOGIN = FRESH LOGIN
+
+Whenever the user chooses email/password login:
+
+1. Before starting the new sign-in transaction, clear stale LOCAL authentication/session state maintained by the app.
+2. Detect whether Clerk already has an active/existing session.
+3. If the existing session belongs to the previous authentication state/account and is not needed for the current login, safely terminate/clear it before starting the fresh sign-in.
+4. Do NOT blindly sign out in a way that can destroy the Clerk sign-in transaction currently being used for MFA.
+5. Start a completely new Clerk sign-in transaction.
+6. Submit email/password.
+7. If MFA/OTP is required, continue the same Clerk sign-in transaction without clearing it.
+8. After successful finalization, read the ACTUAL finalized Clerk session ID.
+9. Activate that finalized session using Clerk's supported active-session mechanism.
+10. Verify that a usable active session exists before navigating to Home.
+11. Only then mark the user as authenticated.
+
+The key requirement is:
+
+EMAIL/PASSWORD → CLEAN STALE STATE → NEW CLERK SIGN-IN → MFA IF REQUIRED → FINALIZE → ACTIVATE NEW SESSION → HOME
+
+B) BIOMETRIC / DEVICE UNLOCK LOGIN = REUSE EXISTING SESSION
+
+For biometric/device-unlock login:
+
+1. DO NOT clear the existing Clerk session.
+2. Check whether a valid Clerk session exists for the locally authenticated user.
+3. If the session is valid, use/activate that existing session.
+4. After successful biometric verification, navigate directly to Home.
+5. Do not force the user through email/password again.
+6. If the existing Clerk session is invalid/expired, gracefully fall back to the normal email/password login flow.
+
+The key requirement is:
+
+BIOMETRIC → VERIFY DEVICE USER → VALID EXISTING CLERK SESSION → HOME
+
+C) APP STARTUP
+
+Do not globally sign out the user every time the app starts.
+
+Instead:
+
+1. Initialize Clerk normally.
+2. Restore/check the existing session.
+3. If the app is entering biometric/device-unlock mode, preserve and use the existing session.
+4. If the user explicitly chooses email/password, switch to the FRESH LOGIN policy above.
+5. Prevent stale local state from incorrectly claiming that a previous session is still active.
+
+D) IMPORTANT CLERK SESSION DETAIL
+
+Previous implementation issues suggest Clerk may mutate the sign-in/session resource during finalization.
+
+Therefore:
+
+* Do not capture a session ID too early and assume it remains unchanged.
+* After finalization, obtain the actual current/finalized session ID from the Clerk resource.
+* Use that final session ID for activation.
+* Verify the session exists before calling setActive()/equivalent.
+* Do not navigate to Home merely because password verification succeeded.
+* Navigation to Home must happen only after Clerk confirms a usable active session.
+
+E) PREVENT DUPLICATE SESSION OPERATIONS
+
+Audit the entire authentication code for multiple places doing:
+
+* signIn.create()
+* signIn.finalize()
+* attemptFirstFactor()
+* attemptSecondFactor()
+* setActive()
+* signOut()
+* session restoration
+* automatic navigation after authentication
+
+There must be ONE clear owner of the authentication/session transition.
+
+Prevent:
+
+* duplicate sign-in transactions
+* duplicate setActive calls
+* concurrent login submissions
+* startup session restoration racing with email login
+* navigation racing with session activation
+
+F) MFA/OTP REQUIREMENT
+
+Do NOT clear or destroy the Clerk sign-in transaction while the user is on the MFA/OTP screen.
+
+If OTP/MFA verification fails:
+
+* keep the OTP screen mounted
+* preserve the active Clerk sign-in transaction
+* allow retry
+
+If final session activation fails:
+
+* do not navigate to Home
+* keep the authentication flow recoverable
+* log the actual Clerk state/session information needed to diagnose the failure
+
+G) ADD AUTOMATED TESTS
+
+Add focused tests for:
+
+1. Email/password with no previous session → fresh login succeeds.
+2. Email/password with stale previous session → stale state is cleared and fresh login succeeds.
+3. Email/password while another account's session exists → previous account is safely replaced.
+4. Email/password + MFA → MFA completes and NEW session becomes active.
+5. Clerk changes/mutates the session ID during finalization → final session ID is used.
+6. MFA failure → OTP screen remains available.
+7. Session activation failure → user is not incorrectly sent to Home.
+8. Biometric login with valid existing session → existing session reused and Home opens.
+9. Biometric login with expired/invalid session → falls back to email/password.
+10. App startup does not unnecessarily sign out the user.
+11. Rapid/double login submission does not create duplicate sign-in/session operations.
+12. Startup session restoration cannot race with a newly requested email/password login.
+
+H) IMPORTANT UX REQUIREMENT
+
+The user should never see:
+
+“Clerk reported an existing session, but no usable local session is available…”
+
+as a normal consequence of switching from one login method to another.
+
+The application should automatically recover from stale session state whenever safe.
+
+Before changing code:
+
+1. Inspect the current Clerk authentication implementation.
+2. Identify exactly where the stale session/local-session mismatch occurs.
+3. Identify all locations that restore, clear, create, finalize, or activate sessions.
+4. Explain the root cause briefly.
+
+Then implement the smallest robust architectural fix following the policies above.
+
+After implementation, run all relevant authentication tests and report:
+
+* root cause
+* files changed
+* session lifecycle before vs after
+* email/password behavior
+* biometric behavior
+* MFA behavior
+* tests passed
+* any remaining limitations
