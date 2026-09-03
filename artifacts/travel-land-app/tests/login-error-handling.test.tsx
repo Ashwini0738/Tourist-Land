@@ -91,10 +91,10 @@ function createSignUp() {
   };
 }
 
-function createSession(id = 'sess_existing', email = 'traveller@example.com') {
+function createSession(id = 'sess_existing', email = 'traveller@example.com', status = 'active') {
   return {
     id,
-    status: 'active',
+    status,
     user: {
       emailAddresses: [{ emailAddress: email }],
     },
@@ -175,6 +175,16 @@ describe('login validation', () => {
 
   it('submits valid email and password input to Clerk', async () => {
     const signIn = createSignIn();
+    const clerk = createClerk();
+    signIn.finalize.mockImplementationOnce(async () => {
+      signIn.createdSessionId = 'sess_finalized';
+      const finalizedSession = createSession('sess_finalized', 'traveller@example.com', 'pending');
+      clerk.client.sessions.push(finalizedSession);
+      clerk.client.lastActiveSessionId = finalizedSession.id;
+      clerk.session = finalizedSession;
+      return { error: null };
+    });
+    mockUseClerk.mockReturnValue(clerk);
     mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
     const screen = render(<LoginScreen />);
 
@@ -189,6 +199,7 @@ describe('login validation', () => {
       });
       expect(signIn.finalize).toHaveBeenCalledWith({});
     });
+    expect(screen.queryByText('We could not complete sign in. Please try again.')).toBeNull();
     expect(router.replace).not.toHaveBeenCalled();
   });
 
@@ -645,7 +656,7 @@ describe('login exception handling', () => {
     signIn.finalize.mockImplementationOnce(async () => {
       expect(signIn.createdSessionId).toBe('sess_pending');
       signIn.createdSessionId = 'sess_finalized';
-      clerk.client.sessions.push(createSession('sess_finalized'));
+      clerk.client.sessions.push(createSession('sess_finalized', 'traveller@example.com', 'pending'));
       return { error: null };
     });
     mockUseClerk.mockReturnValue(clerk);

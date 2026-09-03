@@ -85,7 +85,7 @@ export default function LoginScreen() {
 
     const finalizedSessionId = signIn.createdSessionId ?? clerk.session?.id ?? clerk.client?.lastActiveSessionId;
     const finalizedSession = finalizedSessionId
-      ? clerk.client?.sessions.find((session) => session.id === finalizedSessionId && session.status === 'active')
+      ? clerk.client?.sessions.find((session) => session.id === finalizedSessionId)
       : undefined;
     if (!finalizedSessionId || !finalizedSession) {
       if (__DEV__) {
