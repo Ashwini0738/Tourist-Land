@@ -37,6 +37,7 @@ export type PasswordRecoveryStatus = 'idle' | 'processing' | 'ready' | 'error';
 
 type AuthContextValue = {
   provider: MobileAuthProvider | null;
+  isIdentityLinking: boolean;
   isPasswordRecovery: boolean;
   isLoaded: boolean;
   isSignedIn: boolean;
@@ -48,6 +49,9 @@ type AuthContextValue = {
   accessError: MobileAuthAccessError;
   getToken: () => Promise<string | null>;
   signInWithPassword: (email: string, password: string) => Promise<void>;
+  signInForIdentityLink: (email: string, password: string) => Promise<string>;
+  finishIdentityLinking: () => void;
+  cancelIdentityLinking: () => Promise<void>;
   signUpWithPassword: (email: string, password: string) => Promise<PasswordSignUpResult>;
   verifySupabaseSignup: (code: string) => Promise<void>;
   resendSupabaseSignupCode: () => Promise<void>;
@@ -107,6 +111,7 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
   const [supabaseLoaded, setSupabaseLoaded] = useState(false);
   const [pendingSupabaseSignupEmail, setPendingSupabaseSignupEmail] = useState<string | null>(null);
   const [accessError, setAccessError] = useState<MobileAuthAccessError>(null);
+  const [isIdentityLinking, setIsIdentityLinking] = useState(false);
   const [passwordRecoveryStatus, setPasswordRecoveryStatus] = useState<PasswordRecoveryStatus>('idle');
   const [passwordRecoveryError, setPasswordRecoveryError] = useState<string | null>(null);
   const recoveryUrl = useRef<string | null>(null);
@@ -231,6 +236,40 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
     setSupabaseSession(data.session);
   }, [requireSupabase]);
 
+  const signInForIdentityLink = useCallback(async (email: string, password: string) => {
+    if (!clerkAuth.isSignedIn) {
+      throw new Error('A verified Clerk session is required to link email sign-in.');
+    }
+    const client = requireSupabase();
+    setIsIdentityLinking(true);
+    setAccessError(null);
+    try {
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (!data.session) throw new Error('Supabase did not establish an authenticated session.');
+      setSupabaseSession(data.session);
+      return data.session.access_token;
+    } catch (error) {
+      setIsIdentityLinking(false);
+      throw error;
+    }
+  }, [clerkAuth.isSignedIn, requireSupabase]);
+
+  const finishIdentityLinking = useCallback(() => {
+    setAccessError(null);
+    setIsIdentityLinking(false);
+  }, []);
+
+  const cancelIdentityLinking = useCallback(async () => {
+    if (configuration.client && supabaseSession) {
+      const { error } = await configuration.client.auth.signOut();
+      if (error) throw error;
+      setSupabaseSession(null);
+    }
+    setAccessError(null);
+    setIsIdentityLinking(false);
+  }, [configuration.client, supabaseSession]);
+
   const signUpWithPassword = useCallback(async (email: string, password: string) => {
     const client = requireSupabase();
     setAccessError(null);
@@ -320,6 +359,7 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
 
   const value = useMemo<AuthContextValue>(() => ({
     provider,
+    isIdentityLinking,
     isPasswordRecovery,
     isLoaded,
     isSignedIn,
@@ -331,6 +371,9 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
     accessError,
     getToken,
     signInWithPassword,
+    signInForIdentityLink,
+    finishIdentityLinking,
+    cancelIdentityLinking,
     signUpWithPassword,
     verifySupabaseSignup,
     resendSupabaseSignupCode,
@@ -348,10 +391,13 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
     accessError,
     configuration.client,
     configuration.error,
+    cancelIdentityLinking,
+    finishIdentityLinking,
     getToken,
     isLoaded,
     isSignedIn,
     isPasswordRecovery,
+    isIdentityLinking,
     pendingSupabaseSignupEmail,
     passwordRecoveryError,
     passwordRecoveryStatus,
@@ -362,6 +408,7 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
     resendSupabaseSignupCode,
     requestSupabasePasswordReset,
     signInWithPassword,
+    signInForIdentityLink,
     signOut,
     signUpWithPassword,
     updateSupabasePassword,

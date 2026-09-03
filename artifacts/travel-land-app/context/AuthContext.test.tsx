@@ -76,6 +76,7 @@ function Probe() {
       <Text testID="state">{`${auth.isLoaded}:${auth.provider ?? 'none'}:${auth.userId ?? 'none'}:${auth.accessError ?? 'none'}`}</Text>
       <Text testID="token" />
       <Pressable testID="email-login" onPress={() => void auth.signInWithPassword('traveller@example.com', 'password')} />
+      <Pressable testID="identity-link-login" onPress={() => void auth.signInForIdentityLink('traveller@example.com', 'password')} />
       <Pressable testID="email-signup" onPress={() => void auth.signUpWithPassword('traveller@example.com', 'password')} />
       <Pressable testID="logout" onPress={() => void auth.signOut()} />
       <Pressable testID="mark-unmapped" onPress={auth.markAccountNotLinked} />
@@ -169,6 +170,32 @@ it('creates only a Supabase session for email/password and tracks confirmation-r
   await waitFor(() => expect(authValue?.pendingSupabaseSignupEmail).toBe('traveller@example.com'));
   fireEvent.press(screen.getByTestId('email-login'));
   await waitFor(() => expect(supabase.auth.signInWithPassword).toHaveBeenCalled());
+  expect(clerkSignOut).not.toHaveBeenCalled();
+});
+
+it('authenticates the Supabase side of an identity link without signing out Clerk', async () => {
+  const supabase = client(null);
+  mockCreateSupabase.mockReturnValue(supabase);
+  mockUseClerkAuth.mockReturnValue({
+    isLoaded: true,
+    isSignedIn: true,
+    userId: 'clerk-user-1',
+    getToken: jest.fn().mockResolvedValue('clerk-token'),
+  });
+  let authValue: ReturnType<typeof useMobileAuth> | null = null;
+  function Capture() {
+    authValue = useMobileAuth();
+    return null;
+  }
+  const screen = render(<MobileAuthProvider><Capture /><Probe /></MobileAuthProvider>);
+  await waitFor(() => expect(authValue?.provider).toBe('clerk'));
+  fireEvent.press(screen.getByTestId('identity-link-login'));
+  await waitFor(() => expect(authValue?.provider).toBe('supabase'));
+  expect(authValue!.isIdentityLinking).toBe(true);
+  expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
+    email: 'traveller@example.com',
+    password: 'password',
+  });
   expect(clerkSignOut).not.toHaveBeenCalled();
 });
 

@@ -2194,6 +2194,34 @@ export const GetAuthSessionResponse = zod.object({
 
 
 /**
+ * @summary Start a one-time existing-user Clerk to Supabase identity-link attempt
+ */
+export const StartIdentityLinkResponse = zod.object({
+  "attemptId": zod.string().uuid(),
+  "expiresAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Complete an identity link using independently verified Clerk and Supabase credentials
+ */
+export const CompleteIdentityLinkParams = zod.object({
+  "attemptId": zod.string().uuid()
+})
+
+
+
+
+export const CompleteIdentityLinkHeader = zod.object({
+  "X-Supabase-Link-Token": zod.string().min(1).describe('Short-lived Supabase access token verified by the server and never persisted')
+})
+
+export const CompleteIdentityLinkResponse = zod.object({
+  "status": zod.enum(['linked', 'already_linked'])
+})
+
+
+/**
  * @summary Submit a vendor application before creating a Clerk account
  */
 export const submitVendorApplicationBodyBusinessNameMax = 200;

@@ -69,6 +69,7 @@ import type {
   DestinationList,
   EligibleReviewList,
   EmailInvitationInput,
+  ErrorResponse,
   EventList,
   ExploreCategoriesResponse,
   ExploreFiltersResponse,
@@ -92,6 +93,8 @@ import type {
   HotelReviewList,
   HotelRoomList,
   HotelSearchResponse,
+  IdentityLinkAttempt,
+  IdentityLinkResult,
   InvalidInputResponse,
   ListAdminAuditLogsParams,
   ListAdminAvailabilityParams,
@@ -4185,6 +4188,148 @@ export function useGetAuthSession<TData = Awaited<ReturnType<typeof getAuthSessi
 
 
 
+
+export const getStartIdentityLinkUrl = () => {
+
+
+
+
+  return `/api/v1/auth/identity-link/attempts`
+}
+
+/**
+ * @summary Start a one-time existing-user Clerk to Supabase identity-link attempt
+ */
+export const startIdentityLink = async ( options?: Parameters<typeof customFetch>[1]): Promise<IdentityLinkAttempt> => {
+
+  return customFetch<IdentityLinkAttempt>(getStartIdentityLinkUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartIdentityLinkMutationOptions = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startIdentityLink>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startIdentityLink>>, TError,void, TContext> => {
+
+const mutationKey = ['startIdentityLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startIdentityLink>>, void> = () => {
+
+
+          return  startIdentityLink(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartIdentityLinkMutationResult = NonNullable<Awaited<ReturnType<typeof startIdentityLink>>>
+
+    export type StartIdentityLinkMutationError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Start a one-time existing-user Clerk to Supabase identity-link attempt
+ */
+export const useStartIdentityLink = <TError = ErrorType<UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startIdentityLink>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startIdentityLink>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getStartIdentityLinkMutationOptions(options));
+    }
+
+export const getCompleteIdentityLinkUrl = (attemptId: string,) => {
+
+
+
+
+  return `/api/v1/auth/identity-link/attempts/${attemptId}/complete`
+}
+
+/**
+ * @summary Complete an identity link using independently verified Clerk and Supabase credentials
+ */
+export const completeIdentityLink = async (attemptId: string, options?: Parameters<typeof customFetch>[1]): Promise<IdentityLinkResult> => {
+
+  return customFetch<IdentityLinkResult>(getCompleteIdentityLinkUrl(attemptId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompleteIdentityLinkMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | ErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeIdentityLink>>, TError,{attemptId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeIdentityLink>>, TError,{attemptId: string}, TContext> => {
+
+const mutationKey = ['completeIdentityLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeIdentityLink>>, {attemptId: string}> = (props) => {
+          const {attemptId} = props ?? {};
+
+          return  completeIdentityLink(attemptId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteIdentityLinkMutationResult = NonNullable<Awaited<ReturnType<typeof completeIdentityLink>>>
+
+    export type CompleteIdentityLinkMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | ErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Complete an identity link using independently verified Clerk and Supabase credentials
+ */
+export const useCompleteIdentityLink = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | ErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeIdentityLink>>, TError,{attemptId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeIdentityLink>>,
+        TError,
+        {attemptId: string},
+        TContext
+      > => {
+      return useMutation(getCompleteIdentityLinkMutationOptions(options));
+    }
 
 export const getSubmitVendorApplicationUrl = () => {
 

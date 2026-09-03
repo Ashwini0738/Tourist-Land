@@ -34,3 +34,9 @@ Supabase password recovery is a Supabase-only transaction: accept links only on 
 **Why:** Recovery links grant temporary account access, so accepting arbitrary deep links or letting a recovery session enter role and device-unlock routing could turn an invalid or partially handled link into an unintended authenticated state.
 
 **How to apply:** Keep the callback URI allow-listed and provider-validated, expose a dedicated recovery state, fail invalid/expired/reused links with generic user-facing copy, and clear the recovery session after the password changes. Never route recovery through Clerk or share its session state with phone/MFA flows.
+
+Existing-user provider linking requires two independently verified credentials in one short-lived, server-owned attempt: Clerk proves the existing local account, and Supabase proves the new `auth_user_id`. Provider subjects must be derived server-side; never accept identity IDs, email matching, or ownership reassignment from the client.
+
+**Why:** Linking two authentication authorities is an account-takeover boundary. A one-time transaction with row locks, replay protection, and unique mapping constraints preserves the permanent local user identity while rejecting confused-deputy and race attacks.
+
+**How to apply:** Start under verified Clerk, complete under the same Clerk identity plus a separately verified Supabase token, store no credentials, and update only the local user's provider mapping. Preserve every role and owned record through the unchanged local user ID.

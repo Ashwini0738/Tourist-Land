@@ -18,3 +18,4 @@
 //   export type Post = typeof postsTable.$inferSelect;
 
 export * from "./platform.ts";
+export * from "./identity-link-attempts.ts";

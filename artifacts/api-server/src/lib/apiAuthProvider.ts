@@ -37,7 +37,7 @@ export async function verifyRequestIdentity(
     : verifySupabaseBearerToken(bearerToken(req));
 }
 
-function verifyClerkRequest(req: Request): VerifiedExternalIdentity {
+export function verifyClerkRequest(req: Request): VerifiedExternalIdentity {
   const { userId, sessionId } = getAuth(req);
   if (!userId) throw new AuthenticationRejectedError();
   return {

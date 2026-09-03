@@ -931,6 +931,55 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AuthSessionStatus" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
+  /v1/auth/identity-link/attempts:
+    post:
+      operationId: startIdentityLink
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      summary: Start a one-time existing-user Clerk to Supabase identity-link attempt
+      responses:
+        "201":
+          description: One-time identity-link attempt created for the verified Clerk user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IdentityLinkAttempt" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /v1/auth/identity-link/attempts/{attemptId}/complete:
+    post:
+      operationId: completeIdentityLink
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      summary: Complete an identity link using independently verified Clerk and Supabase credentials
+      parameters:
+        - name: attemptId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: X-Supabase-Link-Token
+          in: header
+          required: true
+          description: Short-lived Supabase access token verified by the server and never persisted
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Identity link completed or already linked to the same verified identity
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IdentityLinkResult" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "410":
+          description: Identity-link attempt expired
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /v1/vendor/applications:
     post:
       operationId: submitVendorApplication
@@ -3544,6 +3593,19 @@ components:
         sessionId: { type: [string, "null"] }
         sessionAuthority: { type: string, enum: [clerk] }
       required: [authenticated, clerkUserId, sessionId, sessionAuthority]
+    IdentityLinkAttempt:
+      type: object
+      properties:
+        attemptId: { type: string, format: uuid }
+        expiresAt: { type: string, format: date-time }
+      required: [attemptId, expiresAt]
+    IdentityLinkResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [linked, already_linked]
+      required: [status]
     PrimaryRole:
       type: string
       enum: [user, vendor, admin]

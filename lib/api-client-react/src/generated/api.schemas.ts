@@ -1581,6 +1581,23 @@ export interface AuthSessionStatus {
   sessionAuthority: AuthSessionStatusSessionAuthority;
 }
 
+export interface IdentityLinkAttempt {
+  attemptId: string;
+  expiresAt: string;
+}
+
+export type IdentityLinkResultStatus = typeof IdentityLinkResultStatus[keyof typeof IdentityLinkResultStatus];
+
+
+export const IdentityLinkResultStatus = {
+  linked: 'linked',
+  already_linked: 'already_linked',
+} as const;
+
+export interface IdentityLinkResult {
+  status: IdentityLinkResultStatus;
+}
+
 export type PrimaryRole = typeof PrimaryRole[keyof typeof PrimaryRole];
 
 

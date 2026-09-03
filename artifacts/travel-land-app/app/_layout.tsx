@@ -116,6 +116,7 @@ function RootLayoutNav() {
     accessError,
     markAccountNotLinked,
     isPasswordRecovery,
+    isIdentityLinking,
   } = useMobileAuth();
   const router = useRouter();
   const { isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete, securityError, retrySecurityState } = useAuthSecurity();
@@ -174,7 +175,7 @@ function RootLayoutNav() {
     securityError,
   ]);
 
-  const showRoleError = Boolean(isSignedIn && isReady && isUnlocked && roleError);
+  const showRoleError = Boolean(isSignedIn && isReady && isUnlocked && roleError && !isIdentityLinking);
   const showSecureStorageRecovery = Boolean(isSignedIn && securityError === 'SECURE_STORAGE_UNAVAILABLE');
 
   return (

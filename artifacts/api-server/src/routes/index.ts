@@ -2,6 +2,7 @@ import { Router, type IRouter, type RequestHandler } from "express";
 import healthRouter from "./health";
 import catalogRouter from "./catalog";
 import authRouter from "./auth";
+import identityLinkRouter from "./identity-link";
 import roleAccessRouter from "./role-access";
 import onboardingRouter from "./onboarding";
 import exploreRouter from "./explore";
@@ -44,6 +45,7 @@ mountOnPaths(
   (path) => hasPrefix(path, "/v1/reviews") || /^\/v1\/hotels\/[^/]+\/reviews(?:\/|$)/.test(path),
 );
 router.use(onboardingRouter);
+router.use(identityLinkRouter);
 mountOnPaths(authRouter, (path) => hasPrefix(path, "/v1/auth") || hasPrefix(path, "/v1/me"));
 mountOnPaths(vendorPortalRouter, (path) => hasPrefix(path, "/v1/vendor"));
 mountOnPaths(adminRouter, (path) => hasPrefix(path, "/v1/admin"));
