@@ -161,12 +161,17 @@ export default function LoginScreen() {
         : await signIn.mfa.verifyEmailCode({ code: signInCode });
       if (error) return setMessage(authErrorMessage(error, 'That verification code did not work. Please try again.'));
       if (signIn.status !== 'complete') return setMessage('The code was accepted, but sign in is not complete yet. Please try again.');
+      const createdSessionId = signIn.createdSessionId;
+      if (!createdSessionId) {
+        return setMessage('We could not complete sign in. Please try again.');
+      }
+      const shouldActivateCreatedSession = clerk.session?.id !== createdSessionId;
       const finalization = await signIn.finalize({});
       if (finalization?.error) {
         return setMessage(authErrorMessage(finalization.error, 'We could not complete sign in. Please try again.'));
       }
-      if (!clerk.session && signIn.createdSessionId) {
-        await setActive({ session: signIn.createdSessionId });
+      if (shouldActivateCreatedSession) {
+        await setActive({ session: createdSessionId });
       }
       setSignInVerificationMethod(null);
       setSignInCode('');

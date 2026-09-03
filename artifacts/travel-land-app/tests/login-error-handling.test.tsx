@@ -607,12 +607,17 @@ describe('login exception handling', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('finalizes MFA verification once, activates the real created session, and clears the verification UI', async () => {
+  it('captures the real MFA session before finalization, activates it, and clears the verification UI', async () => {
     const signIn = createSignIn();
     signIn.status = 'needs_second_factor';
     signIn.createdSessionId = 'sess_created';
     signIn.mfa.verifyEmailCode.mockImplementationOnce(async () => {
       signIn.status = 'complete';
+      return { error: null };
+    });
+    signIn.finalize.mockImplementationOnce(async () => {
+      expect(signIn.createdSessionId).toBe('sess_created');
+      signIn.createdSessionId = null;
       return { error: null };
     });
     mockUseClerk.mockReturnValue({ setActive, session: null });
@@ -633,6 +638,38 @@ describe('login exception handling', () => {
     expect(setActive).toHaveBeenCalledWith({ session: 'sess_created' });
     expect(screen.queryByTestId('verify-sign-in-code')).toBeNull();
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('keeps the MFA UI visible when activating the finalized session fails', async () => {
+    const signIn = createSignIn();
+    signIn.status = 'needs_second_factor';
+    signIn.createdSessionId = 'sess_created';
+    signIn.mfa.verifyEmailCode.mockImplementationOnce(async () => {
+      signIn.status = 'complete';
+      return { error: null };
+    });
+    signIn.finalize.mockImplementationOnce(async () => {
+      signIn.createdSessionId = null;
+      return { error: null };
+    });
+    setActive.mockRejectedValueOnce(new Error('activation internals'));
+    mockUseClerk.mockReturnValue({ setActive, session: null });
+    mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+    const screen = render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText('Email address'), 'traveller@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'not-a-real-password');
+    fireEvent.press(screen.getByTestId('login-continue'));
+    await waitFor(() => expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy());
+
+    fireEvent.changeText(screen.getByTestId('sign-in-verification-code'), '123456');
+    fireEvent.press(screen.getByTestId('verify-sign-in-code'));
+
+    await waitFor(() => {
+      expect(screen.getByText('We could not verify that code. Please try again.')).toBeTruthy();
+    });
+    expect(screen.getByTestId('verify-sign-in-code')).toBeTruthy();
+    expect(setActive).toHaveBeenCalledWith({ session: 'sess_created' });
   });
 
   it('does not submit MFA verification when Clerk already reports an active session', async () => {
