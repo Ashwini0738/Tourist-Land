@@ -203,9 +203,11 @@ describe('login validation', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('does not start another password sign-in when Clerk already reports an active session', async () => {
+  it('starts a fresh password sign-in when the user explicitly submits with an active Clerk session', async () => {
     const signIn = createSignIn();
+    const clerk = createClerk([createSession('sess_previous')], 'sess_previous');
     mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: true });
+    mockUseClerk.mockReturnValue(clerk);
     mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
     const screen = render(<LoginScreen />);
 
@@ -213,7 +215,8 @@ describe('login validation', () => {
     fireEvent.changeText(screen.getByTestId('login-password'), 'not-a-real-password');
     fireEvent.press(screen.getByTestId('login-continue'));
 
-    await waitFor(() => expect(signIn.password).not.toHaveBeenCalled());
+    await waitFor(() => expect(signOut).toHaveBeenCalledWith({ sessionId: 'sess_previous' }));
+    expect(signIn.password).toHaveBeenCalledTimes(1);
     expect(router.replace).not.toHaveBeenCalled();
   });
 

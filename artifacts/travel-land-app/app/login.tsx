@@ -112,7 +112,7 @@ export default function LoginScreen() {
   };
 
   const submit = async () => {
-    if (isSubmitting || isSignedIn) return;
+    if (isSubmitting) return;
     setMessage('');
     if (isNew || authMethod === 'email') {
       const emailMessage = emailValidationMessage(email);
