@@ -4651,7 +4651,9 @@ export const ListAdminUsersPageResponse = zod.object({
 }),zod.null()]),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
-})),
+}).and(zod.object({
+  "supabaseLinked": zod.boolean()
+}))),
   "meta": zod.object({
   "page": zod.number().int().min(1),
   "limit": zod.number().int().min(1),
@@ -4702,7 +4704,9 @@ export const GetAdminUserDetailResponse = zod.object({
 }),zod.null()]),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
-}),
+}).and(zod.object({
+  "supabaseLinked": zod.boolean()
+})),
   "bookingCount": zod.number().int().min(getAdminUserDetailResponseBookingCountMin),
   "favoriteCount": zod.number().int().min(getAdminUserDetailResponseFavoriteCountMin),
   "reviewCount": zod.number().int().min(getAdminUserDetailResponseReviewCountMin)
@@ -4751,6 +4755,56 @@ export const UpdateAdminUserStatusResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
+
+
+/**
+ * This one-way operation is restricted to administrators. It never provisions users or matches identities by email.
+ * @summary Link an approved Supabase identity to an existing local user
+ */
+export const LinkAdminUserSupabaseIdentityParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const linkAdminUserSupabaseIdentityBodyReasonMax = 1000;
+
+
+
+export const LinkAdminUserSupabaseIdentityBody = zod.object({
+  "authUserId": zod.string().uuid().describe('Supabase auth.users.id verified by the administrator before submission.'),
+  "reason": zod.string().min(1).max(linkAdminUserSupabaseIdentityBodyReasonMax).describe('Required approval note retained in the admin audit history.')
+})
+
+export const LinkAdminUserSupabaseIdentityResponse = zod.object({
+  "id": zod.string(),
+  "clerkUserId": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable(),
+  "role": zod.enum(['user', 'vendor', 'admin']),
+  "status": zod.enum(['active', 'inactive', 'suspended']),
+  "vendorProfile": zod.union([zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "businessName": zod.string(),
+  "businessType": zod.string(),
+  "contactName": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "description": zod.string(),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "country": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),zod.null()]),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "supabaseLinked": zod.boolean()
+}))
 
 
 export const listAdminVendorsQueryQMax = 160;
@@ -4808,7 +4862,9 @@ export const ListAdminVendorsResponse = zod.object({
 }),zod.null()]),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
-}),
+}).and(zod.object({
+  "supabaseLinked": zod.boolean()
+})),
   "profile": zod.object({
   "id": zod.string(),
   "userId": zod.string(),

@@ -57,6 +57,22 @@ and Supabase authentication does not provision users or claim invitations. The
 current Clerk middleware, provisioning, invitation claim, configured-admin
 behavior, and 401 response remain unchanged in the default Clerk mode.
 
+## Controlled identity linking
+
+Supabase identities are linked only by an authenticated administrator through
+the one-way `POST /v1/admin/users/{id}/supabase-link` operation. The operator
+must verify the `auth.users.id` in the approved migration roster and provide a
+reason. The endpoint accepts only the Supabase UUID and local user UUID; it
+never accepts email as a lookup key, provisions a new user, or changes local
+ownership IDs.
+
+The operation is transactional: a local user that already has a Supabase
+identity, or a Supabase identity already owned by any local user, is rejected.
+The unique database constraint remains the final race-safety guard. The mapping
+and its approval reason are written together to `admin_audit_logs`; if either
+write fails, neither change is retained. There is intentionally no unlink or
+reassignment endpoint.
+
 ## Invitation migration design
 
 Existing invitation email, status, onboarding state, and Clerk invitation IDs

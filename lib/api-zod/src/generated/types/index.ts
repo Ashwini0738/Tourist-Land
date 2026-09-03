@@ -66,6 +66,7 @@ export * from './adminRoom';
 export * from './adminRoomPage';
 export * from './adminStatusUpdate';
 export * from './adminStatusUpdateStatus';
+export * from './adminSupabaseIdentityLinkInput';
 export * from './adminUser';
 export * from './adminUserDetail';
 export * from './adminUserPage';
