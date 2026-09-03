@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
-import { useAuth, useClerk, useSessionList, useSignIn, useSignUp } from '@clerk/expo';
+import { useAuth, useClerk, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import LoginScreen from '../app/login';
 import VerifyScreen from '../app/verify';
@@ -8,7 +8,6 @@ import VerifyScreen from '../app/verify';
 jest.mock('@clerk/expo', () => ({
   useAuth: jest.fn(),
   useClerk: jest.fn(),
-  useSessionList: jest.fn(),
   useSignIn: jest.fn(),
   useSignUp: jest.fn(),
 }));
@@ -48,10 +47,10 @@ jest.mock('react-native-safe-area-context', () => ({
 
 const mockUseAuth = useAuth as jest.Mock;
 const mockUseClerk = useClerk as jest.Mock;
-const mockUseSessionList = useSessionList as jest.Mock;
 const mockUseSignIn = useSignIn as jest.Mock;
 const mockUseSignUp = useSignUp as jest.Mock;
 const setActive = jest.fn().mockResolvedValue(undefined);
+const signOut = jest.fn().mockResolvedValue(undefined);
 
 function createSignIn() {
   return {
@@ -102,11 +101,36 @@ function createSession(id = 'sess_existing', email = 'traveller@example.com') {
   };
 }
 
+function createClerk(sessions = [] as ReturnType<typeof createSession>[], activeSessionId?: string) {
+  const clerk = {
+    setActive,
+    signOut,
+    session: sessions.find((session) => session.id === activeSessionId) ?? null,
+    client: {
+      sessions: [...sessions],
+      lastActiveSessionId: activeSessionId ?? null,
+    },
+  };
+  setActive.mockImplementation(async ({ session }: { session: string }) => {
+    clerk.session = clerk.client.sessions.find((candidate) => candidate.id === session) ?? null;
+    clerk.client.lastActiveSessionId = session;
+  });
+  signOut.mockImplementation(async ({ sessionId }: { sessionId?: string } = {}) => {
+    clerk.client.sessions = sessionId
+      ? clerk.client.sessions.filter((session) => session.id !== sessionId)
+      : [];
+    if (!sessionId || clerk.session?.id === sessionId) {
+      clerk.session = null;
+      clerk.client.lastActiveSessionId = null;
+    }
+  });
+  return clerk;
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseAuth.mockReturnValue({ isLoaded: true });
-  mockUseClerk.mockReturnValue({ setActive });
-  mockUseSessionList.mockReturnValue({ isLoaded: true, sessions: [] });
+  mockUseClerk.mockReturnValue(createClerk());
   mockUseSignIn.mockReturnValue({ signIn: createSignIn(), fetchStatus: 'idle' });
   mockUseSignUp.mockReturnValue({ signUp: createSignUp(), fetchStatus: 'idle' });
 });
@@ -182,30 +206,29 @@ describe('login validation', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('activates an existing Clerk session and leaves navigation to the root state machine', async () => {
+  it('clears a stale local Clerk session before starting a fresh password sign-in', async () => {
     const signIn = createSignIn();
-    signIn.existingSession = { sessionId: 'sess_existing' };
-    mockUseSessionList.mockReturnValue({ isLoaded: true, sessions: [createSession()] });
-    signIn.password.mockResolvedValueOnce({
-      error: { code: 'session_exists' },
-    });
+    const clerk = createClerk([createSession('sess_stale')], 'sess_stale');
+    mockUseClerk.mockReturnValue(clerk);
     mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
     const screen = render(<LoginScreen />);
 
-    fireEvent.changeText(screen.getByTestId('login-email'), 'ashwini0738@gmail.com');
+    fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
     fireEvent.changeText(screen.getByTestId('login-password'), 'new-password');
     fireEvent.press(screen.getByTestId('login-continue'));
 
-    await waitFor(() => expect(setActive).toHaveBeenCalledWith({ session: 'sess_existing' }));
+    await waitFor(() => expect(signOut).toHaveBeenCalledWith({ sessionId: 'sess_stale' }));
+    expect(signIn.reset).toHaveBeenCalledBefore(signIn.password);
+    expect(signIn.password).toHaveBeenCalledTimes(1);
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('activates a registered session by the entered email when existingSession is absent', async () => {
+  it('removes a reported stale server session and retries a fresh password sign-in once', async () => {
     const signIn = createSignIn();
+    signIn.existingSession = { sessionId: 'sess_server_stale' };
     signIn.password.mockResolvedValueOnce({
       error: { code: 'session_exists' },
-    });
-    mockUseSessionList.mockReturnValue({ isLoaded: true, sessions: [createSession('sess_by_email')] });
+    }).mockResolvedValueOnce({ error: null });
     mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
     const screen = render(<LoginScreen />);
 
@@ -213,10 +236,13 @@ describe('login validation', () => {
     fireEvent.changeText(screen.getByTestId('login-password'), 'not-a-real-password');
     fireEvent.press(screen.getByTestId('login-continue'));
 
-    await waitFor(() => expect(setActive).toHaveBeenCalledWith({ session: 'sess_by_email' }));
+    await waitFor(() => expect(signIn.password).toHaveBeenCalledTimes(2));
+    expect(signOut).toHaveBeenCalledWith({ sessionId: 'sess_server_stale' });
+    expect(signIn.reset).toHaveBeenCalledTimes(2);
+    expect(setActive).not.toHaveBeenCalledWith({ session: 'sess_server_stale' });
   });
 
-  it('shows an error when no usable registered session exists', async () => {
+  it('shows a safe error when Clerk reports a stale session without an identifiable session ID', async () => {
     const signIn = createSignIn();
     signIn.password.mockResolvedValueOnce({
       error: { code: 'session_exists' },
@@ -229,17 +255,16 @@ describe('login validation', () => {
     fireEvent.press(screen.getByTestId('login-continue'));
 
     await waitFor(() => {
-      expect(screen.getByText('Clerk reported an existing session, but no usable local session is available for this account. Please sign out of the existing account and try again.')).toBeTruthy();
+      expect(screen.getByText('You are already signed in. Opening your account.')).toBeTruthy();
     });
+    expect(signIn.password).toHaveBeenCalledTimes(1);
   });
 
-  it('shows an error when activating the registered session fails', async () => {
+  it('shows a safe error when stale-session cleanup fails', async () => {
     const signIn = createSignIn();
-    signIn.password.mockResolvedValueOnce({
-      error: { code: 'session_exists' },
-    });
-    setActive.mockRejectedValueOnce(new Error('activation internals'));
-    mockUseSessionList.mockReturnValue({ isLoaded: true, sessions: [createSession()] });
+    const clerk = createClerk([createSession('sess_stale')], 'sess_stale');
+    signOut.mockRejectedValueOnce(new Error('cleanup internals'));
+    mockUseClerk.mockReturnValue(clerk);
     mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
     const screen = render(<LoginScreen />);
 
@@ -250,6 +275,7 @@ describe('login validation', () => {
     await waitFor(() => {
       expect(screen.getByText('We could not complete sign in. Please try again.')).toBeTruthy();
     });
+    expect(signIn.password).not.toHaveBeenCalled();
   });
 
   it('shows an explicit loading state while Clerk sign-in is pending', async () => {

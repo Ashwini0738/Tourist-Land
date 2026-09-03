@@ -2,7 +2,7 @@ import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { PasswordResetFlow } from '@/features/auth/PasswordResetFlow';
 import { authErrorCodes, authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
-import { useAuth, useClerk, useSessionList, useSignIn, useSignUp } from '@clerk/expo';
+import { useAuth, useClerk, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -33,9 +33,8 @@ export default function LoginScreen() {
   const { signIn, fetchStatus: signInStatus } = useSignIn();
   const { signUp, fetchStatus: signUpStatus } = useSignUp();
   const clerk = useClerk();
-  const { setActive } = clerk;
+  const { setActive, signOut } = clerk;
   const { isLoaded, isSignedIn } = useAuth();
-  const { sessions, isLoaded: sessionsLoaded } = useSessionList();
 
   const [isNew, setNew] = useState(false);
   const [email, setEmail] = useState('');
@@ -52,6 +51,65 @@ export default function LoginScreen() {
 
   const loading = !isLoaded || signInStatus === 'fetching' || signUpStatus === 'fetching' || isSubmitting || isResending;
   const normalizedPhone = normalizePhoneNumber(countryCode, phone);
+
+  const clearSessionsForFreshPasswordSignIn = async () => {
+    const sessionIds = [...(clerk.client?.sessions ?? [])].map((session) => session.id);
+    for (const sessionId of sessionIds) {
+      await signOut({ sessionId });
+    }
+    await signIn.reset();
+  };
+
+  const startFreshPasswordSignIn = async () => {
+    await clearSessionsForFreshPasswordSignIn();
+    const credentials = { emailAddress: email.trim(), password };
+    let result = await signIn.password(credentials);
+    if (!result.error || !authErrorCodes(result.error).some((code) => code.includes('session_exists'))) {
+      return result;
+    }
+
+    const staleSessionId = signIn.existingSession?.sessionId;
+    if (!staleSessionId) return result;
+    await signOut({ sessionId: staleSessionId });
+    await signIn.reset();
+    result = await signIn.password(credentials);
+    return result;
+  };
+
+  const finalizeAndVerifyActiveSession = async () => {
+    const finalization = await signIn.finalize({});
+    if (finalization?.error) {
+      setMessage(authErrorMessage(finalization.error, 'We could not complete sign in. Please try again.'));
+      return false;
+    }
+
+    const finalizedSessionId = signIn.createdSessionId ?? clerk.session?.id ?? clerk.client?.lastActiveSessionId;
+    const finalizedSession = finalizedSessionId
+      ? clerk.client?.sessions.find((session) => session.id === finalizedSessionId && session.status === 'active')
+      : undefined;
+    if (!finalizedSessionId || !finalizedSession) {
+      if (__DEV__) {
+        console.warn('[auth] Finalized session is not available locally', {
+          signInStatus: signIn.status,
+          hasCreatedSessionId: Boolean(signIn.createdSessionId),
+          hasActiveSession: Boolean(clerk.session),
+          sessionStatuses: clerk.client?.sessions.map((session) => session.status) ?? [],
+        });
+      }
+      setMessage('We could not complete sign in. Please try again.');
+      return false;
+    }
+
+    if (clerk.session?.id !== finalizedSessionId) {
+      await setActive({ session: finalizedSessionId });
+    }
+    const activeSessionId = clerk.session?.id ?? clerk.client?.lastActiveSessionId;
+    if (activeSessionId !== finalizedSessionId) {
+      setMessage('We could not complete sign in. Please try again.');
+      return false;
+    }
+    return true;
+  };
 
   const submit = async () => {
     if (isSubmitting || isSignedIn) return;
@@ -101,24 +159,8 @@ export default function LoginScreen() {
         return;
       }
 
-      const { error } = await signIn.password({ emailAddress: email.trim(), password });
+      const { error } = await startFreshPasswordSignIn();
       if (error) {
-        if (authErrorCodes(error).some((code) => code.includes('session_exists'))) {
-          const existingSessionId = signIn.existingSession?.sessionId;
-          const requestedEmail = email.trim().toLowerCase();
-          const usableSession = sessions?.find((session) => {
-            if (session.status !== 'active' || !session.user) return false;
-            if (existingSessionId && session.id === existingSessionId) return true;
-            return session.user.emailAddresses.some(
-              (address) => address.emailAddress.trim().toLowerCase() === requestedEmail,
-            );
-          });
-          if (!sessionsLoaded || !usableSession) {
-            return setMessage('Clerk reported an existing session, but no usable local session is available for this account. Please sign out of the existing account and try again.');
-          }
-          await setActive({ session: usableSession.id });
-          return;
-        }
         if (__DEV__) {
           console.warn('[auth] Password sign-in rejected', {
             codes: authErrorCodes(error).length ? authErrorCodes(error) : ['unknown'],
@@ -140,10 +182,7 @@ export default function LoginScreen() {
         return;
       }
       if (signIn.status !== 'complete') return setMessage('This sign-in needs another verification step. Please restart sign in and try again.');
-      const finalization = await signIn.finalize({});
-      if (finalization?.error) {
-        setMessage(authErrorMessage(finalization.error, 'We could not complete sign in. Please try again.'));
-      }
+      await finalizeAndVerifyActiveSession();
     } catch (error) {
       setMessage(authErrorMessage(error, isNew ? 'We could not create your account. Please try again.' : 'We could not complete sign in. Please try again.'));
     } finally {
@@ -161,18 +200,7 @@ export default function LoginScreen() {
         : await signIn.mfa.verifyEmailCode({ code: signInCode });
       if (error) return setMessage(authErrorMessage(error, 'That verification code did not work. Please try again.'));
       if (signIn.status !== 'complete') return setMessage('The code was accepted, but sign in is not complete yet. Please try again.');
-      const createdSessionId = signIn.createdSessionId;
-      if (!createdSessionId) {
-        return setMessage('We could not complete sign in. Please try again.');
-      }
-      const shouldActivateCreatedSession = clerk.session?.id !== createdSessionId;
-      const finalization = await signIn.finalize({});
-      if (finalization?.error) {
-        return setMessage(authErrorMessage(finalization.error, 'We could not complete sign in. Please try again.'));
-      }
-      if (shouldActivateCreatedSession) {
-        await setActive({ session: createdSessionId });
-      }
+      if (!await finalizeAndVerifyActiveSession()) return;
       setSignInVerificationMethod(null);
       setSignInCode('');
     } catch (error) {
