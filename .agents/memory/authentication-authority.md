@@ -22,3 +22,9 @@ Expo Router's root authentication guard must keep the root navigator mounted and
 **Why:** An unmounted root stack caused both role-based dashboard redirects to fail and the biometric screen to remount, repeatedly reopening the system prompt.
 
 **How to apply:** Derive auth, device-unlock, and role destinations centrally, navigate only after the relevant state is ready, and leave the root `Stack` rendered throughout authentication transitions.
+
+An explicit email/password submission owns a fresh Clerk session transition: clear known prior Clerk sessions before beginning that new transaction, retry a reported identifiable stale session at most once, and never run this cleanup from startup or while MFA is active. Startup and native unlock must reuse the restored Clerk session instead.
+
+**Why:** Reusing a session from the local session-list hook after Clerk returned `session_exists` failed when Clerk's server knew about a session that was not usable locally. Cleanup during MFA would destroy the in-progress transaction, while cleanup during startup would break device-unlock reuse.
+
+**How to apply:** Keep fresh-login cleanup, password transaction creation, finalization, and activation under one login owner. After finalization, resolve the session ID from Clerk's current post-finalize state, confirm that active session exists locally, and only then clear verification UI; leave destination routing to the root state machine.

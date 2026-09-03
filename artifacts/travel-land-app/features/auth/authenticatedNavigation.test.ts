@@ -82,6 +82,15 @@ describe('authenticated navigation state machine', () => {
     }))).toBe('/(tabs)');
   });
 
+  it('falls back to password login when a restored biometric session is no longer signed in', () => {
+    expect(resolveAuthenticatedNavigation(state({
+      route: 'biometric-login',
+      isSignedIn: false,
+      deviceAuthSetupComplete: true,
+      biometricsEnabled: true,
+    }))).toBe('/login');
+  });
+
   it('does not route home after failed or cancelled biometric authentication', () => {
     expect(resolveAuthenticatedNavigation(state({
       route: 'biometric-login',
