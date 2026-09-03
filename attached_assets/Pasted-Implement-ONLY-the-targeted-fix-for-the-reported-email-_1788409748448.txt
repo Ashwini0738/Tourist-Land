@@ -1,0 +1,97 @@
+Implement ONLY the targeted fix for the reported email/password → email MFA verification issue diagnosed in the previous read-only audit.
+
+Do NOT make broad changes. Do NOT change Clerk configuration, Clerk package versions, SecureStore, biometric logic, RoleContext, root navigation, backend authentication, or unrelated login/signup behavior.
+
+Problem confirmed:
+
+* The first “Verify and continue” tap successfully verifies the MFA email code and reaches `signIn.finalize()`.
+* The MFA verification UI remains mounted afterward.
+* The user can tap the button again.
+* The second verification attempt returns Clerk `session_exists` and displays “You are already signed in. Opening your account.”
+* The message itself does not navigate anywhere.
+* Root navigation is already designed to handle authenticated state and should remain the sole destination authority.
+
+Modify ONLY:
+
+1. `artifacts/travel-land-app/app/login.tsx`
+2. `artifacts/travel-land-app/tests/login-error-handling.test.tsx`
+
+Required implementation:
+
+1. In `verifySignInCode`, add the same `isSignedIn` protection already used by the main sign-in submit handler:
+
+   * If `isSubmitting || isSignedIn`, return immediately.
+   * This must prevent verification from being submitted again once Clerk reports an authenticated session.
+
+2. Preserve the existing MFA verification sequence:
+
+   * `signIn.mfa.verifyEmailCode({ code })`
+   * check returned `{ error }`
+   * confirm `signIn.status === 'complete'`
+   * `signIn.finalize({})`
+   * check the returned `{ error }`
+   * preserve the existing loading/finally behavior.
+
+3. After successful `signIn.finalize({})`, make sure the Clerk session is actually activated/available before relying on the asynchronous auth-state update.
+
+   * Use only the installed Clerk APIs already present in this project.
+   * Do not fabricate a session ID.
+   * Do not create a custom authentication/session mechanism.
+   * If the finalized session is already active, leave it alone.
+   * If Clerk exposes the created/available session through the supported installed API, activate that real session with `setActive`.
+   * If activation is unnecessary because Clerk has already made it active, do not perform redundant activation.
+
+4. Do NOT add `router.replace('/(tabs)')` or any hard-coded Home navigation.
+
+   * The existing root authentication/navigation state machine must remain responsible for:
+     authenticated session → SecureStore/security check → biometric setup/unlock → role resolution → final destination.
+
+5. Once finalization/session activation succeeds:
+
+   * Clear or invalidate the MFA verification UI state as appropriate so the completed verification form cannot remain interactively usable.
+   * Do not introduce a second navigation state machine.
+   * Let the existing root auth state transition handle the destination.
+
+6. Preserve all existing error handling:
+
+   * Verification `{ error }` must remain visible.
+   * Finalization `{ error }` must remain visible.
+   * Thrown exceptions must remain safely handled.
+   * Loading must always reset in `finally`.
+   * Do not expose Clerk internals, tokens, or secrets to the user.
+
+7. Add focused regression tests in the existing login test file for:
+
+   * successful MFA verification finalizes exactly once;
+   * `isSignedIn === true` prevents a second verification submission;
+   * successful finalization does not hard-code navigation to `/(tabs)`;
+   * returned `finalize() -> { error }` remains visible;
+   * real Clerk session activation is used only when a valid session is actually available;
+   * no fabricated session ID is used.
+
+Important:
+
+* Do NOT modify `app/_layout.tsx`.
+* Do NOT modify `authenticatedNavigation.ts`.
+* Do NOT modify `AuthSecurityContext.tsx`.
+* Do NOT modify `RoleContext.tsx`.
+* Do NOT modify `app/biometric.tsx` or `app/biometric-login.tsx`.
+* Do NOT modify Clerk configuration or dependencies.
+* Do NOT fix the separate `app/verify.tsx` sign-up issue in this task. Keep this change limited to the reported “Verify and continue” MFA problem.
+
+After implementation, run:
+
+1. Focused login/MFA tests.
+2. Full test suite.
+3. TypeScript/typecheck.
+4. Expo/Metro validation or the project's standard build validation.
+
+Final response must report:
+
+* exact files changed;
+* exact behavioral fix;
+* focused test result;
+* full test result;
+* TypeScript result;
+* build/Expo result;
+* confirmation that no unrelated files or auth/security/navigation architecture were changed.

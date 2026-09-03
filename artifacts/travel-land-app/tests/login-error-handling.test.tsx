@@ -56,6 +56,7 @@ const setActive = jest.fn().mockResolvedValue(undefined);
 function createSignIn() {
   return {
     status: 'complete',
+    createdSessionId: null as string | null,
     existingSession: undefined as { sessionId: string } | undefined,
     supportedFirstFactors: [{ strategy: 'phone_code' }],
     supportedSecondFactors: [{ strategy: 'email_code' }],
@@ -603,6 +604,111 @@ describe('login exception handling', () => {
     await waitFor(() => {
       expect(screen.getByText('We could not complete sign in. Please try again.')).toBeTruthy();
     });
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('finalizes MFA verification once, activates the real created session, and clears the verification UI', async () => {
+    const signIn = createSignIn();
+    signIn.status = 'needs_second_factor';
+    signIn.createdSessionId = 'sess_created';
+    signIn.mfa.verifyEmailCode.mockImplementationOnce(async () => {
+      signIn.status = 'complete';
+      return { error: null };
+    });
+    mockUseClerk.mockReturnValue({ setActive, session: null });
+    mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+    const screen = render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText('Email address'), 'traveller@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'not-a-real-password');
+    fireEvent.press(screen.getByTestId('login-continue'));
+    await waitFor(() => expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy());
+
+    fireEvent.changeText(screen.getByTestId('sign-in-verification-code'), '123456');
+    fireEvent.press(screen.getByTestId('verify-sign-in-code'));
+
+    await waitFor(() => expect(signIn.finalize).toHaveBeenCalledTimes(1));
+    expect(signIn.mfa.verifyEmailCode).toHaveBeenCalledTimes(1);
+    expect(setActive).toHaveBeenCalledTimes(1);
+    expect(setActive).toHaveBeenCalledWith({ session: 'sess_created' });
+    expect(screen.queryByTestId('verify-sign-in-code')).toBeNull();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('does not submit MFA verification when Clerk already reports an active session', async () => {
+    const signIn = createSignIn();
+    signIn.status = 'needs_second_factor';
+    signIn.mfa.verifyEmailCode.mockImplementationOnce(async () => {
+      signIn.status = 'complete';
+      return { error: null };
+    });
+    mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+    mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: false });
+    const screen = render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText('Email address'), 'traveller@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'not-a-real-password');
+    fireEvent.press(screen.getByTestId('login-continue'));
+    await waitFor(() => expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy());
+
+    mockUseAuth.mockReturnValue({ isLoaded: true, isSignedIn: true });
+    screen.rerender(<LoginScreen />);
+    fireEvent.changeText(screen.getByTestId('sign-in-verification-code'), '123456');
+    fireEvent.press(screen.getByTestId('verify-sign-in-code'));
+
+    await waitFor(() => expect(signIn.mfa.verifyEmailCode).not.toHaveBeenCalled());
+    expect(signIn.finalize).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('keeps a returned MFA finalization error visible and does not activate a session', async () => {
+    const signIn = createSignIn();
+    signIn.status = 'needs_second_factor';
+    signIn.mfa.verifyEmailCode.mockImplementationOnce(async () => {
+      signIn.status = 'complete';
+      return { error: null };
+    });
+    signIn.finalize.mockResolvedValueOnce({ error: { code: 'session_activation_failed' } });
+    mockUseClerk.mockReturnValue({ setActive, session: null });
+    mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+    const screen = render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText('Email address'), 'traveller@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'not-a-real-password');
+    fireEvent.press(screen.getByTestId('login-continue'));
+    await waitFor(() => expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy());
+
+    fireEvent.changeText(screen.getByTestId('sign-in-verification-code'), '123456');
+    fireEvent.press(screen.getByTestId('verify-sign-in-code'));
+
+    await waitFor(() => expect(screen.getByText('We could not complete sign in. Please try again.')).toBeTruthy());
+    expect(signIn.finalize).toHaveBeenCalledTimes(1);
+    expect(setActive).not.toHaveBeenCalled();
+    expect(screen.getByTestId('verify-sign-in-code')).toBeTruthy();
+  });
+
+  it('does not fabricate or redundantly activate a session when Clerk provides no usable new session', async () => {
+    const signIn = createSignIn();
+    signIn.status = 'needs_second_factor';
+    signIn.mfa.verifyEmailCode.mockImplementationOnce(async () => {
+      signIn.status = 'complete';
+      return { error: null };
+    });
+    mockUseClerk.mockReturnValue({ setActive, session: { id: 'sess_active' } });
+    mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+    const screen = render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText('Email address'), 'traveller@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'not-a-real-password');
+    fireEvent.press(screen.getByTestId('login-continue'));
+    await waitFor(() => expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy());
+
+    fireEvent.changeText(screen.getByTestId('sign-in-verification-code'), '123456');
+    fireEvent.press(screen.getByTestId('verify-sign-in-code'));
+
+    await waitFor(() => expect(signIn.finalize).toHaveBeenCalledTimes(1));
+    expect(setActive).not.toHaveBeenCalled();
+    expect(signIn.createdSessionId).toBeNull();
     expect(router.replace).not.toHaveBeenCalled();
   });
 });

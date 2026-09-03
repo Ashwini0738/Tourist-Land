@@ -32,7 +32,8 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { signIn, fetchStatus: signInStatus } = useSignIn();
   const { signUp, fetchStatus: signUpStatus } = useSignUp();
-  const { setActive } = useClerk();
+  const clerk = useClerk();
+  const { setActive } = clerk;
   const { isLoaded, isSignedIn } = useAuth();
   const { sessions, isLoaded: sessionsLoaded } = useSessionList();
 
@@ -151,7 +152,7 @@ export default function LoginScreen() {
   };
 
   const verifySignInCode = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || isSignedIn) return;
     setMessage('');
     setIsSubmitting(true);
     try {
@@ -162,8 +163,13 @@ export default function LoginScreen() {
       if (signIn.status !== 'complete') return setMessage('The code was accepted, but sign in is not complete yet. Please try again.');
       const finalization = await signIn.finalize({});
       if (finalization?.error) {
-        setMessage(authErrorMessage(finalization.error, 'We could not complete sign in. Please try again.'));
+        return setMessage(authErrorMessage(finalization.error, 'We could not complete sign in. Please try again.'));
       }
+      if (!clerk.session && signIn.createdSessionId) {
+        await setActive({ session: signIn.createdSessionId });
+      }
+      setSignInVerificationMethod(null);
+      setSignInCode('');
     } catch (error) {
       setMessage(authErrorMessage(error, 'We could not verify that code. Please try again.'));
     } finally {
