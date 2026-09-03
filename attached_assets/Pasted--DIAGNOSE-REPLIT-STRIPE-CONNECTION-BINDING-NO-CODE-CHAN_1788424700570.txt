@@ -1,0 +1,89 @@
+## DIAGNOSE REPLIT STRIPE CONNECTION BINDING — NO CODE CHANGES
+
+The API still fails at startup with:
+
+`Error: Stripe is not connected to this environment.`
+
+The existing application code expects the Replit-managed Stripe connection to provide:
+
+`settings.secret`
+
+Previous verification confirmed:
+
+* Database migrations: PASS
+* API authentication tests: 15/15 PASS
+* Step 6A security tests: 20/20 PASS
+* Full API development suite: 115/115 PASS
+* API typecheck: PASS
+* git diff --check: PASS
+* Worktree: clean
+* API startup: FAIL only because Stripe `settings.secret` is unavailable
+
+### IMPORTANT
+
+This is now an **environment/integration diagnosis only**.
+
+DO NOT:
+
+* modify application code
+* modify `stripeClient.ts`
+* modify Stripe/payment logic
+* add fallback Stripe credentials
+* hard-code any secret
+* modify `.env` with manually copied production credentials
+* modify Clerk
+* modify Supabase
+* modify Step 6A
+* modify database schema
+* start Step 7
+
+### DIAGNOSE THE CONNECTION
+
+Inspect the Replit-managed Stripe connection and determine:
+
+1. Is the Stripe connector actually connected to THIS Replit project?
+2. Is it connected to the SAME environment/workspace used by the API workflow?
+3. Does the connection expose a `settings.secret` value?
+4. Is the secret binding available to the API workflow/runtime?
+5. Is there a difference between the connection shown in the Replit integration UI and the environment available to the running workflow?
+6. Does the connector require reauthorization or account selection?
+7. Is the connection in test/development mode?
+8. Is there a missing environment binding, connection reference, or permission?
+9. Is the current connector ID actually attached to this project?
+10. Does the API workflow have access to the connector configuration?
+
+Inspect existing Replit integration configuration and workflow/environment metadata as read-only wherever possible.
+
+### SECURITY
+
+Never print or expose the actual Stripe secret.
+
+You may verify whether the secret exists, but report only:
+
+`available` / `missing`
+
+Do NOT output secret values, tokens, or credentials into logs or the final report.
+
+### DO NOT WORK AROUND THE PROBLEM
+
+If `settings.secret` is unavailable because the Replit connector is not properly attached, do NOT change application code to bypass the check.
+
+If the connection requires an action in the Replit UI, report the exact UI action required.
+
+If the connector is correctly attached but the API workflow cannot access it, report the exact environment/binding mismatch.
+
+### FINAL REPORT
+
+Return:
+
+1. Stripe connector status
+2. Whether `settings.secret` is available to the API runtime: YES/NO
+3. Whether the connector is attached to this project: YES/NO
+4. Whether it is attached to the API workflow environment: YES/NO
+5. Exact missing configuration/binding, if any
+6. Exact Replit UI action required, if applicable
+7. Confirmation that NO application code was changed
+8. Confirmation that Step 6A was not changed
+9. Confirmation that Step 7 was not started
+
+STOP after diagnosis. Do not make any code changes.
