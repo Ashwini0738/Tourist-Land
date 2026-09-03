@@ -1,0 +1,416 @@
+# STEP 4A — Controlled Dual-Provider API Authentication Transition
+
+Step 4 correctly stopped because the current API is explicitly Clerk-only while the planned mobile email/password flow will use Supabase.
+
+Do NOT proceed with the mobile email/password migration yet.
+
+We now need to make the API capable of supporting the migration safely.
+
+## Objective
+
+Implement a **temporary, explicit dual-provider API authentication boundary** that can independently verify:
+
+1. Clerk JWTs
+2. Supabase JWTs
+
+and resolve either provider to the existing local application identity:
+
+`provider identity → users.id`
+
+This is a migration bridge only.
+
+Do not migrate any client authentication yet.
+
+---
+
+# 1. Preserve existing application identity
+
+The existing local:
+
+`users.id`
+
+remains the ONLY application ownership identity.
+
+Never replace it with:
+
+* Supabase `auth.users.id`
+* Clerk user ID
+* JWT `sub`
+
+Mapping must remain:
+
+### Clerk
+
+`verified Clerk sub`
+→ `users.clerk_user_id`
+→ `users.id`
+
+### Supabase
+
+`verified Supabase sub`
+→ `users.auth_user_id`
+→ `users.id`
+
+Do not change existing ownership relationships.
+
+---
+
+# 2. Do not use email matching
+
+This is mandatory.
+
+Neither provider may resolve an application user by email.
+
+Do NOT implement:
+
+`JWT email → users.email`
+
+Do NOT create fallback matching.
+
+Do NOT automatically attach a Supabase identity to an existing user merely because the emails match.
+
+If a provider identity is valid but unmapped, reject authentication safely with 401.
+
+---
+
+# 3. Replace the current single-provider selector with an explicit migration mode
+
+The existing:
+
+`TRAVEL_LAND_API_AUTH_PROVIDER`
+
+currently accepts only:
+
+`clerk`
+or
+`supabase`
+
+and deliberately rejects `both`.
+
+For this migration bridge, introduce a clearly named explicit mode, for example:
+
+`TRAVEL_LAND_API_AUTH_PROVIDER=dual`
+
+Use the existing naming conventions if the codebase has a better provider-mode name.
+
+Allowed modes should now be exactly:
+
+* `clerk`
+* `supabase`
+* `dual`
+
+Anything else must fail closed.
+
+Default behavior MUST remain:
+
+`clerk`
+
+Do not silently change the default.
+
+---
+
+# 4. Dual mode must not blindly accept both providers
+
+When:
+
+`TRAVEL_LAND_API_AUTH_PROVIDER=dual`
+
+the API may accept either a valid Clerk token or a valid Supabase token.
+
+However:
+
+* Every token must be independently verified.
+* Do not decode a JWT and trust its claims.
+* Do not identify the provider solely from an unverified claim.
+* Do not allow an invalid Clerk token to become a Supabase identity.
+* Do not allow an invalid Supabase token to become a Clerk identity.
+* Do not accept unsigned JWTs.
+* Do not implement custom JWT cryptography.
+
+Use the existing maintained Clerk verification implementation for Clerk.
+
+Use the maintained Supabase SDK verification implementation for Supabase.
+
+---
+
+# 5. Provider detection
+
+Inspect the existing implementation and choose the safest architecture.
+
+Provider detection must never allow attacker-controlled claims to bypass verification.
+
+A safe pattern is:
+
+1. Attempt verification using the appropriate trusted provider mechanisms.
+2. Only after successful verification establish the provider identity.
+3. If dual mode is used, an invalid token must not become authenticated merely because another verifier accepted malformed/untrusted input.
+
+Avoid unnecessarily verifying every request twice if the provider can be determined safely from trusted configuration/issuer characteristics before cryptographic acceptance.
+
+If there is ambiguity, prefer fail-closed behavior.
+
+Document the decision.
+
+---
+
+# 6. Provider-neutral identity
+
+Continue using the provider-neutral identity introduced in Step 3.
+
+The final authenticated representation should contain conceptually:
+
+`provider`
+`externalUserId`
+`localUserId`
+`email?`
+`sessionId?`
+
+The application authorization layer must continue using:
+
+`req.localUser.id`
+
+and must NOT switch to:
+
+`req.authenticatedIdentity.externalUserId`
+
+for ownership.
+
+---
+
+# 7. Preserve existing Clerk behavior
+
+This is critical.
+
+When the provider is:
+
+`clerk`
+
+existing behavior must remain functionally identical.
+
+Preserve:
+
+* Clerk JWT verification
+* Clerk middleware behavior
+* Clerk provisioning behavior
+* primary-email requirement
+* invitation claim behavior
+* administrator promotion
+* role loading
+* account-status checks
+* existing 401 behavior
+* existing `req.localUser` shape
+* `/v1/me`
+* ownership authorization
+
+Do not refactor unrelated Clerk provisioning code merely for cleanliness.
+
+---
+
+# 8. Supabase behavior
+
+When provider mode is:
+
+`supabase`
+
+or:
+
+`dual`
+
+and the request is authenticated using Supabase:
+
+Verify:
+
+* signature
+* issuer
+* audience
+* expiry
+* subject
+
+Then resolve:
+
+`verified Supabase sub`
+→ `users.auth_user_id`
+→ `users.id`
+
+If there is no mapping:
+
+* return 401
+* do not create a user
+* do not email-match
+* do not use `clerk_user_id`
+* do not claim an invitation
+* do not assign roles
+* do not modify the database
+
+---
+
+# 9. Do not migrate users in this step
+
+There must be NO:
+
+* Clerk user migration
+* Supabase user creation
+* bulk identity mapping
+* email-based matching
+* invitation migration
+* ownership migration
+
+This step only creates the API transition capability.
+
+---
+
+# 10. Client applications must remain unchanged
+
+Do NOT modify:
+
+* mobile authentication
+* mobile login
+* mobile signup
+* phone OTP
+* MFA
+* biometric authentication
+* admin authentication
+* navigation
+* API generated clients
+
+The existing clients must continue working against:
+
+`clerk`
+
+mode.
+
+---
+
+# 11. Security tests
+
+Add focused tests covering:
+
+### Clerk
+
+1. Valid Clerk token → authenticated.
+2. Invalid Clerk signature → rejected.
+3. Existing Clerk authorization still works.
+4. Existing Clerk provisioning behavior remains intact.
+
+### Supabase
+
+5. Valid signed Supabase token → authenticated.
+6. Invalid signature → rejected.
+7. Wrong issuer → rejected.
+8. Wrong audience → rejected.
+9. Expired token → rejected.
+10. Missing subject → rejected.
+11. Unmapped Supabase subject → 401.
+12. Mapped Supabase subject → correct local `users.id`.
+
+### Dual mode
+
+13. Valid Clerk token → authenticated.
+14. Valid mapped Supabase token → authenticated.
+15. Invalid token → rejected.
+16. Unknown provider → rejected.
+17. Provider mode `both` → rejected unless the implementation intentionally replaces this with `dual`; there must not be two different dual-provider modes.
+18. Missing/invalid provider configuration → fail closed.
+19. A valid token for User A cannot be modified to identify User B without invalidating its signature.
+20. Supabase email claim cannot be used to impersonate a local user.
+21. Supabase `sub` cannot be used directly as application ownership ID.
+
+### Regression
+
+22. Existing role authorization tests pass.
+23. Existing ownership tests pass.
+24. Existing `/v1/me` behavior passes.
+25. Existing mobile Clerk authentication tests remain unchanged.
+
+---
+
+# 12. Configuration safety
+
+Do not add real credentials.
+
+Update `.env.example` only if necessary.
+
+Document:
+
+`clerk` = current/default production-safe behavior
+
+`dual` = temporary migration/testing bridge
+
+`supabase` = final target after migration
+
+Do not activate `dual` automatically.
+
+Do not change production/environment secrets.
+
+---
+
+# 13. Validation
+
+Run:
+
+* provider-boundary tests
+* Clerk auth tests
+* Supabase JWT tests
+* authorization tests
+* ownership tests
+* `/v1/me` tests
+* API TypeScript typecheck
+* API build
+* existing mobile Clerk authentication tests
+* `git diff --check`
+* prohibited-surface diff check
+
+The known database blocker:
+
+`relation "users" does not exist`
+
+may still prevent database-backed integration tests.
+
+Do not modify the database merely to make this step pass.
+
+The known Stripe startup blocker may also remain.
+
+Report those separately from code/test failures.
+
+---
+
+# 14. Required final report
+
+Stop after Step 4A.
+
+Report:
+
+1. Exact files added.
+2. Exact files modified.
+3. Exact provider-mode configuration.
+4. Default provider.
+5. How Clerk tokens are verified.
+6. How Supabase tokens are verified.
+7. How provider identity is resolved.
+8. How each provider maps to `users.id`.
+9. Confirmation that email matching is impossible.
+10. Confirmation that unmapped Supabase users cannot authenticate.
+11. Confirmation that existing Clerk behavior remains unchanged.
+12. Confirmation that no mobile/admin authentication was changed.
+13. Confirmation that no users or ownership records were migrated.
+14. Security test results.
+15. Full test results.
+16. Remaining environment blockers.
+17. Any architectural concern discovered.
+
+## HARD STOP
+
+Do not:
+
+* migrate mobile email/password,
+* migrate phone OTP,
+* migrate biometric auth,
+* migrate admin,
+* migrate invitations,
+* remove Clerk,
+* change the database ownership model,
+* change OpenAPI,
+* regenerate clients,
+* activate Supabase as the production API provider.
+
+This step is ONLY the temporary dual-provider API bridge.

@@ -39,8 +39,9 @@ later migration steps.
 ## Server verification boundary
 
 The API now has an explicit, fail-closed provider selector:
-`TRAVEL_LAND_API_AUTH_PROVIDER`. It defaults to `clerk`; `supabase` must be
-selected explicitly, and no mode accepts both providers automatically.
+`TRAVEL_LAND_API_AUTH_PROVIDER`. It defaults to `clerk`. `dual` is a temporary
+bridge mode that independently verifies either provider; it is not enabled
+automatically. `supabase` remains reserved for the final cutover.
 
 In Supabase mode, the provider-specific beginning of `requireAuth`:
 
@@ -52,9 +53,9 @@ In Supabase mode, the provider-specific beginning of `requireAuth`:
 6. Continue using the existing role and ownership middleware.
 
 An unmapped subject is rejected. Email is never used as an identity fallback,
-and Supabase mode does not provision users or claim invitations. The current
-Clerk middleware, provisioning, invitation claim, configured-admin behavior,
-and 401 response remain unchanged in the default Clerk mode.
+and Supabase authentication does not provision users or claim invitations. The
+current Clerk middleware, provisioning, invitation claim, configured-admin
+behavior, and 401 response remain unchanged in the default Clerk mode.
 
 ## Invitation migration design
 
