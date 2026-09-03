@@ -1,0 +1,53 @@
+Do NOT restore any checkpoint yet.
+
+I have the available checkpoints, but I do not want to restore an arbitrary older checkpoint because several of them contain unrelated email/password and Clerk fixes.
+
+First perform a read-only checkpoint comparison.
+
+### Find the correct rollback point
+
+Identify:
+
+1. The checkpoint/commit where the unsafe Step 6A Supabase-link endpoint was introduced.
+2. The immediately preceding checkpoint/commit that represents the last known-good state before that endpoint was introduced.
+3. The exact files changed by the unsafe Step 6A merge.
+4. Whether any changes after that merge depend on those Step 6A files.
+5. Whether restoring the preceding checkpoint would also remove any previously approved work from Steps 2, 3, 4A, or 5.
+
+### Important
+
+Do NOT restore anything yet.
+
+Do NOT reset the project to one of the old checkpoints simply because its name looks relevant.
+
+The target state must preserve all previously approved work:
+
+* Step 2 — Supabase foundation
+* Step 3 — Supabase JWT API boundary
+* Step 4A — dual-provider API bridge
+* Step 5 — mobile email/password Supabase migration
+
+It must remove/revert only the unsafe Step 6A identity-link implementation.
+
+If the checkpoint system cannot selectively revert only Step 6A, report that before performing any rollback.
+
+### Security requirement
+
+The unsafe implementation must NOT remain available for use.
+
+If necessary, disable/remove the unsafe endpoint while preserving the earlier approved migration work, but do not create a replacement mapping endpoint yet.
+
+### Final response required
+
+Report:
+
+* unsafe Step 6A checkpoint/commit
+* exact preceding safe checkpoint/commit
+* files introduced/modified by Step 6A
+* files from earlier approved steps that would be affected by rollback
+* recommended checkpoint to restore, if any
+* whether selective file-level revert is safer than checkpoint restore
+
+Do not make implementation changes.
+Do not start Step 7.
+Do not create a new identity-linking mechanism yet.
