@@ -36,18 +36,25 @@ The `@workspace/supabase` package exposes separate entry points:
 No current Clerk provider imports these factories. They are foundation code for
 later migration steps.
 
-## Future server verification boundary
+## Server verification boundary
 
-Supabase token verification will replace only the provider-specific beginning
-of `requireAuth`:
+The API now has an explicit, fail-closed provider selector:
+`TRAVEL_LAND_API_AUTH_PROVIDER`. It defaults to `clerk`; `supabase` must be
+selected explicitly, and no mode accepts both providers automatically.
+
+In Supabase mode, the provider-specific beginning of `requireAuth`:
 
 1. Read the bearer token.
-2. Verify the Supabase JWT and obtain its `sub`.
-3. Resolve `users.auth_user_id = sub`.
-4. Populate `req.localUser` using the existing local UUID and profile.
-5. Continue using the existing role and ownership middleware.
+2. Cryptographically verify it through the Supabase SDK.
+3. Validate the configured issuer, audience, expiration, and `sub`.
+4. Resolve `users.auth_user_id = sub`.
+5. Populate `req.localUser` using the existing local UUID and profile.
+6. Continue using the existing role and ownership middleware.
 
-The current Clerk middleware and API behavior remain unchanged in this step.
+An unmapped subject is rejected. Email is never used as an identity fallback,
+and Supabase mode does not provision users or claim invitations. The current
+Clerk middleware, provisioning, invitation claim, configured-admin behavior,
+and 401 response remain unchanged in the default Clerk mode.
 
 ## Invitation migration design
 

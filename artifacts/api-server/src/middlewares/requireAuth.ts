@@ -1,5 +1,4 @@
 import type { NextFunction, Request, Response } from "express";
-import { getAuth } from "@clerk/express";
 import { db, userRoles, users } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { clerkClient } from "../lib/clerkConfig.ts";
@@ -9,36 +8,76 @@ import {
   resolvePrimaryRole,
 } from "../lib/roles.ts";
 import { claimInvitedAccess } from "../lib/onboarding.ts";
+import {
+  attachLocalIdentity,
+  AuthenticationRejectedError,
+  resolveMappedSupabaseUser,
+  type VerifiedExternalIdentity,
+} from "../lib/authenticatedIdentity.ts";
+import {
+  configuredApiAuthProvider,
+  verifyRequestIdentity,
+} from "../lib/apiAuthProvider.ts";
+
+function unauthenticated(res: Response): void {
+  const message = configuredApiAuthProvider() === "clerk"
+    ? "Please sign in with Clerk to continue."
+    : "Please sign in to continue.";
+  res.status(401).json({
+    error: { code: "UNAUTHENTICATED", message },
+  });
+}
+
+async function resolveClerkUser(identity: VerifiedExternalIdentity) {
+  let local = await db.query.users.findFirst({
+    where: eq(users.clerkUserId, identity.externalUserId),
+  });
+  if (!local) {
+    const clerkUser = await clerkClient.users.getUser(identity.externalUserId);
+    const email = clerkUser.primaryEmailAddress?.emailAddress;
+    if (!email) return { local: null, missingEmail: true };
+    await db.insert(users).values({
+      clerkUserId: identity.externalUserId,
+      email,
+      displayName: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || null,
+    }).onConflictDoNothing();
+    local = await db.query.users.findFirst({
+      where: eq(users.clerkUserId, identity.externalUserId),
+    });
+  }
+  return { local, missingEmail: false };
+}
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   res.set("Cache-Control", "private, no-store");
-  const { userId } = getAuth(req);
-  if (!userId) {
-    res.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Please sign in with Clerk to continue." } });
-    return;
-  }
   try {
-    let local = await db.query.users.findFirst({ where: eq(users.clerkUserId, userId) });
-    if (!local) {
-      const clerkUser = await clerkClient.users.getUser(userId);
-      const email = clerkUser.primaryEmailAddress?.emailAddress;
-      if (!email) {
+    const identity = await verifyRequestIdentity(req);
+    let local;
+    if (identity.provider === "clerk") {
+      const resolved = await resolveClerkUser(identity);
+      if (resolved.missingEmail) {
         res.status(422).json({ error: { code: "ACCOUNT_EMAIL_REQUIRED", message: "Your Clerk account needs a primary email address." } });
         return;
       }
-      await db.insert(users).values({
-        clerkUserId: userId, email, displayName: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || null,
-      }).onConflictDoNothing();
-      local = await db.query.users.findFirst({ where: eq(users.clerkUserId, userId) });
+      local = resolved.local;
+    } else {
+      local = await resolveMappedSupabaseUser(
+        identity,
+        (authUserId) => db.query.users.findFirst({
+          where: eq(users.authUserId, authUserId),
+        }),
+      );
     }
     if (!local) throw new Error("Local user provisioning did not complete.");
-    await claimInvitedAccess({ id: local.id, email: local.email });
+    if (identity.provider === "clerk") {
+      await claimInvitedAccess({ id: local.id, email: local.email });
+    }
     let roleRows = await db
       .select({ role: userRoles.role })
       .from(userRoles)
       .where(eq(userRoles.userId, local.id));
     const configuredAdmins = configuredAdminClerkUserIds();
-    if (configuredAdmins.has(userId) && !roleRows.some((row) => row.role === "admin")) {
+    if (identity.provider === "clerk" && configuredAdmins.has(identity.externalUserId) && !roleRows.some((row) => row.role === "admin")) {
       await db.transaction(async (tx) => {
         await tx.delete(userRoles).where(eq(userRoles.userId, local!.id));
         await tx.insert(userRoles).values({ userId: local!.id, role: "admin" });
@@ -53,9 +92,10 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       res.status(403).json({ error: { code: "ACCOUNT_INACTIVE", message: "This account is not active." } });
       return;
     }
+    req.authenticatedIdentity = attachLocalIdentity(identity, local.id);
     req.localUser = {
       id: local.id,
-      clerkUserId: userId,
+      clerkUserId: local.clerkUserId,
       email: local.email,
       displayName: local.displayName,
       phone: local.phone,
@@ -66,7 +106,11 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       updatedAt: local.updatedAt,
     };
     next();
-  } catch {
+  } catch (error) {
+    if (error instanceof AuthenticationRejectedError) {
+      unauthenticated(res);
+      return;
+    }
     res.status(503).json({ error: { code: "AUTH_UNAVAILABLE", message: "Authentication is temporarily unavailable. Please try again." } });
   }
 }

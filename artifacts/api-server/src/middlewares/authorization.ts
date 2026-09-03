@@ -7,6 +7,7 @@ import {
   type AccountStatus,
   type PrimaryRole,
 } from "../lib/roles.ts";
+import type { AuthenticatedIdentity } from "../lib/authenticatedIdentity.ts";
 
 export type LocalUser = {
   id: string;
@@ -24,6 +25,7 @@ export type LocalUser = {
 declare global {
   namespace Express {
     interface Request {
+      authenticatedIdentity?: AuthenticatedIdentity;
       localUser?: LocalUser;
     }
   }
