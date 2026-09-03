@@ -1,0 +1,14 @@
+{
+  "name": "@workspace/supabase",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./browser": "./src/browser.ts",
+    "./mobile": "./src/mobile.ts",
+    "./server": "./src/server.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.113.0"
+  }
+}

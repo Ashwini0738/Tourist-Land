@@ -22,6 +22,7 @@ const timestamps = {
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   clerkUserId: text("clerk_user_id").notNull().unique(),
+  authUserId: uuid("auth_user_id").unique("users_auth_user_id_key"),
   email: text("email").notNull().unique(),
   displayName: text("display_name"),
   phone: text("phone"),
