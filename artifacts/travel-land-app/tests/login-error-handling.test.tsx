@@ -701,6 +701,7 @@ describe('login exception handling', () => {
   it('keeps a returned MFA finalization error visible and does not activate a session', async () => {
     const signIn = createSignIn();
     signIn.status = 'needs_second_factor';
+    signIn.createdSessionId = 'sess_created';
     signIn.mfa.verifyEmailCode.mockImplementationOnce(async () => {
       signIn.status = 'complete';
       return { error: null };
@@ -724,7 +725,7 @@ describe('login exception handling', () => {
     expect(screen.getByTestId('verify-sign-in-code')).toBeTruthy();
   });
 
-  it('does not fabricate or redundantly activate a session when Clerk provides no usable new session', async () => {
+  it('does not finalize or fabricate a session when Clerk provides no created session ID', async () => {
     const signIn = createSignIn();
     signIn.status = 'needs_second_factor';
     signIn.mfa.verifyEmailCode.mockImplementationOnce(async () => {
@@ -743,9 +744,11 @@ describe('login exception handling', () => {
     fireEvent.changeText(screen.getByTestId('sign-in-verification-code'), '123456');
     fireEvent.press(screen.getByTestId('verify-sign-in-code'));
 
-    await waitFor(() => expect(signIn.finalize).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByText('We could not complete sign in. Please try again.')).toBeTruthy());
+    expect(signIn.finalize).not.toHaveBeenCalled();
     expect(setActive).not.toHaveBeenCalled();
     expect(signIn.createdSessionId).toBeNull();
+    expect(screen.getByTestId('verify-sign-in-code')).toBeTruthy();
     expect(router.replace).not.toHaveBeenCalled();
   });
 });
