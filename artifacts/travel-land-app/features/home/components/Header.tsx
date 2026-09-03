@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useUser } from '@clerk/expo';
+import { useMobileAuth } from '@/context/AuthContext';
 import { useHomeLocation } from '../hooks/useHomeLocation';
 import { SecurityIcon } from '@/components/SecurityIcon';
 import { getGetUnreadNotificationCountQueryKey, useGetUnreadNotificationCount } from '@workspace/api-client-react';
@@ -13,7 +13,7 @@ import colors from '@/constants/colors';
 
 export function Header() {
   const insets = useSafeAreaInsets();
-  const { user } = useUser();
+  const { profile } = useMobileAuth();
   const { locationName, loading, hasPermission, requestPermission } = useHomeLocation();
   const unreadQuery = useGetUnreadNotificationCount({ query: { queryKey: getGetUnreadNotificationCountQueryKey(), staleTime: 30_000, refetchInterval: 60_000 } });
   const unreadCount = unreadQuery.data?.count ?? 0;
@@ -23,7 +23,7 @@ export function Header() {
   if (hour < 12) greeting = 'Good morning';
   else if (hour < 17) greeting = 'Good afternoon';
 
-  const firstName = user?.firstName || 'Explorer';
+  const firstName = profile.firstName || 'Explorer';
 
   return (
     <LinearGradient

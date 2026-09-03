@@ -1,4 +1,4 @@
-import { useClerk } from '@clerk/expo';
+import { useMobileAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -6,7 +6,7 @@ import { useColors } from '@/hooks/useColors';
 
 export function SecureStorageRecovery({ onRetry }: { onRetry: () => Promise<void> }) {
   const colors = useColors();
-  const { signOut } = useClerk();
+  const { signOut } = useMobileAuth();
   const router = useRouter();
   const [action, setAction] = useState<'retrying' | 'signing-out' | null>(null);
   const [message, setMessage] = useState('');

@@ -2,26 +2,26 @@ import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { SecureStorageRecovery } from './SecureStorageRecovery';
 
-jest.mock('@clerk/expo', () => ({
-  useClerk: jest.fn(),
+jest.mock('@/context/AuthContext', () => ({
+  useMobileAuth: jest.fn(),
 }));
 
 jest.mock('expo-router', () => ({
   useRouter: jest.fn(),
 }));
 
-const { useClerk } = jest.requireMock('@clerk/expo') as { useClerk: jest.Mock };
+const { useMobileAuth } = jest.requireMock('@/context/AuthContext') as { useMobileAuth: jest.Mock };
 const { useRouter } = jest.requireMock('expo-router') as { useRouter: jest.Mock };
 
 describe('SecureStorageRecovery', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    useClerk.mockReturnValue({ signOut: jest.fn().mockResolvedValue(undefined) });
+    useMobileAuth.mockReturnValue({ signOut: jest.fn().mockResolvedValue(undefined) });
     useRouter.mockReturnValue({ replace: jest.fn() });
   });
 
   it('signs out and returns to login safely', async () => {
-    const signOut = useClerk().signOut;
+    const signOut = useMobileAuth().signOut;
     const replace = useRouter().replace;
     const screen = render(<SecureStorageRecovery onRetry={jest.fn().mockResolvedValue(undefined)} />);
 

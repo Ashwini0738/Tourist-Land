@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+export type { Session, User } from "@supabase/supabase-js";
 import {
   assertPublicSupabaseConfig,
   type PublicSupabaseConfig,

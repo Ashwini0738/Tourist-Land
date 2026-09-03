@@ -4,10 +4,10 @@ import {
   type CurrentUser,
   type PrimaryRole,
 } from '@workspace/api-client-react';
-import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useAuthSecurity } from './AuthSecurityContext';
+import { useMobileAuth } from './AuthContext';
 
 type RoleContextValue = {
   currentUser: CurrentUser | undefined;
@@ -21,7 +21,7 @@ type RoleContextValue = {
 const RoleContext = createContext<RoleContextValue | null>(null);
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, userId } = useAuth();
+  const { isSignedIn, userId } = useMobileAuth();
   const { isReady: securityReady, isUnlocked } = useAuthSecurity();
   const queryClient = useQueryClient();
   const enabled = Boolean(isSignedIn && securityReady && isUnlocked);

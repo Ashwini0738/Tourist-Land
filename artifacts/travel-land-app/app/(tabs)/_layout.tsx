@@ -4,7 +4,7 @@ import { useColors } from '@/hooks/useColors';
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
-import { useAuth } from '@clerk/expo';
+import { useMobileAuth } from '@/context/AuthContext';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
 import { radii } from '@/constants/theme';
 
@@ -134,7 +134,7 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useMobileAuth();
   const { isReady, isUnlocked, deviceAuthSetupComplete } = useAuthSecurity();
   if (!isSignedIn || !isReady || !deviceAuthSetupComplete || !isUnlocked) return null;
   return <ClassicTabLayout />;

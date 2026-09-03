@@ -1,7 +1,7 @@
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { useColors } from '@/hooks/useColors';
 import { router } from 'expo-router';
-import { useClerk } from '@clerk/expo';
+import { useMobileAuth } from '@/context/AuthContext';
 import React, { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -54,7 +54,7 @@ export function RoleDashboard({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { signOut } = useClerk();
+  const { signOut } = useMobileAuth();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const isVendor = role === 'vendor';
   const items = NAVIGATION[role];
@@ -150,7 +150,7 @@ export function RoleProfileScreen({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { signOut } = useClerk();
+  const { signOut } = useMobileAuth();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const isVendor = role === 'vendor';
   const profile = vendorProfile ?? currentUser?.vendorProfile;

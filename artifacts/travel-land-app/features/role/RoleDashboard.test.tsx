@@ -10,8 +10,8 @@ jest.mock('expo-router', () => ({
   },
 }));
 
-jest.mock('@clerk/expo', () => ({
-  useClerk: () => ({ signOut: jest.fn().mockResolvedValue(undefined) }),
+jest.mock('@/context/AuthContext', () => ({
+  useMobileAuth: () => ({ signOut: jest.fn().mockResolvedValue(undefined) }),
 }));
 
 jest.mock('react-native-safe-area-context', () => ({

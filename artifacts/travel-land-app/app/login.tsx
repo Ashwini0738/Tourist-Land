@@ -1,14 +1,14 @@
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
-import { PasswordResetFlow } from '@/features/auth/PasswordResetFlow';
-import { authErrorCodes, authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
-import { useAuth, useClerk, useSignIn, useSignUp } from '@clerk/expo';
+import { authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
+import { useClerk, useSignIn } from '@clerk/expo';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
+import { useMobileAuth } from '@/context/AuthContext';
 
 type AuthMethod = 'email' | 'phone';
 type SignInVerificationMethod = 'email' | 'phone' | null;
@@ -50,10 +50,16 @@ export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { signIn, fetchStatus: signInStatus } = useSignIn();
-  const { signUp, fetchStatus: signUpStatus } = useSignUp();
   const clerk = useClerk();
-  const { setActive, signOut } = clerk;
-  const { isLoaded, isSignedIn } = useAuth();
+  const { setActive } = clerk;
+  const {
+    isLoaded,
+    isSignedIn,
+    supabaseAvailable,
+    supabaseConfigurationError,
+    signInWithPassword,
+    signUpWithPassword,
+  } = useMobileAuth();
 
   const [isNew, setNew] = useState(false);
   const [email, setEmail] = useState('');
@@ -66,10 +72,9 @@ export default function LoginScreen() {
   const [signInCode, setSignInCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [pendingOrganizationChoice, setPendingOrganizationChoice] = useState<PendingOrganizationChoice | null>(null);
 
-  const loading = !isLoaded || signInStatus === 'fetching' || signUpStatus === 'fetching' || isSubmitting || isResending;
+  const loading = !isLoaded || signInStatus === 'fetching' || isSubmitting || isResending;
   const normalizedPhone = normalizePhoneNumber(countryCode, phone);
 
   useEffect(() => {
@@ -81,30 +86,6 @@ export default function LoginScreen() {
       currentTask: clerk.session?.currentTask?.key ?? null,
     });
   }, [clerk.session?.currentTask?.key, clerk.session?.status, isLoaded, isSignedIn]);
-
-  const clearSessionsForFreshPasswordSignIn = async () => {
-    const sessionIds = [...(clerk.client?.sessions ?? [])].map((session) => session.id);
-    for (const sessionId of sessionIds) {
-      await signOut({ sessionId });
-    }
-    await signIn.reset();
-  };
-
-  const startFreshPasswordSignIn = async () => {
-    await clearSessionsForFreshPasswordSignIn();
-    const credentials = { emailAddress: email.trim(), password };
-    let result = await signIn.password(credentials);
-    if (!result.error || !authErrorCodes(result.error).some((code) => code.includes('session_exists'))) {
-      return result;
-    }
-
-    const staleSessionId = signIn.existingSession?.sessionId;
-    if (!staleSessionId) return result;
-    await signOut({ sessionId: staleSessionId });
-    await signIn.reset();
-    result = await signIn.password(credentials);
-    return result;
-  };
 
   const finalizeAndVerifyActiveSession = async () => {
     const finalization = await signIn.finalize({});
@@ -179,7 +160,7 @@ export default function LoginScreen() {
         isLoaded,
         isSignedIn: Boolean(isSignedIn),
         signInStatus,
-        signUpStatus,
+        emailProvider: 'supabase',
       });
     }
     setMessage('');
@@ -197,11 +178,12 @@ export default function LoginScreen() {
     setIsSubmitting(true);
     try {
       if (isNew) {
-        const { error } = await signUp.password({ emailAddress: email.trim(), password });
-        if (error) return setMessage(authErrorMessage(error, 'We could not create that account. Please review your email and password and try again.'));
-        const verification = await signUp.verifications.sendEmailCode();
-        if (verification.error) return setMessage(authErrorMessage(verification.error, 'We could not send the verification email. Please check the address and try again.'));
-        router.push('/verify');
+        if (!supabaseAvailable) {
+          setMessage(supabaseConfigurationError ?? 'Email signup is not configured for this build.');
+          return;
+        }
+        const result = await signUpWithPassword(email.trim(), password);
+        if (result.requiresEmailConfirmation) router.push('/verify');
         return;
       }
 
@@ -228,34 +210,11 @@ export default function LoginScreen() {
         return;
       }
 
-      if (__DEV__) console.info('[auth] Starting fresh password session cleanup');
-      const { error } = await startFreshPasswordSignIn();
-      if (error) {
-        if (__DEV__) {
-          console.warn('[auth] Password sign-in rejected', {
-            ...authErrorDiagnostic(error),
-          });
-        }
-        return setMessage(authErrorMessage(error, 'We could not sign you in. Please check your details and try again.'));
-      }
-      if (__DEV__) console.info('[auth] Password verification completed', { signInStatus: signIn.status });
-      if (signIn.status === 'needs_second_factor' || signIn.status === 'needs_client_trust') {
-        const emailFactor = signIn.supportedSecondFactors?.find((factor) => factor.strategy === 'email_code');
-        if (!emailFactor) {
-          return setMessage('This account requires an additional sign-in method that is not available in this app.');
-        }
-        const verification = await signIn.mfa.sendEmailCode();
-        if (verification.error) {
-          return setMessage(authErrorMessage(verification.error, 'We could not send the sign-in verification code. Please try again.'));
-        }
-        setSignInCode('');
-        setSignInVerificationMethod('email');
-        if (__DEV__) console.info('[auth] MFA email verification started');
+      if (!supabaseAvailable) {
+        setMessage(supabaseConfigurationError ?? 'Email sign-in is not configured for this build.');
         return;
       }
-      if (signIn.status !== 'complete') return setMessage('This sign-in needs another verification step. Please restart sign in and try again.');
-      const sessionReady = await finalizeAndVerifyActiveSession();
-      if (__DEV__) console.info('[auth] Password session finalization finished', { sessionReady });
+      await signInWithPassword(email.trim(), password);
     } catch (error) {
       if (__DEV__) console.warn('[auth] Email/password submit threw', authErrorDiagnostic(error));
       setMessage(authErrorMessage(error, isNew ? 'We could not create your account. Please try again.' : 'We could not complete sign in. Please try again.'));
@@ -273,6 +232,22 @@ export default function LoginScreen() {
         ? await signIn.phoneCode.verifyCode({ code: signInCode })
         : await signIn.mfa.verifyEmailCode({ code: signInCode });
       if (error) return setMessage(authErrorMessage(error, 'That verification code did not work. Please try again.'));
+      if (
+        signInVerificationMethod === 'phone'
+        && (signIn.status === 'needs_second_factor' || signIn.status === 'needs_client_trust')
+      ) {
+        const emailFactor = signIn.supportedSecondFactors?.find((factor) => factor.strategy === 'email_code');
+        if (!emailFactor) {
+          return setMessage('This account requires an additional sign-in method that is not available in this app.');
+        }
+        const verification = await signIn.mfa.sendEmailCode();
+        if (verification.error) {
+          return setMessage(authErrorMessage(verification.error, 'We could not send the sign-in verification code. Please try again.'));
+        }
+        setSignInCode('');
+        setSignInVerificationMethod('email');
+        return;
+      }
       if (signIn.status !== 'complete') return setMessage('The code was accepted, but sign in is not complete yet. Please try again.');
       if (!await finalizeAndVerifyActiveSession()) return;
       setSignInVerificationMethod(null);
@@ -321,26 +296,6 @@ export default function LoginScreen() {
       setIsSubmitting(false);
     }
   };
-
-  if (showPasswordReset) {
-    return (
-      <PasswordResetFlow
-        signIn={signIn}
-        initialEmail={email}
-        onBackToLogin={() => {
-          signIn.reset();
-          setShowPasswordReset(false);
-          setMessage('');
-        }}
-        onCompleted={() => {
-          signIn.reset();
-          setShowPasswordReset(false);
-          setPassword('');
-          setMessage('Your password was reset. Sign in with your new password.');
-        }}
-      />
-    );
-  }
 
   if (pendingOrganizationChoice) {
     return (
@@ -472,7 +427,7 @@ export default function LoginScreen() {
               <TextInput testID="login-email" value={email} onChangeText={(value) => { setEmail(value); setMessage(''); }} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
               <TextInput testID="login-password" value={password} onChangeText={(value) => { setPassword(value); setMessage(''); }} autoCapitalize="none" secureTextEntry autoComplete={isNew ? 'new-password' : 'current-password'} placeholder="Password" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card, marginTop: 16 }]} />
               {!isNew && (
-                <Pressable testID="forgot-password" onPress={() => { setMessage(''); setShowPasswordReset(true); }} style={styles.forgotPassword}>
+                <Pressable testID="forgot-password" onPress={() => { setMessage('Password reset for email accounts is not available in this build yet.'); }} style={styles.forgotPassword}>
                   <Text style={[styles.secondaryText, { color: colors.primary }]}>Forgot password?</Text>
                 </Pressable>
               )}
@@ -488,7 +443,6 @@ export default function LoginScreen() {
           <Pressable onPress={() => router.push('/vendor-application')} style={styles.vendorLink}>
             <Text style={[styles.vendorLinkText, { color: colors.foreground }]}>Are you a travel business? Apply as a vendor</Text>
           </Pressable>
-          {isNew && <View nativeID="clerk-captcha" />}
         </View>
       </KeyboardAwareScrollViewCompat>
     );

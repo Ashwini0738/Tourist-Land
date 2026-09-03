@@ -1,21 +1,21 @@
 ---
 name: Authentication authority
-description: Why Clerk remains the sole session authority while native device authentication provides local app unlock.
+description: Provider ownership during the mobile Supabase transition and the role of native device authentication.
 ---
 
-Clerk is the only account and session authority. Native device authentication only unlocks an already-restored Clerk session. Never create parallel application refresh tokens or store app PINs, device credentials, passwords, or biometric data on-device.
+Mobile email/password authentication is owned by Supabase Auth. Mobile phone OTP and MFA remain owned by Clerk during the transition. A single provider-neutral mobile boundary must expose only the active provider session and its access token; never create custom tokens or copy credentials between providers.
 
-**Why:** Keeping one session authority avoids conflicting expiry, revocation, and logout behavior. Native device authentication provides convenience without adding a second application credential or weakening managed identity verification.
+**Why:** The staged migration requires both managed providers temporarily, but each login transaction must still have exactly one owner so expiry, refresh, revocation, and logout behavior cannot conflict.
 
 Invitation metadata is not an authorization authority. Vendor and admin invitations grant a local role only when the verified Clerk account email matches an active invitation/application record in PostgreSQL; rejected or revoked local states must fail closed even if a Clerk signup succeeds.
 
 **Why:** Clerk owns account creation, but local onboarding review owns Travel & Land privileges. Matching the verified email connects those systems without accepting client-supplied roles or depending on mutable public metadata.
 
-Clerk hook functions such as token getters may change identity during auth updates. Security initialization effects must be keyed to stable auth facts such as signed-in state and user ID, while reading the current token getter through a ref. Do not use the getter function itself as an initialization-effect dependency.
+Provider token getters may change identity during auth updates. Security initialization effects must be keyed to stable auth facts such as signed-in state and external user ID. Do not use a changing token-getter function itself as a security initialization dependency.
 
 **Why:** Depending on a changing token-getter identity repeatedly reset the security provider to not-ready and flooded the session endpoint, producing a continuous screen blink immediately after verification.
 
-**How to apply:** New protected mobile flows must require a valid Clerk session plus the app-unlocked state. New protected API routes must use Clerk middleware and local-user provisioning; they must not accept app-PIN verification as a replacement for a Clerk session. Privileged invitation claims must check an active local record against Clerk’s verified email. Auth bootstrap effects should rerun only when the signed-in user changes.
+**How to apply:** Protected mobile flows require one restored provider session, successful API resolution to local `users.id`, role/account approval, and the existing device-unlock gate. Supabase maps only through `auth_user_id`; Clerk maps through `clerk_user_id`. Never email-match Supabase users or treat device unlock as account authentication.
 
 Expo Router's root authentication guard must keep the root navigator mounted and perform destination changes from an effect. Returning a root-level redirect in place of the navigator can leave navigation actions unhandled and remount native authentication screens.
 
@@ -23,8 +23,8 @@ Expo Router's root authentication guard must keep the root navigator mounted and
 
 **How to apply:** Derive auth, device-unlock, and role destinations centrally, navigate only after the relevant state is ready, and leave the root `Stack` rendered throughout authentication transitions.
 
-An explicit email/password submission owns a fresh Clerk session transition: clear known prior Clerk sessions before beginning that new transaction, retry a reported identifiable stale session at most once, and never run this cleanup from startup or while MFA is active. Startup and native unlock must reuse the restored Clerk session instead.
+An explicit mobile email/password submission creates only a Supabase session. It must never call Clerk password sign-in, activate a Clerk session, or fall back to a Clerk token. Phone OTP and its second-factor continuation remain entirely within Clerk.
 
-**Why:** Reusing a session from the local session-list hook after Clerk returned `session_exists` failed when Clerk's server knew about a session that was not usable locally. Cleanup during MFA would destroy the in-progress transaction, while cleanup during startup would break device-unlock reuse.
+**Why:** Competing sessions would make API identity, logout, and restoration ambiguous during the transition.
 
-**How to apply:** Keep fresh-login cleanup, password transaction creation, finalization, and activation under one login owner. After finalization, resolve the session ID from Clerk's current post-finalize state, confirm that active session exists locally, and only then clear verification UI; leave destination routing to the root state machine.
+**How to apply:** Use the active Supabase access token for migrated email users and Clerk’s verified token for phone/MFA users. Sign out only the active provider. Keep refresh tokens inside provider-managed persistence and leave destination routing to the root state machine.

@@ -64,6 +64,7 @@
   },
   "dependencies": {
     "@clerk/expo": "^4.6.0",
+    "@workspace/supabase": "workspace:*",
     "expo-auth-session": "~7.0.11",
     "expo-crypto": "~15.0.9",
     "expo-notifications": "~0.32.17",

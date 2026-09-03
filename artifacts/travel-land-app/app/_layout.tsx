@@ -11,7 +11,6 @@ import {
   useFonts,
 } from '@expo-google-fonts/inter';
 import { Stack, useRouter, useSegments } from 'expo-router';
-import { useAuth, useClerk } from '@clerk/expo';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
 import * as SplashScreen from 'expo-splash-screen';
 import { AppStateProvider } from '@/context/AppStateContext';
@@ -24,6 +23,7 @@ import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from '
 import { useColors } from '@/hooks/useColors';
 import { resolveAuthenticatedNavigation } from '@/features/auth/authenticatedNavigation';
 import { SecureStorageRecovery } from '@/components/SecureStorageRecovery';
+import { MobileAuthProvider, useMobileAuth } from '@/context/AuthContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -34,9 +34,15 @@ if (domain) setBaseUrl(`https://${domain}`);
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
-function RoleResolutionError({ onRetry }: { onRetry: () => Promise<unknown> }) {
+function RoleResolutionError({
+  onRetry,
+  accountNotLinked,
+}: {
+  onRetry: () => Promise<unknown>;
+  accountNotLinked: boolean;
+}) {
   const colors = useColors();
-  const { signOut } = useClerk();
+  const { signOut, clearAccessError } = useMobileAuth();
   const router = useRouter();
   const [action, setAction] = useState<'retrying' | 'signing-out' | null>(null);
   const [message, setMessage] = useState('');
@@ -46,6 +52,7 @@ function RoleResolutionError({ onRetry }: { onRetry: () => Promise<unknown> }) {
     setAction('retrying');
     setMessage('');
     try {
+      clearAccessError();
       await onRetry();
     } catch {
       setMessage('We could not refresh your access yet. Please try again.');
@@ -70,9 +77,13 @@ function RoleResolutionError({ onRetry }: { onRetry: () => Promise<unknown> }) {
   return (
     <View style={[styles.roleErrorOverlay, { backgroundColor: colors.background }]}>
       <Text style={[styles.roleErrorKicker, { color: colors.primary }]}>ACCESS CHECK</Text>
-      <Text style={[styles.roleErrorTitle, { color: colors.foreground }]}>We could not verify your access.</Text>
+      <Text style={[styles.roleErrorTitle, { color: colors.foreground }]}>
+        {accountNotLinked ? 'Your account is not linked yet.' : 'We could not verify your access.'}
+      </Text>
       <Text style={[styles.roleErrorText, { color: colors.mutedForeground }]}>
-        Your secure session is still protected, but your Travel & Land role could not be loaded. Try again or sign out safely.
+        {accountNotLinked
+          ? 'Your email session is secure, but it is not connected to a Travel & Land account. No bookings or saved data were changed. Contact support or sign out safely.'
+          : 'Your secure session is still protected, but your Travel & Land role could not be loaded. Try again or sign out safely.'}
       </Text>
       {!!message && <Text style={[styles.roleErrorMessage, { color: colors.destructive }]}>{message}</Text>}
       <Pressable
@@ -96,8 +107,15 @@ function RoleResolutionError({ onRetry }: { onRetry: () => Promise<unknown> }) {
 }
 
 function RootLayoutNav() {
-  const { isLoaded, isSignedIn, getToken } = useAuth();
-  const { signOut } = useClerk();
+  const {
+    provider,
+    isLoaded,
+    isSignedIn,
+    getToken,
+    signOut,
+    accessError,
+    markAccountNotLinked,
+  } = useMobileAuth();
   const router = useRouter();
   const { isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete, securityError, retrySecurityState } = useAuthSecurity();
   const { role, isReady: roleReady, isLoading: roleLoading, isError: roleError, refetch: refetchRole } = useRole();
@@ -108,6 +126,10 @@ function RootLayoutNav() {
   useEffect(() => {
     setAuthTokenGetter(() => getToken());
     setUnauthorizedHandler(async () => {
+      if (provider === 'supabase') {
+        markAccountNotLinked();
+        return;
+      }
       await signOut();
       router.replace('/login');
     });
@@ -115,7 +137,7 @@ function RootLayoutNav() {
       setAuthTokenGetter(null);
       setUnauthorizedHandler(null);
     };
-  }, [getToken, router, signOut]);
+  }, [getToken, markAccountNotLinked, provider, router, signOut]);
 
   useEffect(() => {
     const target = resolveAuthenticatedNavigation({
@@ -155,7 +177,7 @@ function RootLayoutNav() {
   return (
     <View style={styles.root}>
       {renderRoutes()}
-      {showRoleError && <RoleResolutionError onRetry={refetchRole} />}
+      {showRoleError && <RoleResolutionError onRetry={refetchRole} accountNotLinked={accessError === 'ACCOUNT_NOT_LINKED'} />}
       {showSecureStorageRecovery && <SecureStorageRecovery onRetry={retrySecurityState} />}
     </View>
   );
@@ -212,21 +234,23 @@ export default function RootLayout() {
 
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
-    <SafeAreaProvider>
-      <ErrorBoundary>
-        <AuthSecurityProvider>
-          <QueryClientProvider client={queryClient}>
-            <AppStateProvider>
-            <RoleProvider>
-                <GestureHandlerRootView style={styles.gestureRoot}>
-                  <RootLayoutNav />
-                </GestureHandlerRootView>
-            </RoleProvider>
-            </AppStateProvider>
-          </QueryClientProvider>
-        </AuthSecurityProvider>
-      </ErrorBoundary>
-    </SafeAreaProvider>
+      <MobileAuthProvider>
+        <SafeAreaProvider>
+          <ErrorBoundary>
+            <AuthSecurityProvider>
+              <QueryClientProvider client={queryClient}>
+                <AppStateProvider>
+                  <RoleProvider>
+                    <GestureHandlerRootView style={styles.gestureRoot}>
+                      <RootLayoutNav />
+                    </GestureHandlerRootView>
+                  </RoleProvider>
+                </AppStateProvider>
+              </QueryClientProvider>
+            </AuthSecurityProvider>
+          </ErrorBoundary>
+        </SafeAreaProvider>
+      </MobileAuthProvider>
     </ClerkProvider>
   );
 }

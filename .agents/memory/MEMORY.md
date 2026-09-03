@@ -1,4 +1,4 @@
-- [Authentication authority](authentication-authority.md) — Clerk owns sessions; local unlock is secondary, and security initialization must key off user identity rather than hook function identity.
+- [Authentication authority](authentication-authority.md) — mobile email/password uses Supabase; Clerk still owns phone/MFA, while local unlock gates either restored provider session.
 - [Existing Clerk onboarding](existing-clerk-onboarding.md) — a Clerk account can predate local provisioning; vendor approval must activate that identity instead of retrying an invitation.
 - [Native location verification](native-location-verification.md) — browser previews and mocks cannot confirm native prompts, GPS settings, or platform map-app launch.
 - [Native unlock verification](native-unlock-verification.md) — mocked Expo tests protect routing logic but do not confirm biometric or device-passcode behavior.

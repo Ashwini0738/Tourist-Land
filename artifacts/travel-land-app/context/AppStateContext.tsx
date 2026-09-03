@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import { useAuth } from '@clerk/expo';
 import {
   FavoriteEntityType,
   getListFavoritesQueryKey,
@@ -12,6 +11,7 @@ import {
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState as NativeAppState, Platform } from 'react-native';
 import { destinations, properties, stays } from '@/lib/content';
+import { useMobileAuth } from './AuthContext';
 
 type PendingFavorite = {
   desired: boolean;
@@ -127,7 +127,7 @@ export function getFavoriteKey(entityType: FavoriteEntityTypeValue, entityId: st
 }
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
-  const { isLoaded, isSignedIn, userId } = useAuth();
+  const { isLoaded, isSignedIn, userId } = useMobileAuth();
   const accountId = isSignedIn && userId ? userId : null;
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [legacyFavoriteIds, setLegacyFavoriteIds] = useState<string[]>([]);

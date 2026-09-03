@@ -1,11 +1,11 @@
-import { useAuth } from '@clerk/expo';
+import { useMobileAuth } from '@/context/AuthContext';
 import { Stack } from 'expo-router';
 import React from 'react';
 import { useAuthSecurity } from '@/context/AuthSecurityContext';
 import { useRole } from '@/context/RoleContext';
 
 export default function VendorLayout() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useMobileAuth();
   const { isReady, isUnlocked, deviceAuthSetupComplete } = useAuthSecurity();
   const { role, isReady: roleReady } = useRole();
   if (!isSignedIn || !isReady || !deviceAuthSetupComplete || !isUnlocked || !roleReady || role !== 'vendor') return null;

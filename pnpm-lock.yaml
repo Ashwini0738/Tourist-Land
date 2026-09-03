@@ -649,6 +649,9 @@ importers:
       '@clerk/expo':
         specifier: ^4.6.0
         version: 4.6.0(@types/react@19.1.17)(expo-auth-session@7.0.11(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(expo-constants@18.0.14)(expo-crypto@15.0.9(expo@54.0.37))(expo-local-authentication@17.0.9(expo@54.0.37))(expo-secure-store@15.0.8(expo@54.0.37))(expo-web-browser@15.0.11(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0)))(expo@54.0.37)(react-dom@19.1.0(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.1.0))(zod@3.25.76)
+      '@workspace/supabase':
+        specifier: workspace:*
+        version: link:../../lib/supabase
       expo-auth-session:
         specifier: ~7.0.11
         version: 7.0.11(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)

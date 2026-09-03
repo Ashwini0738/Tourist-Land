@@ -4,8 +4,8 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { AuthSecurityProvider, useAuthSecurity } from './AuthSecurityContext';
 import * as SecureStore from 'expo-secure-store';
 
-jest.mock('@clerk/expo', () => ({
-  useAuth: jest.fn(),
+jest.mock('./AuthContext', () => ({
+  useMobileAuth: jest.fn(),
 }));
 
 jest.mock('expo-secure-store', () => ({
@@ -14,7 +14,7 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
-const { useAuth } = jest.requireMock('@clerk/expo') as { useAuth: jest.Mock };
+const { useMobileAuth } = jest.requireMock('./AuthContext') as { useMobileAuth: jest.Mock };
 
 function SecurityState() {
   const { isReady, deviceAuthSetupComplete, biometricsEnabled, isUnlocked, securityError, retrySecurityState } = useAuthSecurity();
@@ -30,7 +30,7 @@ describe('AuthSecurityProvider', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (SecureStore.getItemAsync as jest.Mock).mockResolvedValue(null);
-    useAuth.mockImplementation(() => ({
+    useMobileAuth.mockImplementation(() => ({
       isSignedIn: true,
       userId: 'user-1',
     }));

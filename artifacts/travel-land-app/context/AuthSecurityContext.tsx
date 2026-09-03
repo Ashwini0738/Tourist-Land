@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
-import { useAuth } from '@clerk/expo';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useMobileAuth } from './AuthContext';
 
 type SecurityError = 'SECURE_STORAGE_UNAVAILABLE';
 type SecurityContextValue = {
@@ -22,7 +22,7 @@ const SETUP_COMPLETE = 'travel-land.device-auth-setup-complete';
 const LEGACY_HAS_PIN = 'travel-land.has-pin';
 
 export function AuthSecurityProvider({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, userId } = useAuth();
+  const { isSignedIn, userId } = useMobileAuth();
   const [isReady, setReady] = useState(false);
   const [biometricsEnabled, setBiometrics] = useState(false);
   const [deviceAuthSetupComplete, setDeviceAuthSetupCompleteState] = useState(false);

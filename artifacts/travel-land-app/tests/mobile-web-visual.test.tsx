@@ -3,7 +3,6 @@ import { render, waitFor } from '@testing-library/react-native';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuth, useClerk, useUser } from '@clerk/expo';
 import { useGetExploreFilters, useListExploreCategories, useSearchExplore, useGetUnreadNotificationCount, useListFavorites, useListBookings } from '@workspace/api-client-react';
 import { HomeScreen } from '@/features/home/HomeScreen';
 import ExploreScreen from '@/app/(tabs)/explore';
@@ -19,9 +18,6 @@ const mockUseGetExploreFilters = useGetExploreFilters as jest.Mock;
 const mockUseGetUnreadNotificationCount = useGetUnreadNotificationCount as jest.Mock;
 const mockUseListFavorites = useListFavorites as jest.Mock;
 const mockUseListBookings = useListBookings as jest.Mock;
-const mockUseUser = useUser as jest.Mock;
-const mockUseClerk = useClerk as jest.Mock;
-const mockUseAuth = useAuth as jest.Mock;
 const mockUseQueryClient = useQueryClient as jest.Mock;
 
 const mockColors = {
@@ -45,10 +41,17 @@ jest.mock('@tanstack/react-query', () => ({
   useQueryClient: jest.fn(),
 }));
 
-jest.mock('@clerk/expo', () => ({
-  useAuth: jest.fn(),
-  useClerk: jest.fn(),
-  useUser: jest.fn(),
+jest.mock('@/context/AuthContext', () => ({
+  useMobileAuth: jest.fn(() => ({
+    isLoaded: true,
+    isSignedIn: true,
+    profile: {
+      firstName: 'Asha',
+      displayName: 'Asha Traveller',
+      email: 'asha@example.com',
+    },
+    signOut: jest.fn(),
+  })),
 }));
 
 jest.mock('@/context/AuthSecurityContext', () => ({
@@ -323,15 +326,6 @@ beforeAll(() => {
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseQueryClient.mockReturnValue({ refetchQueries: jest.fn() });
-  mockUseAuth.mockReturnValue({ isSignedIn: true });
-  mockUseUser.mockReturnValue({
-    user: {
-      firstName: 'Asha',
-      fullName: 'Asha Traveller',
-      primaryEmailAddress: { emailAddress: 'asha@example.com' },
-    },
-  });
-  mockUseClerk.mockReturnValue({ signOut: jest.fn() });
   mockUseSearchExplore.mockReturnValue(queryResult());
   mockUseListExploreCategories.mockReturnValue(queryResult());
   mockUseGetExploreFilters.mockReturnValue(queryResult());
