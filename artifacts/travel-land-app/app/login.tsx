@@ -4,7 +4,7 @@ import { PasswordResetFlow } from '@/features/auth/PasswordResetFlow';
 import { authErrorCodes, authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
 import { useAuth, useClerk, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -66,6 +66,16 @@ export default function LoginScreen() {
 
   const loading = !isLoaded || signInStatus === 'fetching' || signUpStatus === 'fetching' || isSubmitting || isResending;
   const normalizedPhone = normalizePhoneNumber(countryCode, phone);
+
+  useEffect(() => {
+    if (!__DEV__) return;
+    console.info('[auth] Login session state', {
+      isLoaded,
+      isSignedIn: Boolean(isSignedIn),
+      sessionStatus: clerk.session?.status ?? null,
+      currentTask: clerk.session?.currentTask?.key ?? null,
+    });
+  }, [clerk.session?.currentTask?.key, clerk.session?.status, isLoaded, isSignedIn]);
 
   const clearSessionsForFreshPasswordSignIn = async () => {
     const sessionIds = [...(clerk.client?.sessions ?? [])].map((session) => session.id);
