@@ -52,8 +52,6 @@ import type {
   AdminReviewPage,
   AdminRoomPage,
   AdminStatusUpdate,
-  AdminSupabaseIdentityLinkInput,
-  AdminUser,
   AdminUserDetail,
   AdminUserPage,
   AdminVendorPage,
@@ -71,7 +69,6 @@ import type {
   DestinationList,
   EligibleReviewList,
   EmailInvitationInput,
-  ErrorResponse,
   EventList,
   ExploreCategoriesResponse,
   ExploreFiltersResponse,
@@ -7844,79 +7841,6 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getUpdateAdminUserStatusMutationOptions(options));
-    }
-
-export const getLinkAdminUserSupabaseIdentityUrl = (id: string,) => {
-
-
-
-
-  return `/api/v1/admin/users/${id}/supabase-link`
-}
-
-/**
- * This one-way operation is restricted to administrators. It never provisions users or matches identities by email.
- * @summary Link an approved Supabase identity to an existing local user
- */
-export const linkAdminUserSupabaseIdentity = async (id: string,
-    adminSupabaseIdentityLinkInput: AdminSupabaseIdentityLinkInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminUser> => {
-
-  return customFetch<AdminUser>(getLinkAdminUserSupabaseIdentityUrl(id),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(adminSupabaseIdentityLinkInput)
-  }
-);}
-
-
-
-
-
-export const getLinkAdminUserSupabaseIdentityMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkAdminUserSupabaseIdentity>>, TError,{id: string;data: BodyType<AdminSupabaseIdentityLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof linkAdminUserSupabaseIdentity>>, TError,{id: string;data: BodyType<AdminSupabaseIdentityLinkInput>}, TContext> => {
-
-const mutationKey = ['linkAdminUserSupabaseIdentity'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof linkAdminUserSupabaseIdentity>>, {id: string;data: BodyType<AdminSupabaseIdentityLinkInput>}> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  linkAdminUserSupabaseIdentity(id,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type LinkAdminUserSupabaseIdentityMutationResult = NonNullable<Awaited<ReturnType<typeof linkAdminUserSupabaseIdentity>>>
-    export type LinkAdminUserSupabaseIdentityMutationBody = BodyType<AdminSupabaseIdentityLinkInput>
-    export type LinkAdminUserSupabaseIdentityMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | ErrorResponse>
-
-    /**
- * @summary Link an approved Supabase identity to an existing local user
- */
-export const useLinkAdminUserSupabaseIdentity = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkAdminUserSupabaseIdentity>>, TError,{id: string;data: BodyType<AdminSupabaseIdentityLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof linkAdminUserSupabaseIdentity>>,
-        TError,
-        {id: string;data: BodyType<AdminSupabaseIdentityLinkInput>},
-        TContext
-      > => {
-      return useMutation(getLinkAdminUserSupabaseIdentityMutationOptions(options));
     }
 
 export const getListAdminVendorsUrl = (params?: ListAdminVendorsParams,) => {

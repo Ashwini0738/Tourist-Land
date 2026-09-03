@@ -2187,9 +2187,7 @@ export interface AdminDashboard {
   revenue: AdminDashboardRevenue;
 }
 
-export type AdminUser = CurrentUser & {
-  supabaseLinked: boolean;
-};
+export type AdminUser = CurrentUser;
 
 export interface AdminUserPage {
   items: AdminUser[];
@@ -2230,17 +2228,6 @@ export interface AdminStatusUpdate {
      * @nullable
      */
   reason?: string | null;
-}
-
-export interface AdminSupabaseIdentityLinkInput {
-  /** Supabase auth.users.id verified by the administrator before submission. */
-  authUserId: string;
-  /**
-     * Required approval note retained in the admin audit history.
-     * @minLength 1
-     * @maxLength 1000
-     */
-  reason: string;
 }
 
 export type AdminFeaturedContentType = typeof AdminFeaturedContentType[keyof typeof AdminFeaturedContentType];

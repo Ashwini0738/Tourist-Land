@@ -3,7 +3,7 @@ name: Orval Zod compatibility
 description: The OpenAPI generator currently emits Zod 4 helper syntax into a workspace that uses Zod 3.
 ---
 
-The generated Zod client output must pass through the repository's normalization step before library typechecking; normalize `zod.int()`, `zod.email()`, and `zod.uuid()` to Zod 3-compatible schemas.
+The generated Zod client output must pass through the repository's normalization step before library typechecking; normalize `zod.int()` and `zod.email()` to Zod 3-compatible string/number schemas.
 
 **Why:** Orval can emit top-level Zod 4 helpers for `integer` and `email` formats even though the installed Zod runtime is v3, causing generated-library typecheck failures after otherwise valid OpenAPI changes.
 

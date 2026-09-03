@@ -155,7 +155,6 @@ async function deleteFixture(fixture: AdminFixture): Promise<void> {
 async function adminSchemaReady(): Promise<boolean> {
   const requiredColumns = [
     "users.status",
-    "users.auth_user_id",
     "user_roles.role",
     "vendor_profiles.status",
     "hotels.catalog_id",
@@ -246,7 +245,6 @@ const protectedAdminRoutes: Array<{ method: string; path: string; body?: JsonObj
   { method: "GET", path: "/v1/admin/users" },
   { method: "GET", path: `/v1/admin/users/${randomUUID()}` },
   { method: "POST", path: `/v1/admin/users/${randomUUID()}/status`, body: { status: "active" } },
-  { method: "POST", path: `/v1/admin/users/${randomUUID()}/supabase-link`, body: { authUserId: randomUUID(), reason: "Fixture" } },
   { method: "GET", path: "/v1/admin/vendors" },
   { method: "POST", path: `/v1/admin/vendors/${randomUUID()}/status`, body: { status: "approved" } },
   { method: "GET", path: "/v1/admin/hotels" },
@@ -289,96 +287,6 @@ test("every admin route rejects unauthenticated and non-admin requests", async (
     assert.equal(nonAdmin.status, 403, `${route.method} ${route.path} should require admin role`);
     assert.equal((nonAdmin.body.error as JsonObject).code, "FORBIDDEN");
   }
-});
-
-test("admin links one approved Supabase identity to one existing local user", async (t) => {
-  if (!(await adminSchemaReady())) {
-    t.skip("development database schema is pending post-merge application");
-    return;
-  }
-  const fixture = await createFixture();
-  t.after(() => deleteFixture(fixture));
-  const server = await startTestServer(buildTestApp(fixture.adminId, fixture.targetUserId));
-  t.after(() => server.close());
-  const authUserId = randomUUID();
-
-  const invalid = await adminRequest(server.baseUrl, `/v1/admin/users/${fixture.targetUserId}/supabase-link`, "admin", {
-    method: "POST",
-    body: JSON.stringify({ authUserId, reason: "" }),
-  });
-  assert.equal(invalid.status, 400);
-  assert.equal((invalid.body.error as JsonObject).code, "INVALID_INPUT");
-
-  const linked = await adminRequest(server.baseUrl, `/v1/admin/users/${fixture.targetUserId}/supabase-link`, "admin", {
-    method: "POST",
-    body: JSON.stringify({ authUserId, reason: "Verified against the approved Supabase migration roster." }),
-  });
-  assert.equal(linked.status, 200);
-  assert.equal(linked.body.id, fixture.targetUserId);
-  assert.equal(linked.body.supabaseLinked, true);
-
-  const persisted = await db.query.users.findFirst({ where: eq(users.id, fixture.targetUserId) });
-  assert.equal(persisted?.authUserId, authUserId);
-  const logs = await db.select().from(adminAuditLogs)
-    .where(eq(adminAuditLogs.adminUserId, fixture.adminId));
-  assert.equal(logs.length, 1);
-  assert.equal(logs[0]?.action, "supabase_identity_linked");
-  assert.equal(logs[0]?.entityType, "user");
-  assert.equal(logs[0]?.entityId, fixture.targetUserId);
-  assert.deepEqual(logs[0]?.metadata, {
-    provider: "supabase",
-    authUserId,
-    reason: "Verified against the approved Supabase migration roster.",
-  });
-
-  const alreadyLinked = await adminRequest(server.baseUrl, `/v1/admin/users/${fixture.targetUserId}/supabase-link`, "admin", {
-    method: "POST",
-    body: JSON.stringify({ authUserId: randomUUID(), reason: "Attempted reassignment." }),
-  });
-  assert.equal(alreadyLinked.status, 409);
-  assert.equal((alreadyLinked.body.error as JsonObject).code, "LOCAL_USER_ALREADY_LINKED");
-
-  const conflicting = await adminRequest(server.baseUrl, `/v1/admin/users/${fixture.vendorId}/supabase-link`, "admin", {
-    method: "POST",
-    body: JSON.stringify({ authUserId, reason: "Attempted duplicate identity." }),
-  });
-  assert.equal(conflicting.status, 409);
-  assert.equal((conflicting.body.error as JsonObject).code, "SUPABASE_IDENTITY_ALREADY_LINKED");
-  const vendor = await db.query.users.findFirst({ where: eq(users.id, fixture.vendorId) });
-  assert.equal(vendor?.authUserId, null);
-
-  const missing = await adminRequest(server.baseUrl, `/v1/admin/users/${randomUUID()}/supabase-link`, "admin", {
-    method: "POST",
-    body: JSON.stringify({
-      authUserId: randomUUID(),
-      reason: "This must not provision a new account.",
-      email: "existing-target@example.test",
-    }),
-  });
-  assert.equal(missing.status, 404);
-  assert.equal((missing.body.error as JsonObject).code, "NOT_FOUND");
-});
-
-test("Supabase identity link and audit record roll back together", async (t) => {
-  if (!(await adminSchemaReady())) {
-    t.skip("development database schema is pending post-merge application");
-    return;
-  }
-  const fixture = await createFixture();
-  t.after(() => deleteFixture(fixture));
-  const unknownAdminId = randomUUID();
-  const server = await startTestServer(buildTestApp(fixture.adminId, fixture.targetUserId, unknownAdminId));
-  t.after(() => server.close());
-
-  const response = await adminRequest(server.baseUrl, `/v1/admin/users/${fixture.targetUserId}/supabase-link`, "admin", {
-    method: "POST",
-    body: JSON.stringify({ authUserId: randomUUID(), reason: "Audit rollback fixture." }),
-  });
-  assert.equal(response.status, 500);
-  assert.equal((response.body.error as JsonObject).code, "SUPABASE_IDENTITY_LINK_FAILED");
-  const target = await db.query.users.findFirst({ where: eq(users.id, fixture.targetUserId) });
-  assert.equal(target?.authUserId, null);
-  assert.equal((await db.select().from(adminAuditLogs).where(eq(adminAuditLogs.adminUserId, unknownAdminId))).length, 0);
 });
 
 test("admin status transitions validate values, isolate entities, and write auditable metadata", async (t) => {

@@ -6,10 +6,8 @@ import {
 } from "./apiAuthProvider.ts";
 import {
   attachLocalIdentity,
-  assertSupabaseIdentityLinkAvailable,
   AuthenticationRejectedError,
   resolveMappedSupabaseUser,
-  SupabaseIdentityLinkRejectedError,
 } from "./authenticatedIdentity.ts";
 
 test("API auth provider defaults to Clerk and rejects arbitrary modes", () => {
@@ -50,23 +48,6 @@ test("mapped Supabase subject resolves to the matching local user ID", async () 
   assert.deepEqual(localUser, { id: "local-user-9", role: "vendor" });
 });
 
-test("a Supabase subject cannot resolve to another local user's mapping", async () => {
-  const findByAuthUserId = async (authUserId: string) =>
-    authUserId === "supabase-user-a" ? { id: "local-user-a" } : null;
-  const localUser = await resolveMappedSupabaseUser(
-    { provider: "supabase", externalUserId: "supabase-user-a" },
-    findByAuthUserId,
-  );
-  assert.equal(localUser.id, "local-user-a");
-  await assert.rejects(
-    () => resolveMappedSupabaseUser(
-      { provider: "supabase", externalUserId: "supabase-user-b" },
-      findByAuthUserId,
-    ),
-    AuthenticationRejectedError,
-  );
-});
-
 test("unmapped Supabase subject is rejected without email fallback", async () => {
   await assert.rejects(
     () => resolveMappedSupabaseUser(
@@ -79,35 +60,6 @@ test("unmapped Supabase subject is rejected without email fallback", async () =>
     ),
     AuthenticationRejectedError,
   );
-});
-
-test("Supabase identity linking rejects a local user that is already linked", () => {
-  assert.throws(
-    () => assertSupabaseIdentityLinkAvailable(
-      { id: "local-user-9", authUserId: "existing-supabase-user" },
-      null,
-    ),
-    (error) => error instanceof SupabaseIdentityLinkRejectedError
-      && error.code === "LOCAL_USER_ALREADY_LINKED",
-  );
-});
-
-test("Supabase identity linking rejects an identity already owned by another local user", () => {
-  assert.throws(
-    () => assertSupabaseIdentityLinkAvailable(
-      { id: "local-user-9", authUserId: null },
-      { id: "other-local-user", authUserId: "supabase-user-1" },
-    ),
-    (error) => error instanceof SupabaseIdentityLinkRejectedError
-      && error.code === "SUPABASE_IDENTITY_ALREADY_LINKED",
-  );
-});
-
-test("Supabase identity linking permits only an unlinked identity and local user", () => {
-  assert.doesNotThrow(() => assertSupabaseIdentityLinkAvailable(
-    { id: "local-user-9", authUserId: null },
-    null,
-  ));
 });
 
 test("dual mode accepts an independently verified Clerk identity", async () => {

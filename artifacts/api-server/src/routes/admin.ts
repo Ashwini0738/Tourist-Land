@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type RequestHandler, type Response } from "express";
-import { and, asc, desc, eq, gte, ilike, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import {
   adminAuditLogs,
   attractions,
@@ -26,11 +26,6 @@ import { requireAuth } from "../middlewares/requireAuth.ts";
 import { requireRole } from "../middlewares/authorization.ts";
 import { resolvePrimaryRole } from "../lib/roles.ts";
 import { db } from "@workspace/db";
-import {
-  assertSupabaseIdentityLinkAvailable,
-  SUPABASE_AUTH_USER_ID_PATTERN,
-  SupabaseIdentityLinkRejectedError,
-} from "../lib/authenticatedIdentity.ts";
 
 export function createAdminRouter(authenticate: RequestHandler = requireAuth): IRouter {
   const router: IRouter = Router();
@@ -62,10 +57,6 @@ function pageMeta(page: Page, total: number): { page: number; limit: number; tot
 
 function fail(res: Response, status: number, code: string, message: string): void {
   res.status(status).json({ error: { code, message } });
-}
-
-function isUniqueConstraintError(error: unknown): boolean {
-  return Boolean(error && typeof error === "object" && "code" in error && error.code === "23505");
 }
 
 function jsonBody(req: Request): Record<string, unknown> | null {
@@ -114,7 +105,6 @@ function serializeUser(user: typeof users.$inferSelect, role: "user" | "vendor" 
     avatarUrl: user.avatarUrl,
     role,
     status: user.status,
-    supabaseLinked: Boolean(user.authUserId),
     vendorProfile: null,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -398,58 +388,6 @@ router.get("/v1/admin/users/:id", async (req, res) => {
     count(reviews, eq(reviews.userId, user.id)),
   ]);
   res.json({ user: serializeUser(user, roles.get(user.id) ?? "user"), bookingCount, favoriteCount, reviewCount });
-});
-
-router.post("/v1/admin/users/:id/supabase-link", async (req, res) => {
-  const targetUserId = id(req);
-  const body = jsonBody(req);
-  const authUserId = typeof body?.authUserId === "string" ? body.authUserId.trim() : "";
-  const reason = typeof body?.reason === "string" ? body.reason.trim() : "";
-  if (!SUPABASE_AUTH_USER_ID_PATTERN.test(authUserId) || reason.length < 1 || reason.length > 1000) {
-    return fail(res, 400, "INVALID_INPUT", "A valid Supabase auth user ID and a non-empty reason (up to 1000 characters) are required.");
-  }
-  if (!SUPABASE_AUTH_USER_ID_PATTERN.test(targetUserId)) {
-    return fail(res, 400, "INVALID_INPUT", "A valid local user ID is required.");
-  }
-
-  let linked: typeof users.$inferSelect | undefined;
-  try {
-    linked = await db.transaction(async (tx) => {
-      const localUser = await tx.query.users.findFirst({
-        where: eq(users.id, targetUserId),
-      });
-      if (!localUser) return undefined;
-      const existingIdentityOwner = await tx.query.users.findFirst({
-        where: eq(users.authUserId, authUserId),
-      });
-      assertSupabaseIdentityLinkAvailable(localUser, existingIdentityOwner);
-
-      const changed = (await tx.update(users)
-        .set({ authUserId, updatedAt: new Date() })
-        .where(and(eq(users.id, targetUserId), isNull(users.authUserId)))
-        .returning())[0];
-      if (!changed) {
-        throw new SupabaseIdentityLinkRejectedError("LOCAL_USER_ALREADY_LINKED");
-      }
-      await audit(req, "supabase_identity_linked", "user", changed.id, {
-        provider: "supabase",
-        authUserId,
-        reason,
-      }, tx);
-      return changed;
-    });
-  } catch (error) {
-    if (error instanceof SupabaseIdentityLinkRejectedError) {
-      return fail(res, 409, error.code, error.message);
-    }
-    if (isUniqueConstraintError(error)) {
-      return fail(res, 409, "SUPABASE_IDENTITY_CONFLICT", "The Supabase identity could not be linked without risking an existing account.");
-    }
-    return fail(res, 500, "SUPABASE_IDENTITY_LINK_FAILED", "The identity link and its audit record could not be saved.");
-  }
-  if (!linked) return fail(res, 404, "NOT_FOUND", "User not found.");
-  const roles = await roleByUserIds([linked.id]);
-  return res.json(serializeUser(linked, roles.get(linked.id) ?? "user"));
 });
 
 router.post("/v1/admin/users/:id/status", async (req, res) => {

@@ -1884,35 +1884,6 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
-  /v1/admin/users/{id}/supabase-link:
-    post:
-      operationId: linkAdminUserSupabaseIdentity
-      tags: [admin]
-      security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: "#/components/parameters/Id" }]
-      summary: Link an approved Supabase identity to an existing local user
-      description: This one-way operation is restricted to administrators. It never provisions users or matches identities by email.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/AdminSupabaseIdentityLinkInput" }
-      responses:
-        "200":
-          description: Existing local user with the linked identity
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/AdminUser" }
-        "400": { $ref: "#/components/responses/InvalidInput" }
-        "401": { $ref: "#/components/responses/Unauthenticated" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "500":
-          description: Identity link could not be saved
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ErrorResponse" }
   /v1/admin/vendors:
     get:
       operationId: listAdminVendors
@@ -3965,10 +3936,6 @@ components:
     AdminUser:
       allOf:
         - $ref: "#/components/schemas/CurrentUser"
-        - type: object
-          properties:
-            supabaseLinked: { type: boolean }
-          required: [supabaseLinked]
     AdminUserPage:
       type: object
       properties:
@@ -3989,19 +3956,6 @@ components:
         status: { type: string, enum: [active, inactive, suspended, approved, rejected, published, archived, pending, pending_payment, confirmed, cancelled] }
         reason: { type: [string, "null"], maxLength: 1000 }
       required: [status]
-    AdminSupabaseIdentityLinkInput:
-      type: object
-      properties:
-        authUserId:
-          type: string
-          format: uuid
-          description: Supabase auth.users.id verified by the administrator before submission.
-        reason:
-          type: string
-          minLength: 1
-          maxLength: 1000
-          description: Required approval note retained in the admin audit history.
-      required: [authUserId, reason]
     AdminFeaturedContentType:
       type: string
       enum: [destination, hotel, event, offer]

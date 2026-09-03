@@ -7,6 +7,4 @@
  */
 import type { CurrentUser } from './currentUser';
 
-export type AdminUser = CurrentUser & {
-  supabaseLinked: boolean;
-};
+export type AdminUser = CurrentUser;
