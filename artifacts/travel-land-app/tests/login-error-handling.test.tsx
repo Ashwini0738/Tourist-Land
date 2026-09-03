@@ -51,6 +51,7 @@ const mockUseSignIn = useSignIn as jest.Mock;
 const mockUseSignUp = useSignUp as jest.Mock;
 const setActive = jest.fn().mockResolvedValue(undefined);
 const signOut = jest.fn().mockResolvedValue(undefined);
+const redirectToTasks = jest.fn().mockResolvedValue(undefined);
 
 function createSignIn() {
   return {
@@ -91,12 +92,20 @@ function createSignUp() {
   };
 }
 
-function createSession(id = 'sess_existing', email = 'traveller@example.com', status = 'active') {
+function createSession(
+  id = 'sess_existing',
+  email = 'traveller@example.com',
+  status = 'active',
+  currentTask?: { key: 'choose-organization' | 'reset-password' | 'setup-mfa' },
+) {
   return {
     id,
     status,
+    currentTask,
+    lastActiveOrganizationId: null as string | null,
     user: {
       emailAddresses: [{ emailAddress: email }],
+      organizationMemberships: [] as Array<{ organization: { id: string } }>,
     },
   };
 }
@@ -105,15 +114,21 @@ function createClerk(sessions = [] as ReturnType<typeof createSession>[], active
   const clerk = {
     setActive,
     signOut,
+    redirectToTasks,
     session: sessions.find((session) => session.id === activeSessionId) ?? null,
     client: {
       sessions: [...sessions],
       lastActiveSessionId: activeSessionId ?? null,
     },
   };
-  setActive.mockImplementation(async ({ session }: { session: string }) => {
+  setActive.mockImplementation(async ({ session, organization }: { session: string; organization?: string }) => {
     clerk.session = clerk.client.sessions.find((candidate) => candidate.id === session) ?? null;
     clerk.client.lastActiveSessionId = session;
+    if (organization && clerk.session) {
+      clerk.session.status = 'active';
+      clerk.session.currentTask = undefined;
+      clerk.session.lastActiveOrganizationId = organization;
+    }
   });
   signOut.mockImplementation(async ({ sessionId }: { sessionId?: string } = {}) => {
     clerk.client.sessions = sessionId
@@ -178,7 +193,13 @@ describe('login validation', () => {
     const clerk = createClerk();
     signIn.finalize.mockImplementationOnce(async () => {
       signIn.createdSessionId = 'sess_finalized';
-      const finalizedSession = createSession('sess_finalized', 'traveller@example.com', 'pending');
+      const finalizedSession = createSession(
+        'sess_finalized',
+        'traveller@example.com',
+        'pending',
+        { key: 'choose-organization' },
+      );
+      finalizedSession.user.organizationMemberships.push({ organization: { id: 'org_only' } });
       clerk.client.sessions.push(finalizedSession);
       clerk.client.lastActiveSessionId = finalizedSession.id;
       clerk.session = finalizedSession;
@@ -199,6 +220,7 @@ describe('login validation', () => {
       });
       expect(signIn.finalize).toHaveBeenCalledWith({});
     });
+    expect(setActive).toHaveBeenCalledWith({ session: 'sess_finalized', organization: 'org_only' });
     expect(screen.queryByText('We could not complete sign in. Please try again.')).toBeNull();
     expect(router.replace).not.toHaveBeenCalled();
   });
@@ -659,7 +681,7 @@ describe('login exception handling', () => {
     signIn.finalize.mockImplementationOnce(async () => {
       expect(signIn.createdSessionId).toBe('sess_pending');
       signIn.createdSessionId = 'sess_finalized';
-      clerk.client.sessions.push(createSession('sess_finalized', 'traveller@example.com', 'pending'));
+      clerk.client.sessions.push(createSession('sess_finalized'));
       return { error: null };
     });
     mockUseClerk.mockReturnValue(clerk);

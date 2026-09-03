@@ -125,7 +125,23 @@ export default function LoginScreen() {
       return false;
     }
 
-    if (clerk.session?.id !== finalizedSessionId) {
+    if (finalizedSession.status === 'pending') {
+      const memberships = finalizedSession.user?.organizationMemberships ?? [];
+      const previousOrganizationId = finalizedSession.lastActiveOrganizationId;
+      const organizationId = previousOrganizationId && memberships.some(
+        (membership) => membership.organization.id === previousOrganizationId,
+      )
+        ? previousOrganizationId
+        : memberships.length === 1
+          ? memberships[0].organization.id
+          : null;
+
+      if (finalizedSession.currentTask?.key !== 'choose-organization' || !organizationId) {
+        await clerk.redirectToTasks();
+        return false;
+      }
+      await setActive({ session: finalizedSessionId, organization: organizationId });
+    } else if (clerk.session?.id !== finalizedSessionId) {
       await setActive({ session: finalizedSessionId });
     }
     const activeSessionId = clerk.session?.id ?? clerk.client?.lastActiveSessionId;
