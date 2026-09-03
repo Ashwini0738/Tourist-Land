@@ -1,0 +1,77 @@
+Approve the corrective rollback of the unsafe Step 6A implementation.
+
+Use the recommended **selective commit-level revert of**:
+
+`54378df2910018231fa3a96a2507325219159fa9`
+
+Commit message:
+
+`Add audited Supabase identity linking for existing users`
+
+### Requirements
+
+1. Revert ONLY commit `54378df`.
+2. Do NOT restore an arbitrary older checkpoint.
+3. Do NOT reset the branch to an older point.
+4. Preserve all approved work from Steps 2, 3, 4A, and 5.
+5. Do not modify or remove:
+
+   * Supabase foundation
+   * `users.auth_user_id`
+   * Supabase JWT verification
+   * dual-provider API authentication
+   * mobile Supabase email/password authentication
+   * Clerk phone/SMS OTP
+   * Clerk MFA
+   * biometric/device unlock
+   * existing Clerk provisioning
+   * existing `users.id`
+   * existing `users.clerk_user_id`
+
+### The revert should remove
+
+* `/v1/admin/users/:id/supabase-link`
+* the unsafe identity-link implementation
+* its admin UI controls
+* its Step 6A OpenAPI/generated client additions
+* Step 6A-specific tests
+* Step 6A-specific documentation/memory changes
+
+### IMPORTANT
+
+After the revert, DO NOT implement a replacement Supabase identity-link endpoint yet.
+
+We will redesign Step 6A after the unsafe implementation has been completely removed.
+
+### Validation
+
+After reverting:
+
+* run the relevant API tests
+* run existing mobile authentication tests
+* run TypeScript/typecheck
+* run API build
+* run lint/static checks
+* run `git diff --check`
+* confirm the unsafe `/v1/admin/users/:id/supabase-link` route no longer exists
+* confirm no client can submit arbitrary Supabase identity IDs for mapping
+* confirm Steps 2–5 remain intact
+* confirm Step 7 has not started
+
+Because there are no commits after `54378df` on `main`, verify the resulting state against its direct parent:
+
+`872c59743febfb11c5a804c61f27e85d415a317f`
+
+Do not make any other functional changes.
+
+At the end, report:
+
+1. Revert commit created
+2. Files removed/reverted
+3. Confirmation that Steps 2–5 remain intact
+4. Test results
+5. Confirmation that the unsafe link endpoint is gone
+6. Current Step 6A status
+7. Confirmation that Step 7 has NOT started
+
+STOP after this validation. Do not design or implement the new mapping mechanism yet.
