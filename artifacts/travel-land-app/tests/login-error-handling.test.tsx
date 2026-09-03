@@ -141,6 +141,14 @@ function enterEmailCredentials(screen: ReturnType<typeof render>) {
   fireEvent.changeText(screen.getByTestId('login-password'), 'not-a-real-password');
 }
 
+async function startPhoneSignIn(screen: ReturnType<typeof render>) {
+  fireEvent.press(screen.getByTestId('login-method-phone'));
+  fireEvent.changeText(screen.getByTestId('phone-country-code'), '+91');
+  fireEvent.changeText(screen.getByTestId('phone-number'), '9999999999');
+  fireEvent.press(screen.getByTestId('login-continue'));
+  await waitFor(() => expect(screen.getByTestId('phone-sign-in-verification-code')).toBeTruthy());
+}
+
 it('validates email before calling either provider', async () => {
   const signIn = createSignIn();
   mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
@@ -213,12 +221,94 @@ it('keeps phone OTP on Clerk and never calls Supabase password auth', async () =
   const signIn = createSignIn();
   mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
   const screen = render(<LoginScreen />);
-  fireEvent.press(screen.getByTestId('login-method-phone'));
-  fireEvent.changeText(screen.getByTestId('phone-country-code'), '+91');
-  fireEvent.changeText(screen.getByTestId('phone-number'), '9999999999');
-  fireEvent.press(screen.getByTestId('login-continue'));
+  await startPhoneSignIn(screen);
   await waitFor(() => expect(signIn.create).toHaveBeenCalledWith({ identifier: '+919999999999' }));
   expect(signIn.phoneCode.sendCode).toHaveBeenCalled();
+  expect(mobileAuth.signInWithPassword).not.toHaveBeenCalled();
+});
+
+it('establishes a Clerk session after a successful phone OTP without creating a Supabase session', async () => {
+  const signIn = createSignIn();
+  signIn.phoneCode.verifyCode.mockImplementation(async () => {
+    signIn.status = 'complete';
+    return { error: null };
+  });
+  const clerk = createClerk();
+  signIn.finalize.mockImplementation(async () => {
+    const session = { id: 'clerk-phone-session', status: 'active', user: { organizationMemberships: [] as never[] } };
+    signIn.createdSessionId = session.id;
+    clerk.client.sessions.push(session);
+    return { error: null };
+  });
+  mockUseClerk.mockReturnValue(clerk);
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+  const screen = render(<LoginScreen />);
+
+  await startPhoneSignIn(screen);
+  fireEvent.changeText(screen.getByTestId('phone-sign-in-verification-code'), '123456');
+  fireEvent.press(screen.getByTestId('verify-phone-sign-in-code'));
+
+  await waitFor(() => expect(clerk.setActive).toHaveBeenCalledWith({ session: 'clerk-phone-session' }));
+  expect(signIn.finalize).toHaveBeenCalled();
+  expect(mobileAuth.signInWithPassword).not.toHaveBeenCalled();
+});
+
+it.each([
+  ['verification_code_invalid', 'That verification code is incorrect. Check the code and try again.'],
+  ['verification_code_expired', 'That verification code has expired. Request a new code and try again.'],
+])('handles Clerk phone OTP error %s safely', async (code, expectedMessage) => {
+  const signIn = createSignIn();
+  signIn.phoneCode.verifyCode.mockResolvedValueOnce({ error: { code } });
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+  const screen = render(<LoginScreen />);
+
+  await startPhoneSignIn(screen);
+  fireEvent.changeText(screen.getByTestId('phone-sign-in-verification-code'), '123456');
+  fireEvent.press(screen.getByTestId('verify-phone-sign-in-code'));
+
+  await waitFor(() => expect(screen.getByText(expectedMessage)).toBeTruthy());
+  expect(signIn.finalize).not.toHaveBeenCalled();
+});
+
+it('resends a Clerk phone OTP without calling Supabase', async () => {
+  const signIn = createSignIn();
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+  const screen = render(<LoginScreen />);
+
+  await startPhoneSignIn(screen);
+  fireEvent.press(screen.getByTestId('resend-phone-sign-in-code'));
+
+  await waitFor(() => expect(signIn.phoneCode.sendCode).toHaveBeenCalledTimes(2));
+  expect(screen.getByText('A new verification code was sent.')).toBeTruthy();
+  expect(mobileAuth.signInWithPassword).not.toHaveBeenCalled();
+});
+
+it('handles Clerk phone OTP resend rate limits without retrying', async () => {
+  const signIn = createSignIn();
+  signIn.phoneCode.sendCode
+    .mockResolvedValueOnce({ error: null })
+    .mockResolvedValueOnce({ error: { code: 'too_many_requests' } });
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+  const screen = render(<LoginScreen />);
+
+  await startPhoneSignIn(screen);
+  fireEvent.press(screen.getByTestId('resend-phone-sign-in-code'));
+
+  await waitFor(() => expect(screen.getByText('Too many attempts. Please wait a few minutes and try again.')).toBeTruthy());
+  expect(signIn.phoneCode.sendCode).toHaveBeenCalledTimes(2);
+});
+
+it('cancels pending Clerk phone verification without creating a session', async () => {
+  const signIn = createSignIn();
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+  const screen = render(<LoginScreen />);
+
+  await startPhoneSignIn(screen);
+  fireEvent.press(screen.getByTestId('login-code-back'));
+
+  await waitFor(() => expect(screen.getByTestId('login-method-phone')).toBeTruthy());
+  expect(signIn.reset).toHaveBeenCalled();
+  expect(signIn.finalize).not.toHaveBeenCalled();
   expect(mobileAuth.signInWithPassword).not.toHaveBeenCalled();
 });
 
@@ -230,11 +320,7 @@ it('continues a Clerk phone login into Clerk MFA when required', async () => {
   });
   mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
   const screen = render(<LoginScreen />);
-  fireEvent.press(screen.getByTestId('login-method-phone'));
-  fireEvent.changeText(screen.getByTestId('phone-country-code'), '+91');
-  fireEvent.changeText(screen.getByTestId('phone-number'), '9999999999');
-  fireEvent.press(screen.getByTestId('login-continue'));
-  await waitFor(() => expect(screen.getByTestId('phone-sign-in-verification-code')).toBeTruthy());
+  await startPhoneSignIn(screen);
   fireEvent.changeText(screen.getByTestId('phone-sign-in-verification-code'), '123456');
   fireEvent.press(screen.getByTestId('verify-phone-sign-in-code'));
   await waitFor(() => expect(signIn.mfa.sendEmailCode).toHaveBeenCalled());
@@ -261,11 +347,7 @@ it('finishes a Clerk MFA code using the Clerk-created session', async () => {
   mockUseClerk.mockReturnValue(clerk);
   mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
   const screen = render(<LoginScreen />);
-  fireEvent.press(screen.getByTestId('login-method-phone'));
-  fireEvent.changeText(screen.getByTestId('phone-country-code'), '+91');
-  fireEvent.changeText(screen.getByTestId('phone-number'), '9999999999');
-  fireEvent.press(screen.getByTestId('login-continue'));
-  await waitFor(() => expect(screen.getByTestId('phone-sign-in-verification-code')).toBeTruthy());
+  await startPhoneSignIn(screen);
   fireEvent.changeText(screen.getByTestId('phone-sign-in-verification-code'), '123456');
   fireEvent.press(screen.getByTestId('verify-phone-sign-in-code'));
   await waitFor(() => expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy());
