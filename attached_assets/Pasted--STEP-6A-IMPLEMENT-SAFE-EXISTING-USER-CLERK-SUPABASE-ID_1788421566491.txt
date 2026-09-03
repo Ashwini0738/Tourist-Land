@@ -1,0 +1,445 @@
+## STEP 6A — IMPLEMENT SAFE EXISTING-USER CLERK → SUPABASE IDENTITY MIGRATION
+
+The Expo preview/tunnel issue is now resolved and validated.
+
+Proceed with **Step 6A only**: implement the secure migration path for an EXISTING local user who currently has a Clerk identity and wants to link their Supabase email/password identity.
+
+### CURRENT VERIFIED STATE
+
+The following are already complete and must remain unchanged:
+
+* Supabase foundation
+* Supabase JWT API verification
+* Dual-provider API authentication
+* Mobile Supabase email/password authentication
+* Clerk phone/SMS OTP
+* Clerk MFA
+* Biometric/device-unlock behavior
+* Supabase password recovery
+* Existing `users.id` ownership model
+* `users.clerk_user_id`
+* nullable unique `users.auth_user_id`
+* Expo development workflow
+* Step 6A unsafe admin-link implementation was reverted
+
+The current safe baseline is the reverted tree after:
+
+`1a13b2e62d4f3ca8a801dfa543669f8c6088e52f`
+
+Do NOT recreate the previously rejected admin endpoint.
+
+---
+
+# PRIMARY GOAL
+
+Allow an EXISTING authenticated Clerk user to securely link their own Supabase identity.
+
+The server must independently verify BOTH identities.
+
+The final mapping must be:
+
+`Supabase auth.users.id`
+→ `users.auth_user_id`
+→ existing `users.id`
+
+while preserving:
+
+* existing `users.id`
+* `users.clerk_user_id`
+* role
+* ownership
+* bookings
+* favorites
+* reviews
+* wallet
+* invitations
+* all existing application relationships
+
+Do NOT create a new local `users` record during this step.
+
+---
+
+# SECURITY REQUIREMENT — CRITICAL
+
+Never accept arbitrary identity IDs from the client and trust them.
+
+The client must NOT be able to say:
+
+`clerk_user_id = X`
+
+and:
+
+`supabase_user_id = Y`
+
+and ask the server to link them.
+
+The server must derive both identities from independently verified credentials.
+
+Do NOT use:
+
+* email equality
+* email lookup
+* biometric state
+* local storage values
+* client-supplied Clerk user ID
+* client-supplied Supabase user ID
+* recovery-session state
+* access-token contents without verification
+* refresh-token contents
+* admin-entered identity IDs
+
+as proof of ownership.
+
+---
+
+# REQUIRED FLOW
+
+Implement a user-authenticated migration flow approximately as follows:
+
+### Step 1 — Existing Clerk authentication
+
+The existing user authenticates through the current Clerk flow.
+
+The server independently verifies the Clerk session/token and derives:
+
+`verified Clerk subject`
+
+Then resolve:
+
+`users.clerk_user_id = verified Clerk subject`
+
+This identifies the existing local user.
+
+Do NOT identify the local user by email.
+
+---
+
+### Step 2 — Supabase authentication
+
+The same user authenticates with Supabase email/password.
+
+The server independently verifies the Supabase access token using the existing Supabase JWT verification boundary.
+
+Derive:
+
+`verified Supabase auth.users.id`
+
+Do NOT accept the Supabase user ID as a request-body parameter.
+
+---
+
+### Step 3 — Verify both identities
+
+The server must establish:
+
+`verified Clerk identity`
++
+`verified Supabase identity`
+
+before creating the mapping.
+
+The identities must belong to the same authenticated migration attempt.
+
+Do not allow a client to mix credentials from unrelated accounts.
+
+---
+
+# MIGRATION ATTEMPT / REPLAY PROTECTION
+
+Implement a short-lived, one-time migration attempt mechanism if required by the existing architecture.
+
+A suitable design may use a dedicated table such as:
+
+`identity_link_attempts`
+
+but first inspect the existing schema and architecture.
+
+If a migration-attempt table is needed, it should contain only the minimum metadata required for:
+
+* one-time use
+* expiration
+* migration attempt ID
+* existing local user ID
+* verified Clerk subject
+* verified Supabase subject, if appropriate
+* status
+* created/used timestamps
+* audit information
+
+NEVER store:
+
+* access tokens
+* refresh tokens
+* passwords
+* OTP codes
+* session secrets
+
+Use cryptographically secure random identifiers/nonces.
+
+Prevent:
+
+* replay
+* reuse
+* cross-user substitution
+* expired attempts
+* concurrent conflicting mappings
+
+---
+
+# DATABASE TRANSACTION
+
+The final mapping must be transactional.
+
+Before writing:
+
+1. Resolve the existing local user from the VERIFIED Clerk identity.
+2. Resolve the VERIFIED Supabase identity.
+3. Confirm the Supabase identity is not already mapped to another local user.
+4. Confirm the existing local user does not already have a conflicting `auth_user_id`.
+5. Perform the mapping atomically.
+
+Set only:
+
+`users.auth_user_id = verified Supabase subject`
+
+Do NOT modify:
+
+`users.id`
+
+Do NOT modify:
+
+`users.clerk_user_id`
+
+Do NOT modify role or ownership.
+
+If any constraint/conflict occurs, roll back the entire operation.
+
+---
+
+# EXISTING USER ALREADY MAPPED
+
+Handle these cases explicitly.
+
+### Case A
+
+The local user already has:
+
+`users.auth_user_id = this Supabase subject`
+
+Return a safe idempotent success/already-linked result.
+
+### Case B
+
+The local user has a different `auth_user_id`
+
+Reject the migration as a conflict.
+
+Do not overwrite it automatically.
+
+### Case C
+
+The Supabase subject is already mapped to another local user
+
+Reject the migration.
+
+Do not merge users.
+
+Do not reassign the identity.
+
+### Case D
+
+The Clerk identity does not resolve to a local user
+
+Reject safely.
+
+Do not create a new local user in Step 6A.
+
+### Case E
+
+The Supabase identity is valid but unmapped
+
+Allow linking only after the verified two-provider migration flow succeeds.
+
+---
+
+# API CONTRACT
+
+Inspect the existing API authentication architecture first.
+
+Add the smallest provider-neutral migration endpoint(s) required.
+
+Do NOT create an endpoint such as:
+
+`POST /v1/admin/users/:id/supabase-link`
+
+Do NOT make this an admin-only identity-linking operation.
+
+The migration should be initiated by the authenticated user.
+
+Use the existing authenticated identity infrastructure wherever possible.
+
+Return stable machine-readable errors for cases such as:
+
+* migration required
+* account not found
+* already linked
+* identity conflict
+* identity already belongs to another account
+* invalid/expired migration attempt
+* provider verification failure
+
+Do not expose sensitive provider information unnecessarily.
+
+Do not leak whether another user's Supabase account exists.
+
+---
+
+# MOBILE UI
+
+Only after the server-side design is proven safe, add the minimum mobile UI required to allow an existing Clerk user to complete the migration.
+
+Do NOT redesign the authentication screens.
+
+Do NOT change:
+
+* phone OTP
+* MFA
+* biometric flow
+* password recovery
+* normal Supabase email/password login
+
+The migration UI should be an explicit migration/linking flow.
+
+A user who has not completed migration should receive the existing stable access-resolution state rather than entering an infinite retry loop.
+
+---
+
+# IMPORTANT — NEW USER PROVISIONING
+
+Do NOT implement Supabase-only new-user provisioning in this step.
+
+The current schema has an existing Clerk identity requirement, including the current `users.clerk_user_id` contract.
+
+Therefore:
+
+**Step 6A = existing-user migration only.**
+
+New Supabase-only account provisioning will be handled separately after this is validated.
+
+Do not make `clerk_user_id` nullable as part of this task unless the existing architecture review proves it is absolutely required for the existing-user migration. If it is required, STOP and report why rather than making a broad schema change.
+
+---
+
+# INVITATIONS
+
+Do not redesign invitation behavior.
+
+For an existing Clerk user being migrated:
+
+* preserve the existing local user
+* preserve invitation state
+* preserve role
+* preserve ownership
+
+Do not automatically claim or modify invitations based on email matching.
+
+---
+
+# TESTS — REQUIRED
+
+Add focused tests for at least:
+
+1. Valid Clerk + valid Supabase identity → mapping succeeds.
+2. Existing local user is resolved from verified Clerk subject.
+3. Supabase subject is derived from verified JWT, not request body.
+4. Client-supplied Supabase ID cannot override verified JWT subject.
+5. Client-supplied Clerk ID cannot override verified Clerk identity.
+6. Email equality alone cannot authorize linking.
+7. Unknown Clerk user → rejected.
+8. Unknown Supabase identity → rejected.
+9. Supabase identity already mapped to another local user → rejected.
+10. Existing local user mapped to a different Supabase identity → rejected.
+11. Already-linked same identity → idempotent success.
+12. Expired migration attempt → rejected.
+13. Reused migration attempt → rejected.
+14. Cross-user migration attempt → rejected.
+15. Concurrent linking cannot produce two owners.
+16. Transaction rolls back on mapping failure.
+17. `users.id` never changes.
+18. `users.clerk_user_id` remains unchanged.
+19. Role/ownership remain unchanged.
+20. No tokens/passwords are persisted.
+
+Also test that existing Clerk authentication and existing Supabase API authentication continue to work.
+
+---
+
+# VALIDATION
+
+Run:
+
+* focused migration tests
+* existing API authentication tests
+* mobile authentication tests
+* mobile TypeScript typecheck
+* API TypeScript/typecheck
+* relevant build checks
+* `git diff --check`
+
+Also inspect the final diff carefully.
+
+Confirm that there are NO unintended changes to:
+
+* Step 7 phone/SMS OTP
+* MFA
+* biometric authentication
+* password recovery
+* Stripe
+* unrelated application screens
+* unrelated database tables
+* generated clients/OpenAPI unless the new API contract genuinely requires regeneration
+* existing booking/ownership logic
+
+---
+
+# STOP CONDITIONS
+
+STOP WITHOUT IMPLEMENTING if you discover that the current architecture cannot securely correlate the two independently verified sessions.
+
+STOP if implementation would require:
+
+* email-based identity matching
+* client-supplied identity IDs
+* admin-provided identity IDs
+* token storage
+* password storage
+* changing `users.id`
+* merging local users
+* silently overwriting an existing identity mapping
+* broad schema redesign
+* broad authentication rewrite
+
+If any of these are required, explain the exact blocker instead of implementing an unsafe workaround.
+
+---
+
+# FINAL REPORT
+
+Return:
+
+1. Exact implementation design.
+2. Files changed.
+3. Database/schema changes, if any.
+4. Exact API endpoint(s) added.
+5. How Clerk identity is independently verified.
+6. How Supabase identity is independently verified.
+7. How cross-user linking is prevented.
+8. How replay protection works.
+9. How transactions/concurrency are handled.
+10. Test results.
+11. Typecheck/build results.
+12. Confirmation that `users.id` and ownership were preserved.
+13. Confirmation that phone OTP, MFA, biometric auth, and password recovery were untouched.
+14. Confirmation that Step 7 was NOT started.
+
+Do not proceed beyond Step 6A.
