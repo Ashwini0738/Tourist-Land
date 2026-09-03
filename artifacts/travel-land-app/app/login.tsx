@@ -12,6 +12,10 @@ import { useColors } from '@/hooks/useColors';
 
 type AuthMethod = 'email' | 'phone';
 type SignInVerificationMethod = 'email' | 'phone' | null;
+type PendingOrganizationChoice = {
+  sessionId: string;
+  organizations: Array<{ id: string; name: string }>;
+};
 
 function authErrorDiagnostic(error: unknown) {
   const source = error && typeof error === 'object' ? error as Record<string, unknown> : {};
@@ -63,6 +67,7 @@ export default function LoginScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [pendingOrganizationChoice, setPendingOrganizationChoice] = useState<PendingOrganizationChoice | null>(null);
 
   const loading = !isLoaded || signInStatus === 'fetching' || signUpStatus === 'fetching' || isSubmitting || isResending;
   const normalizedPhone = normalizePhoneNumber(countryCode, phone);
@@ -136,8 +141,22 @@ export default function LoginScreen() {
           ? memberships[0].organization.id
           : null;
 
-      if (finalizedSession.currentTask?.key !== 'choose-organization' || !organizationId) {
+      if (finalizedSession.currentTask?.key !== 'choose-organization') {
         await clerk.redirectToTasks();
+        return false;
+      }
+      if (!organizationId) {
+        if (memberships.length === 0) {
+          setMessage('Your account must be added to an organization before you can sign in.');
+          return false;
+        }
+        setPendingOrganizationChoice({
+          sessionId: finalizedSessionId,
+          organizations: memberships.map((membership) => ({
+            id: membership.organization.id,
+            name: membership.organization.name,
+          })),
+        });
         return false;
       }
       await setActive({ session: finalizedSessionId, organization: organizationId });
@@ -285,6 +304,24 @@ export default function LoginScreen() {
     }
   };
 
+  const selectOrganization = async (organizationId: string) => {
+    if (!pendingOrganizationChoice || isSubmitting) return;
+    setMessage('');
+    setIsSubmitting(true);
+    try {
+      await setActive({
+        session: pendingOrganizationChoice.sessionId,
+        organization: organizationId,
+      });
+      setPendingOrganizationChoice(null);
+    } catch (error) {
+      if (__DEV__) console.warn('[auth] Organization activation failed', authErrorDiagnostic(error));
+      setMessage(authErrorMessage(error, 'We could not select that organization. Please try again.'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (showPasswordReset) {
     return (
       <PasswordResetFlow
@@ -302,6 +339,36 @@ export default function LoginScreen() {
           setMessage('Your password was reset. Sign in with your new password.');
         }}
       />
+    );
+  }
+
+  if (pendingOrganizationChoice) {
+    return (
+      <KeyboardAwareScrollViewCompat
+        testID="organization-choice-scroll-view"
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 16 }]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.copy}>
+          <Text style={[styles.kicker, { color: colors.primary }]}>CHOOSE YOUR ORGANIZATION</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>Where are you signing in?</Text>
+          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Clerk requires an organization for this account. Select one to finish signing in.</Text>
+          {pendingOrganizationChoice.organizations.map((organization) => (
+            <Pressable
+              key={organization.id}
+              testID={`select-organization-${organization.id}`}
+              disabled={isSubmitting}
+              onPress={() => void selectOrganization(organization.id)}
+              style={[styles.organizationOption, { backgroundColor: colors.card, borderColor: colors.input }]}
+            >
+              <Text style={[styles.organizationOptionText, { color: colors.foreground }]}>{organization.name}</Text>
+              {isSubmitting ? <ActivityIndicator color={colors.primary} /> : <Feather name="arrow-right" size={17} color={colors.primary} />}
+            </Pressable>
+          ))}
+          {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
+        </View>
+      </KeyboardAwareScrollViewCompat>
     );
   }
 
@@ -442,6 +509,8 @@ const styles = StyleSheet.create({
   methodSwitcher: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   methodOption: { flex: 1, height: 44, borderWidth: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   methodOptionText: { fontSize: 14, fontWeight: '700' },
+  organizationOption: { minHeight: 58, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  organizationOptionText: { flex: 1, fontSize: 15, fontWeight: '700' },
   phoneRow: { flexDirection: 'row', gap: 10 },
   countryCodeInput: { width: 88 },
   phoneInput: { flex: 1 },

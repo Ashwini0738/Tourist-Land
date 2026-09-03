@@ -105,7 +105,7 @@ function createSession(
     lastActiveOrganizationId: null as string | null,
     user: {
       emailAddresses: [{ emailAddress: email }],
-      organizationMemberships: [] as Array<{ organization: { id: string } }>,
+      organizationMemberships: [] as Array<{ organization: { id: string; name: string } }>,
     },
   };
 }
@@ -199,7 +199,7 @@ describe('login validation', () => {
         'pending',
         { key: 'choose-organization' },
       );
-      finalizedSession.user.organizationMemberships.push({ organization: { id: 'org_only' } });
+      finalizedSession.user.organizationMemberships.push({ organization: { id: 'org_only', name: 'Travel & Land' } });
       clerk.client.sessions.push(finalizedSession);
       clerk.client.lastActiveSessionId = finalizedSession.id;
       clerk.session = finalizedSession;
