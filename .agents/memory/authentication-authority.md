@@ -28,3 +28,9 @@ An explicit mobile email/password submission creates only a Supabase session. It
 **Why:** Competing sessions would make API identity, logout, and restoration ambiguous during the transition.
 
 **How to apply:** Use the active Supabase access token for migrated email users and Clerk’s verified token for phone/MFA users. Sign out only the active provider. Keep refresh tokens inside provider-managed persistence and leave destination routing to the root state machine.
+
+Supabase password recovery is a Supabase-only transaction: accept links only on the approved mobile callback, exchange the one-time code or provider session through Supabase, and hold recovery sessions outside normal app navigation until the password update completes.
+
+**Why:** Recovery links grant temporary account access, so accepting arbitrary deep links or letting a recovery session enter role and device-unlock routing could turn an invalid or partially handled link into an unintended authenticated state.
+
+**How to apply:** Keep the callback URI allow-listed and provider-validated, expose a dedicated recovery state, fail invalid/expired/reused links with generic user-facing copy, and clear the recovery session after the password changes. Never route recovery through Clerk or share its session state with phone/MFA flows.

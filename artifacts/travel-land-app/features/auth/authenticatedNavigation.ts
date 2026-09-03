@@ -1,7 +1,7 @@
 import type { PrimaryRole } from '@workspace/api-client-react';
 import { roleHome, unauthorizedHome } from '@/features/role/roleRouting';
 
-export const publicRoutes = ['splash', 'login', 'verify', 'vendor-application'];
+export const publicRoutes = ['splash', 'login', 'verify', 'vendor-application', 'auth'];
 export const lockedSessionRoutes = ['verify', 'biometric', 'biometric-login'];
 
 export type AuthenticatedNavigationTarget =
@@ -26,6 +26,7 @@ export type AuthenticatedNavigationState = {
   roleReady: boolean;
   roleLoading: boolean;
   roleError: boolean;
+  isPasswordRecovery?: boolean;
 };
 
 export function resolveAuthenticatedNavigation({
@@ -41,8 +42,11 @@ export function resolveAuthenticatedNavigation({
   roleReady,
   roleLoading,
   roleError,
+  isPasswordRecovery = false,
 }: AuthenticatedNavigationState): AuthenticatedNavigationTarget {
   if (!isLoaded) return null;
+
+  if (isPasswordRecovery) return null;
 
   if (!isSignedIn) {
     return route && !publicRoutes.includes(route) ? '/login' : null;

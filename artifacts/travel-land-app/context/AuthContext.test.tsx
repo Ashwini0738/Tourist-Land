@@ -60,6 +60,10 @@ function client(initialSession: ReturnType<typeof session> | null) {
         error: null,
       }),
       resend: jest.fn().mockResolvedValue({ data: {}, error: null }),
+      resetPasswordForEmail: jest.fn().mockResolvedValue({ data: {}, error: null }),
+      exchangeCodeForSession: jest.fn().mockResolvedValue({ data: { session: session() }, error: null }),
+      setSession: jest.fn().mockResolvedValue({ data: { session: session() }, error: null }),
+      updateUser: jest.fn().mockResolvedValue({ data: { user: session().user }, error: null }),
       signOut: supabaseSignOut.mockResolvedValue({ error: null }),
     },
   };
@@ -175,6 +179,51 @@ it('keeps an unmapped Supabase session authenticated but marks application acces
   fireEvent.press(screen.getByTestId('mark-unmapped'));
   await waitFor(() => expect(screen.getByTestId('state').props.children).toContain('ACCOUNT_NOT_LINKED'));
   expect(supabaseSignOut).not.toHaveBeenCalled();
+});
+
+it('sends recovery email through Supabase and restores only a valid recovery session', async () => {
+  const supabase = client(null);
+  mockCreateSupabase.mockReturnValue(supabase);
+  let authValue: ReturnType<typeof useMobileAuth> | null = null;
+  function Capture() {
+    authValue = useMobileAuth();
+    return null;
+  }
+  render(<MobileAuthProvider><Capture /></MobileAuthProvider>);
+  await waitFor(() => expect(authValue?.isLoaded).toBe(true));
+
+  await authValue!.requestSupabasePasswordReset('traveller@example.com');
+  expect(supabase.auth.resetPasswordForEmail).toHaveBeenCalledWith('traveller@example.com', {
+    redirectTo: 'travel-land-app://auth/callback',
+  });
+
+  await authValue!.processSupabasePasswordRecoveryUrl(
+    'travel-land-app://auth/callback?code=one-time-code',
+  );
+  await waitFor(() => expect(authValue?.passwordRecoveryStatus).toBe('ready'));
+  expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledWith('one-time-code');
+  await authValue!.updateSupabasePassword('new-password');
+  expect(supabase.auth.updateUser).toHaveBeenCalledWith({ password: 'new-password' });
+});
+
+it('turns an invalid recovery callback into a safe error without calling Supabase session APIs', async () => {
+  const supabase = client(null);
+  mockCreateSupabase.mockReturnValue(supabase);
+  let authValue: ReturnType<typeof useMobileAuth> | null = null;
+  function Capture() {
+    authValue = useMobileAuth();
+    return null;
+  }
+  render(<MobileAuthProvider><Capture /></MobileAuthProvider>);
+  await waitFor(() => expect(authValue?.isLoaded).toBe(true));
+
+  await authValue!.processSupabasePasswordRecoveryUrl(
+    'travel-land-app://auth/callback?error=access_denied',
+  );
+  await waitFor(() => expect(authValue?.passwordRecoveryStatus).toBe('error'));
+  expect(authValue!.passwordRecoveryError).toContain('invalid, expired');
+  expect(supabase.auth.exchangeCodeForSession).not.toHaveBeenCalled();
+  expect(supabase.auth.setSession).not.toHaveBeenCalled();
 });
 
 it('keeps Clerk available while Supabase email configuration is missing', async () => {

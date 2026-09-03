@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useMobileAuth } from '@/context/AuthContext';
+import { PasswordResetFlow } from '@/features/auth/PasswordResetFlow';
 
 type AuthMethod = 'email' | 'phone';
 type SignInVerificationMethod = 'email' | 'phone' | null;
@@ -73,6 +74,7 @@ export default function LoginScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [pendingOrganizationChoice, setPendingOrganizationChoice] = useState<PendingOrganizationChoice | null>(null);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
 
   const loading = !isLoaded || signInStatus === 'fetching' || isSubmitting || isResending;
   const normalizedPhone = normalizePhoneNumber(countryCode, phone);
@@ -86,6 +88,17 @@ export default function LoginScreen() {
       currentTask: clerk.session?.currentTask?.key ?? null,
     });
   }, [clerk.session?.currentTask?.key, clerk.session?.status, isLoaded, isSignedIn]);
+
+  if (showPasswordReset) {
+    return (
+      <PasswordResetFlow
+        mode="request"
+        initialEmail={email}
+        onBackToLogin={() => setShowPasswordReset(false)}
+        onCompleted={() => setShowPasswordReset(false)}
+      />
+    );
+  }
 
   const finalizeAndVerifyActiveSession = async () => {
     const finalization = await signIn.finalize({});
@@ -427,7 +440,7 @@ export default function LoginScreen() {
               <TextInput testID="login-email" value={email} onChangeText={(value) => { setEmail(value); setMessage(''); }} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
               <TextInput testID="login-password" value={password} onChangeText={(value) => { setPassword(value); setMessage(''); }} autoCapitalize="none" secureTextEntry autoComplete={isNew ? 'new-password' : 'current-password'} placeholder="Password" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card, marginTop: 16 }]} />
               {!isNew && (
-                <Pressable testID="forgot-password" onPress={() => { setMessage('Password reset for email accounts is not available in this build yet.'); }} style={styles.forgotPassword}>
+                <Pressable testID="forgot-password" onPress={() => { setMessage(''); setShowPasswordReset(true); }} style={styles.forgotPassword}>
                   <Text style={[styles.secondaryText, { color: colors.primary }]}>Forgot password?</Text>
                 </Pressable>
               )}

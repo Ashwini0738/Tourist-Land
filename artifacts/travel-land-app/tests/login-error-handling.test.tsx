@@ -116,6 +116,12 @@ function createMobileAuth() {
     verifySupabaseSignup: jest.fn().mockResolvedValue(undefined),
     resendSupabaseSignupCode: jest.fn().mockResolvedValue(undefined),
     clearPendingSupabaseSignup: jest.fn(),
+    requestSupabasePasswordReset: jest.fn().mockResolvedValue(undefined),
+    updateSupabasePassword: jest.fn().mockResolvedValue(undefined),
+    processSupabasePasswordRecoveryUrl: jest.fn().mockResolvedValue(undefined),
+    passwordRecoveryStatus: 'idle' as const,
+    passwordRecoveryError: null as string | null,
+    signOut: jest.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -293,11 +299,15 @@ it('preserves Clerk verification for an existing unmigrated Clerk flow', async (
   expect(signUp.finalize).toHaveBeenCalled();
 });
 
-it('does not send migrated email users into the Clerk password-reset flow', () => {
+it('sends migrated email users into the Supabase password-reset flow', async () => {
   const signIn = createSignIn();
   mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
   const screen = render(<LoginScreen />);
   fireEvent.press(screen.getByTestId('forgot-password'));
-  expect(screen.getByText('Password reset for email accounts is not available in this build yet.')).toBeTruthy();
+  expect(screen.getByTestId('password-reset-submit-email')).toBeTruthy();
+  expect(signIn.create).not.toHaveBeenCalled();
+  fireEvent.changeText(screen.getByTestId('password-reset-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('password-reset-submit-email'));
+  await waitFor(() => expect(mobileAuth.requestSupabasePasswordReset).toHaveBeenCalledWith('traveller@example.com'));
   expect(signIn.create).not.toHaveBeenCalled();
 });

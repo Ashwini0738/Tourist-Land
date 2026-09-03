@@ -115,6 +115,7 @@ function RootLayoutNav() {
     signOut,
     accessError,
     markAccountNotLinked,
+    isPasswordRecovery,
   } = useMobileAuth();
   const router = useRouter();
   const { isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete, securityError, retrySecurityState } = useAuthSecurity();
@@ -153,6 +154,7 @@ function RootLayoutNav() {
       roleReady,
       roleLoading,
       roleError,
+      isPasswordRecovery,
     });
     if (target) router.replace(target);
   }, [
@@ -161,6 +163,7 @@ function RootLayoutNav() {
     isLoaded,
     isReady,
     isSignedIn,
+    isPasswordRecovery,
     isUnlocked,
     role,
     roleError,
@@ -189,6 +192,7 @@ function renderRoutes() {
       <Stack.Screen name="splash" />
       <Stack.Screen name="login" />
       <Stack.Screen name="verify" />
+      <Stack.Screen name="auth/callback" />
       <Stack.Screen name="vendor-application" />
       <Stack.Screen name="biometric" />
       <Stack.Screen name="biometric-login" />

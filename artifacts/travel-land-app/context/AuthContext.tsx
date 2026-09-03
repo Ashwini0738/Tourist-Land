@@ -13,7 +13,12 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { Linking } from 'react-native';
 import { supabaseSecureStorage } from '@/lib/supabaseSecureStorage';
+import {
+  PASSWORD_RECOVERY_REDIRECT_URI,
+  parsePasswordRecoveryLink,
+} from '@/features/auth/passwordRecovery';
 
 export type MobileAuthProvider = 'clerk' | 'supabase';
 export type MobileAuthAccessError = 'ACCOUNT_NOT_LINKED' | null;
@@ -28,8 +33,11 @@ type PasswordSignUpResult = {
   requiresEmailConfirmation: boolean;
 };
 
+export type PasswordRecoveryStatus = 'idle' | 'processing' | 'ready' | 'error';
+
 type AuthContextValue = {
   provider: MobileAuthProvider | null;
+  isPasswordRecovery: boolean;
   isLoaded: boolean;
   isSignedIn: boolean;
   userId: string | null;
@@ -44,6 +52,12 @@ type AuthContextValue = {
   verifySupabaseSignup: (code: string) => Promise<void>;
   resendSupabaseSignupCode: () => Promise<void>;
   clearPendingSupabaseSignup: () => void;
+  requestSupabasePasswordReset: (email: string) => Promise<void>;
+  updateSupabasePassword: (password: string) => Promise<void>;
+  processSupabasePasswordRecoveryUrl: (url: string) => Promise<void>;
+  clearPasswordRecovery: () => void;
+  passwordRecoveryStatus: PasswordRecoveryStatus;
+  passwordRecoveryError: string | null;
   signOut: () => Promise<void>;
   markAccountNotLinked: () => void;
   clearAccessError: () => void;
@@ -93,6 +107,9 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
   const [supabaseLoaded, setSupabaseLoaded] = useState(false);
   const [pendingSupabaseSignupEmail, setPendingSupabaseSignupEmail] = useState<string | null>(null);
   const [accessError, setAccessError] = useState<MobileAuthAccessError>(null);
+  const [passwordRecoveryStatus, setPasswordRecoveryStatus] = useState<PasswordRecoveryStatus>('idle');
+  const [passwordRecoveryError, setPasswordRecoveryError] = useState<string | null>(null);
+  const recoveryUrl = useRef<string | null>(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -110,10 +127,18 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
       setSupabaseSession(error ? null : data.session);
       setSupabaseLoaded(true);
     });
-    const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = client.auth.onAuthStateChange((event, session) => {
       if (!mounted.current) return;
       setSupabaseSession(session);
       setAccessError(null);
+      if (event === 'PASSWORD_RECOVERY') {
+        setPasswordRecoveryStatus('ready');
+        setPasswordRecoveryError(null);
+      } else if (event === 'SIGNED_OUT') {
+        setPasswordRecoveryStatus('idle');
+        setPasswordRecoveryError(null);
+        recoveryUrl.current = null;
+      }
       setSupabaseLoaded(true);
     });
     return () => {
@@ -129,6 +154,7 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
       : null;
   const isLoaded = clerkAuth.isLoaded && supabaseLoaded;
   const isSignedIn = Boolean(provider);
+  const isPasswordRecovery = passwordRecoveryStatus !== 'idle';
   const userId = provider === 'supabase'
     ? supabaseSession?.user.id ?? null
     : clerkAuth.userId ?? null;
@@ -146,6 +172,54 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
     }
     return configuration.client;
   }, [configuration]);
+
+  const processSupabasePasswordRecoveryUrl = useCallback(async (url: string) => {
+    const link = parsePasswordRecoveryLink(url);
+    if (!link || recoveryUrl.current === url) return;
+
+    recoveryUrl.current = url;
+    setPasswordRecoveryStatus('processing');
+    setPasswordRecoveryError(null);
+    try {
+      const client = requireSupabase();
+      if (link.kind === 'invalid') {
+        setPasswordRecoveryStatus('error');
+        setPasswordRecoveryError('This password reset link is invalid, expired, or has already been used.');
+        return;
+      }
+
+      const result = link.kind === 'code'
+        ? await client.auth.exchangeCodeForSession(link.code)
+        : await client.auth.setSession({
+            access_token: link.accessToken,
+            refresh_token: link.refreshToken,
+          });
+      if (result.error || !result.data.session) {
+        setPasswordRecoveryStatus('error');
+        setPasswordRecoveryError('This password reset link is invalid, expired, or has already been used.');
+        return;
+      }
+      setSupabaseSession(result.data.session);
+      setPasswordRecoveryStatus('ready');
+    } catch {
+      setPasswordRecoveryStatus('error');
+      setPasswordRecoveryError('This password reset link is invalid, expired, or has already been used.');
+    }
+  }, [requireSupabase]);
+
+  useEffect(() => {
+    let active = true;
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      void processSupabasePasswordRecoveryUrl(url);
+    });
+    void Linking.getInitialURL().then((url) => {
+      if (active && url) void processSupabasePasswordRecoveryUrl(url);
+    });
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, [processSupabasePasswordRecoveryUrl]);
 
   const signInWithPassword = useCallback(async (email: string, password: string) => {
     const client = requireSupabase();
@@ -195,6 +269,30 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
     if (error) throw error;
   }, [pendingSupabaseSignupEmail, requireSupabase]);
 
+  const requestSupabasePasswordReset = useCallback(async (email: string) => {
+    const client = requireSupabase();
+    const { error } = await client.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: PASSWORD_RECOVERY_REDIRECT_URI,
+    });
+    if (error) throw error;
+  }, [requireSupabase]);
+
+  const updateSupabasePassword = useCallback(async (password: string) => {
+    const client = requireSupabase();
+    if (passwordRecoveryStatus !== 'ready' || !supabaseSession) {
+      throw new Error('Your password reset session is no longer available. Request a new reset link.');
+    }
+    const { data, error } = await client.auth.updateUser({ password });
+    if (error) throw error;
+    if (!data.user) throw new Error('Your password could not be updated. Request a new reset link.');
+  }, [passwordRecoveryStatus, requireSupabase, supabaseSession]);
+
+  const clearPasswordRecovery = useCallback(() => {
+    setPasswordRecoveryStatus('idle');
+    setPasswordRecoveryError(null);
+    recoveryUrl.current = null;
+  }, []);
+
   const getToken = useCallback(async () => {
     if (provider === 'supabase') {
       const client = requireSupabase();
@@ -212,6 +310,9 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
       const { error } = await client.auth.signOut();
       if (error) throw error;
       setSupabaseSession(null);
+      setPasswordRecoveryStatus('idle');
+      setPasswordRecoveryError(null);
+      recoveryUrl.current = null;
       return;
     }
     if (provider === 'clerk') await clerk.signOut();
@@ -219,6 +320,7 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
 
   const value = useMemo<AuthContextValue>(() => ({
     provider,
+    isPasswordRecovery,
     isLoaded,
     isSignedIn,
     userId,
@@ -233,6 +335,12 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
     verifySupabaseSignup,
     resendSupabaseSignupCode,
     clearPendingSupabaseSignup: () => setPendingSupabaseSignupEmail(null),
+    requestSupabasePasswordReset,
+    updateSupabasePassword,
+    processSupabasePasswordRecoveryUrl,
+    clearPasswordRecovery,
+    passwordRecoveryStatus,
+    passwordRecoveryError,
     signOut,
     markAccountNotLinked: () => setAccessError('ACCOUNT_NOT_LINKED'),
     clearAccessError: () => setAccessError(null),
@@ -243,13 +351,20 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
     getToken,
     isLoaded,
     isSignedIn,
+    isPasswordRecovery,
     pendingSupabaseSignupEmail,
+    passwordRecoveryError,
+    passwordRecoveryStatus,
+    processSupabasePasswordRecoveryUrl,
+    clearPasswordRecovery,
     profile,
     provider,
     resendSupabaseSignupCode,
+    requestSupabasePasswordReset,
     signInWithPassword,
     signOut,
     signUpWithPassword,
+    updateSupabasePassword,
     userId,
     verifySupabaseSignup,
   ]);

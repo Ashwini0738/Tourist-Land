@@ -1,17 +1,17 @@
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
-import { useSignIn } from '@clerk/expo';
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
+import { useMobileAuth } from '@/context/AuthContext';
 
-type SignInResource = NonNullable<ReturnType<typeof useSignIn>['signIn']>;
-type ResetStep = 'email' | 'code' | 'password';
+type ResetMode = 'request' | 'recovery';
+type ResetStep = 'email' | 'sent' | 'password' | 'complete';
 
 type PasswordResetFlowProps = {
-  signIn: SignInResource;
+  mode: ResetMode;
   initialEmail: string;
   onBackToLogin: () => void;
   onCompleted: () => void;
@@ -20,30 +20,35 @@ type PasswordResetFlowProps = {
 function resetPasswordValidationMessage(password: string, confirmation: string) {
   if (!password) return 'New password is required.';
   if (password !== confirmation) return 'Passwords do not match.';
-  // The installed Future API does not expose local password metadata. Clerk's
-  // submitPassword call remains authoritative for the configured requirements.
   return null;
 }
 
 export function PasswordResetFlow({
-  signIn,
+  mode,
   initialEmail,
   onBackToLogin,
   onCompleted,
 }: PasswordResetFlowProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { fetchStatus } = useSignIn();
-  const [step, setStep] = useState<ResetStep>('email');
+  const {
+    requestSupabasePasswordReset,
+    updateSupabasePassword,
+    signOut,
+    passwordRecoveryStatus,
+    passwordRecoveryError,
+  } = useMobileAuth();
+  const [step, setStep] = useState<ResetStep>(mode === 'request' ? 'email' : 'password');
   const [email, setEmail] = useState(initialEmail);
-  const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isResending, setIsResending] = useState(false);
 
-  const loading = fetchStatus === 'fetching' || isSubmitting || isResending;
+  const recoveryIsLoading = mode === 'recovery' && (
+    passwordRecoveryStatus === 'idle' || passwordRecoveryStatus === 'processing'
+  );
+  const loading = recoveryIsLoading || isSubmitting;
 
   const startReset = async () => {
     if (isSubmitting) return;
@@ -56,104 +61,73 @@ export function PasswordResetFlow({
 
     setIsSubmitting(true);
     try {
-      const createResult = await signIn.create({ identifier: email.trim() });
-      if (createResult.error) {
-        setMessage(authErrorMessage(createResult.error, 'We could not start password reset. Check the email and try again.'));
-        return;
-      }
-      const sendResult = await signIn.resetPasswordEmailCode.sendCode();
-      if (sendResult.error) {
-        setMessage(authErrorMessage(sendResult.error, 'We could not send a password reset code. Please try again.'));
-        return;
-      }
-      setCode('');
-      setStep('code');
+      await requestSupabasePasswordReset(email);
+      setStep('sent');
     } catch (error) {
-      setMessage(authErrorMessage(error, 'We could not start password reset. Check the email and try again.'));
+      setMessage(authErrorMessage(error, 'We could not start password reset. Please try again.'));
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const verifyResetCode = async () => {
-    if (isSubmitting) return;
-    setMessage('');
-    if (code.trim().length !== 6) {
-      setMessage('Enter the six-digit verification code.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const verifyResult = await signIn.resetPasswordEmailCode.verifyCode({ code: code.trim() });
-      if (verifyResult.error) {
-        setMessage(authErrorMessage(verifyResult.error, 'We could not verify that code. Please try again.'));
-        return;
-      }
-      if (signIn.status !== 'needs_new_password') {
-        setMessage('We could not verify that code. Request a new code and try again.');
-        return;
-      }
-      setStep('password');
-    } catch (error) {
-      setMessage(authErrorMessage(error, 'We could not verify that code. Please try again.'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const resendResetCode = async () => {
-    if (isResending) return;
-    setMessage('');
-    setIsResending(true);
-    try {
-      const sendResult = await signIn.resetPasswordEmailCode.sendCode();
-      if (sendResult.error) {
-        setMessage(authErrorMessage(sendResult.error, 'We could not send a new reset code. Please try again.'));
-      } else {
-        setMessage('A new password reset code was sent.');
-      }
-    } catch (error) {
-      setMessage(authErrorMessage(error, 'We could not send a new reset code. Please try again.'));
-    } finally {
-      setIsResending(false);
     }
   };
 
   const submitNewPassword = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || recoveryIsLoading) return;
     setMessage('');
     const validationMessage = resetPasswordValidationMessage(newPassword, confirmation);
     if (validationMessage) {
       setMessage(validationMessage);
       return;
     }
+    if (passwordRecoveryStatus !== 'ready') {
+      setMessage(passwordRecoveryError ?? 'This password reset link is no longer available. Request a new link.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      const result = await signIn.resetPasswordEmailCode.submitPassword({ password: newPassword });
-      if (result.error) {
-        setMessage(authErrorMessage(result.error, 'We could not reset your password. Please try again.'));
-      } else {
-        onCompleted();
-      }
+      await updateSupabasePassword(newPassword);
+      await signOut();
+      setStep('complete');
+      onCompleted();
     } catch (error) {
-      setMessage(authErrorMessage(error, 'We could not reset your password. Please try again.'));
+      setMessage(authErrorMessage(error, 'We could not reset your password. Request a new link and try again.'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const title = step === 'email'
-    ? 'Reset your password.'
-    : step === 'code'
-      ? 'Check your email.'
-      : 'Create a new password.';
-  const subtitle = step === 'email'
-    ? 'Enter the email address on your account and we’ll send a secure reset code.'
-    : step === 'code'
-      ? 'Enter the six-digit code we sent to verify your password reset.'
-      : 'Choose a new password that meets your account security requirements.';
+  const back = () => {
+    if (mode === 'request' && step === 'sent') {
+      setStep('email');
+      setMessage('');
+      return;
+    }
+    onBackToLogin();
+  };
+
+  const recoveryError = mode === 'recovery' && passwordRecoveryStatus === 'error';
+  const title = mode === 'recovery'
+    ? recoveryIsLoading
+      ? 'Checking your link.'
+      : recoveryError
+        ? 'This link is no longer valid.'
+        : step === 'complete'
+          ? 'Password updated.'
+          : 'Create a new password.'
+    : step === 'email'
+      ? 'Reset your password.'
+      : 'Check your email.';
+  const subtitle = mode === 'recovery'
+    ? recoveryIsLoading
+      ? 'We are securely restoring your password reset session.'
+      : recoveryError
+        ? passwordRecoveryError
+        : step === 'complete'
+          ? 'Your Supabase password was changed. Sign in again with your new password.'
+          : 'Choose a new password for your Travel & Land account.'
+    : step === 'email'
+      ? 'Enter your email address and we’ll send a secure password reset link.'
+      : 'If an account exists for that email, we sent a secure reset link. Open it on this device to continue.';
 
   return (
     <KeyboardAwareScrollViewCompat
@@ -167,7 +141,7 @@ export function PasswordResetFlow({
       <Pressable
         testID="password-reset-back"
         accessibilityRole="button"
-        onPress={() => (step === 'email' ? onBackToLogin() : setStep(step === 'password' ? 'code' : 'email'))}
+        onPress={back}
         style={styles.back}
       >
         <Feather name="arrow-left" size={22} color={colors.foreground} />
@@ -177,7 +151,7 @@ export function PasswordResetFlow({
       <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{subtitle}</Text>
 
-      {step === 'email' && (
+      {mode === 'request' && step === 'email' && (
         <>
           <TextInput
             testID="password-reset-email"
@@ -197,39 +171,22 @@ export function PasswordResetFlow({
             onPress={() => void startReset()}
             style={[styles.button, { backgroundColor: loading ? colors.muted : colors.primary }]}
           >
-            {loading ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Send reset code</Text>}
+            {loading ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Send reset link</Text>}
           </Pressable>
         </>
       )}
 
-      {step === 'code' && (
-        <>
-          <TextInput
-            testID="password-reset-code"
-            value={code}
-            onChangeText={(value) => { setCode(value); setMessage(''); }}
-            keyboardType="number-pad"
-            maxLength={6}
-            placeholder="000000"
-            placeholderTextColor={colors.mutedForeground}
-            style={[styles.input, styles.codeInput, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]}
-          />
-          {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
-          <Pressable
-            testID="password-reset-submit-code"
-            disabled={loading}
-            onPress={() => void verifyResetCode()}
-            style={[styles.button, { backgroundColor: loading ? colors.muted : colors.primary }]}
-          >
-            {loading ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Verify code</Text>}
-          </Pressable>
-          <Pressable testID="password-reset-resend" disabled={loading} onPress={() => void resendResetCode()} style={styles.secondary}>
-            <Text style={[styles.secondaryText, { color: colors.primary }]}>{isResending ? 'Sending a new code…' : 'Send a new code'}</Text>
-          </Pressable>
-        </>
+      {mode === 'request' && step === 'sent' && (
+        <Pressable
+          testID="password-reset-done"
+          onPress={onBackToLogin}
+          style={[styles.button, { backgroundColor: colors.primary }]}
+        >
+          <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Back to sign in</Text>
+        </Pressable>
       )}
 
-      {step === 'password' && (
+      {mode === 'recovery' && !recoveryIsLoading && !recoveryError && step !== 'complete' && (
         <>
           <TextInput
             testID="password-reset-new-password"
@@ -264,6 +221,16 @@ export function PasswordResetFlow({
           </Pressable>
         </>
       )}
+
+      {mode === 'recovery' && (recoveryError || step === 'complete') && (
+        <Pressable
+          testID="password-reset-return"
+          onPress={onBackToLogin}
+          style={[styles.button, { backgroundColor: colors.primary }]}
+        >
+          <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Return to sign in</Text>
+        </Pressable>
+      )}
     </KeyboardAwareScrollViewCompat>
   );
 }
@@ -276,10 +243,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { fontSize: 15, lineHeight: 22, marginTop: 12, marginBottom: 32 },
   input: { height: 58, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, fontSize: 15 },
-  codeInput: { textAlign: 'center', letterSpacing: 8, fontSize: 22, fontWeight: '700' },
   error: { fontSize: 13, lineHeight: 18, marginTop: 12 },
   button: { height: 58, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginTop: 24 },
   buttonText: { fontSize: 16, fontWeight: '700' },
-  secondary: { alignItems: 'center', marginTop: 24 },
-  secondaryText: { fontSize: 14, fontWeight: '600' },
 });
