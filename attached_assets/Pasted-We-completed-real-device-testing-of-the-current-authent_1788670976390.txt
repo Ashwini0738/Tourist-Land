@@ -1,0 +1,283 @@
+We completed real-device testing of the current authentication build and found two failures.
+
+IMPORTANT: I want to change the authentication UX to a SINGLE unified identifier field. Do not keep separate Email and Phone tabs.
+
+TARGET UX:
+
+LOGIN:
+One input field labeled:
+"Email or Mobile Number"
+
+The app determines the provider from the entered value:
+
+* Valid email -> Supabase email authentication
+* Valid mobile number -> Clerk SMS OTP
+* Invalid input -> validation error
+
+CREATE ACCOUNT:
+Use the same single field:
+"Email or Mobile Number"
+
+* Email entered -> Supabase account creation/email verification flow
+* Mobile number entered -> Clerk phone/SMS OTP account creation/verification flow
+
+There must not be separate Email and Phone tabs.
+
+CURRENT REAL-DEVICE FAILURES:
+
+1. Email:
+   The app displays:
+   "Supabase email authentication is not configured for this build"
+
+2. Phone:
+   Phone authentication works in the login implementation, but the Create Account page does not currently provide a phone-number registration path.
+
+GOAL:
+
+Fix the authentication UX and the Supabase build configuration issue while preserving the existing provider architecture.
+
+ARCHITECTURE MUST REMAIN:
+
+EMAIL:
+
+* Supabase Auth owns email/password.
+* Supabase owns email verification and password recovery.
+* Do not route email authentication through Clerk.
+
+PHONE:
+
+* Clerk owns phone/SMS OTP.
+* Use Clerk's supported phone_code APIs.
+* Do not create custom OTP storage or verification.
+* Do not create a Supabase session for phone authentication.
+
+MFA:
+
+* Existing Clerk MFA remains unchanged.
+
+BIOMETRIC:
+
+* Existing biometric/device-unlock behavior remains unchanged.
+
+API:
+
+* Keep TRAVEL_LAND_API_AUTH_PROVIDER=dual.
+* Clerk phone sessions continue using Clerk bearer tokens.
+* Supabase email sessions continue using Supabase bearer tokens.
+
+IDENTITY MAPPING:
+
+* Keep the existing Step 6A secure identity-linking architecture.
+* Never match users by email alone.
+* Never fabricate identity mappings.
+* Never change users.id.
+* Do not change ownership of bookings, favorites, reviews, wallet, enquiries, or other existing records.
+
+STRIPE:
+
+* Completely out of scope.
+* Do not modify Stripe or payment code.
+
+FIRST: AUDIT ONLY
+
+Before editing, inspect:
+
+1. Current login.tsx.
+2. Current create-account/register screen.
+3. Current navigation between login/register/verification screens.
+4. Existing Clerk phone/SMS implementation.
+5. Existing Supabase mobile client configuration.
+6. Expo environment variable configuration.
+7. EAS/development build configuration if relevant.
+8. Existing tests for email and phone authentication.
+9. Current AuthContext/provider-neutral authentication state.
+
+Specifically determine why the physical/dev build says:
+
+"Supabase email authentication is not configured for this build"
+
+Identify whether:
+
+* EXPO_PUBLIC_SUPABASE_URL is missing,
+* EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY is missing,
+* variables are not included in the current build,
+* mobile Supabase client initialization is failing,
+* or the app intentionally detects an unavailable Supabase configuration.
+
+Do not expose or print any secret values. Only report whether required configuration is present.
+
+THEN IMPLEMENT:
+
+A. UNIFIED LOGIN
+
+Replace the current separate Email/Phone tab UX with:
+
+Identifier field:
+"Email or Mobile Number"
+
+Continue button.
+
+Detection must be deterministic and safe:
+
+* Normalize/trim input.
+* Detect valid email format.
+* Detect valid phone-number format using the existing phone normalization/validation logic.
+* Do not guess based on arbitrary strings.
+
+Email -> existing Supabase email flow.
+Phone -> existing Clerk SMS OTP flow.
+
+Do not duplicate authentication logic.
+
+B. UNIFIED CREATE ACCOUNT
+
+The Create Account flow must also start with:
+
+"Email or Mobile Number"
+
+Email:
+
+* Continue into the existing Supabase registration/email verification flow.
+
+Phone:
+
+* Continue into Clerk phone verification.
+* Use Clerk phone_code.
+* Complete the Clerk phone verification/session flow.
+
+IMPORTANT:
+
+Before implementing phone local-user provisioning, inspect the existing server/database provisioning contract.
+
+If phone registration requires a new local `users` row and the current schema/API cannot safely support a Clerk-phone-only user because of the existing users.clerk_user_id contract or any other identity constraint:
+
+STOP before making that architectural change and report exactly what is required.
+
+Do NOT:
+
+* match by email,
+* create a fake Supabase identity,
+* create an arbitrary users row without the required identity contract,
+* alter users.id ownership.
+
+C. VERIFICATION SCREEN
+
+The verification UI should identify the method:
+
+Email:
+"Check your email for the verification code/link."
+
+Phone:
+"Enter the SMS verification code."
+
+Do not show irrelevant provider controls.
+
+D. BACK NAVIGATION
+
+Allow the user to return to the unified identifier screen and change Email/Mobile.
+
+E. ERROR HANDLING
+
+Handle:
+
+* invalid email
+* invalid phone
+* invalid OTP
+* expired OTP
+* resend/rate limit
+* Supabase configuration unavailable
+* Clerk unavailable
+* existing account
+* account not linked
+
+Use safe user-facing messages.
+
+Do not expose raw provider errors.
+
+F. SUPABASE BUILD CONFIGURATION
+
+Fix the reason the physical build reports:
+
+"Supabase email authentication is not configured for this build"
+
+Use the existing `@workspace/supabase/mobile` configuration.
+
+Do not hard-code credentials.
+
+Do not put secrets into source code.
+
+Do not use the Supabase service-role key in the mobile app.
+
+If the current Replit/Expo build environment cannot provide the required public Supabase variables, STOP and report the exact configuration action required instead of inventing credentials.
+
+TESTS REQUIRED:
+
+Add/update focused tests for:
+
+1. Unified identifier detects email.
+2. Unified identifier detects phone.
+3. Invalid identifier rejected.
+4. Email login calls Supabase.
+5. Phone login calls Clerk.
+6. Email registration uses Supabase.
+7. Phone registration starts Clerk phone verification.
+8. Invalid/expired phone OTP.
+9. Phone resend/rate limit.
+10. User can switch from email to phone before authentication.
+11. User can switch from phone to email before authentication.
+12. Supabase configuration unavailable produces the correct safe state.
+13. Clerk phone authentication never creates a Supabase session.
+14. Supabase email authentication never creates a Clerk phone session.
+15. Existing MFA tests remain passing.
+16. Existing password recovery tests remain passing.
+17. Existing biometric tests remain passing.
+18. Existing Step 6A identity-linking tests remain passing.
+19. Existing dual-provider API authentication remains passing.
+
+VALIDATION:
+
+Run:
+
+* focused authentication tests
+* full mobile test suite
+* mobile typecheck
+* bundle/build validation if practical
+* git diff --check
+
+DO NOT:
+
+* modify Stripe
+* modify payments
+* modify wallet
+* modify booking
+* modify database ownership
+* remove Clerk
+* remove Supabase
+* migrate admin authentication
+* change Step 6A identity-linking
+* create custom OTP infrastructure
+
+IMPORTANT STOP CONDITIONS:
+
+STOP and report instead of making an architectural assumption if:
+
+1. Supabase public mobile configuration is unavailable and cannot be safely configured from the existing build environment.
+2. Phone account creation requires a new local-user provisioning design not currently supported.
+3. A database schema change is required.
+4. The unified registration flow requires changing the Step 6A identity-mapping contract.
+5. Any existing authentication flow would need to be rewritten rather than minimally adapted.
+
+At the end report:
+
+* Exact files changed
+* Why Supabase email was unavailable in the build
+* Whether the unified Email/Mobile UX is implemented
+* Login behavior for Email
+* Login behavior for Phone
+* Create Account behavior for Email
+* Create Account behavior for Phone
+* Tests passed
+* Typecheck/build result
+* Any STOP condition encountered
+
+Do not begin another migration task after this.
