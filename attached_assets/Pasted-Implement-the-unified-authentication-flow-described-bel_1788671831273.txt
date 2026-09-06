@@ -1,0 +1,176 @@
+Implement the unified authentication flow described below. This is an implementation task based on the real-device test report.
+
+## Baseline findings from the real-device report
+
+1. Phone/SMS login currently works on the real Android device.
+2. Email login currently fails with:
+   “Supabase email authentication is not configured for this build.”
+3. Create Account currently has no phone-registration path.
+4. The desired UX is one unified authentication flow rather than separate Email and Phone tabs.
+
+## Required implementation
+
+Replace the separate Email/Phone authentication tabs with a unified:
+
+**“Email or Mobile Number”**
+
+input/flow.
+
+The same unified field must support both:
+
+### Login
+
+* User enters an email address → use the existing email authentication flow.
+* User enters a mobile number → use the existing SMS/OTP authentication flow.
+* Preserve the currently working phone/SMS login behavior.
+* Do not create a second/custom OTP implementation if an existing provider flow already handles it.
+
+### Create Account
+
+* User enters an email address → provide the existing email registration flow.
+* User enters a mobile number → add the required phone/SMS registration flow.
+* After successful phone verification, continue through the existing account/session flow.
+* Do not leave phone registration as a login-only capability.
+
+## Supabase email authentication
+
+The real-device report shows that email authentication is currently unavailable in the build:
+
+“Supabase email authentication is not configured for this build.”
+
+Investigate the exact cause.
+
+Check:
+
+* Supabase initialization/configuration
+* required environment variables
+* build-time environment configuration
+* Expo/React Native configuration
+* authentication provider configuration
+* whether the app is accidentally using different configuration between development and the real-device build
+
+Fix the configuration if it can be safely corrected within the existing architecture.
+
+Do NOT hard-code secrets, service-role keys, passwords, or credentials into source code.
+
+If the required Supabase configuration cannot be safely changed from the codebase/build configuration available to you, STOP and report exactly what external configuration is required instead of inventing a workaround.
+
+## Architecture constraints
+
+IMPORTANT:
+
+* Do NOT remove Clerk.
+* Do NOT replace Clerk wholesale.
+* Preserve the existing dual-provider authentication architecture.
+* Do NOT create a third authentication system.
+* Do NOT implement a custom OTP backend.
+* Do NOT bypass provider verification.
+* Do NOT modify Stripe or any payment functionality.
+* Do NOT make unrelated UI or application changes.
+
+Before changing anything related to identity/account provisioning, inspect the existing architecture.
+
+If implementing phone registration requires:
+
+* database schema changes,
+* identity/user provisioning changes,
+* backend changes,
+* linking Supabase and Clerk identities,
+* changing the canonical user ID,
+* changing existing account records,
+
+STOP before making those changes and report:
+
+1. What change is required.
+2. Why it is required.
+3. Which files/tables/services would be affected.
+4. Whether the existing architecture already has a supported mechanism for it.
+
+Do not make those identity/provisioning changes without explicit approval.
+
+## UI requirements
+
+Use one field labelled:
+
+**Email or Mobile Number**
+
+The UI should determine whether the entered value is an email address or mobile number and route to the appropriate existing authentication flow.
+
+Do not require the user to select Email vs Phone first.
+
+Keep:
+
+* existing password behavior for email authentication where applicable
+* existing SMS OTP behavior for phone authentication
+* existing MFA/security behavior
+* existing session handling
+* existing error handling
+* existing navigation behavior
+
+Do not weaken any authentication/security checks just to make the flow work.
+
+## Validation
+
+After implementation, run focused tests/build validation for:
+
+1. Email login
+2. Phone login
+3. Email account creation
+4. Phone account creation
+5. OTP verification
+6. Existing MFA/session handling
+7. Invalid email/mobile input
+8. Authentication failure states
+9. Real-device build configuration
+10. Regression of existing authentication flows
+
+Clearly distinguish:
+
+* code-level tests that pass
+* build/configuration checks that pass
+* anything that still requires real-device verification
+
+## Final report
+
+Do NOT simply say “implemented successfully.”
+
+Report:
+
+### Files changed
+
+List every modified file and why.
+
+### Authentication flow
+
+Explain exactly how:
+
+* Email Login works
+* Phone Login works
+* Email Registration works
+* Phone Registration works
+
+### Supabase configuration
+
+Explain the exact cause of the previous:
+“Supabase email authentication is not configured for this build”
+error and what was changed to resolve it.
+
+### Tests
+
+List the tests/commands executed and their results.
+
+### Remaining external configuration
+
+Clearly identify anything that still needs to be configured outside the repository.
+
+### Identity/provisioning boundary
+
+Explicitly state whether any database, identity-linking, user-provisioning, or canonical-user-ID changes were required.
+
+If such a change was required but not authorized, STOP before implementing it and report the blocker.
+
+### Stripe
+
+Confirm that Stripe/payment functionality was not changed.
+
+Do not modify unrelated files or functionality.
