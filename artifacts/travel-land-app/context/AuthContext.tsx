@@ -16,8 +16,8 @@ import React, {
 import { Linking } from 'react-native';
 import { supabaseSecureStorage } from '@/lib/supabaseSecureStorage';
 import {
-  PASSWORD_RECOVERY_REDIRECT_URI,
-  parsePasswordRecoveryLink,
+  getSupabaseAuthRedirectUri,
+  parseSupabaseAuthCallback,
 } from '@/features/auth/passwordRecovery';
 
 export type MobileAuthProvider = 'clerk' | 'supabase';
@@ -34,6 +34,7 @@ type PasswordSignUpResult = {
 };
 
 export type PasswordRecoveryStatus = 'idle' | 'processing' | 'ready' | 'error';
+export type SignupConfirmationStatus = 'idle' | 'processing' | 'ready' | 'error';
 
 type AuthContextValue = {
   provider: MobileAuthProvider | null;
@@ -59,9 +60,12 @@ type AuthContextValue = {
   requestSupabasePasswordReset: (email: string) => Promise<void>;
   updateSupabasePassword: (password: string) => Promise<void>;
   processSupabasePasswordRecoveryUrl: (url: string) => Promise<void>;
+  processSupabaseAuthCallbackUrl: (url: string) => Promise<void>;
   clearPasswordRecovery: () => void;
   passwordRecoveryStatus: PasswordRecoveryStatus;
   passwordRecoveryError: string | null;
+  signupConfirmationStatus: SignupConfirmationStatus;
+  signupConfirmationError: string | null;
   signOut: () => Promise<void>;
   markAccountNotLinked: () => void;
   clearAccessError: () => void;
@@ -114,7 +118,9 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
   const [isIdentityLinking, setIsIdentityLinking] = useState(false);
   const [passwordRecoveryStatus, setPasswordRecoveryStatus] = useState<PasswordRecoveryStatus>('idle');
   const [passwordRecoveryError, setPasswordRecoveryError] = useState<string | null>(null);
-  const recoveryUrl = useRef<string | null>(null);
+  const [signupConfirmationStatus, setSignupConfirmationStatus] = useState<SignupConfirmationStatus>('idle');
+  const [signupConfirmationError, setSignupConfirmationError] = useState<string | null>(null);
+  const authCallbackUrl = useRef<string | null>(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -142,7 +148,9 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
       } else if (event === 'SIGNED_OUT') {
         setPasswordRecoveryStatus('idle');
         setPasswordRecoveryError(null);
-        recoveryUrl.current = null;
+        setSignupConfirmationStatus('idle');
+        setSignupConfirmationError(null);
+        authCallbackUrl.current = null;
       }
       setSupabaseLoaded(true);
     });

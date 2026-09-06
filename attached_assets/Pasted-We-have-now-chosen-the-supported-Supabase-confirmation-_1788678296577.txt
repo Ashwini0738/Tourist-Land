@@ -1,0 +1,77 @@
+We have now chosen the supported Supabase confirmation-link architecture.
+
+Proceed with ONLY the email confirmation-link implementation.
+
+Goal:
+
+Create Account → Email
+→ Supabase signUp()
+→ Supabase confirmation email
+→ user taps confirmation link
+→ Expo app receives the callback
+→ Supabase email confirmation/session is completed
+→ existing authenticated session is available
+
+Use the existing Expo deep-link infrastructure already identified:
+
+travel-land-app://auth/callback
+
+Before changing anything, inspect the current callback/session implementation and make the smallest architecture-safe changes required to support SUPABASE SIGNUP confirmation in addition to the existing PASSWORD RECOVERY flow.
+
+Requirements:
+
+1. Keep the existing password-recovery flow working.
+2. Add support for Supabase signup/email-confirmation callbacks.
+3. The signup flow must pass an appropriate emailRedirectTo when calling Supabase auth.signUp().
+4. Do not use http://localhost:3000.
+5. Do not introduce a custom OTP system.
+6. Do not configure custom SMTP.
+7. Do not modify the database schema.
+8. Do not modify users/auth_user_id provisioning.
+9. Do not modify /v1/me.
+10. Do not modify Clerk.
+11. Do not modify phone authentication.
+12. Do not modify phone registration.
+13. Do not modify Stripe/payment.
+14. Do not use a service-role key or admin API.
+
+Expo Go consideration:
+
+The implementation must account for the fact that Expo Go may require an Expo-generated development redirect rather than assuming the production custom scheme is directly usable.
+
+Determine the correct redirect URI for the current Expo Go environment and ensure the Supabase signup flow uses it appropriately.
+
+Do not blindly hardcode an Expo Go URL.
+
+Verification screen:
+
+The current six-digit "Enter code" screen was designed for the old OTP approach. Replace or adapt this only as necessary so that the email signup UI correctly tells the user to check their email and open the confirmation link.
+
+Do not remove existing authentication functionality.
+
+After implementation, test/validate:
+
+A. New email signup
+B. Confirmation email received
+C. Confirmation link opens
+D. Callback is received by the Expo app
+E. Supabase email confirmation succeeds
+F. Authenticated Supabase session exists
+G. Then test /v1/me
+
+IMPORTANT:
+
+If /v1/me fails because the new Supabase Auth user has no corresponding local users.auth_user_id record, STOP at that exact boundary.
+
+Do NOT implement local-user provisioning in this task.
+
+Return:
+
+* files changed
+* exact authentication flow implemented
+* redirect URI used
+* physical-device/Expo Go test result
+* exact /v1/me result
+* any remaining blocker
+
+Do not make unrelated changes.
