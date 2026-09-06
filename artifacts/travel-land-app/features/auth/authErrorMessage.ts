@@ -56,6 +56,9 @@ export function authErrorMessage(error: unknown, fallback: string) {
   const details = errorDetails(error);
   const codes = authErrorCodes(error);
 
+  if (includesCode(codes, 'invalid_credentials')) {
+    return 'The email or password was not accepted. Check your details or reset your password, then try again.';
+  }
   if (includesCode(codes, 'identifier_exists')) {
     return 'An account with this email already exists. Switch to sign in instead.';
   }

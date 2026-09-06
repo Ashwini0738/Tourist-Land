@@ -177,7 +177,7 @@ export default function LoginScreen() {
       });
     }
     setMessage('');
-    if (isNew || authMethod === 'email') {
+    if (authMethod === 'email') {
       const emailMessage = emailValidationMessage(email);
       if (emailMessage) {
         setMessage(emailMessage);
@@ -187,6 +187,14 @@ export default function LoginScreen() {
         setMessage(isNew ? 'Password is required.' : 'Enter your password.');
         return;
       }
+    }
+    if (authMethod === 'phone' && !normalizedPhone) {
+      setMessage('Enter a valid mobile number with its country code and try again.');
+      return;
+    }
+    if (isNew && authMethod === 'phone') {
+      setMessage('Mobile number registration cannot be completed yet because new phone-only accounts require an email for local account provisioning. Create your account with email for now.');
+      return;
     }
     setIsSubmitting(true);
     try {
@@ -201,11 +209,7 @@ export default function LoginScreen() {
       }
 
       if (authMethod === 'phone') {
-        if (!normalizedPhone) {
-          setMessage('Enter a valid phone number with its country code and try again.');
-          return;
-        }
-
+        if (!normalizedPhone) return;
         const { error } = await signIn.create({ identifier: normalizedPhone });
         if (error) return setMessage(authErrorMessage(error, 'We could not start phone sign in. Please check your number and try again.'));
 
@@ -401,17 +405,15 @@ export default function LoginScreen() {
           <Text style={[styles.kicker, { color: colors.primary }]}>{isNew ? 'JOIN THE JOURNEY' : 'WELCOME BACK'}</Text>
           <Text style={[styles.title, { color: colors.foreground }]}>{isNew ? 'Start exploring.' : 'Your next chapter\nstarts here.'}</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{isNew ? 'Create an account to save the places that feel like home.' : 'Sign in to keep your stays, bookings, and saved places together.'}</Text>
-          {!isNew && (
-            <View style={styles.methodSwitcher}>
-              <Pressable testID="login-method-email" onPress={() => { setAuthMethod('email'); setMessage(''); }} style={[styles.methodOption, { backgroundColor: authMethod === 'email' ? colors.primary : colors.card, borderColor: colors.input }]}>
-                <Text style={[styles.methodOptionText, { color: authMethod === 'email' ? colors.primaryForeground : colors.foreground }]}>Email</Text>
-              </Pressable>
-              <Pressable testID="login-method-phone" onPress={() => { setAuthMethod('phone'); setMessage(''); }} style={[styles.methodOption, { backgroundColor: authMethod === 'phone' ? colors.primary : colors.card, borderColor: colors.input }]}>
-                <Text style={[styles.methodOptionText, { color: authMethod === 'phone' ? colors.primaryForeground : colors.foreground }]}>Phone</Text>
-              </Pressable>
-            </View>
-          )}
-          {authMethod === 'phone' && !isNew ? (
+          <View style={styles.methodSwitcher}>
+            <Pressable testID="login-method-email" onPress={() => { setAuthMethod('email'); setMessage(''); }} style={[styles.methodOption, { backgroundColor: authMethod === 'email' ? colors.primary : colors.card, borderColor: colors.input }]}>
+              <Text style={[styles.methodOptionText, { color: authMethod === 'email' ? colors.primaryForeground : colors.foreground }]}>Email</Text>
+            </Pressable>
+            <Pressable testID="login-method-phone" onPress={() => { setAuthMethod('phone'); setMessage(''); }} style={[styles.methodOption, { backgroundColor: authMethod === 'phone' ? colors.primary : colors.card, borderColor: colors.input }]}>
+              <Text style={[styles.methodOptionText, { color: authMethod === 'phone' ? colors.primaryForeground : colors.foreground }]}>Mobile Number</Text>
+            </Pressable>
+          </View>
+          {authMethod === 'phone' ? (
             <View style={styles.phoneRow}>
               <TextInput
                 testID="phone-country-code"
@@ -430,7 +432,7 @@ export default function LoginScreen() {
                 onChangeText={setPhone}
                 autoCapitalize="none"
                 keyboardType="phone-pad"
-                placeholder="Phone number"
+                placeholder="Mobile number"
                 placeholderTextColor={colors.mutedForeground}
                 style={[styles.input, styles.phoneInput, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]}
               />

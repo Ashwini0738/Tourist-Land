@@ -175,11 +175,14 @@ it('signs in email/password through Supabase without calling Clerk password auth
 });
 
 it('shows a safe Supabase sign-in rejection', async () => {
-  mobileAuth.signInWithPassword.mockRejectedValueOnce(new Error('Invalid login credentials'));
+  mobileAuth.signInWithPassword.mockRejectedValueOnce(Object.assign(
+    new Error('Invalid login credentials'),
+    { code: 'invalid_credentials', status: 400 },
+  ));
   const screen = render(<LoginScreen />);
   enterEmailCredentials(screen);
   fireEvent.press(screen.getByTestId('login-continue'));
-  await waitFor(() => expect(screen.getByText('We could not complete sign in. Please try again.')).toBeTruthy());
+  await waitFor(() => expect(screen.getByText('The email or password was not accepted. Check your details or reset your password, then try again.')).toBeTruthy());
 });
 
 it('blocks email authentication cleanly when Supabase configuration is missing', async () => {
@@ -205,6 +208,26 @@ it('signs up through Supabase and opens confirmation without calling Clerk signu
   ));
   expect(signUp.password).not.toHaveBeenCalled();
   expect(router.push).toHaveBeenCalledWith('/verify');
+});
+
+it('offers mobile number registration but stops before creating a phone-only Clerk account', async () => {
+  const signIn = createSignIn();
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+  const screen = render(<LoginScreen />);
+  fireEvent.press(screen.getByText('New here? Create an account'));
+  expect(screen.getByText('Email')).toBeTruthy();
+  expect(screen.getByText('Mobile Number')).toBeTruthy();
+
+  fireEvent.press(screen.getByTestId('login-method-phone'));
+  fireEvent.changeText(screen.getByTestId('phone-country-code'), '+91');
+  fireEvent.changeText(screen.getByTestId('phone-number'), '9999999999');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByText(
+    'Mobile number registration cannot be completed yet because new phone-only accounts require an email for local account provisioning. Create your account with email for now.',
+  )).toBeTruthy());
+  expect(signIn.create).not.toHaveBeenCalled();
+  expect(mobileAuth.signUpWithPassword).not.toHaveBeenCalled();
 });
 
 it('keeps a signup session returned by Supabase without creating a confirmation state', async () => {
