@@ -15,8 +15,16 @@ export type SupabaseAuthCallback =
   | { flow: SupabaseAuthFlow; kind: 'session'; accessToken: string; refreshToken: string }
   | { flow: SupabaseAuthFlow; kind: 'invalid' };
 
+function runtimeAuthCallbackUri() {
+  try {
+    return ExpoLinking.createURL(AUTH_CALLBACK_PATH);
+  } catch {
+    return NATIVE_AUTH_CALLBACK_URI;
+  }
+}
+
 export function getSupabaseAuthRedirectUri(flow: SupabaseAuthFlow) {
-  const redirect = new URL(ExpoLinking.createURL(AUTH_CALLBACK_PATH));
+  const redirect = new URL(runtimeAuthCallbackUri());
   redirect.searchParams.set('flow', flow);
   return redirect.toString();
 }
@@ -35,7 +43,7 @@ function isApprovedCallbackUrl(value: string) {
   if (!location) return false;
   return [
     NATIVE_AUTH_CALLBACK_URI,
-    ExpoLinking.createURL(AUTH_CALLBACK_PATH),
+    runtimeAuthCallbackUri(),
   ].some((approved) => callbackLocation(approved) === location);
 }
 
@@ -64,8 +72,7 @@ export function parseSupabaseAuthCallback(value: string): SupabaseAuthCallback |
 
   const params = readParams(value);
   const code = params.get('code')?.trim();
-  const flow = callbackFlow(params) ?? (code ? 'recovery' : null);
-  if (!flow) return null;
+  const flow = callbackFlow(params) ?? 'recovery';
   const hasProviderError = params.has('error') || params.has('error_code') || params.has('error_description');
   if (hasProviderError) return { flow, kind: 'invalid' };
 

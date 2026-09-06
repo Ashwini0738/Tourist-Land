@@ -166,8 +166,19 @@ it('creates only a Supabase session for email/password and tracks confirmation-r
   await waitFor(() => expect(supabase.auth.signUp).toHaveBeenCalledWith({
     email: 'traveller@example.com',
     password: 'password',
+    options: {
+      emailRedirectTo: 'travel-land-app://auth/callback?flow=signup',
+    },
   }));
   await waitFor(() => expect(authValue?.pendingSupabaseSignupEmail).toBe('traveller@example.com'));
+  await authValue!.resendSupabaseSignupCode();
+  expect(supabase.auth.resend).toHaveBeenCalledWith({
+    email: 'traveller@example.com',
+    type: 'signup',
+    options: {
+      emailRedirectTo: 'travel-land-app://auth/callback?flow=signup',
+    },
+  });
   fireEvent.press(screen.getByTestId('email-login'));
   await waitFor(() => expect(supabase.auth.signInWithPassword).toHaveBeenCalled());
   expect(clerkSignOut).not.toHaveBeenCalled();
@@ -221,7 +232,7 @@ it('sends recovery email through Supabase and restores only a valid recovery ses
 
   await authValue!.requestSupabasePasswordReset('traveller@example.com');
   expect(supabase.auth.resetPasswordForEmail).toHaveBeenCalledWith('traveller@example.com', {
-    redirectTo: 'travel-land-app://auth/callback',
+    redirectTo: 'travel-land-app://auth/callback?flow=recovery',
   });
 
   await authValue!.processSupabasePasswordRecoveryUrl(
@@ -251,6 +262,28 @@ it('turns an invalid recovery callback into a safe error without calling Supabas
   expect(authValue!.passwordRecoveryError).toContain('invalid, expired');
   expect(supabase.auth.exchangeCodeForSession).not.toHaveBeenCalled();
   expect(supabase.auth.setSession).not.toHaveBeenCalled();
+});
+
+it('exchanges a signup confirmation callback for a Supabase session without entering recovery', async () => {
+  const supabase = client(null);
+  mockCreateSupabase.mockReturnValue(supabase);
+  let authValue: ReturnType<typeof useMobileAuth> | null = null;
+  function Capture() {
+    authValue = useMobileAuth();
+    return null;
+  }
+  render(<MobileAuthProvider><Capture /></MobileAuthProvider>);
+  await waitFor(() => expect(authValue?.isLoaded).toBe(true));
+
+  await authValue!.processSupabaseAuthCallbackUrl(
+    'travel-land-app://auth/callback?flow=signup&code=signup-code',
+  );
+
+  await waitFor(() => expect(authValue?.provider).toBe('supabase'));
+  expect(authValue!.signupConfirmationStatus).toBe('ready');
+  expect(authValue!.isPasswordRecovery).toBe(false);
+  expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledWith('signup-code');
+  expect(clerkSignOut).not.toHaveBeenCalled();
 });
 
 it('keeps Clerk available while Supabase email configuration is missing', async () => {
