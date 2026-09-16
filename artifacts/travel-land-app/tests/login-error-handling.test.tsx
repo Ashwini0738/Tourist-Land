@@ -380,18 +380,16 @@ it('finishes a Clerk MFA code using the Clerk-created session', async () => {
   expect(mobileAuth.signInWithPassword).not.toHaveBeenCalled();
 });
 
-it('verifies and resends a Supabase signup OTP without using Clerk verification', async () => {
+it('shows Supabase confirmation-link guidance and resends without using Clerk verification', async () => {
   mobileAuth.pendingSupabaseSignupEmail = 'traveller@example.com';
   const signUp = createSignUp();
   mockUseSignUp.mockReturnValue({ signUp, fetchStatus: 'idle' });
   const screen = render(<VerifyScreen />);
-  expect(screen.getByText(/six-digit verification code/)).toBeTruthy();
-  fireEvent.press(screen.getByText('Send a new code'));
+  expect(screen.getByText(/Open that link on this device/)).toBeTruthy();
+  expect(screen.queryByTestId('verification-code')).toBeNull();
+  fireEvent.press(screen.getByText('Send confirmation link again'));
   await waitFor(() => expect(mobileAuth.resendSupabaseSignupCode).toHaveBeenCalled());
-  fireEvent.changeText(screen.getByTestId('verification-code'), '12a34 56');
-  expect(screen.getByTestId('verification-code').props.value).toBe('123456');
-  fireEvent.press(screen.getByText('Verify email'));
-  await waitFor(() => expect(mobileAuth.verifySupabaseSignup).toHaveBeenCalledWith('123456'));
+  expect(mobileAuth.verifySupabaseSignup).not.toHaveBeenCalled();
   expect(signUp.verifications.verifyEmailCode).not.toHaveBeenCalled();
   expect(signUp.verifications.sendEmailCode).not.toHaveBeenCalled();
 });
