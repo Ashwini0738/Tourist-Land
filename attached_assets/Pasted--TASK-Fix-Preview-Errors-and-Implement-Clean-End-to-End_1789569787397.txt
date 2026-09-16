@@ -1,0 +1,956 @@
+## TASK: Fix Preview Errors and Implement Clean End-to-End Clerk Email OTP Authentication
+
+We need to fix the current iOS/Android preview errors and completely stabilize the authentication flow in the **Travel & Land** application.
+
+### PRIMARY REQUIREMENT
+
+**Stop using Supabase Authentication for the application's login/signup flow.**
+
+Use **Clerk as the single authentication provider end-to-end**, including:
+
+- Email signup
+- Email OTP verification
+- Email login
+- OTP verification
+- Existing phone authentication if already supported
+- Session management
+- User authentication state
+- Backend authentication
+- User provisioning / `/v1/me`
+- Role loading
+- Biometric unlock after successful authentication
+- Navigation to Home
+
+The final application must not depend on Supabase Auth for authentication.
+
+---
+
+# 1. FIRST: AUDIT THE ENTIRE AUTHENTICATION IMPLEMENTATION
+
+Before changing code, inspect the entire project.
+
+Search all files for:
+
+- Supabase authentication
+- `supabase.auth`
+- `signInWithPassword`
+- `signUp`
+- `verifyOtp`
+- `signInWithOtp`
+- `verifyOtp`
+- `exchangeCodeForSession`
+- Supabase callback handling
+- Supabase session handling
+- Supabase redirect URLs
+- Clerk authentication
+- `useAuth`
+- `useSignIn`
+- `useSignUp`
+- Clerk Expo integration
+- email verification
+- OTP verification
+- biometric authentication
+- SecureStore
+- navigation guards
+- auth providers
+- `/v1/me`
+- `clerk_user_id`
+- role loading
+- logout
+- session restoration
+
+Also inspect:
+
+- `package.json`
+- Expo configuration
+- app configuration
+- environment variables
+- authentication providers
+- navigation/router structure
+- API authentication middleware
+- backend user provisioning
+- database user records
+- all login/signup screens
+- OTP screens
+- biometric screens
+- loading screens
+- error boundaries
+
+Do not start modifying files until the existing authentication architecture is understood.
+
+---
+
+# 2. BACKUP THE OLD SUPABASE CODE
+
+Do NOT permanently delete the old Supabase authentication implementation yet.
+
+The existing Supabase Auth code must be preserved as a commented backup where practical.
+
+For example:
+
+```ts
+/*
+OLD SUPABASE AUTH BACKUP
+------------------------
+Previous implementation:
+...
+*/
+```
+
+However:
+
+### IMPORTANT
+
+Do not leave active Supabase authentication code running.
+
+The old implementation must be:
+
+- commented out
+- isolated
+- clearly marked as legacy/backup
+- not imported by active authentication code
+- not executed
+- not responsible for session state
+- not responsible for navigation
+- not responsible for OTP verification
+
+Do not create duplicate authentication providers.
+
+There must be only ONE active authentication system:
+
+**CLERK**
+
+---
+
+# 3. REMOVE SUPABASE AUTH FROM THE ACTIVE FLOW
+
+Remove all active Supabase Auth dependencies from:
+
+- Login
+- Create Account
+- OTP verification
+- Session restoration
+- Logout
+- Auth guards
+- Navigation
+- User provisioning
+- Authentication error handling
+
+Do NOT necessarily remove the Supabase database if the application still uses Supabase/Postgres for application data.
+
+The requirement is:
+
+### Supabase database can remain if required.
+
+### Supabase Authentication must NOT be used.
+
+Do not break existing database functionality simply because Supabase Auth is being removed.
+
+---
+
+# 4. CLERK EMAIL OTP FLOW
+
+Implement the Clerk email authentication flow correctly for the installed Clerk SDK/version.
+
+The desired user experience is:
+
+## CREATE ACCOUNT
+
+User opens:
+
+**Create Account**
+
+Display:
+
+**Email / Mobile Number**
+
+If user selects email:
+
+1. User enters email.
+2. Validate email locally.
+3. User presses **Create Account**.
+4. Create the Clerk signup.
+5. Send the Clerk email verification code.
+6. Navigate to a clean OTP verification screen.
+7. Display:
+
+   **Enter the 6-digit code sent to your email**
+
+8. User enters OTP.
+9. Verify the OTP through Clerk.
+10. Complete Clerk signup/session creation.
+11. Provision/synchronize the application user if required.
+12. Load `/v1/me`.
+13. Load the user's role.
+14. Ask for biometric authentication/enrollment if supported.
+15. Enable biometric unlock.
+16. Navigate to Home.
+
+There must be no Supabase redirect URL.
+
+There must be no localhost callback.
+
+There must be no browser-based Supabase confirmation page.
+
+There must be no `site can't be reached` error.
+
+---
+
+# 5. CLERK EMAIL LOGIN FLOW
+
+For:
+
+**Sign In → Email**
+
+Implement:
+
+1. User enters email.
+2. Validate email.
+3. Start Clerk email authentication.
+4. Send OTP to the email.
+5. Navigate to OTP screen.
+6. User enters OTP.
+7. Verify OTP using Clerk.
+8. Establish the Clerk session.
+9. Fetch `/v1/me`.
+10. Resolve user role.
+11. Enable/use biometric authentication.
+12. Navigate to Home.
+
+Expected final flow:
+
+```text
+Email
+  ↓
+Send Clerk OTP
+  ↓
+Enter OTP
+  ↓
+Verify OTP
+  ↓
+Clerk Session
+  ↓
+Backend /v1/me
+  ↓
+Role
+  ↓
+Biometric
+  ↓
+Home
+```
+
+---
+
+# 6. PHONE AUTHENTICATION
+
+Do not break the existing working Clerk phone/SMS authentication.
+
+If phone authentication already works:
+
+- preserve it
+- migrate it into the same clean Clerk authentication architecture
+- remove any Supabase dependency
+- make sure phone login and email login both produce a valid Clerk session
+
+Expected:
+
+```text
+EMAIL
+  ↓
+Clerk Email OTP
+  ↓
+Clerk Session
+
+OR
+
+PHONE
+  ↓
+Clerk SMS OTP
+  ↓
+Clerk Session
+```
+
+Both must converge into the same authenticated application flow.
+
+---
+
+# 7. UNIFIED AUTH STATE
+
+There must be one source of truth for authentication:
+
+**Clerk session/authentication state.**
+
+Do not maintain parallel states such as:
+
+```text
+Clerk authenticated = true
+Supabase authenticated = false
+Local authenticated = true
+```
+
+This causes inconsistent navigation and preview errors.
+
+Instead:
+
+```text
+Clerk Session
+     ↓
+Authenticated Application State
+     ↓
+/v1/me
+     ↓
+Role
+     ↓
+Application
+```
+
+Implement proper loading states.
+
+Do not render protected screens before authentication state is resolved.
+
+---
+
+# 8. BIOMETRIC FLOW
+
+After successful email/phone OTP authentication:
+
+1. Confirm Clerk session exists.
+2. Confirm application user exists.
+3. Confirm `/v1/me` succeeds.
+4. Then initialize biometric setup.
+
+Use the existing Expo biometric implementation where appropriate.
+
+Biometric authentication should ONLY unlock an existing authenticated Clerk session.
+
+It must NOT create a fake authentication state.
+
+It must NOT bypass Clerk.
+
+It must NOT fail-open.
+
+If biometric setup is unavailable on the device:
+
+- do not crash
+- do not block the application
+- continue safely to Home where appropriate
+- display a clean user-friendly message if needed
+
+Expected:
+
+```text
+OTP verified
+   ↓
+Clerk session established
+   ↓
+User loaded
+   ↓
+Biometric available?
+   ├── YES → Enable biometric → Home
+   └── NO  → Continue safely → Home
+```
+
+---
+
+# 9. FIX ALL PREVIEW ERRORS
+
+The current iOS and Android preview are failing before the authentication flow can be tested.
+
+Investigate the actual root cause.
+
+Do not simply hide errors.
+
+Check:
+
+- Metro bundling errors
+- JavaScript runtime errors
+- Expo Router errors
+- missing imports
+- invalid imports
+- undefined variables
+- incorrect Clerk SDK APIs
+- incorrect hook usage
+- invalid navigation
+- async errors
+- promise rejection
+- environment variable access
+- Expo configuration
+- native module compatibility
+- SecureStore
+- LocalAuthentication
+- authentication provider initialization
+- API authentication middleware
+- session restoration
+- role loading
+- error boundaries
+
+Fix the ROOT CAUSE.
+
+Do not add generic:
+
+```ts
+try {
+  ...
+} catch {
+  // ignore
+}
+```
+
+just to make the error disappear.
+
+Errors must be handled intentionally.
+
+---
+
+# 10. CLEAN THE AUTHENTICATION CODE
+
+After implementing Clerk:
+
+Review every authentication-related file.
+
+Remove:
+
+- unused imports
+- dead authentication functions
+- duplicate functions
+- duplicate providers
+- obsolete Supabase authentication code from the active path
+- unused callbacks
+- unused state variables
+- obsolete redirect logic
+- localhost authentication logic
+- stale OTP implementations
+- conflicting authentication guards
+- duplicate session management
+- unnecessary API calls
+- dead navigation branches
+- obsolete error messages
+
+Keep only the code required for the final Clerk implementation.
+
+Old Supabase code can remain ONLY as clearly commented backup where useful.
+
+The active code should be clean and understandable.
+
+---
+
+# 11. DO NOT CREATE MULTIPLE AUTH SYSTEMS
+
+Do not implement:
+
+```text
+Clerk + Supabase Auth
+```
+
+Do not implement:
+
+```text
+Clerk + local fake OTP
+```
+
+Do not implement:
+
+```text
+Clerk + custom password authentication
+```
+
+Do not implement a fake OTP generator.
+
+The OTP must come from the real Clerk email verification/authentication mechanism supported by the installed Clerk SDK.
+
+---
+
+# 12. ENVIRONMENT VARIABLES
+
+Inspect the current Clerk configuration.
+
+Verify that the required Clerk publishable key/environment configuration is available to the Expo app and backend.
+
+Do not expose secret Clerk keys in client-side code.
+
+Do not hard-code API secrets.
+
+Do not introduce unnecessary environment variables.
+
+If an environment variable is missing, identify it clearly instead of silently using an invalid fallback.
+
+---
+
+# 13. BACKEND AUTHENTICATION
+
+Inspect the backend authentication middleware.
+
+The backend must validate the authenticated Clerk user/session/token correctly.
+
+Existing patterns such as:
+
+```text
+getAuth(req).userId
+```
+
+should be preserved if compatible with the installed Clerk backend SDK.
+
+Verify:
+
+```text
+Mobile App
+   ↓
+Clerk Session
+   ↓
+Authenticated API Request
+   ↓
+Backend Clerk Verification
+   ↓
+Clerk User ID
+   ↓
+Application User
+   ↓
+Role
+```
+
+Make sure `/v1/me` works for:
+
+- new users
+- existing users
+- email users
+- phone users
+
+Do not create duplicate application users on every login.
+
+---
+
+# 14. ROLE HANDLING
+
+The application has:
+
+- Admin
+- Vendor
+- User
+
+After authentication:
+
+```text
+Clerk authentication
+       ↓
+/v1/me
+       ↓
+application user
+       ↓
+role
+       ↓
+correct navigation
+```
+
+Fix any existing blank-screen behavior when role loading fails.
+
+Never leave the user on an empty screen.
+
+Show a proper loading/error state.
+
+---
+
+# 15. OTP SCREEN
+
+Create one clean reusable OTP verification experience.
+
+It should include:
+
+- Email address display
+- 6-digit OTP input
+- Verify button
+- Resend code
+- Countdown if appropriate
+- Loading state
+- Invalid OTP message
+- Expired OTP message
+- Network error message
+- Success transition
+- Back navigation where appropriate
+
+Do not duplicate OTP logic between login and signup unless absolutely necessary.
+
+Use a reusable authentication service/hook where appropriate.
+
+---
+
+# 16. ERROR HANDLING
+
+Every authentication operation must have explicit handling for:
+
+- invalid email
+- empty email
+- invalid OTP
+- expired OTP
+- incorrect OTP
+- OTP resend failure
+- network failure
+- Clerk API failure
+- session creation failure
+- session restoration failure
+- backend `/v1/me` failure
+- user provisioning failure
+- biometric unavailable
+- biometric cancelled
+- unexpected authentication error
+
+Errors must be shown as clean user-facing messages.
+
+Do not expose raw stack traces to users.
+
+Log useful diagnostic information in development only.
+
+---
+
+# 17. NAVIGATION SAFETY
+
+Review the entire auth navigation flow.
+
+There must be no race condition like:
+
+```text
+OTP verified
+↓
+navigate Home
+↓
+auth state still loading
+↓
+redirect Login
+```
+
+Use Clerk's actual session/auth state as the source of truth.
+
+Ensure:
+
+```text
+Unauthenticated → Auth screens
+
+Authenticating → Loading screen
+
+OTP verification → Session establishment
+
+Authenticated → /v1/me
+
+Authenticated + user loaded → Home/app
+```
+
+Do not navigate repeatedly.
+
+Do not create navigation loops.
+
+---
+
+# 18. TESTING REQUIREMENT
+
+After implementation, DO NOT immediately say it is complete.
+
+Run the project's full test suite.
+
+Run:
+
+- TypeScript check
+- ESLint if configured
+- unit tests
+- integration tests
+- authentication tests
+- API tests
+- Expo/Metro validation
+- production build validation if available
+
+Also specifically test:
+
+### Email signup
+
+```text
+Create Account
+→ Email
+→ Send OTP
+→ Enter OTP
+→ Verify
+→ Clerk session
+→ /v1/me
+→ Biometric
+→ Home
+```
+
+### Email login
+
+```text
+Sign In
+→ Email
+→ Send OTP
+→ Enter OTP
+→ Verify
+→ Clerk session
+→ /v1/me
+→ Biometric
+→ Home
+```
+
+### Phone login
+
+```text
+Sign In
+→ Phone
+→ SMS OTP
+→ Verify
+→ Clerk session
+→ /v1/me
+→ Home
+```
+
+### Logout
+
+```text
+Home
+→ Logout
+→ Clerk session removed
+→ Auth screen
+```
+
+### Session restoration
+
+```text
+Close/reopen app
+→ Clerk session restored
+→ /v1/me
+→ Home
+```
+
+### Invalid OTP
+
+```text
+OTP
+→ incorrect code
+→ error message
+→ remain on OTP screen
+```
+
+### Expired OTP
+
+```text
+Expired code
+→ clear error
+→ resend
+→ new OTP
+```
+
+---
+
+# 19. TEST BOTH PLATFORMS
+
+The application is targeting:
+
+- Android
+- iOS
+
+Validate that the code does not contain platform-specific assumptions that break the other platform.
+
+Pay particular attention to:
+
+- Expo Router
+- Clerk Expo
+- SecureStore
+- LocalAuthentication
+- deep linking
+- session restoration
+- keyboard behavior
+- OTP input
+- navigation
+- environment variables
+
+The authentication implementation must use APIs supported by the actual installed Expo/Clerk versions.
+
+Do not assume an API exists. Verify the installed package versions and their actual API usage.
+
+---
+
+# 20. VERIFY THE CURRENT PACKAGE VERSIONS
+
+Before finalizing, inspect:
+
+```text
+package.json
+```
+
+and installed Clerk packages.
+
+Use the APIs that match the installed versions.
+
+Do not blindly copy authentication code intended for a different Clerk SDK version.
+
+If an existing Clerk implementation is outdated, update it only when necessary and ensure the dependency versions remain compatible with the current Expo SDK.
+
+---
+
+# 21. CODE QUALITY REQUIREMENT
+
+The final authentication implementation must be:
+
+- clean
+- modular
+- readable
+- typed
+- maintainable
+- DRY
+- properly error handled
+- free from duplicate authentication logic
+- free from unused imports
+- free from dead active code
+- free from Supabase Auth dependencies
+- free from localhost callback dependencies
+- free from fake OTP logic
+
+Prefer a structure similar to:
+
+```text
+auth/
+  clerk/
+    auth service
+    email OTP
+    phone OTP
+    session handling
+  biometric/
+    biometric service
+  hooks/
+    auth hook
+  components/
+    OTPInput
+    AuthLoading
+    AuthError
+```
+
+Adapt this to the existing project structure rather than unnecessarily restructuring the entire application.
+
+---
+
+# 22. IMPORTANT: DO NOT BREAK OTHER APPLICATION FEATURES
+
+This task is specifically an authentication stabilization/migration.
+
+Do not unnecessarily modify:
+
+- Home
+- Explore
+- Destinations
+- Hotels
+- Maps
+- Bookings
+- Payments
+- Land sourcing
+- Admin
+- Vendor
+- Reports
+- Database schema
+
+Only modify them if required to correctly integrate the new Clerk authentication/session/role flow.
+
+---
+
+# 23. FINAL VERIFICATION BEFORE REPORTING SUCCESS
+
+Before saying the task is complete, verify all of the following:
+
+### Build
+
+- [ ] No TypeScript errors
+- [ ] No unresolved imports
+- [ ] No Metro errors
+- [ ] No Expo runtime errors
+- [ ] No obvious React warnings
+- [ ] No authentication navigation loops
+
+### Authentication
+
+- [ ] Clerk is the only active authentication provider
+- [ ] Supabase Auth is inactive
+- [ ] Email OTP signup works
+- [ ] Email OTP login works
+- [ ] Phone authentication still works
+- [ ] OTP verification works
+- [ ] Resend OTP works
+- [ ] Clerk session is created correctly
+- [ ] Session restoration works
+- [ ] `/v1/me` works
+- [ ] User role loads correctly
+- [ ] Biometric flow works safely
+- [ ] Home opens successfully
+
+### Preview
+
+- [ ] Android preview starts without an error
+- [ ] iOS preview starts without an error
+- [ ] Login screen opens
+- [ ] Create Account opens
+- [ ] Email OTP screen opens
+- [ ] OTP verification does not crash
+- [ ] Successful authentication reaches Home
+
+### Code
+
+- [ ] Old active Supabase Auth code removed
+- [ ] Legacy Supabase Auth preserved only as commented backup where appropriate
+- [ ] No duplicate auth providers
+- [ ] No dead auth code
+- [ ] No unused auth imports
+- [ ] No fake OTP
+- [ ] No localhost callback
+- [ ] No unnecessary redirects
+- [ ] No swallowed errors
+
+---
+
+# 24. IMPORTANT FINAL RULE
+
+Do not claim:
+
+> "Tested successfully"
+
+unless the relevant automated tests/build checks actually passed.
+
+If a real external dependency prevents a complete test, clearly identify exactly what was tested and what could not be tested.
+
+Do not hide failures.
+
+Do not disable tests just to make them pass.
+
+Do not weaken validation.
+
+Do not suppress errors.
+
+Do not remove error handling.
+
+---
+
+# FINAL OUTPUT REQUIRED
+
+After completing the work, provide a concise implementation report containing:
+
+### 1. Root cause of the preview error
+
+### 2. Files changed
+
+### 3. Clerk authentication architecture
+
+### 4. Supabase Auth code that was disabled/commented
+
+### 5. Email OTP flow implemented
+
+### 6. Phone flow status
+
+### 7. Biometric flow status
+
+### 8. `/v1/me` and role flow status
+
+### 9. Tests executed and exact results
+
+### 10. Android preview/build result
+
+### 11. iOS preview/build result
+
+### 12. Any remaining issue, if one exists
+
+Do not report success until the code has actually been validated.
+
+The final goal is:
+
+**Clean code + Clerk-only authentication + real email OTP + successful verification + biometric + Home + no preview/runtime errors.**
