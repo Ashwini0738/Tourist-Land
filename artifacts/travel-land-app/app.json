@@ -17,6 +17,8 @@
       "supportsTablet": false
     },
     "android": {
+      "package": "com.arohagroup.travelandland",
+      "versionCode": 1,
       "intentFilters": [
         {
           "action": "VIEW",
