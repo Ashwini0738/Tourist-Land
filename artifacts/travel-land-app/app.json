@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "com.arohagroup.travelandland",
-      "versionCode": 2,
+      "versionCode": 3,
       "intentFilters": [
         {
           "action": "VIEW",
