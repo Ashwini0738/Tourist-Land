@@ -1,4 +1,4 @@
-export const AUTH_PROVIDERS = ["clerk", "supabase"] as const;
+export const AUTH_PROVIDERS = ["clerk"] as const;
 
 export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
 
@@ -25,16 +25,4 @@ export function attachLocalIdentity(
   localUserId: string,
 ): AuthenticatedIdentity {
   return { ...identity, localUserId };
-}
-
-export async function resolveMappedSupabaseUser<T extends { id: string }>(
-  identity: VerifiedExternalIdentity,
-  findByAuthUserId: (authUserId: string) => Promise<T | null | undefined>,
-): Promise<T> {
-  if (identity.provider !== "supabase") {
-    throw new Error("Supabase identity resolution requires a Supabase identity.");
-  }
-  const localUser = await findByAuthUserId(identity.externalUserId);
-  if (!localUser) throw new AuthenticationRejectedError();
-  return localUser;
 }

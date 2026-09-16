@@ -188,9 +188,6 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
-      '@workspace/supabase':
-        specifier: workspace:*
-        version: link:../../lib/supabase
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -234,9 +231,6 @@ importers:
       esbuild-plugin-pino:
         specifier: ^2.3.3
         version: 2.3.3(esbuild@0.27.3)(pino-pretty@13.1.3)(pino@9.14.0)(thread-stream@3.1.0)
-      jose:
-        specifier: ^6.1.3
-        version: 6.2.10
       pino-pretty:
         specifier: ^13.1.3
         version: 13.1.3
@@ -649,9 +643,6 @@ importers:
       '@clerk/expo':
         specifier: ^4.6.0
         version: 4.6.0(@types/react@19.1.17)(expo-auth-session@7.0.11(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(expo-constants@18.0.14)(expo-crypto@15.0.9(expo@54.0.37))(expo-local-authentication@17.0.9(expo@54.0.37))(expo-secure-store@15.0.8(expo@54.0.37))(expo-web-browser@15.0.11(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0)))(expo@54.0.37)(react-dom@19.1.0(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.1.0))(zod@3.25.76)
-      '@workspace/supabase':
-        specifier: workspace:*
-        version: link:../../lib/supabase
       expo-auth-session:
         specifier: ~7.0.11
         version: 7.0.11(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -5721,9 +5712,6 @@ packages:
   jiti@2.7.0:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
-
-  jose@6.2.10:
-    resolution: {integrity: sha512-iiW7J9qRFlGxvCOIBDBDxFePQSn7ZMAnrYGhrrOo6siO/MIqwfyilLR27pkfDgUk+raLuzADS8A3S/KLBisc0g==}
 
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
@@ -14120,8 +14108,6 @@ snapshots:
   jimp-compact@0.16.1: {}
 
   jiti@2.7.0: {}
-
-  jose@6.2.10: {}
 
   joycon@3.1.1: {}
 

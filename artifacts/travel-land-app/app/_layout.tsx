@@ -36,13 +36,11 @@ const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 function RoleResolutionError({
   onRetry,
-  accountNotLinked,
 }: {
   onRetry: () => Promise<unknown>;
-  accountNotLinked: boolean;
 }) {
   const colors = useColors();
-  const { signOut, clearAccessError } = useMobileAuth();
+  const { signOut } = useMobileAuth();
   const router = useRouter();
   const [action, setAction] = useState<'retrying' | 'signing-out' | null>(null);
   const [message, setMessage] = useState('');
@@ -52,7 +50,6 @@ function RoleResolutionError({
     setAction('retrying');
     setMessage('');
     try {
-      clearAccessError();
       await onRetry();
     } catch {
       setMessage('We could not refresh your access yet. Please try again.');
@@ -77,13 +74,9 @@ function RoleResolutionError({
   return (
     <View style={[styles.roleErrorOverlay, { backgroundColor: colors.background }]}>
       <Text style={[styles.roleErrorKicker, { color: colors.primary }]}>ACCESS CHECK</Text>
-      <Text style={[styles.roleErrorTitle, { color: colors.foreground }]}>
-        {accountNotLinked ? 'Your account is not linked yet.' : 'We could not verify your access.'}
-      </Text>
+      <Text style={[styles.roleErrorTitle, { color: colors.foreground }]}>We could not verify your access.</Text>
       <Text style={[styles.roleErrorText, { color: colors.mutedForeground }]}>
-        {accountNotLinked
-          ? 'Your email session is secure, but it is not connected to a Travel & Land account. No bookings or saved data were changed. Contact support or sign out safely.'
-          : 'Your secure session is still protected, but your Travel & Land role could not be loaded. Try again or sign out safely.'}
+        Your secure Clerk session is still protected, but your Travel & Land role could not be loaded. Try again or sign out safely.
       </Text>
       {!!message && <Text style={[styles.roleErrorMessage, { color: colors.destructive }]}>{message}</Text>}
       <Pressable
@@ -108,15 +101,10 @@ function RoleResolutionError({
 
 function RootLayoutNav() {
   const {
-    provider,
     isLoaded,
     isSignedIn,
     getToken,
     signOut,
-    accessError,
-    markAccountNotLinked,
-    isPasswordRecovery,
-    isIdentityLinking,
   } = useMobileAuth();
   const router = useRouter();
   const { isReady, isUnlocked, biometricsEnabled, deviceAuthSetupComplete, securityError, retrySecurityState } = useAuthSecurity();
@@ -128,10 +116,6 @@ function RootLayoutNav() {
   useEffect(() => {
     setAuthTokenGetter(() => getToken());
     setUnauthorizedHandler(async () => {
-      if (provider === 'supabase') {
-        markAccountNotLinked();
-        return;
-      }
       await signOut();
       router.replace('/login');
     });
@@ -139,7 +123,7 @@ function RootLayoutNav() {
       setAuthTokenGetter(null);
       setUnauthorizedHandler(null);
     };
-  }, [getToken, markAccountNotLinked, provider, router, signOut]);
+  }, [getToken, router, signOut]);
 
   useEffect(() => {
     const target = resolveAuthenticatedNavigation({
@@ -155,7 +139,6 @@ function RootLayoutNav() {
       roleReady,
       roleLoading,
       roleError,
-      isPasswordRecovery,
     });
     if (target) router.replace(target);
   }, [
@@ -164,7 +147,6 @@ function RootLayoutNav() {
     isLoaded,
     isReady,
     isSignedIn,
-    isPasswordRecovery,
     isUnlocked,
     role,
     roleError,
@@ -175,13 +157,13 @@ function RootLayoutNav() {
     securityError,
   ]);
 
-  const showRoleError = Boolean(isSignedIn && isReady && isUnlocked && roleError && !isIdentityLinking);
+  const showRoleError = Boolean(isSignedIn && isReady && isUnlocked && roleError);
   const showSecureStorageRecovery = Boolean(isSignedIn && securityError === 'SECURE_STORAGE_UNAVAILABLE');
 
   return (
     <View style={styles.root}>
       {renderRoutes()}
-      {showRoleError && <RoleResolutionError onRetry={refetchRole} accountNotLinked={accessError === 'ACCOUNT_NOT_LINKED'} />}
+      {showRoleError && <RoleResolutionError onRetry={refetchRole} />}
       {showSecureStorageRecovery && <SecureStorageRecovery onRetry={retrySecurityState} />}
     </View>
   );
@@ -193,7 +175,6 @@ function renderRoutes() {
       <Stack.Screen name="splash" />
       <Stack.Screen name="login" />
       <Stack.Screen name="verify" />
-      <Stack.Screen name="auth/callback" />
       <Stack.Screen name="vendor-application" />
       <Stack.Screen name="biometric" />
       <Stack.Screen name="biometric-login" />

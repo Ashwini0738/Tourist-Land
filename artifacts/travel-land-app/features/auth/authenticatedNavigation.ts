@@ -26,7 +26,6 @@ export type AuthenticatedNavigationState = {
   roleReady: boolean;
   roleLoading: boolean;
   roleError: boolean;
-  isPasswordRecovery?: boolean;
 };
 
 export function resolveAuthenticatedNavigation({
@@ -42,11 +41,8 @@ export function resolveAuthenticatedNavigation({
   roleReady,
   roleLoading,
   roleError,
-  isPasswordRecovery = false,
 }: AuthenticatedNavigationState): AuthenticatedNavigationTarget {
   if (!isLoaded) return null;
-
-  if (isPasswordRecovery) return null;
 
   if (!isSignedIn) {
     return route && !publicRoutes.includes(route) ? '/login' : null;

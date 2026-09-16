@@ -50,14 +50,6 @@ describe('authenticated navigation state machine', () => {
     }))).toBeNull();
   });
 
-  it('keeps a password recovery session on the recovery screen', () => {
-    expect(resolveAuthenticatedNavigation(state({
-      isPasswordRecovery: true,
-      deviceAuthSetupComplete: true,
-      isUnlocked: true,
-    }))).toBeNull();
-  });
-
   it('routes vendors to the vendor destination', () => {
     expect(resolveAuthenticatedNavigation(state({
       role: 'vendor',

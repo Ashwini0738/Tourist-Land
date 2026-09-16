@@ -11,20 +11,13 @@ import { claimInvitedAccess } from "../lib/onboarding.ts";
 import {
   attachLocalIdentity,
   AuthenticationRejectedError,
-  resolveMappedSupabaseUser,
   type VerifiedExternalIdentity,
 } from "../lib/authenticatedIdentity.ts";
-import {
-  configuredApiAuthProvider,
-  verifyRequestIdentity,
-} from "../lib/apiAuthProvider.ts";
+import { verifyRequestIdentity } from "../lib/apiAuthProvider.ts";
 
 function unauthenticated(res: Response): void {
-  const message = configuredApiAuthProvider() === "clerk"
-    ? "Please sign in with Clerk to continue."
-    : "Please sign in to continue.";
   res.status(401).json({
-    error: { code: "UNAUTHENTICATED", message },
+    error: { code: "UNAUTHENTICATED", message: "Please sign in with Clerk to continue." },
   });
 }
 
@@ -52,32 +45,20 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   res.set("Cache-Control", "private, no-store");
   try {
     const identity = await verifyRequestIdentity(req);
-    let local;
-    if (identity.provider === "clerk") {
-      const resolved = await resolveClerkUser(identity);
-      if (resolved.missingEmail) {
-        res.status(422).json({ error: { code: "ACCOUNT_EMAIL_REQUIRED", message: "Your Clerk account needs a primary email address." } });
-        return;
-      }
-      local = resolved.local;
-    } else {
-      local = await resolveMappedSupabaseUser(
-        identity,
-        (authUserId) => db.query.users.findFirst({
-          where: eq(users.authUserId, authUserId),
-        }),
-      );
+    const resolved = await resolveClerkUser(identity);
+    if (resolved.missingEmail) {
+      res.status(422).json({ error: { code: "ACCOUNT_EMAIL_REQUIRED", message: "Your Clerk account needs a primary email address." } });
+      return;
     }
+    const local = resolved.local;
     if (!local) throw new Error("Local user provisioning did not complete.");
-    if (identity.provider === "clerk") {
-      await claimInvitedAccess({ id: local.id, email: local.email });
-    }
+    await claimInvitedAccess({ id: local.id, email: local.email });
     let roleRows = await db
       .select({ role: userRoles.role })
       .from(userRoles)
       .where(eq(userRoles.userId, local.id));
     const configuredAdmins = configuredAdminClerkUserIds();
-    if (identity.provider === "clerk" && configuredAdmins.has(identity.externalUserId) && !roleRows.some((row) => row.role === "admin")) {
+    if (configuredAdmins.has(identity.externalUserId) && !roleRows.some((row) => row.role === "admin")) {
       await db.transaction(async (tx) => {
         await tx.delete(userRoles).where(eq(userRoles.userId, local!.id));
         await tx.insert(userRoles).values({ userId: local!.id, role: "admin" });

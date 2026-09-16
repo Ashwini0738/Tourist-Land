@@ -21,7 +21,6 @@ export default function ProfileTab() {
     ['inbox', 'Property enquiries', '/property-enquiries'],
     ['star', 'Reviews', '/reviews'],
     ['help-circle', 'Help & support', '/notifications'],
-    ['mail', 'Add email sign-in', '/identity-link'],
   ] as const;
   const dashboardRoute = role === 'vendor' ? '/vendor' : role === 'admin' ? '/admin' : null;
   const dashboardLabel = role === 'vendor' ? 'Vendor dashboard' : role === 'admin' ? 'Admin dashboard' : null;

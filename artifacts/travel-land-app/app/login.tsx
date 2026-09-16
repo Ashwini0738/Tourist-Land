@@ -1,7 +1,7 @@
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
-import { useClerk, useSignIn } from '@clerk/expo';
+import { useClerk, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -9,7 +9,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useMobileAuth } from '@/context/AuthContext';
-import { PasswordResetFlow } from '@/features/auth/PasswordResetFlow';
 
 type AuthMethod = 'email' | 'phone';
 type SignInVerificationMethod = 'email' | 'phone' | null;
@@ -56,15 +55,11 @@ export default function LoginScreen() {
   const {
     isLoaded,
     isSignedIn,
-    supabaseAvailable,
-    supabaseConfigurationError,
-    signInWithPassword,
-    signUpWithPassword,
   } = useMobileAuth();
+  const { signUp } = useSignUp();
 
   const [isNew, setNew] = useState(false);
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [authMethod, setAuthMethod] = useState<AuthMethod>('email');
   const [countryCode, setCountryCode] = useState('+91');
   const [phone, setPhone] = useState('');
@@ -74,7 +69,6 @@ export default function LoginScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [pendingOrganizationChoice, setPendingOrganizationChoice] = useState<PendingOrganizationChoice | null>(null);
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
 
   const loading = !isLoaded || signInStatus === 'fetching' || isSubmitting || isResending;
   const normalizedPhone = normalizePhoneNumber(countryCode, phone);
@@ -88,17 +82,6 @@ export default function LoginScreen() {
       currentTask: clerk.session?.currentTask?.key ?? null,
     });
   }, [clerk.session?.currentTask?.key, clerk.session?.status, isLoaded, isSignedIn]);
-
-  if (showPasswordReset) {
-    return (
-      <PasswordResetFlow
-        mode="request"
-        initialEmail={email}
-        onBackToLogin={() => setShowPasswordReset(false)}
-        onCompleted={() => setShowPasswordReset(false)}
-      />
-    );
-  }
 
   const finalizeAndVerifyActiveSession = async () => {
     const finalization = await signIn.finalize({});
@@ -168,12 +151,11 @@ export default function LoginScreen() {
   const submit = async () => {
     if (isSubmitting) return;
     if (__DEV__) {
-      console.info('[auth] Email/password submit started', {
+      console.info('[auth] Email OTP submit started', {
         authMethod,
         isLoaded,
         isSignedIn: Boolean(isSignedIn),
         signInStatus,
-        emailProvider: 'supabase',
       });
     }
     setMessage('');
@@ -181,10 +163,6 @@ export default function LoginScreen() {
       const emailMessage = emailValidationMessage(email);
       if (emailMessage) {
         setMessage(emailMessage);
-        return;
-      }
-      if (!password.trim()) {
-        setMessage(isNew ? 'Password is required.' : 'Enter your password.');
         return;
       }
     }
@@ -199,12 +177,17 @@ export default function LoginScreen() {
     setIsSubmitting(true);
     try {
       if (isNew) {
-        if (!supabaseAvailable) {
-          setMessage(supabaseConfigurationError ?? 'Email signup is not configured for this build.');
+        const created = await signUp.create({ emailAddress: email.trim() });
+        if (created.error) {
+          setMessage(authErrorMessage(created.error, 'We could not create your account. Please try again.'));
           return;
         }
-        const result = await signUpWithPassword(email.trim(), password);
-        if (result.requiresEmailConfirmation) router.push('/verify');
+        const verification = await signUp.verifications.sendEmailCode();
+        if (verification.error) {
+          setMessage(authErrorMessage(verification.error, 'We could not send your verification code. Please try again.'));
+          return;
+        }
+        router.push({ pathname: '/verify', params: { email: email.trim(), mode: 'signup' } });
         return;
       }
 
@@ -227,13 +210,25 @@ export default function LoginScreen() {
         return;
       }
 
-      if (!supabaseAvailable) {
-        setMessage(supabaseConfigurationError ?? 'Email sign-in is not configured for this build.');
+      const result = await signIn.create({ identifier: email.trim() });
+      if (result.error) {
+        setMessage(authErrorMessage(result.error, 'We could not start email sign in. Please try again.'));
         return;
       }
-      await signInWithPassword(email.trim(), password);
+      const emailFactor = signIn.supportedFirstFactors?.find((factor) => factor.strategy === 'email_code');
+      if (!emailFactor) {
+        setMessage('Email code sign in is not enabled for this account. Try another sign-in method.');
+        return;
+      }
+      const verification = await signIn.emailCode.sendCode();
+      if (verification.error) {
+        setMessage(authErrorMessage(verification.error, 'We could not send your verification code. Please try again.'));
+        return;
+      }
+      setSignInCode('');
+      setSignInVerificationMethod('email');
     } catch (error) {
-      if (__DEV__) console.warn('[auth] Email/password submit threw', authErrorDiagnostic(error));
+      if (__DEV__) console.warn('[auth] Email OTP submit threw', authErrorDiagnostic(error));
       setMessage(authErrorMessage(error, isNew ? 'We could not create your account. Please try again.' : 'We could not complete sign in. Please try again.'));
     } finally {
       setIsSubmitting(false);
@@ -247,7 +242,9 @@ export default function LoginScreen() {
     try {
       const { error } = signInVerificationMethod === 'phone'
         ? await signIn.phoneCode.verifyCode({ code: signInCode })
-        : await signIn.mfa.verifyEmailCode({ code: signInCode });
+        : signIn.status === 'needs_second_factor'
+          ? await signIn.mfa.verifyEmailCode({ code: signInCode })
+          : await signIn.emailCode.verifyCode({ code: signInCode });
       if (error) return setMessage(authErrorMessage(error, 'That verification code did not work. Please try again.'));
       if (
         signInVerificationMethod === 'phone'
@@ -283,7 +280,9 @@ export default function LoginScreen() {
     try {
       const { error } = signInVerificationMethod === 'phone'
         ? await signIn.phoneCode.sendCode()
-        : await signIn.mfa.sendEmailCode();
+        : signIn.status === 'needs_second_factor'
+          ? await signIn.mfa.sendEmailCode()
+          : await signIn.emailCode.sendCode();
       if (error) {
         setMessage(authErrorMessage(error, 'We could not send a new code. Please try again.'));
       } else {
@@ -438,18 +437,10 @@ export default function LoginScreen() {
               />
             </View>
           ) : (
-            <>
-              <TextInput testID="login-email" value={email} onChangeText={(value) => { setEmail(value); setMessage(''); }} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
-              <TextInput testID="login-password" value={password} onChangeText={(value) => { setPassword(value); setMessage(''); }} autoCapitalize="none" secureTextEntry autoComplete={isNew ? 'new-password' : 'current-password'} placeholder="Password" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card, marginTop: 16 }]} />
-              {!isNew && (
-                <Pressable testID="forgot-password" onPress={() => { setMessage(''); setShowPasswordReset(true); }} style={styles.forgotPassword}>
-                  <Text style={[styles.secondaryText, { color: colors.primary }]}>Forgot password?</Text>
-                </Pressable>
-              )}
-            </>
+            <TextInput testID="login-email" value={email} onChangeText={(value) => { setEmail(value); setMessage(''); }} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
           )}
           {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
-          <Pressable testID="login-continue" disabled={(authMethod === 'phone' && !normalizedPhone) || loading} onPress={() => void submit()} style={[styles.button, { backgroundColor: (authMethod === 'email' ? email.trim() && password.trim() : normalizedPhone) && !loading ? colors.primary : colors.muted, marginTop: 24 }]}>
+          <Pressable testID="login-continue" disabled={(authMethod === 'phone' && !normalizedPhone) || loading} onPress={() => void submit()} style={[styles.button, { backgroundColor: (authMethod === 'email' ? email.trim() : normalizedPhone) && !loading ? colors.primary : colors.muted, marginTop: 24 }]}>
             {loading ? <><ActivityIndicator color="#fff" /><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Creating account...' : authMethod === 'phone' ? 'Sending code...' : 'Signing in...'}</Text></> : <><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Create account' : 'Sign in'}</Text><Feather name="arrow-right" size={17} color="#fff" /></>}
           </Pressable>
           <Pressable onPress={() => { setNew(!isNew); setAuthMethod('email'); setMessage(''); }} style={styles.secondary}>
@@ -488,7 +479,6 @@ const styles = StyleSheet.create({
   buttonText: { fontSize: 16, fontWeight: '700' },
   secondary: { alignItems: 'center', marginTop: 24 },
   secondaryText: { fontSize: 14, fontWeight: '600' },
-  forgotPassword: { alignSelf: 'flex-end', marginTop: 12, paddingVertical: 4 },
   vendorLink: { alignItems: 'center', marginTop: 28, paddingVertical: 8 },
   vendorLinkText: { fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
 });

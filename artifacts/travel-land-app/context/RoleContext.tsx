@@ -21,10 +21,10 @@ type RoleContextValue = {
 const RoleContext = createContext<RoleContextValue | null>(null);
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, userId, isIdentityLinking } = useMobileAuth();
+  const { isSignedIn, userId } = useMobileAuth();
   const { isReady: securityReady, isUnlocked } = useAuthSecurity();
   const queryClient = useQueryClient();
-  const enabled = Boolean(isSignedIn && securityReady && isUnlocked && !isIdentityLinking);
+  const enabled = Boolean(isSignedIn && securityReady && isUnlocked);
   const query = useGetCurrentUser({
     query: {
       enabled,
