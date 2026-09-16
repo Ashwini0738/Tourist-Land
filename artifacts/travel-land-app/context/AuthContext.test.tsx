@@ -163,22 +163,16 @@ it('creates only a Supabase session for email/password and tracks confirmation-r
   const screen = render(<MobileAuthProvider><Capture /><Probe /></MobileAuthProvider>);
   await waitFor(() => expect(authValue?.isLoaded).toBe(true));
   fireEvent.press(screen.getByTestId('email-signup'));
-  await waitFor(() => expect(supabase.auth.signUp).toHaveBeenCalledWith({
-    email: 'traveller@example.com',
-    password: 'password',
-    options: {
-      emailRedirectTo: 'travel-land-app://auth/callback?flow=signup',
-    },
-  }));
+   await waitFor(() => expect(supabase.auth.signUp).toHaveBeenCalledWith({
+     email: 'traveller@example.com',
+     password: 'password',
+   }));
   await waitFor(() => expect(authValue?.pendingSupabaseSignupEmail).toBe('traveller@example.com'));
   await authValue!.resendSupabaseSignupCode();
-  expect(supabase.auth.resend).toHaveBeenCalledWith({
-    email: 'traveller@example.com',
-    type: 'signup',
-    options: {
-      emailRedirectTo: 'travel-land-app://auth/callback?flow=signup',
-    },
-  });
+   expect(supabase.auth.resend).toHaveBeenCalledWith({
+     email: 'traveller@example.com',
+     type: 'signup',
+   });
   fireEvent.press(screen.getByTestId('email-login'));
   await waitFor(() => expect(supabase.auth.signInWithPassword).toHaveBeenCalled());
   expect(clerkSignOut).not.toHaveBeenCalled();

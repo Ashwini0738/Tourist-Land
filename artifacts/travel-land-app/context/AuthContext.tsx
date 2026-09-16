@@ -311,9 +311,6 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
     const { data, error } = await client.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: getSupabaseAuthRedirectUri('signup'),
-      },
     });
     if (error) throw error;
     if (data.session) {
@@ -345,9 +342,6 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
     const { error } = await client.auth.resend({
       email: pendingSupabaseSignupEmail,
       type: 'signup',
-      options: {
-        emailRedirectTo: getSupabaseAuthRedirectUri('signup'),
-      },
     });
     if (error) throw error;
   }, [pendingSupabaseSignupEmail, requireSupabase]);
