@@ -1,0 +1,58 @@
+The Android internal-distribution APK build is already configured and must remain unchanged.
+
+Now I also need an iOS testing build for the same Travel & Land React Native / Expo application.
+
+IMPORTANT:
+- Do not modify or break the existing Android configuration.
+- Do not change the Android package ID:
+  com.arohagroup.travelandland
+- Do not change authentication, Supabase, API, Stripe, maps, database, or business logic.
+- Reuse the same application code and environment configuration where appropriate.
+- First inspect the existing Expo/EAS configuration and determine exactly what is required for iOS.
+
+TASK:
+
+1. Verify that the project supports Expo/EAS iOS builds.
+
+2. Inspect:
+   - app.json/app.config.*
+   - eas.json
+   - iOS bundle identifier if already configured
+   - Expo project configuration
+   - environment variables
+   - Supabase authentication/redirect configuration
+   - existing EAS credentials
+
+3. If an iOS bundle identifier already exists, preserve it.
+   Do not randomly generate or change it.
+
+4. If no iOS bundle identifier exists, stop and tell me what identifier should be configured before making the change.
+
+5. Create a separate iOS testing build profile without changing the Android preview profile.
+
+6. Prefer an appropriate internal/testing distribution method for real-device iPhone testing.
+
+7. If Apple Developer account/signing credentials are required, STOP and clearly tell me exactly what I need to provide or configure.
+   Do not create fake credentials or bypass Apple signing.
+
+8. Do not claim that an iOS build is complete until EAS reports it as successfully finished.
+
+9. Before building, run:
+   - TypeScript check
+   - existing test suite
+   - Expo dependency validation
+   - Expo Doctor
+   - Expo/EAS configuration validation
+
+10. If validation passes, submit the iOS testing build.
+
+11. Report:
+   - iOS build status
+   - iOS bundle identifier
+   - build profile
+   - EAS build URL
+   - installation/testing method
+   - whether TestFlight is required
+   - any Apple Developer account action required
+
+Keep the existing Android APK configuration working independently.

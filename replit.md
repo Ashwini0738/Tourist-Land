@@ -11,6 +11,7 @@ A cross-platform travel discovery, booking, and verified land-sourcing applicati
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `cd artifacts/travel-land-app && pnpm dlx eas-cli@latest build --platform android --profile preview` — submit the internal client-testing APK build
 - Development authentication requires `TRAVEL_LAND_AUTH_TARGET=external-development`, `TRAVEL_LAND_DEV_CLERK_PUBLISHABLE_KEY`, `TRAVEL_LAND_DEV_CLERK_SECRET_KEY`, and `TRAVEL_LAND_DEV_ADMIN_CLERK_USER_IDS`.
 - The API also requires the Replit Stripe integration because payment synchronization and managed webhook registration run during startup.
 - `DATABASE_URL` and the PostgreSQL connection variables are supplied by Replit's built-in database.

@@ -14,7 +14,9 @@
       "backgroundColor": "#fbfaf6"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.arohagroup.travelandland",
+      "buildNumber": "1"
     },
     "android": {
       "package": "com.arohagroup.travelandland",
@@ -35,6 +37,12 @@
             "DEFAULT"
           ]
         }
+      ],
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
       ]
     },
     "web": {
@@ -60,11 +68,29 @@
         {
           "faceIDPermission": "Allow Travel & Land to use Face ID for secure app unlock."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "packagingOptions": {
+              "exclude": [
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+              ]
+            }
+          }
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "cf1e0bbe-99d6-47f4-9df4-f49a8da8d07e"
+      }
+    },
+    "owner": "ashwini0738s-team"
   }
 }
