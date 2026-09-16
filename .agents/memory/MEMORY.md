@@ -19,3 +19,4 @@
 - [Expo static build cleanup](expo-static-build-cleanup.md) — static Expo builds can remove assets from older tracked build snapshots; restore stale snapshots before finishing.
 - [Playwright on Nix](playwright-nix-runtime.md) — headless Chromium needs explicit Nix shared libraries; keep downloaded browser binaries outside the repository.
 - [Expo workflow tunnel failures](expo-workflow-tunnel.md) — ngrok can block live Expo Go verification even when Metro and Android/iOS static bundles are healthy.
+- [APK Supabase validation](apk-supabase-validation.md) — validate Supabase DNS and Auth settings before EAS builds; configured variables can still reference a removed project.
