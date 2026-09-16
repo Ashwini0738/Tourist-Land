@@ -1,6 +1,10 @@
-import * as SecureStore from 'expo-secure-store';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useMobileAuth } from './AuthContext';
+import {
+  deletePlatformSecureItem,
+  getPlatformSecureItem,
+  setPlatformSecureItem,
+} from '@/lib/platformSecureStorage';
 
 type SecurityError = 'SECURE_STORAGE_UNAVAILABLE';
 type SecurityContextValue = {
@@ -48,9 +52,9 @@ export function AuthSecurityProvider({ children }: { children: React.ReactNode }
 
     try {
       const [biometrics, setupComplete, legacyPin] = await Promise.all([
-        SecureStore.getItemAsync(storageKey(BIOMETRICS)),
-        SecureStore.getItemAsync(storageKey(SETUP_COMPLETE)),
-        SecureStore.getItemAsync(storageKey(LEGACY_HAS_PIN)),
+        getPlatformSecureItem(storageKey(BIOMETRICS)),
+        getPlatformSecureItem(storageKey(SETUP_COMPLETE)),
+        getPlatformSecureItem(storageKey(LEGACY_HAS_PIN)),
       ]);
       if (!isCurrent()) return;
         const enabled = biometrics === 'true';
@@ -59,10 +63,10 @@ export function AuthSecurityProvider({ children }: { children: React.ReactNode }
         setDeviceAuthSetupCompleteState(hasCompletedSetup);
         setUnlocked(hasCompletedSetup && !enabled);
         if (hasCompletedSetup && setupComplete !== 'true') {
-          await SecureStore.setItemAsync(storageKey(SETUP_COMPLETE), 'true');
+          await setPlatformSecureItem(storageKey(SETUP_COMPLETE), 'true');
         }
         if (!isCurrent()) return;
-        await SecureStore.deleteItemAsync(storageKey(LEGACY_HAS_PIN));
+        await deletePlatformSecureItem(storageKey(LEGACY_HAS_PIN));
         setReady(true);
     } catch {
       if (!isCurrent()) return;
@@ -87,11 +91,11 @@ export function AuthSecurityProvider({ children }: { children: React.ReactNode }
 
   const setBiometricsEnabled = useCallback(async (enabled: boolean) => {
     setBiometrics(enabled);
-    await SecureStore.setItemAsync(storageKey(BIOMETRICS), String(enabled));
+    await setPlatformSecureItem(storageKey(BIOMETRICS), String(enabled));
   }, [storageKey]);
   const setDeviceAuthSetupComplete = useCallback(async (complete: boolean) => {
     setDeviceAuthSetupCompleteState(complete);
-    await SecureStore.setItemAsync(storageKey(SETUP_COMPLETE), String(complete));
+    await setPlatformSecureItem(storageKey(SETUP_COMPLETE), String(complete));
   }, [storageKey]);
   const unlock = useCallback(async () => setUnlocked(true), []);
   const lock = useCallback(async () => setUnlocked(false), []);

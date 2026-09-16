@@ -21,3 +21,4 @@
 - [Expo workflow tunnel failures](expo-workflow-tunnel.md) — ngrok can block live Expo Go verification even when Metro and Android/iOS static bundles are healthy.
 - [APK Supabase validation](apk-supabase-validation.md) — validate Supabase DNS and Auth settings before EAS builds; configured variables can still reference a removed project.
 - [Supabase email verification](supabase-email-verification.md) — use the native confirmation link when the active project cannot customize signup email templates for OTP.
+- [Web secure storage compatibility](web-secure-storage.md) — wrap SecureStore for web; its preview shim can call a missing native method during startup.
