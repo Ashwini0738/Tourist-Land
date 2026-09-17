@@ -3,7 +3,7 @@ name: Authentication authority
 description: Clerk is the sole account authentication authority; local roles and native unlock remain separate gates.
 ---
 
-Clerk is the sole authentication and session authority for mobile email OTP, phone OTP, MFA, token restoration, and logout. Supabase Auth, provider linking, password callbacks, and Supabase bearer-token acceptance are not part of the active application.
+Clerk is the sole authentication and session authority for mobile email OTP, email-based MFA, token restoration, and logout. Supabase Auth, phone login, provider linking, password callbacks, and Supabase bearer-token acceptance are not part of the active application.
 
 **Why:** Parallel Clerk and Supabase sessions caused ambiguous identity, navigation, callback, and API behavior. A single provider gives expiry, refresh, revocation, and logout one source of truth.
 
@@ -23,7 +23,7 @@ Expo Router's root authentication guard must keep the root navigator mounted and
 
 **How to apply:** Derive auth, device-unlock, and role destinations centrally, navigate only after the relevant state is ready, and leave the root `Stack` rendered throughout authentication transitions.
 
-Email signup and login use Clerk email-code verification. Phone OTP and any second-factor continuation also remain entirely within Clerk, and all successful methods converge on the same Clerk session flow.
+Email signup and login use Clerk email-code verification. Phone-number login is intentionally unavailable. Any supported second-factor continuation uses email and converges on the same Clerk session flow.
 
 **Why:** Competing sessions make API identity, logout, and restoration ambiguous.
 

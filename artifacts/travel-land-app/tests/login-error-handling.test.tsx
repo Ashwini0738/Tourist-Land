@@ -23,11 +23,10 @@ function signInFixture() {
   return {
     status: 'needs_first_factor',
     createdSessionId: null,
-    supportedFirstFactors: [{ strategy: 'email_code' }, { strategy: 'phone_code' }],
+    supportedFirstFactors: [{ strategy: 'email_code' }],
     supportedSecondFactors: [{ strategy: 'email_code' }],
     create: jest.fn().mockResolvedValue({ error: null }),
     emailCode: { sendCode: jest.fn().mockResolvedValue({ error: null }), verifyCode: jest.fn().mockResolvedValue({ error: null }) },
-    phoneCode: { sendCode: jest.fn().mockResolvedValue({ error: null }), verifyCode: jest.fn().mockResolvedValue({ error: null }) },
     mfa: { sendEmailCode: jest.fn().mockResolvedValue({ error: null }), verifyEmailCode: jest.fn().mockResolvedValue({ error: null }) },
     finalize: jest.fn().mockResolvedValue({ error: null }),
     reset: jest.fn(),
@@ -77,15 +76,77 @@ it('verifies a Clerk email-code sign-in and keeps the existing finalization path
   await waitFor(() => expect(signIn.emailCode.verifyCode).toHaveBeenCalledWith({ code: '123456' }));
 });
 
-it('preserves Clerk phone-code sign in', async () => {
+it('shows email authentication without a mobile-number option', () => {
   const screen = render(<LoginScreen />);
-  const { signIn } = (useSignIn as jest.Mock).mock.results[0]?.value ?? {};
-  fireEvent.press(screen.getByTestId('login-method-phone'));
-  fireEvent.changeText(screen.getByTestId('phone-country-code'), '+91');
-  fireEvent.changeText(screen.getByTestId('phone-number'), '9999999999');
+
+  expect(screen.getByTestId('login-email')).toBeTruthy();
+  expect(screen.queryByText('Mobile Number')).toBeNull();
+  expect(screen.queryByTestId('phone-number')).toBeNull();
+});
+
+it('resumes an existing Clerk session instead of showing the already-signed-in error', async () => {
+  const existingSession = {
+    id: 'session_existing',
+    status: 'active',
+    currentTask: null,
+    user: { organizationMemberships: [] },
+    lastActiveOrganizationId: null,
+  };
+  const setActive = jest.fn().mockResolvedValue(undefined);
+  const signIn = signInFixture();
+  signIn.create.mockResolvedValue({
+    error: { errors: [{ code: 'session_exists', message: 'Session already exists' }] },
+  });
+  mockUseClerk.mockReturnValue({
+    setActive,
+    session: existingSession,
+    client: { sessions: [existingSession], lastActiveSessionId: existingSession.id },
+    redirectToTasks: jest.fn(),
+  });
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
   fireEvent.press(screen.getByTestId('login-continue'));
-  await waitFor(() => expect(signIn.create).toHaveBeenCalledWith({ identifier: '+919999999999' }));
-  expect(signIn.phoneCode.sendCode).toHaveBeenCalled();
+
+  await waitFor(() => expect(setActive).toHaveBeenCalledWith({ session: existingSession.id }));
+  expect(screen.queryByText('You are already signed in. Opening your account.')).toBeNull();
+});
+
+it('activates the available organization before continuing a restored pending session', async () => {
+  const pendingSession = {
+    id: 'session_pending',
+    status: 'pending',
+    currentTask: { key: 'choose-organization' },
+    user: {
+      organizationMemberships: [
+        { organization: { id: 'organization_travel', name: 'Travel & Land' } },
+      ],
+    },
+    lastActiveOrganizationId: null,
+  };
+  const setActive = jest.fn().mockResolvedValue(undefined);
+  const signIn = signInFixture();
+  signIn.create.mockRejectedValue({
+    errors: [{ code: 'session_exists', message: 'Session already exists' }],
+  });
+  mockUseClerk.mockReturnValue({
+    setActive,
+    session: pendingSession,
+    client: { sessions: [pendingSession], lastActiveSessionId: pendingSession.id },
+    redirectToTasks: jest.fn(),
+  });
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(setActive).toHaveBeenCalledWith({
+    session: pendingSession.id,
+    organization: 'organization_travel',
+  }));
+  expect(screen.queryByText('You are already signed in. Opening your account.')).toBeNull();
 });
 
 it('starts Clerk email-code signup and opens reusable verification', async () => {

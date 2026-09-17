@@ -1,6 +1,6 @@
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
-import { authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
+import { authErrorCodes, authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
 import { useClerk, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -10,8 +10,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useMobileAuth } from '@/context/AuthContext';
 
-type AuthMethod = 'email' | 'phone';
-type SignInVerificationMethod = 'email' | 'phone' | null;
 type PendingOrganizationChoice = {
   sessionId: string;
   organizations: Array<{ id: string; name: string }>;
@@ -32,20 +30,6 @@ function authErrorDiagnostic(error: unknown) {
   };
 }
 
-function normalizePhoneNumber(countryCodeInput: string, phoneInput: string) {
-  const phone = phoneInput.trim();
-  const countryCode = countryCodeInput.trim();
-  const raw = phone.startsWith('+')
-    ? phone
-    : phone.startsWith('00')
-      ? `+${phone.slice(2)}`
-      : `${countryCode.startsWith('+') ? countryCode : `+${countryCode}`}${phone}`;
-  const digits = raw.replace(/\D/g, '');
-
-  if (digits.length < 8 || digits.length > 15) return null;
-  return `+${digits}`;
-}
-
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -60,18 +44,14 @@ export default function LoginScreen() {
 
   const [isNew, setNew] = useState(false);
   const [email, setEmail] = useState('');
-  const [authMethod, setAuthMethod] = useState<AuthMethod>('email');
-  const [countryCode, setCountryCode] = useState('+91');
-  const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
-  const [signInVerificationMethod, setSignInVerificationMethod] = useState<SignInVerificationMethod>(null);
+  const [isSignInVerificationOpen, setSignInVerificationOpen] = useState(false);
   const [signInCode, setSignInCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [pendingOrganizationChoice, setPendingOrganizationChoice] = useState<PendingOrganizationChoice | null>(null);
 
   const loading = !isLoaded || signInStatus === 'fetching' || isSubmitting || isResending;
-  const normalizedPhone = normalizePhoneNumber(countryCode, phone);
 
   useEffect(() => {
     if (!__DEV__) return;
@@ -83,33 +63,30 @@ export default function LoginScreen() {
     });
   }, [clerk.session?.currentTask?.key, clerk.session?.status, isLoaded, isSignedIn]);
 
-  const finalizeAndVerifyActiveSession = async () => {
-    const finalization = await signIn.finalize({});
-    if (finalization?.error) {
-      setMessage(authErrorMessage(finalization.error, 'We could not complete sign in. Please try again.'));
-      return false;
-    }
-
-    const finalizedSessionId = signIn.createdSessionId ?? clerk.session?.id ?? clerk.client?.lastActiveSessionId;
-    const finalizedSession = finalizedSessionId
-      ? clerk.client?.sessions.find((session) => session.id === finalizedSessionId)
+  const activateAvailableSession = async (preferredSessionId?: string | null) => {
+    const sessions = clerk.client?.sessions ?? [];
+    const sessionId = preferredSessionId
+      ?? clerk.session?.id
+      ?? clerk.client?.lastActiveSessionId
+      ?? sessions.find((session) => session.status === 'active' || session.status === 'pending')?.id;
+    const session = sessionId
+      ? sessions.find((candidate) => candidate.id === sessionId) ?? (clerk.session?.id === sessionId ? clerk.session : undefined)
       : undefined;
-    if (!finalizedSessionId || !finalizedSession) {
+    if (!sessionId || !session) {
       if (__DEV__) {
-        console.warn('[auth] Finalized session is not available locally', {
+        console.warn('[auth] Existing session is not available locally', {
           signInStatus: signIn.status,
           hasCreatedSessionId: Boolean(signIn.createdSessionId),
           hasActiveSession: Boolean(clerk.session),
-          sessionStatuses: clerk.client?.sessions.map((session) => session.status) ?? [],
+          sessionStatuses: sessions.map((candidate) => candidate.status),
         });
       }
-      setMessage('We could not complete sign in. Please try again.');
       return false;
     }
 
-    if (finalizedSession.status === 'pending') {
-      const memberships = finalizedSession.user?.organizationMemberships ?? [];
-      const previousOrganizationId = finalizedSession.lastActiveOrganizationId;
+    if (session.status === 'pending') {
+      const memberships = session.user?.organizationMemberships ?? [];
+      const previousOrganizationId = session.lastActiveOrganizationId;
       const organizationId = previousOrganizationId && memberships.some(
         (membership) => membership.organization.id === previousOrganizationId,
       )
@@ -118,32 +95,51 @@ export default function LoginScreen() {
           ? memberships[0].organization.id
           : null;
 
-      if (finalizedSession.currentTask?.key !== 'choose-organization') {
+      if (session.currentTask?.key !== 'choose-organization') {
         await clerk.redirectToTasks();
-        return false;
+        return true;
       }
       if (!organizationId) {
         if (memberships.length === 0) {
           setMessage('Your account must be added to an organization before you can sign in.');
-          return false;
+          return true;
         }
         setPendingOrganizationChoice({
-          sessionId: finalizedSessionId,
+          sessionId,
           organizations: memberships.map((membership) => ({
             id: membership.organization.id,
             name: membership.organization.name,
           })),
         });
-        return false;
+        return true;
       }
-      await setActive({ session: finalizedSessionId, organization: organizationId });
-    } else if (clerk.session?.id !== finalizedSessionId) {
-      await setActive({ session: finalizedSessionId });
+      await setActive({ session: sessionId, organization: organizationId });
+    } else if (clerk.session?.id !== sessionId || !isSignedIn) {
+      await setActive({ session: sessionId });
     }
-    const activeSessionId = clerk.session?.id ?? clerk.client?.lastActiveSessionId;
-    if (activeSessionId !== finalizedSessionId) {
-      setMessage('We could not complete sign in. Please try again.');
+
+    return true;
+  };
+
+  const finalizeAndVerifyActiveSession = async () => {
+    const finalization = await signIn.finalize({});
+    if (finalization?.error) {
+      setMessage(authErrorMessage(finalization.error, 'We could not complete sign in. Please try again.'));
       return false;
+    }
+
+    const activated = await activateAvailableSession(signIn.createdSessionId);
+    if (!activated) setMessage('We could not complete sign in. Please try again.');
+    return activated;
+  };
+
+  const resumeExistingSession = async (error: unknown) => {
+    const sessionExists = authErrorCodes(error).some((code) => code.includes('session_exists'));
+    if (!sessionExists) return false;
+
+    const resumed = await activateAvailableSession();
+    if (!resumed) {
+      setMessage('Your existing session could not be restored. Close and reopen the app, then try again.');
     }
     return true;
   };
@@ -152,26 +148,19 @@ export default function LoginScreen() {
     if (isSubmitting) return;
     if (__DEV__) {
       console.info('[auth] Email OTP submit started', {
-        authMethod,
         isLoaded,
         isSignedIn: Boolean(isSignedIn),
         signInStatus,
       });
     }
     setMessage('');
-    if (authMethod === 'email') {
-      const emailMessage = emailValidationMessage(email);
-      if (emailMessage) {
-        setMessage(emailMessage);
-        return;
-      }
-    }
-    if (authMethod === 'phone' && !normalizedPhone) {
-      setMessage('Enter a valid mobile number with its country code and try again.');
+    if (isSignedIn) {
+      await activateAvailableSession();
       return;
     }
-    if (isNew && authMethod === 'phone') {
-      setMessage('Mobile number registration cannot be completed yet because new phone-only accounts require an email for local account provisioning. Create your account with email for now.');
+    const emailMessage = emailValidationMessage(email);
+    if (emailMessage) {
+      setMessage(emailMessage);
       return;
     }
     setIsSubmitting(true);
@@ -191,27 +180,9 @@ export default function LoginScreen() {
         return;
       }
 
-      if (authMethod === 'phone') {
-        if (!normalizedPhone) return;
-        const { error } = await signIn.create({ identifier: normalizedPhone });
-        if (error) return setMessage(authErrorMessage(error, 'We could not start phone sign in. Please check your number and try again.'));
-
-        const phoneFactor = signIn.supportedFirstFactors?.find((factor) => factor.strategy === 'phone_code');
-        if (!phoneFactor) {
-          return setMessage('Phone sign in is not enabled for this account. Try email sign in instead.');
-        }
-
-        const verification = await signIn.phoneCode.sendCode();
-        if (verification.error) {
-          return setMessage(authErrorMessage(verification.error, 'We could not send a verification code. Please try again.'));
-        }
-        setSignInCode('');
-        setSignInVerificationMethod('phone');
-        return;
-      }
-
       const result = await signIn.create({ identifier: email.trim() });
       if (result.error) {
+        if (await resumeExistingSession(result.error)) return;
         setMessage(authErrorMessage(result.error, 'We could not start email sign in. Please try again.'));
         return;
       }
@@ -226,9 +197,10 @@ export default function LoginScreen() {
         return;
       }
       setSignInCode('');
-      setSignInVerificationMethod('email');
+      setSignInVerificationOpen(true);
     } catch (error) {
       if (__DEV__) console.warn('[auth] Email OTP submit threw', authErrorDiagnostic(error));
+      if (await resumeExistingSession(error)) return;
       setMessage(authErrorMessage(error, isNew ? 'We could not create your account. Please try again.' : 'We could not complete sign in. Please try again.'));
     } finally {
       setIsSubmitting(false);
@@ -240,31 +212,13 @@ export default function LoginScreen() {
     setMessage('');
     setIsSubmitting(true);
     try {
-      const { error } = signInVerificationMethod === 'phone'
-        ? await signIn.phoneCode.verifyCode({ code: signInCode })
-        : signIn.status === 'needs_second_factor'
-          ? await signIn.mfa.verifyEmailCode({ code: signInCode })
-          : await signIn.emailCode.verifyCode({ code: signInCode });
+      const { error } = signIn.status === 'needs_second_factor'
+        ? await signIn.mfa.verifyEmailCode({ code: signInCode })
+        : await signIn.emailCode.verifyCode({ code: signInCode });
       if (error) return setMessage(authErrorMessage(error, 'That verification code did not work. Please try again.'));
-      if (
-        signInVerificationMethod === 'phone'
-        && (signIn.status === 'needs_second_factor' || signIn.status === 'needs_client_trust')
-      ) {
-        const emailFactor = signIn.supportedSecondFactors?.find((factor) => factor.strategy === 'email_code');
-        if (!emailFactor) {
-          return setMessage('This account requires an additional sign-in method that is not available in this app.');
-        }
-        const verification = await signIn.mfa.sendEmailCode();
-        if (verification.error) {
-          return setMessage(authErrorMessage(verification.error, 'We could not send the sign-in verification code. Please try again.'));
-        }
-        setSignInCode('');
-        setSignInVerificationMethod('email');
-        return;
-      }
       if (signIn.status !== 'complete') return setMessage('The code was accepted, but sign in is not complete yet. Please try again.');
       if (!await finalizeAndVerifyActiveSession()) return;
-      setSignInVerificationMethod(null);
+      setSignInVerificationOpen(false);
       setSignInCode('');
     } catch (error) {
       setMessage(authErrorMessage(error, 'We could not verify that code. Please try again.'));
@@ -278,11 +232,9 @@ export default function LoginScreen() {
     setMessage('');
     setIsResending(true);
     try {
-      const { error } = signInVerificationMethod === 'phone'
-        ? await signIn.phoneCode.sendCode()
-        : signIn.status === 'needs_second_factor'
-          ? await signIn.mfa.sendEmailCode()
-          : await signIn.emailCode.sendCode();
+      const { error } = signIn.status === 'needs_second_factor'
+        ? await signIn.mfa.sendEmailCode()
+        : await signIn.emailCode.sendCode();
       if (error) {
         setMessage(authErrorMessage(error, 'We could not send a new code. Please try again.'));
       } else {
@@ -343,8 +295,7 @@ export default function LoginScreen() {
     );
   }
 
-  if (signInVerificationMethod) {
-    const isPhoneVerification = signInVerificationMethod === 'phone';
+  if (isSignInVerificationOpen) {
     return (
       <KeyboardAwareScrollViewCompat
         testID="sign-in-verification-scroll-view"
@@ -354,15 +305,15 @@ export default function LoginScreen() {
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable testID="login-code-back" onPress={() => { signIn.reset(); setSignInVerificationMethod(null); setSignInCode(''); setMessage(''); }} style={{ padding: 8, marginLeft: -8, alignSelf: 'flex-start' }}>
+        <Pressable testID="login-code-back" onPress={() => { signIn.reset(); setSignInVerificationOpen(false); setSignInCode(''); setMessage(''); }} style={{ padding: 8, marginLeft: -8, alignSelf: 'flex-start' }}>
           <Feather name="arrow-left" size={24} color={colors.foreground} />
         </Pressable>
         <View style={styles.copy}>
           <Text style={[styles.kicker, { color: colors.primary }]}>VERIFY YOUR SIGN IN</Text>
-          <Text style={[styles.title, { color: colors.foreground }]}>{isPhoneVerification ? 'Check your phone.' : 'Check your email.'}</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>Check your email.</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>We sent a verification code to finish signing you in securely.</Text>
           <TextInput
-            testID={isPhoneVerification ? 'phone-sign-in-verification-code' : 'sign-in-verification-code'}
+            testID="sign-in-verification-code"
             value={signInCode}
             onChangeText={setSignInCode}
             keyboardType="number-pad"
@@ -372,14 +323,14 @@ export default function LoginScreen() {
             style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card, textAlign: 'center', letterSpacing: 8, fontWeight: '700', fontSize: 20 }]}
           />
           {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
-          <Pressable testID={isPhoneVerification ? 'verify-phone-sign-in-code' : 'verify-sign-in-code'} disabled={signInCode.length !== 6 || loading} onPress={verifySignInCode} style={[styles.button, { backgroundColor: signInCode.length === 6 && !loading ? '#064E3B' : colors.muted, marginTop: 24 }]}>
+          <Pressable testID="verify-sign-in-code" disabled={signInCode.length !== 6 || loading} onPress={verifySignInCode} style={[styles.button, { backgroundColor: signInCode.length === 6 && !loading ? '#064E3B' : colors.muted, marginTop: 24 }]}>
             {loading ? <ActivityIndicator color="#fff" /> : <><Text style={[styles.buttonText, { color: '#fff' }]}>Verify and continue</Text><Feather name="arrow-right" size={17} color="#fff" /></>}
           </Pressable>
-          <Pressable testID={isPhoneVerification ? 'resend-phone-sign-in-code' : 'resend-sign-in-code'} onPress={resendSignInCode} style={styles.secondary}>
+          <Pressable testID="resend-sign-in-code" onPress={resendSignInCode} style={styles.secondary}>
             <Text style={[styles.secondaryText, { color: colors.primary }]}>Send a new code</Text>
           </Pressable>
-          <Pressable testID="change-sign-in-identifier" onPress={() => { signIn.reset(); setSignInVerificationMethod(null); setSignInCode(''); setMessage(''); }} style={styles.secondary}>
-            <Text style={[styles.secondaryText, { color: colors.primary }]}>Use a different {isPhoneVerification ? 'phone number' : 'email address'}</Text>
+          <Pressable testID="change-sign-in-identifier" onPress={() => { signIn.reset(); setSignInVerificationOpen(false); setSignInCode(''); setMessage(''); }} style={styles.secondary}>
+            <Text style={[styles.secondaryText, { color: colors.primary }]}>Use a different email address</Text>
           </Pressable>
         </View>
       </KeyboardAwareScrollViewCompat>
@@ -404,46 +355,12 @@ export default function LoginScreen() {
           <Text style={[styles.kicker, { color: colors.primary }]}>{isNew ? 'JOIN THE JOURNEY' : 'WELCOME BACK'}</Text>
           <Text style={[styles.title, { color: colors.foreground }]}>{isNew ? 'Start exploring.' : 'Your next chapter\nstarts here.'}</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{isNew ? 'Create an account to save the places that feel like home.' : 'Sign in to keep your stays, bookings, and saved places together.'}</Text>
-          <View style={styles.methodSwitcher}>
-            <Pressable testID="login-method-email" onPress={() => { setAuthMethod('email'); setMessage(''); }} style={[styles.methodOption, { backgroundColor: authMethod === 'email' ? colors.primary : colors.card, borderColor: colors.input }]}>
-              <Text style={[styles.methodOptionText, { color: authMethod === 'email' ? colors.primaryForeground : colors.foreground }]}>Email</Text>
-            </Pressable>
-            <Pressable testID="login-method-phone" onPress={() => { setAuthMethod('phone'); setMessage(''); }} style={[styles.methodOption, { backgroundColor: authMethod === 'phone' ? colors.primary : colors.card, borderColor: colors.input }]}>
-              <Text style={[styles.methodOptionText, { color: authMethod === 'phone' ? colors.primaryForeground : colors.foreground }]}>Mobile Number</Text>
-            </Pressable>
-          </View>
-          {authMethod === 'phone' ? (
-            <View style={styles.phoneRow}>
-              <TextInput
-                testID="phone-country-code"
-                value={countryCode}
-                onChangeText={setCountryCode}
-                autoCapitalize="none"
-                keyboardType="phone-pad"
-                maxLength={5}
-                placeholder="+91"
-                placeholderTextColor={colors.mutedForeground}
-                style={[styles.input, styles.countryCodeInput, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]}
-              />
-              <TextInput
-                testID="phone-number"
-                value={phone}
-                onChangeText={setPhone}
-                autoCapitalize="none"
-                keyboardType="phone-pad"
-                placeholder="Mobile number"
-                placeholderTextColor={colors.mutedForeground}
-                style={[styles.input, styles.phoneInput, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]}
-              />
-            </View>
-          ) : (
-            <TextInput testID="login-email" value={email} onChangeText={(value) => { setEmail(value); setMessage(''); }} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
-          )}
+          <TextInput testID="login-email" value={email} onChangeText={(value) => { setEmail(value); setMessage(''); }} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
           {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
-          <Pressable testID="login-continue" disabled={(authMethod === 'phone' && !normalizedPhone) || loading} onPress={() => void submit()} style={[styles.button, { backgroundColor: (authMethod === 'email' ? email.trim() : normalizedPhone) && !loading ? colors.primary : colors.muted, marginTop: 24 }]}>
-            {loading ? <><ActivityIndicator color="#fff" /><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Creating account...' : authMethod === 'phone' ? 'Sending code...' : 'Signing in...'}</Text></> : <><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Create account' : 'Sign in'}</Text><Feather name="arrow-right" size={17} color="#fff" /></>}
+          <Pressable testID="login-continue" disabled={loading} onPress={() => void submit()} style={[styles.button, { backgroundColor: email.trim() && !loading ? colors.primary : colors.muted, marginTop: 24 }]}>
+            {loading ? <><ActivityIndicator color="#fff" /><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Creating account...' : 'Signing in...'}</Text></> : <><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Create account' : 'Sign in'}</Text><Feather name="arrow-right" size={17} color="#fff" /></>}
           </Pressable>
-          <Pressable onPress={() => { setNew(!isNew); setAuthMethod('email'); setMessage(''); }} style={styles.secondary}>
+          <Pressable onPress={() => { setNew(!isNew); setMessage(''); }} style={styles.secondary}>
             <Text style={[styles.secondaryText, { color: colors.primary }]}>{isNew ? 'Already have an account? Sign in' : 'New here? Create an account'}</Text>
           </Pressable>
           <Pressable onPress={() => router.push('/vendor-application')} style={styles.vendorLink}>
@@ -466,14 +383,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { fontSize: 15, lineHeight: 22, marginTop: 12, marginBottom: 32 },
   input: { height: 58, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, fontSize: 15 },
-  methodSwitcher: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  methodOption: { flex: 1, height: 44, borderWidth: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  methodOptionText: { fontSize: 14, fontWeight: '700' },
   organizationOption: { minHeight: 58, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   organizationOptionText: { flex: 1, fontSize: 15, fontWeight: '700' },
-  phoneRow: { flexDirection: 'row', gap: 10 },
-  countryCodeInput: { width: 88 },
-  phoneInput: { flex: 1 },
   error: { fontSize: 13, lineHeight: 18, marginTop: 12 },
   button: { height: 58, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 7px 14px rgba(20, 63, 74, 0.18)', elevation: 5 },
   buttonText: { fontSize: 16, fontWeight: '700' },
