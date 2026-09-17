@@ -1,0 +1,157 @@
+Fix the current Travel & Land sign-in failure in ONE complete pass.
+
+CURRENT ERROR
+
+When an email user enters valid credentials and taps Sign In, the app shows:
+
+"Your account must be added to an organization before you can sign in"
+
+The email-only authentication UI is correct and must remain unchanged.
+
+KNOWN CONTEXT
+
+The app currently uses Clerk organizations and has this intended behavior:
+
+- Email-only authentication.
+- Existing Clerk session should be reused when `session_exists`.
+- If exactly one organization is available, activate it automatically.
+- After authentication, the central navigation guard routes the user appropriately.
+- Existing organization/role authorization must remain intact.
+- Phone/mobile-number login has intentionally been removed and must NOT be reintroduced.
+
+ROOT CAUSE TO INVESTIGATE
+
+The current logic appears to handle:
+1. existing session
+2. existing organization
+3. organization activation
+
+but does not handle a valid authenticated Clerk user who has ZERO organizations.
+
+Implement a safe organization-provisioning solution rather than simply bypassing the organization requirement.
+
+REQUIREMENTS
+
+1. Trace the complete sign-in flow from:
+   Sign In button
+   → Clerk authentication
+   → session activation
+   → organization lookup
+   → organization activation
+   → `/v1/me`
+   → role resolution
+   → navigation.
+
+2. Identify the exact code path producing:
+   "Your account must be added to an organization before you can sign in"
+
+3. For a newly authenticated user with no organization:
+   - provision the correct default organization using the project's existing organization architecture, OR
+   - assign the user to the existing appropriate organization if the project already has a canonical organization.
+   
+   Do NOT create duplicate organizations on every login.
+
+4. The provisioning must be idempotent:
+   - first login can create/assign the organization;
+   - subsequent logins reuse the same organization;
+   - repeated login attempts must not create duplicates.
+
+5. Preserve role/security boundaries:
+   - do NOT grant admin privileges to normal users;
+   - use the existing default user/customer role;
+   - do NOT allow the client to choose its own role;
+   - do NOT trust organization IDs supplied by the client for authorization.
+
+6. If organization creation requires a privileged Clerk/backend operation:
+   - perform it server-side;
+   - never expose a Clerk secret/service credential in the Expo client;
+   - reuse the project's existing backend Clerk integration where available.
+
+7. Preserve the existing single-organization auto-activation behavior.
+
+8. If the user belongs to multiple organizations:
+   - do NOT arbitrarily change their organization;
+   - preserve the existing organization-selection/security behavior.
+
+9. Handle race conditions:
+   - two simultaneous login/provision requests must not create duplicate organizations or duplicate memberships.
+
+10. Keep the email-only UI exactly as it is.
+    Do NOT restore:
+    - mobile number selector
+    - phone input
+    - phone OTP
+    - phone resend
+    - mobile login.
+
+DEMO ACCOUNT
+
+Create a safe demo client account for testing.
+
+Use the project's existing Clerk/backend provisioning mechanism rather than putting credentials into source code.
+
+Create:
+
+- Demo user name: Travel & Land Demo
+- Demo role: normal client/user/customer role, NOT admin
+- Demo organization: reuse the project's canonical/default client organization if one exists; otherwise create one using the same provisioning mechanism.
+- Demo account must be able to:
+  1. sign in with email
+  2. reach the authenticated home/client experience
+  3. pass organization membership validation
+  4. exercise the normal client role
+  5. not access admin/vendor functionality.
+
+IMPORTANT:
+- Do not print or commit any real password, secret key, Clerk secret, Supabase service-role key, or other credential.
+- If a demo password must be generated, create/store it only through the appropriate secret/credential mechanism and report only that the demo credential was created.
+- Do not use a production secret in client-side code.
+- Do not create a fake local-only authentication bypass.
+
+TESTING
+
+Add/update automated tests covering:
+
+1. authenticated user with existing organization → signs in normally.
+2. authenticated user with exactly one organization → organization activates automatically.
+3. authenticated user with zero organizations → organization is provisioned/assigned and sign-in continues.
+4. repeated sign-in after provisioning → no duplicate organization.
+5. multiple organizations → existing safe behavior is preserved.
+6. normal client cannot obtain admin/vendor role through organization provisioning.
+7. `session_exists` recovery still works.
+8. email-only login remains the only login UI.
+9. mobile-number login is not rendered.
+10. provisioning failure produces a useful user-facing error and does not create an invalid session state.
+
+RUN:
+
+- Full mobile test suite
+- Organization/auth focused tests
+- TypeScript typecheck
+- Existing lint/static checks if configured
+- Expo workflow health check
+
+Finally perform a real development-flow verification using the newly created demo account.
+
+Confirm:
+
+- Sign In succeeds.
+- Organization membership exists.
+- Correct organization is active.
+- `/v1/me` resolves correctly.
+- Demo user receives the normal client role.
+- Client home page renders.
+- Admin/vendor routes remain protected.
+
+Do not make unrelated UI, authentication, Supabase, payment, or navigation changes.
+
+Return a concise final report containing:
+
+A. Root cause
+B. Files changed
+C. Organization provisioning behavior
+D. Demo account status
+E. Test results
+F. Typecheck result
+G. Live sign-in verification result
+H. Whether any secrets/credentials were added and where they are stored (without revealing their values).
