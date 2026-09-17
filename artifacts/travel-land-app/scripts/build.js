@@ -4,6 +4,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { Readable } = require('stream');
 const { pipeline } = require('stream/promises');
+const { getExpoClerkConfiguration } = require('./clerk-config');
 
 let metroProcess = null;
 let metroPort = 8081;
@@ -185,39 +186,6 @@ function getMetroUrl(pathname) {
 
 function getExpoPublicReplId() {
   return process.env.REPL_ID || process.env.EXPO_PUBLIC_REPL_ID;
-}
-
-function getExpoClerkConfiguration() {
-  const target = process.env.TRAVEL_LAND_AUTH_TARGET;
-
-  if (target === 'external-development') {
-    const publishableKey = process.env.TRAVEL_LAND_DEV_CLERK_PUBLISHABLE_KEY;
-    if (!publishableKey) {
-      throw new Error(
-        'TRAVEL_LAND_DEV_CLERK_PUBLISHABLE_KEY is required for external-development authentication.',
-      );
-    }
-    return { publishableKey, proxyUrl: '' };
-  }
-
-  if (target && target !== 'replit-managed') {
-    throw new Error(
-      `Invalid TRAVEL_LAND_AUTH_TARGET "${target}". Expected "external-development" or "replit-managed".`,
-    );
-  }
-
-  if (process.env.NODE_ENV === 'development' && !target) {
-    throw new Error(
-      'TRAVEL_LAND_AUTH_TARGET must be set explicitly in development; refusing to fall back to replit-managed authentication.',
-    );
-  }
-
-  return {
-    publishableKey: process.env.CLERK_PUBLISHABLE_KEY || '',
-    proxyUrl: process.env.CLERK_PROXY_URL
-      ? `https://${getExpoPublicDomain()}${process.env.CLERK_PROXY_URL}`
-      : '',
-  };
 }
 
 async function startMetro(expoPublicDomain, expoPublicReplId) {
