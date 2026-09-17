@@ -188,7 +188,11 @@ function getExpoPublicReplId() {
   return process.env.REPL_ID || process.env.EXPO_PUBLIC_REPL_ID;
 }
 
-async function startMetro(expoPublicDomain, expoPublicReplId) {
+async function startMetro(
+  expoPublicDomain,
+  expoPublicReplId,
+  clerkConfiguration,
+) {
   const selectedPort = await findAvailableMetroPort();
   if (selectedPort === null) {
     const requestedPort = getRequestedMetroPort();
@@ -204,7 +208,6 @@ async function startMetro(expoPublicDomain, expoPublicReplId) {
   metroPort = selectedPort;
   console.log(`Starting Metro on port ${metroPort}...`);
   console.log(`Setting EXPO_PUBLIC_DOMAIN=${expoPublicDomain}`);
-  const clerkConfiguration = getExpoClerkConfiguration();
   const env = {
     ...process.env,
     CI: process.env.CI || '1',
@@ -609,11 +612,12 @@ async function main() {
   const expoPublicReplId = getExpoPublicReplId();
   const baseUrl = `https://${domain}`;
   const timestamp = `${Date.now()}-${process.pid}`;
+  const clerkConfiguration = getExpoClerkConfiguration(process.env, domain);
 
   prepareDirectories(timestamp);
   clearMetroCache();
 
-  await startMetro(domain, expoPublicReplId);
+  await startMetro(domain, expoPublicReplId, clerkConfiguration);
 
   const downloadTimeout = 600000;
   const downloadPromise = downloadBundlesAndManifests(timestamp);

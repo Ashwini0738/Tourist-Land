@@ -36,13 +36,22 @@ describe('Clerk build configuration', () => {
       }),
     ).toThrow(/missing CLERK_PUBLISHABLE_KEY/);
 
-    expect(() =>
+    const developmentKeyAttempt = () =>
       getExpoClerkConfiguration({
         NODE_ENV: 'production',
         TRAVEL_LAND_AUTH_TARGET: 'replit-managed',
         CLERK_PUBLISHABLE_KEY: developmentKey,
-      }),
-    ).toThrow(/requires CLERK_PUBLISHABLE_KEY to be a pk_live_/);
+      });
+
+    expect(developmentKeyAttempt).toThrow(
+      /requires CLERK_PUBLISHABLE_KEY to be a pk_live_/,
+    );
+
+    try {
+      developmentKeyAttempt();
+    } catch (error) {
+      expect(error.message).not.toContain(developmentKey);
+    }
   });
 
   it('accepts a pk_live key for a production build without logging it', () => {

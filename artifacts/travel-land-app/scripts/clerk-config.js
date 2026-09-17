@@ -20,7 +20,7 @@ function requireLivePublishableKey(env) {
     );
   }
 
-  if (!/^pk_live_.+/.test(publishableKey)) {
+  if (!/^pk_live_[^\s]+$/.test(publishableKey)) {
     throw new Error(
       'Production/release Clerk configuration requires CLERK_PUBLISHABLE_KEY to be a pk_live_ publishable key. ' +
         'Development pk_test_ keys cannot be used for release builds.',
@@ -30,12 +30,14 @@ function requireLivePublishableKey(env) {
   return publishableKey;
 }
 
-function getExpoClerkConfiguration(env = process.env) {
+function getExpoClerkConfiguration(
+  env = process.env,
+  expoPublicDomain = env.EXPO_PUBLIC_DOMAIN || '',
+) {
   const target = env.TRAVEL_LAND_AUTH_TARGET;
 
   if (target === 'external-development') {
     if (isReleaseBuild(env)) {
-      requireLivePublishableKey(env);
       throw new Error(
         'Production/release builds cannot use TRAVEL_LAND_AUTH_TARGET=external-development. ' +
           'Use TRAVEL_LAND_AUTH_TARGET=replit-managed with a pk_live_ CLERK_PUBLISHABLE_KEY.',
@@ -70,7 +72,7 @@ function getExpoClerkConfiguration(env = process.env) {
   return {
     publishableKey,
     proxyUrl: env.CLERK_PROXY_URL
-      ? `https://${env.EXPO_PUBLIC_DOMAIN || env.REPLIT_DEV_DOMAIN}${env.CLERK_PROXY_URL}`
+      ? `https://${expoPublicDomain}${env.CLERK_PROXY_URL}`
       : '',
   };
 }
