@@ -1,0 +1,300 @@
+# FINAL NATIVE BUILD READINESS — TRAVEL & LAND
+
+The latest automated validation has passed:
+
+- Mobile tests: 116/116
+- API Clerk auth tests: 3/3
+- TypeScript: PASS
+- Workflow validation: PASS
+- Expo dependency validation: PASS
+- Expo Doctor: 18/18
+- Production Expo JS bundles: PASS for Android and iOS
+
+Do NOT rewrite the authentication architecture again unless you discover a real defect.
+
+The current goal is now:
+
+1. Verify the real Clerk Email OTP flow.
+2. Verify native build configuration.
+3. Prepare Android APK build.
+4. Prepare iOS IPA/TestFlight build.
+5. Identify only genuine external build blockers.
+
+---
+
+## 1. REAL CLERK EMAIL OTP VERIFICATION
+
+Automated tests are not sufficient by themselves.
+
+Inspect the implementation and confirm that the production code uses the actual Clerk email-code/OTP mechanism supported by the installed Clerk SDK.
+
+The required user experience is:
+
+```text
+Create Account
+↓
+Email
+↓
+Clerk sends real email verification code
+↓
+User enters code inside Travel & Land
+↓
+Clerk verifies code
+↓
+Clerk session
+↓
+/v1/me
+↓
+Role
+↓
+Biometric
+↓
+Home
+```
+
+And:
+
+```text
+Sign In
+↓
+Email
+↓
+Clerk sends real email code
+↓
+Enter code inside app
+↓
+Clerk verification
+↓
+Session
+↓
+/v1/me
+↓
+Biometric
+↓
+Home
+```
+
+There must be NO:
+
+- Supabase Auth
+- Supabase OTP
+- Supabase confirmation link
+- localhost redirect
+- fake OTP
+- password fallback being used instead of the requested email OTP
+- custom OTP generation
+
+---
+
+## 2. VERIFY CLERK DASHBOARD REQUIREMENTS
+
+Inspect the project's Clerk configuration and determine whether the Clerk instance is configured to send email verification/authentication codes.
+
+If the application code is correct but the Clerk Dashboard configuration prevents email codes from being sent, report the exact required Clerk setting.
+
+Do not change unrelated Clerk settings.
+
+---
+
+## 3. ANDROID NATIVE BUILD
+
+The Android application ID must remain:
+
+```text
+com.arohagroup.travelandland
+```
+
+Version:
+
+```text
+1.0.0
+```
+
+Version code:
+
+```text
+3
+```
+
+Inspect `eas.json` and Expo configuration.
+
+Determine whether an EAS Android APK build can be initiated.
+
+If EAS cloud build is configured and available:
+
+- initiate the Android APK build
+- wait for the build result
+- verify the artifact
+- report the build ID
+- provide the artifact link/location
+
+If it cannot be initiated:
+
+Report the exact blocker.
+
+Do NOT claim an APK exists.
+
+---
+
+## 4. IOS NATIVE BUILD
+
+The iOS bundle identifier must remain:
+
+```text
+com.arohagroup.travelandland
+```
+
+Version:
+
+```text
+1.0.0
+```
+
+Build number:
+
+```text
+1
+```
+
+Determine whether an EAS/cloud iOS internal distribution build can be initiated.
+
+If Apple credentials/signing are already configured:
+
+- initiate the build
+- wait for the result
+- verify the artifact
+- report build ID/status
+
+If Apple Developer credentials are required:
+
+state exactly what needs to be connected/configured.
+
+Do not claim an IPA exists unless an IPA was actually generated.
+
+---
+
+## 5. DO NOT CONFUSE JS BUNDLES WITH NATIVE PACKAGES
+
+The following files:
+
+```text
+_expo/static/js/ios/bundle.js
+_expo/static/js/android/bundle.js
+```
+
+are JavaScript bundles.
+
+They are NOT:
+
+- Android APK
+- Android AAB
+- iOS IPA
+
+Do not report them as installable packages.
+
+---
+
+## 6. VERIFY BUILD ENVIRONMENT
+
+Check whether the current environment contains:
+
+- Android SDK
+- Java
+- Gradle
+- EAS CLI
+- Expo CLI
+- Apple/iOS build capability
+
+Do not repeatedly attempt unsupported local native builds.
+
+If native builds must use EAS/cloud infrastructure, use that route where available.
+
+---
+
+## 7. FINAL CODE QUALITY CHECK
+
+Before native packaging, run the existing checks again:
+
+- TypeScript
+- tests
+- Expo Doctor
+- production bundle
+- authentication tests
+
+Do not modify application code simply to make a build command pass.
+
+Do not disable tests.
+
+Do not suppress errors.
+
+---
+
+## 8. FINAL REPORT
+
+Return:
+
+### Authentication
+
+- Clerk Email OTP: PASS/FAIL
+- Clerk Phone OTP: PASS/FAIL
+- Supabase Auth inactive: PASS/FAIL
+- Biometric: PASS/FAIL
+- `/v1/me`: PASS/FAIL
+
+### Build
+
+- Android APK: CREATED / BLOCKED
+- Android AAB: CREATED / NOT CREATED
+- iOS IPA: CREATED / BLOCKED
+- EAS Android build ID/status
+- EAS iOS build ID/status
+
+### If blocked
+
+Give the exact blocker and the exact next action required.
+
+Do not say only:
+
+> "Native build is not supported."
+
+Explain whether the blocker is:
+
+- missing Android SDK
+- missing EAS access
+- missing Apple Developer account
+- missing Apple signing credentials
+- missing environment variable
+- unavailable build service
+- another concrete technical issue
+
+---
+
+## IMPORTANT
+
+The current source has already passed the automated validation.
+
+Do NOT perform another broad authentication rewrite.
+
+Only change code if an actual defect is discovered during this final verification.
+
+The desired final state is:
+
+```text
+Clean Clerk source
+      ↓
+Real Clerk Email OTP
+      ↓
+Real Clerk Session
+      ↓
+/v1/me
+      ↓
+Biometric
+      ↓
+Home
+      ↓
+Android native build
+      +
+iOS native build
+```
+
+Do not report the task as fully packaged until the native artifacts actually exist.
