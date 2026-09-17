@@ -209,24 +209,11 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
-  const colors = useColors();
-
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
-
-  if (!fontsLoaded && !fontError) {
-    return (
-      <View style={[styles.startup, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-        <Text style={[styles.startupText, { color: colors.mutedForeground }]}>
-          Starting Travel & Land…
-        </Text>
-      </View>
-    );
-  }
 
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
@@ -254,15 +241,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   gestureRoot: { flex: 1 },
-  startup: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  startupText: {
-    fontSize: 14,
-  },
   roleErrorOverlay: {
     position: 'absolute',
     top: 0,
