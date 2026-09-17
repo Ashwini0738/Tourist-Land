@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   road: { position: 'absolute', height: 8, width: '130%', left: '-15%', opacity: 0.72, borderRadius: 8 },
   roadOne: { top: '42%', transform: [{ rotate: '22deg' }] },
   roadTwo: { top: '67%', transform: [{ rotate: '-28deg' }] },
-  marker: { position: 'absolute', width: 30, height: 30, marginLeft: -15, marginTop: -15, borderRadius: 15, borderWidth: 2, alignItems: 'center', justifyContent: 'center', shadowColor: '#1f2a24', shadowOpacity: 0.15, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+  marker: { position: 'absolute', width: 30, height: 30, marginLeft: -15, marginTop: -15, borderRadius: 15, borderWidth: 2, alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(31, 42, 36, 0.15)', elevation: 3 },
   selectedMarker: { width: 42, height: 42, marginLeft: -21, marginTop: -21, borderRadius: 21, borderWidth: 3 },
   emptyMap: { position: 'absolute', left: 28, right: 28, top: '32%', alignItems: 'center' },
   emptyMapTitle: { fontSize: 16, fontWeight: '700', marginTop: 9 },

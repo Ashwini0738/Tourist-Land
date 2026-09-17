@@ -104,8 +104,8 @@ export default function ExploreDetailScreen({ defaultType = 'hotel' }: { default
 const styles = StyleSheet.create({
   container: { paddingBottom: 42 },
   hero: { height: 420, position: 'relative' },
-  heroImage: { ...StyleSheet.absoluteFillObject, width: undefined, height: undefined },
-  heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(17,35,27,0.42)' },
+  heroImage: { ...StyleSheet.absoluteFill, width: undefined, height: undefined },
+  heroShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(17,35,27,0.42)' },
   heroActions: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', justifyContent: 'space-between' },
   actionButton: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center' },
   heroCopy: { position: 'absolute', left: 20, right: 20, bottom: 28 },

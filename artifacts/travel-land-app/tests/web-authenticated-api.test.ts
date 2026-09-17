@@ -16,7 +16,7 @@ function requestHeaders() {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  global.fetch = mockFetch as typeof fetch;
+  globalThis.fetch = mockFetch as typeof fetch;
   setBaseUrl('https://api.example.test');
   setAuthTokenGetter(null);
   setUnauthorizedHandler(null);

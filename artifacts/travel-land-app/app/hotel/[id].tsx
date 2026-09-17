@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 24 },
   hero: { height: 354, position: 'relative', overflow: 'hidden' },
   heroImage: { width: 390, height: 354 },
-  heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(31,42,36,0.3)' },
+  heroShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(31,42,36,0.3)' },
   heroHeader: { position: 'absolute', left: 0, right: 0, paddingHorizontal: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   heroActions: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   heroIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },

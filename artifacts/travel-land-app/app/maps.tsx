@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   categoryChip: { borderWidth: 1, borderRadius: 100, paddingHorizontal: 11, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
   categoryText: { fontSize: 10, fontWeight: '800' },
   mapFrame: { flex: 1, minHeight: 275, marginHorizontal: 12, borderRadius: 24, overflow: 'hidden', position: 'relative' },
-  locationButton: { position: 'absolute', right: 15, bottom: 17, width: 43, height: 43, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center', shadowColor: '#1f2a24', shadowOpacity: 0.13, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+  locationButton: { position: 'absolute', right: 15, bottom: 17, width: 43, height: 43, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(31, 42, 36, 0.13)', elevation: 3 },
   currentPill: { position: 'absolute', left: 14, bottom: 16, maxWidth: '58%', borderWidth: 1, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
   currentDot: { width: 7, height: 7, borderRadius: 4 },
   currentText: { fontSize: 10, fontWeight: '700' },

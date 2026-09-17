@@ -101,7 +101,7 @@ function ClassicTabLayout() {
                borderWidth: focused ? 0 : 1, borderColor: colors.border,
                alignItems: 'center', justifyContent: 'center',
                marginTop: isWeb ? -4 : -8,
-               shadowColor: focused ? colors.primary : '#000', shadowOpacity: focused ? 0.24 : 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: focused ? 6 : 0
+               boxShadow: focused ? `0 4px 10px ${colors.primary}` : '0 4px 10px rgba(0, 0, 0, 0.05)', elevation: focused ? 6 : 0
             }}>
               <Feather name="calendar" size={isWeb ? 18 : 20} color={focused ? colors.primaryForeground : color} />
             </View>

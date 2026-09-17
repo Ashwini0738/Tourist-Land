@@ -87,8 +87,8 @@ export default function PropertyDetail() {
 const styles = StyleSheet.create({
   container: { paddingBottom: 42 },
   hero: { height: 420, position: 'relative' },
-  image: { ...StyleSheet.absoluteFillObject, width: undefined, height: undefined },
-  shade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(17,35,27,0.36)' },
+  image: { ...StyleSheet.absoluteFill, width: undefined, height: undefined },
+  shade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(17,35,27,0.36)' },
   heroActions: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', justifyContent: 'space-between' },
   action: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.78)' },
   heroCopy: { position: 'absolute', left: 20, right: 20, bottom: 28 },

@@ -7,12 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "travel-land-app",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#fbfaf6"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.arohagroup.travelandland",
@@ -39,6 +33,14 @@
         }
       ],
       "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#fbfaf6"
+        }
+      ],
       "expo-web-browser",
       [
         "expo-location",
@@ -63,7 +65,8 @@
             }
           }
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

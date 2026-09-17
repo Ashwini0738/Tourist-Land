@@ -45,7 +45,7 @@ export default function WalletScreen() {
         </View>
 
         {/* Inactive travel pass preview */}
-        <View style={{ backgroundColor: colors.card, marginHorizontal: 16, marginTop: -20, borderRadius: 20, padding: 24, paddingTop: 48, borderWidth: 1, borderColor: colors.border, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4, zIndex: 1 }}>
+        <View style={{ backgroundColor: colors.card, marginHorizontal: 16, marginTop: -20, borderRadius: 20, padding: 24, paddingTop: 48, borderWidth: 1, borderColor: colors.border, alignItems: 'center', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.05)', elevation: 4, zIndex: 1 }}>
            <SecurityIcon name="pass" size={64} color={colors.foreground} />
            <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: '700', marginTop: 16 }}>Travel pass preview</Text>
            <Text style={{ color: colors.mutedForeground, fontSize: 13, lineHeight: 19, marginTop: 6, textAlign: 'center' }}>Your secure check-in pass will activate after your first confirmed booking.</Text>

@@ -395,7 +395,7 @@ export default function LoginScreen() {
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
-        <LinearGradient pointerEvents="none" colors={[colors.gradientSoft, 'transparent']} style={styles.orb} />
+        <LinearGradient colors={[colors.gradientSoft, 'transparent']} style={styles.orb} />
         <View style={styles.brandRow}>
           <View style={[styles.brandMark, { backgroundColor: colors.accent }]}><Text style={[styles.brandMarkText, { color: colors.accentForeground }]}>T</Text></View>
           <Text style={[styles.brandName, { color: colors.primary }]}>TRAVEL & LAND</Text>
@@ -456,7 +456,7 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 24, overflow: 'hidden' },
-  orb: { position: 'absolute', width: 300, height: 300, borderRadius: 150, top: -190, right: -90, opacity: 0.9 },
+  orb: { position: 'absolute', width: 300, height: 300, borderRadius: 150, top: -190, right: -90, opacity: 0.9, pointerEvents: 'none' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   brandMark: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   brandMarkText: { fontSize: 17, fontWeight: '800' },
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
   countryCodeInput: { width: 88 },
   phoneInput: { flex: 1 },
   error: { fontSize: 13, lineHeight: 18, marginTop: 12 },
-  button: { height: 58, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, ...({ shadowColor: '#143f4a', shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 7 }, elevation: 5 }) },
+  button: { height: 58, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 7px 14px rgba(20, 63, 74, 0.18)', elevation: 5 },
   buttonText: { fontSize: 16, fontWeight: '700' },
   secondary: { alignItems: 'center', marginTop: 24 },
   secondaryText: { fontSize: 14, fontWeight: '600' },

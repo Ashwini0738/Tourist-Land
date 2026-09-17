@@ -1,11 +1,12 @@
 import React from 'react';
+import type { ColorValue } from 'react-native';
 import { Circle, Path, Svg } from 'react-native-svg';
 
 type PlatformIconProps = {
   name: string;
   size?: number;
-  color?: string;
-  fill?: string;
+  color?: ColorValue;
+  fill?: ColorValue;
   accessibilityLabel?: string;
 };
 

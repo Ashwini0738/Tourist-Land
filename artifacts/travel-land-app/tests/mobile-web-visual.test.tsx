@@ -377,11 +377,11 @@ describe('mobile web visual contracts', () => {
     const installedExpoRouter = require('expo-router/package.json') as { version: string };
 
     assertTabContract(
-      appPackage.devDependencies?.['expo-router'] === '~6.0.24',
-      'The visual contract must declare the supported Expo Router 6.0 release line (~6.0.24)',
+      appPackage.devDependencies?.['expo-router'] === '~57.0.21',
+      'The visual contract must declare the supported Expo Router 57 release line (~57.0.21)',
     );
     assertTabContract(
-      installedExpoRouter.version === '6.0.24',
+      installedExpoRouter.version === '57.0.21',
       `The visual contract is not running against the Expo Router version declared by the app (found ${installedExpoRouter.version})`,
     );
   });

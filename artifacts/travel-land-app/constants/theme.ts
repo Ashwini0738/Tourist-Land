@@ -27,17 +27,11 @@ export const typeScale = {
 
 export const elevation = {
   card: {
-    shadowColor: '#102d3a',
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
+    boxShadow: '0 6px 14px rgba(16, 45, 58, 0.08)',
     elevation: 3,
   },
   floating: {
-    shadowColor: '#102d3a',
-    shadowOpacity: 0.16,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 10 },
+    boxShadow: '0 10px 22px rgba(16, 45, 58, 0.16)',
     elevation: 7,
   },
 } as const;

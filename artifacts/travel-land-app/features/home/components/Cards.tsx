@@ -15,7 +15,7 @@ export function BannerCard({ item }: { item: Banner }) {
       onPress={() => router.push(`/destination/${item.destinationId}`)}
       style={{ width: 300, height: 196, borderRadius: radii.lg, overflow: 'hidden', ...elevation.card }}
     >
-      <Image source={getImageSource(item.imageKey)} style={{ ...StyleSheet.absoluteFillObject, width: undefined, height: undefined }} />
+      <Image source={getImageSource(item.imageKey)} style={{ ...StyleSheet.absoluteFill, width: undefined, height: undefined }} />
       <LinearGradient
         pointerEvents="none"
         colors={['rgba(16,45,58,0.04)', 'rgba(16,45,58,0.82)']}

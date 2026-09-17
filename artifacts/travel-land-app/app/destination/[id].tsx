@@ -53,7 +53,7 @@ function DestinationLoading() {
       scrollEnabled={false}
     >
       <View style={[styles.hero, { backgroundColor: colors.secondary }]}>
-        <Skeleton style={StyleSheet.absoluteFillObject} />
+        <Skeleton style={StyleSheet.absoluteFill} />
         <View style={styles.heroCopy}>
           <Skeleton style={styles.kickerSkeleton} />
           <Skeleton style={styles.titleSkeleton} />
@@ -542,8 +542,8 @@ function InfoItem({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   container: { paddingBottom: 46 },
   hero: { height: 430, position: 'relative' },
-  heroImage: { ...StyleSheet.absoluteFillObject, width: undefined, height: undefined },
-  heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(17,35,27,0.42)' },
+  heroImage: { ...StyleSheet.absoluteFill, width: undefined, height: undefined },
+  heroShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(17,35,27,0.42)' },
   heroActions: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   heroRightActions: { flexDirection: 'row', gap: 10 },
   actionButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
