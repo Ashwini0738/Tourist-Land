@@ -4,13 +4,13 @@ export const DEFAULT_CLIENT_ORGANIZATION = {
   role: "org:member",
 } as const;
 
-type OrganizationRecord = { id: string; slug: string };
+type OrganizationRecord = { id: string; name: string; slug?: string | null };
 type OrganizationPage = { data: OrganizationRecord[] };
 type MembershipPage = { data: Array<{ id: string }> };
 
 export type OrganizationProvisioner = {
   getOrganizationList(params: { query: string; limit: number }): Promise<OrganizationPage>;
-  createOrganization(params: { name: string; slug: string; maxAllowedMemberships: number }): Promise<OrganizationRecord>;
+  createOrganization(params: { name: string; slug?: string; maxAllowedMemberships: number }): Promise<OrganizationRecord>;
   getOrganizationMembershipList(params: {
     organizationId: string;
     userId: string[];
@@ -25,10 +25,25 @@ export type OrganizationProvisioner = {
 
 async function findDefaultOrganization(client: OrganizationProvisioner): Promise<OrganizationRecord | null> {
   const page = await client.getOrganizationList({
-    query: DEFAULT_CLIENT_ORGANIZATION.slug,
+    query: DEFAULT_CLIENT_ORGANIZATION.name,
     limit: 100,
   });
-  return page.data.find((organization) => organization.slug === DEFAULT_CLIENT_ORGANIZATION.slug) ?? null;
+  return page.data.find(
+    (organization) =>
+      organization.name === DEFAULT_CLIENT_ORGANIZATION.name &&
+      (!organization.slug || organization.slug === DEFAULT_CLIENT_ORGANIZATION.slug),
+  ) ?? null;
+}
+
+function organizationSlugsDisabled(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const source = error as {
+    errors?: Array<{ code?: string }>;
+    aggregateErrors?: Array<{ code?: string }>;
+  };
+  return [...(source.errors ?? []), ...(source.aggregateErrors ?? [])].some(
+    ({ code }) => code === "organization_slugs_disabled",
+  );
 }
 
 async function getOrCreateDefaultOrganization(client: OrganizationProvisioner): Promise<OrganizationRecord> {
@@ -42,6 +57,12 @@ async function getOrCreateDefaultOrganization(client: OrganizationProvisioner): 
       maxAllowedMemberships: 0,
     });
   } catch (error) {
+    if (organizationSlugsDisabled(error)) {
+      return client.createOrganization({
+        name: DEFAULT_CLIENT_ORGANIZATION.name,
+        maxAllowedMemberships: 0,
+      });
+    }
     const raced = await findDefaultOrganization(client);
     if (raced) return raced;
     throw error;

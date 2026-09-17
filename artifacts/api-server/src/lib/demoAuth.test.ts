@@ -23,14 +23,14 @@ function fakeClient() {
     externalId: string;
     emailAddresses: Array<{ emailAddress: string }>;
   }> = [];
-  const organizations: Array<{ id: string; slug: string }> = [];
+  const organizations: Array<{ id: string; name: string; slug?: string | null }> = [];
   const memberships = new Set<string>();
   const organizationClient: OrganizationProvisioner = {
     async getOrganizationList() {
       return { data: organizations };
     },
-    async createOrganization({ slug }) {
-      const organization = { id: "org_clients", slug };
+    async createOrganization({ name, slug }) {
+      const organization = { id: "org_clients", name, slug };
       organizations.push(organization);
       return organization;
     },
