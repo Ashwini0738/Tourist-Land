@@ -40,9 +40,10 @@ export function demoAuthEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
 export function demoAuthConfig(env: NodeJS.ProcessEnv = process.env) {
   if (!demoAuthEnabled(env)) throw new DemoAuthUnavailableError();
   const email = env.TRAVEL_LAND_DEMO_EMAIL?.trim().toLowerCase();
+  const phone = env.TRAVEL_LAND_DEMO_PHONE?.trim();
   const otp = env.TRAVEL_LAND_DEMO_OTP?.trim();
-  if (!email || !otp) throw new DemoAuthUnavailableError();
-  return { email, otp };
+  if (!email || !phone || !otp) throw new DemoAuthUnavailableError();
+  return { email, phone, otp };
 }
 
 export function verifyDemoOtp(
@@ -76,6 +77,8 @@ export type DemoClerkClient = {
     createUser(params: {
       externalId: string;
       emailAddress: string[];
+      phoneNumber: string[];
+      phoneNumberIdentificationStatus: ["reserved"];
       firstName: string;
       lastName: string;
       skipPasswordRequirement: boolean;
@@ -93,6 +96,7 @@ export type DemoClerkClient = {
 
 async function getOrCreateDemoUser(
   email: string,
+  phone: string,
   client: DemoClerkClient,
 ): Promise<DemoUser> {
   const users = await client.users.getUserList({
@@ -115,6 +119,8 @@ async function getOrCreateDemoUser(
     return await client.users.createUser({
       externalId: DEMO_EXTERNAL_ID,
       emailAddress: [email],
+      phoneNumber: [phone],
+      phoneNumberIdentificationStatus: ["reserved"],
       ...DEMO_DISPLAY_NAME,
       skipPasswordRequirement: true,
     });
@@ -141,7 +147,8 @@ export async function createDemoSignIn(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<{ email: string; ticket: string; organizationId: string; userId: string }> {
   const { email } = verifyDemoOtp(suppliedOtp, env);
-  const user = await getOrCreateDemoUser(email, client);
+  const { phone } = demoAuthConfig(env);
+  const user = await getOrCreateDemoUser(email, phone, client);
   const { organizationId } = await ensureDefaultClientOrganizationMembership(
     user.id,
     client.organizations,

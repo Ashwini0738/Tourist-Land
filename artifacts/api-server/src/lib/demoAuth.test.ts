@@ -13,6 +13,7 @@ const safeEnv = {
   NODE_ENV: "development",
   TRAVEL_LAND_DEMO_AUTH_ENABLED: "true",
   TRAVEL_LAND_DEMO_EMAIL: "demo@travel-land.example",
+  TRAVEL_LAND_DEMO_PHONE: "+12025550199",
   TRAVEL_LAND_DEMO_OTP: "246810",
 } as NodeJS.ProcessEnv;
 
