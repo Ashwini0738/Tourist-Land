@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useMobileAuth } from '@/context/AuthContext';
+import { provisionDefaultOrganization } from '@workspace/api-client-react';
 
 type PendingOrganizationChoice = {
   sessionId: string;
@@ -101,7 +102,22 @@ export default function LoginScreen() {
       }
       if (!organizationId) {
         if (memberships.length === 0) {
-          setMessage('Your account must be added to an organization before you can sign in.');
+          try {
+            const token = await session.getToken();
+            if (!token) {
+              throw new Error('The pending Clerk session did not provide an authentication token.');
+            }
+            const provisioned = await provisionDefaultOrganization({
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            await setActive({
+              session: sessionId,
+              organization: provisioned.organizationId,
+            });
+          } catch (error) {
+            if (__DEV__) console.warn('[auth] Organization provisioning failed', authErrorDiagnostic(error));
+            setMessage('We could not finish setting up your account. Please try again.');
+          }
           return true;
         }
         setPendingOrganizationChoice({

@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { useMobileAuth } from '@/context/AuthContext';
 import LoginScreen from '../app/login';
 import VerifyScreen from '../app/verify';
+import { provisionDefaultOrganization } from '@workspace/api-client-react';
 
 jest.mock('@clerk/expo', () => ({ useClerk: jest.fn(), useSignIn: jest.fn(), useSignUp: jest.fn() }));
 jest.mock('@/context/AuthContext', () => ({ useMobileAuth: jest.fn() }));
@@ -13,11 +14,13 @@ jest.mock('expo-linear-gradient', () => ({ LinearGradient: () => null }));
 jest.mock('@/components/PlatformIcon', () => ({ PlatformIcon: () => null }));
 jest.mock('@/hooks/useColors', () => ({ useColors: () => ({ background: '#fbfaf6', foreground: '#14231f', primary: '#064e3b', primaryForeground: '#ffffff', mutedForeground: '#71807a', input: '#d7ded9', card: '#ffffff', destructive: '#b42318', muted: '#d7ded9', accent: '#f5c26b', accentForeground: '#3f2a10', gradientSoft: '#e8f0ea' }) }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }) }));
+jest.mock('@workspace/api-client-react', () => ({ provisionDefaultOrganization: jest.fn() }));
 
 const mockUseClerk = useClerk as jest.Mock;
 const mockUseSignIn = useSignIn as jest.Mock;
 const mockUseSignUp = useSignUp as jest.Mock;
 const mockUseMobileAuth = useMobileAuth as jest.Mock;
+const mockProvisionDefaultOrganization = provisionDefaultOrganization as jest.Mock;
 
 function signInFixture() {
   return {
@@ -49,6 +52,7 @@ beforeEach(() => {
   mockUseClerk.mockReturnValue({ setActive: jest.fn(), session: null, client: { sessions: [], lastActiveSessionId: null }, redirectToTasks: jest.fn() });
   mockUseSignIn.mockReturnValue({ signIn: signInFixture(), fetchStatus: 'idle' });
   mockUseSignUp.mockReturnValue({ signUp: signUpFixture(), fetchStatus: 'idle' });
+  mockProvisionDefaultOrganization.mockResolvedValue({ organizationId: 'organization_clients' });
 });
 
 it('starts Clerk email-code sign in without password or Supabase APIs', async () => {
@@ -147,6 +151,39 @@ it('activates the available organization before continuing a restored pending se
     organization: 'organization_travel',
   }));
   expect(screen.queryByText('You are already signed in. Opening your account.')).toBeNull();
+});
+
+it('provisions and activates the canonical organization for a restored zero-organization session', async () => {
+  const pendingSession = {
+    id: 'session_pending',
+    status: 'pending',
+    currentTask: { key: 'choose-organization' },
+    getToken: jest.fn().mockResolvedValue('pending-session-token'),
+    user: { organizationMemberships: [] },
+    lastActiveOrganizationId: null,
+  };
+  const setActive = jest.fn().mockResolvedValue(undefined);
+  const signIn = signInFixture();
+  signIn.create.mockRejectedValue({ errors: [{ code: 'session_exists' }] });
+  mockUseClerk.mockReturnValue({
+    setActive,
+    session: pendingSession,
+    client: { sessions: [pendingSession], lastActiveSessionId: pendingSession.id },
+    redirectToTasks: jest.fn(),
+  });
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(mockProvisionDefaultOrganization).toHaveBeenCalledWith({
+    headers: { Authorization: 'Bearer pending-session-token' },
+  }));
+  expect(setActive).toHaveBeenCalledWith({
+    session: pendingSession.id,
+    organization: 'organization_clients',
+  });
 });
 
 it('starts Clerk email-code signup and opens reusable verification', async () => {

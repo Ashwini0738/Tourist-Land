@@ -2194,6 +2194,17 @@ export const GetAuthSessionResponse = zod.object({
 
 
 /**
+ * @summary Idempotently assign the authenticated user to the canonical client organization
+ */
+
+
+
+export const ProvisionDefaultOrganizationResponse = zod.object({
+  "organizationId": zod.string().min(1)
+})
+
+
+/**
  * @summary Start a one-time existing-user Clerk to Supabase identity-link attempt
  */
 export const StartIdentityLinkResponse = zod.object({

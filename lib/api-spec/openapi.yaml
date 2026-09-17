@@ -931,6 +931,20 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AuthSessionStatus" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
+  /v1/auth/organization/provision:
+    post:
+      operationId: provisionDefaultOrganization
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      summary: Idempotently assign the authenticated user to the canonical client organization
+      responses:
+        "200":
+          description: Canonical organization membership exists
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrganizationProvisioningResult" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /v1/auth/identity-link/attempts:
     post:
       operationId: startIdentityLink
@@ -3593,6 +3607,12 @@ components:
         sessionId: { type: [string, "null"] }
         sessionAuthority: { type: string, enum: [clerk] }
       required: [authenticated, clerkUserId, sessionId, sessionAuthority]
+    OrganizationProvisioningResult:
+      type: object
+      additionalProperties: false
+      properties:
+        organizationId: { type: string, minLength: 1 }
+      required: [organizationId]
     IdentityLinkAttempt:
       type: object
       properties:

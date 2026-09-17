@@ -9,7 +9,7 @@
     "start": "node --enable-source-maps ./dist/index.mjs",
     "pretypecheck": "pnpm -w exec tsc --build --force",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --import ../../scripts/node_modules/tsx/dist/loader.mjs --test src/lib/authenticatedIdentity.test.ts src/lib/roles.test.ts src/lib/onboarding.test.ts src/lib/email.test.ts src/lib/stripe-payment-state.test.ts src/lib/booking-payments.test.ts src/middlewares/errorHandler.test.ts src/webhookHandlers.test.ts src/routes/explore.test.ts src/routes/catalog.test.ts src/routes/hotel-catalog.test.ts src/routes/hotel-availability.test.ts src/routes/booking.test.ts src/routes/favorite-catalog.test.ts src/routes/vendor-portal.test.ts src/routes/admin.test.ts src/routes/reports.test.ts",
+    "test": "node --import ../../scripts/node_modules/tsx/dist/loader.mjs --test src/lib/authenticatedIdentity.test.ts src/lib/roles.test.ts src/lib/onboarding.test.ts src/lib/clerkOrganization.test.ts src/lib/email.test.ts src/lib/stripe-payment-state.test.ts src/lib/booking-payments.test.ts src/middlewares/errorHandler.test.ts src/webhookHandlers.test.ts src/routes/explore.test.ts src/routes/catalog.test.ts src/routes/hotel-catalog.test.ts src/routes/hotel-availability.test.ts src/routes/booking.test.ts src/routes/favorite-catalog.test.ts src/routes/vendor-portal.test.ts src/routes/admin.test.ts src/routes/reports.test.ts",
     "test:demo-e2e": "node --import ../../scripts/node_modules/tsx/dist/loader.mjs --test --test-concurrency=1 src/routes/demo-e2e.test.ts",
     "test:reports-e2e": "node --import ../../scripts/node_modules/tsx/dist/loader.mjs --test --test-concurrency=1 src/routes/reports-export-e2e.test.ts"
   },

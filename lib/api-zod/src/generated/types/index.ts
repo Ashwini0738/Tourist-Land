@@ -207,6 +207,7 @@ export * from './notificationList';
 export * from './notificationsReadAllResponse';
 export * from './notificationType';
 export * from './notificationUnreadCount';
+export * from './organizationProvisioningResult';
 export * from './paymentStatus';
 export * from './place';
 export * from './placeList';

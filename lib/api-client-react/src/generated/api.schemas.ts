@@ -1581,6 +1581,11 @@ export interface AuthSessionStatus {
   sessionAuthority: AuthSessionStatusSessionAuthority;
 }
 
+export interface OrganizationProvisioningResult {
+  /** @minLength 1 */
+  organizationId: string;
+}
+
 export interface IdentityLinkAttempt {
   attemptId: string;
   expiresAt: string;

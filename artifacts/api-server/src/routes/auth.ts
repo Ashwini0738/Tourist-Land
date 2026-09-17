@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import { getAuth } from "@clerk/express";
 import { requireAuth } from "../middlewares/requireAuth";
 import { findVendorProfile, serializeCurrentUser } from "../lib/role-data";
+import { ensureDefaultClientOrganizationMembership } from "../lib/clerkOrganization";
+import { clerkClient } from "../lib/clerkConfig";
 
 const authRouter: IRouter = Router();
 
@@ -19,6 +21,14 @@ authRouter.get("/v1/auth/session", async (req, res) => {
     sessionId: auth.sessionId ?? null,
     sessionAuthority: "clerk",
   });
+});
+
+authRouter.post("/v1/auth/organization/provision", async (req, res) => {
+  const result = await ensureDefaultClientOrganizationMembership(
+    req.localUser!.clerkUserId,
+    clerkClient.organizations,
+  );
+  res.json(result);
 });
 
 authRouter.get("/v1/me", async (req, res) => {

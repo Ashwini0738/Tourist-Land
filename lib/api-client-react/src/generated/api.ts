@@ -130,6 +130,7 @@ import type {
   NotificationList,
   NotificationUnreadCount,
   NotificationsReadAllResponse,
+  OrganizationProvisioningResult,
   PlaceList,
   Property,
   PropertyEnquiryInput,
@@ -4188,6 +4189,77 @@ export function useGetAuthSession<TData = Awaited<ReturnType<typeof getAuthSessi
 
 
 
+
+export const getProvisionDefaultOrganizationUrl = () => {
+
+
+
+
+  return `/api/v1/auth/organization/provision`
+}
+
+/**
+ * @summary Idempotently assign the authenticated user to the canonical client organization
+ */
+export const provisionDefaultOrganization = async ( options?: Parameters<typeof customFetch>[1]): Promise<OrganizationProvisioningResult> => {
+
+  return customFetch<OrganizationProvisioningResult>(getProvisionDefaultOrganizationUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getProvisionDefaultOrganizationMutationOptions = <TError = ErrorType<UnauthenticatedResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof provisionDefaultOrganization>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof provisionDefaultOrganization>>, TError,void, TContext> => {
+
+const mutationKey = ['provisionDefaultOrganization'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof provisionDefaultOrganization>>, void> = () => {
+
+
+          return  provisionDefaultOrganization(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ProvisionDefaultOrganizationMutationResult = NonNullable<Awaited<ReturnType<typeof provisionDefaultOrganization>>>
+
+    export type ProvisionDefaultOrganizationMutationError = ErrorType<UnauthenticatedResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Idempotently assign the authenticated user to the canonical client organization
+ */
+export const useProvisionDefaultOrganization = <TError = ErrorType<UnauthenticatedResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof provisionDefaultOrganization>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof provisionDefaultOrganization>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getProvisionDefaultOrganizationMutationOptions(options));
+    }
 
 export const getStartIdentityLinkUrl = () => {
 
