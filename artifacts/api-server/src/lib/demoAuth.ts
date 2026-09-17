@@ -1,9 +1,4 @@
 import { timingSafeEqual } from "node:crypto";
-import {
-  DEFAULT_CLIENT_ORGANIZATION,
-  ensureDefaultClientOrganizationMembership,
-  type OrganizationProvisioner,
-} from "./clerkOrganization.ts";
 
 const DEMO_EXTERNAL_ID = "travel-land-development-demo";
 const DEMO_DISPLAY_NAME = {
@@ -84,11 +79,9 @@ export type DemoClerkClient = {
       skipPasswordRequirement: boolean;
     }): Promise<DemoUser>;
   };
-  organizations: OrganizationProvisioner;
   signInTokens: {
     createSignInToken(params: {
       userId: string;
-      orgId: string;
       expiresInSeconds: number;
     }): Promise<{ token: string }>;
   };
@@ -145,25 +138,17 @@ export async function createDemoSignIn(
   suppliedOtp: string,
   client: DemoClerkClient,
   env: NodeJS.ProcessEnv = process.env,
-): Promise<{ email: string; ticket: string; organizationId: string; userId: string }> {
+): Promise<{ email: string; ticket: string; userId: string }> {
   const { email } = verifyDemoOtp(suppliedOtp, env);
   const { phone } = demoAuthConfig(env);
   const user = await getOrCreateDemoUser(email, phone, client);
-  const { organizationId } = await ensureDefaultClientOrganizationMembership(
-    user.id,
-    client.organizations,
-  );
   const signInToken = await client.signInTokens.createSignInToken({
     userId: user.id,
-    orgId: organizationId,
     expiresInSeconds: 60,
   });
   return {
     email,
     ticket: signInToken.token,
-    organizationId,
     userId: user.id,
   };
 }
-
-export { DEFAULT_CLIENT_ORGANIZATION };

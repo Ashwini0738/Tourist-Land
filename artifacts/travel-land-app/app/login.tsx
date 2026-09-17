@@ -9,12 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useMobileAuth } from '@/context/AuthContext';
-import { createDemoAuthSession, provisionDefaultOrganization } from '@workspace/api-client-react';
-
-type PendingOrganizationChoice = {
-  sessionId: string;
-  organizations: Array<{ id: string; name: string }>;
-};
+import { createDemoAuthSession } from '@workspace/api-client-react';
 
 function authErrorDiagnostic(error: unknown) {
   const source = error && typeof error === 'object' ? error as Record<string, unknown> : {};
@@ -51,7 +46,6 @@ export default function LoginScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [isDemoLogin, setIsDemoLogin] = useState(false);
-  const [pendingOrganizationChoice, setPendingOrganizationChoice] = useState<PendingOrganizationChoice | null>(null);
 
   const loading = !isLoaded || signInStatus === 'fetching' || isSubmitting || isResending;
 
@@ -86,55 +80,18 @@ export default function LoginScreen() {
       return false;
     }
 
-    if (session.status === 'pending') {
-      const memberships = session.user?.organizationMemberships ?? [];
-      const previousOrganizationId = session.lastActiveOrganizationId;
-      const organizationId = previousOrganizationId && memberships.some(
-        (membership) => membership.organization.id === previousOrganizationId,
-      )
-        ? previousOrganizationId
-        : memberships.length === 1
-          ? memberships[0].organization.id
-          : null;
-
-      if (session.currentTask?.key !== 'choose-organization') {
-        await clerk.redirectToTasks();
-        return true;
-      }
-      if (!organizationId) {
-        if (memberships.length === 0) {
-          try {
-            const token = await session.getToken();
-            if (!token) {
-              throw new Error('The pending Clerk session did not provide an authentication token.');
-            }
-            const provisioned = await provisionDefaultOrganization({
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'X-Clerk-Session-Id': sessionId,
-              },
-            });
-            await setActive({
-              session: sessionId,
-              organization: provisioned.organizationId,
-            });
-          } catch (error) {
-            if (__DEV__) console.warn('[auth] Organization provisioning failed', authErrorDiagnostic(error));
-            setMessage('We could not finish setting up your account. Please try again.');
-          }
-          return true;
-        }
-        setPendingOrganizationChoice({
-          sessionId,
-          organizations: memberships.map((membership) => ({
-            id: membership.organization.id,
-            name: membership.organization.name,
-          })),
+    if (session.status !== 'active') {
+      if (__DEV__) {
+        console.warn('[auth] Clerk session is not active', {
+          sessionStatus: session.status,
+          currentTask: session.currentTask?.key ?? null,
         });
-        return true;
       }
-      await setActive({ session: sessionId, organization: organizationId });
-    } else if (clerk.session?.id !== sessionId || !isSignedIn) {
+      setMessage('Clerk could not activate this session. Please sign out, then try again.');
+      return false;
+    }
+
+    if (clerk.session?.id !== sessionId || !isSignedIn) {
       await setActive({ session: sessionId });
     }
 
@@ -300,54 +257,6 @@ export default function LoginScreen() {
     }
   };
 
-  const selectOrganization = async (organizationId: string) => {
-    if (!pendingOrganizationChoice || isSubmitting) return;
-    setMessage('');
-    setIsSubmitting(true);
-    try {
-      await setActive({
-        session: pendingOrganizationChoice.sessionId,
-        organization: organizationId,
-      });
-      setPendingOrganizationChoice(null);
-    } catch (error) {
-      if (__DEV__) console.warn('[auth] Organization activation failed', authErrorDiagnostic(error));
-      setMessage(authErrorMessage(error, 'We could not select that organization. Please try again.'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (pendingOrganizationChoice) {
-    return (
-      <KeyboardAwareScrollViewCompat
-        testID="organization-choice-scroll-view"
-        style={{ backgroundColor: colors.background }}
-        contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 16 }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.copy}>
-          <Text style={[styles.kicker, { color: colors.primary }]}>CHOOSE YOUR ORGANIZATION</Text>
-          <Text style={[styles.title, { color: colors.foreground }]}>Where are you signing in?</Text>
-          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Clerk requires an organization for this account. Select one to finish signing in.</Text>
-          {pendingOrganizationChoice.organizations.map((organization) => (
-            <Pressable
-              key={organization.id}
-              testID={`select-organization-${organization.id}`}
-              disabled={isSubmitting}
-              onPress={() => void selectOrganization(organization.id)}
-              style={[styles.organizationOption, { backgroundColor: colors.card, borderColor: colors.input }]}
-            >
-              <Text style={[styles.organizationOptionText, { color: colors.foreground }]}>{organization.name}</Text>
-              {isSubmitting ? <ActivityIndicator color={colors.primary} /> : <Feather name="arrow-right" size={17} color={colors.primary} />}
-            </Pressable>
-          ))}
-          {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
-        </View>
-      </KeyboardAwareScrollViewCompat>
-    );
-  }
-
   if (isSignInVerificationOpen) {
     return (
       <KeyboardAwareScrollViewCompat
@@ -445,8 +354,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { fontSize: 15, lineHeight: 22, marginTop: 12, marginBottom: 32 },
   input: { height: 58, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, fontSize: 15 },
-  organizationOption: { minHeight: 58, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  organizationOptionText: { flex: 1, fontSize: 15, fontWeight: '700' },
   error: { fontSize: 13, lineHeight: 18, marginTop: 12 },
   button: { height: 58, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 7px 14px rgba(20, 63, 74, 0.18)', elevation: 5 },
   buttonText: { fontSize: 16, fontWeight: '700' },

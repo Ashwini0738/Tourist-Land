@@ -7,6 +7,10 @@ Clerk is the sole authentication and session authority for mobile email OTP, ema
 
 **Why:** Parallel Clerk and Supabase sessions caused ambiguous identity, navigation, callback, and API behavior. A single provider gives expiry, refresh, revocation, and logout one source of truth.
 
+Clerk organization membership is not part of login, profile provisioning, or role authorization. Sessions must become active without organization provisioning; `/v1/me` resolves the verified Clerk identity to the local profile and database role.
+
+**Why:** Organization-required pending sessions blocked normal Android login with provisioning 401s even though Travel & Land authorization already lives in PostgreSQL.
+
 Invitation metadata is not an authorization authority. Vendor and admin invitations grant a local role only when the verified Clerk account email matches an active invitation/application record in PostgreSQL; rejected or revoked local states must fail closed even if a Clerk signup succeeds.
 
 **Why:** Clerk owns account creation, but local onboarding review owns Travel & Land privileges. Matching the verified email connects those systems without accepting client-supplied roles or depending on mutable public metadata.
@@ -27,4 +31,4 @@ Email signup and login use Clerk email-code verification. Phone-number login is 
 
 **Why:** Competing sessions make API identity, logout, and restoration ambiguous.
 
-**How to apply:** Send the verified Clerk bearer token on mobile API calls. The backend verifies Clerk, provisions or resolves the local user, loads local roles, and fails closed for inactive accounts.
+**How to apply:** Send the verified Clerk bearer token on mobile API calls. The backend verifies Clerk, provisions or resolves the local user, loads local roles, and fails closed for inactive accounts. Never add organization provisioning to session activation.

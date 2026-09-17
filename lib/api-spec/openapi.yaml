@@ -931,25 +931,6 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AuthSessionStatus" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
-  /v1/auth/organization/provision:
-    post:
-      operationId: provisionDefaultOrganization
-      tags: [auth]
-      security: [{ bearerAuth: [] }]
-      summary: Idempotently assign the authenticated user to the canonical client organization
-      parameters:
-        - name: X-Clerk-Session-Id
-          in: header
-          required: true
-          schema: { type: string, minLength: 1 }
-      responses:
-        "200":
-          description: Canonical organization membership exists
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/OrganizationProvisioningResult" }
-        "401": { $ref: "#/components/responses/Unauthenticated" }
-        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /v1/auth/demo:
     post:
       operationId: createDemoAuthSession
@@ -3630,12 +3611,6 @@ components:
         sessionId: { type: [string, "null"] }
         sessionAuthority: { type: string, enum: [clerk] }
       required: [authenticated, clerkUserId, sessionId, sessionAuthority]
-    OrganizationProvisioningResult:
-      type: object
-      additionalProperties: false
-      properties:
-        organizationId: { type: string, minLength: 1 }
-      required: [organizationId]
     DemoAuthInput:
       type: object
       additionalProperties: false
@@ -3648,8 +3623,7 @@ components:
       properties:
         email: { type: string, format: email }
         ticket: { type: string, minLength: 1 }
-        organizationId: { type: string, minLength: 1 }
-      required: [email, ticket, organizationId]
+      required: [email, ticket]
     IdentityLinkAttempt:
       type: object
       properties:

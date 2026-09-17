@@ -10,6 +10,4 @@ export interface DemoAuthResult {
   email: string;
   /** @minLength 1 */
   ticket: string;
-  /** @minLength 1 */
-  organizationId: string;
 }

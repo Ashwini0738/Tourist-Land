@@ -2,17 +2,12 @@ import { Router, type IRouter } from "express";
 import { getAuth } from "@clerk/express";
 import { requireAuth } from "../middlewares/requireAuth";
 import { findVendorProfile, serializeCurrentUser } from "../lib/role-data";
-import { ensureDefaultClientOrganizationMembership } from "../lib/clerkOrganization";
 import { clerkClient } from "../lib/clerkConfig";
 import {
   createDemoSignIn,
   DemoAuthUnavailableError,
   InvalidDemoOtpError,
 } from "../lib/demoAuth";
-import {
-  InvalidClerkSessionProofError,
-  verifyClerkSessionProof,
-} from "../lib/clerkSessionProof";
 import { configuredAdminClerkUserIds } from "../lib/roles";
 import { db, userRoles, users } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -22,28 +17,6 @@ const authRouter: IRouter = Router();
 authRouter.use((_req, res, next) => {
   res.set("Cache-Control", "private, no-store");
   next();
-});
-
-authRouter.post("/v1/auth/organization/provision", async (req, res) => {
-  try {
-    const session = await verifyClerkSessionProof(req, clerkClient.sessions);
-    const result = await ensureDefaultClientOrganizationMembership(
-      session.userId,
-      clerkClient.organizations,
-    );
-    res.json(result);
-  } catch (error) {
-    if (error instanceof InvalidClerkSessionProofError) {
-      res.status(401).json({
-        error: {
-          code: "UNAUTHENTICATED",
-          message: "A valid Clerk session proof is required.",
-        },
-      });
-      return;
-    }
-    throw error;
-  }
 });
 
 authRouter.post("/v1/auth/demo", async (req, res) => {
@@ -67,7 +40,6 @@ authRouter.post("/v1/auth/demo", async (req, res) => {
     res.json({
       email: result.email,
       ticket: result.ticket,
-      organizationId: result.organizationId,
     });
   } catch (error) {
     if (error instanceof InvalidDemoOtpError) {

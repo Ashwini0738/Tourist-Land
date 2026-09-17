@@ -23,4 +23,3 @@
 - [Supabase email verification](supabase-email-verification.md) — use the native confirmation link when the active project cannot customize signup email templates for OTP.
 - [Web secure storage compatibility](web-secure-storage.md) — wrap SecureStore for web; its preview shim can call a missing native method during startup.
 - [Expo preview host](expo-preview-host.md) — advertise the dedicated Expo development domain to Android/iOS simulators, not the shared Replit domain.
-- [Clerk organization slugs](clerk-organization-slugs.md) — preserve exact-name canonical provisioning when a Clerk tenant explicitly disables organization slugs.

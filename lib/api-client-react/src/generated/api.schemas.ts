@@ -1581,11 +1581,6 @@ export interface AuthSessionStatus {
   sessionAuthority: AuthSessionStatusSessionAuthority;
 }
 
-export interface OrganizationProvisioningResult {
-  /** @minLength 1 */
-  organizationId: string;
-}
-
 export interface DemoAuthInput {
   /**
      * @minLength 6
@@ -1598,8 +1593,6 @@ export interface DemoAuthResult {
   email: string;
   /** @minLength 1 */
   ticket: string;
-  /** @minLength 1 */
-  organizationId: string;
 }
 
 export interface IdentityLinkAttempt {

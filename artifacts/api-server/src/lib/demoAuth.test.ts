@@ -7,7 +7,6 @@ import {
   verifyDemoOtp,
   type DemoClerkClient,
 } from "./demoAuth.ts";
-import type { OrganizationProvisioner } from "./clerkOrganization.ts";
 
 const safeEnv = {
   NODE_ENV: "development",
@@ -23,29 +22,6 @@ function fakeClient() {
     externalId: string;
     emailAddresses: Array<{ emailAddress: string }>;
   }> = [];
-  const organizations: Array<{ id: string; name: string; slug?: string | null }> = [];
-  const memberships = new Set<string>();
-  const organizationClient: OrganizationProvisioner = {
-    async getOrganizationList() {
-      return { data: organizations };
-    },
-    async createOrganization({ name, slug }) {
-      const organization = { id: "org_clients", name, slug };
-      organizations.push(organization);
-      return organization;
-    },
-    async getOrganizationMembershipList({ organizationId, userId }) {
-      return {
-        data: memberships.has(`${organizationId}:${userId[0]}`)
-          ? [{ id: "membership" }]
-          : [],
-      };
-    },
-    async createOrganizationMembership({ organizationId, userId, role }) {
-      assert.equal(role, "org:member");
-      memberships.add(`${organizationId}:${userId}`);
-    },
-  };
   let userCreates = 0;
   let ticketCreates = 0;
   const client: DemoClerkClient = {
@@ -64,18 +40,16 @@ function fakeClient() {
         return user;
       },
     },
-    organizations: organizationClient,
     signInTokens: {
-      async createSignInToken({ userId, orgId, expiresInSeconds }) {
+      async createSignInToken({ userId, expiresInSeconds }) {
         assert.equal(userId, "user_demo");
-        assert.equal(orgId, "org_clients");
         assert.equal(expiresInSeconds, 60);
         ticketCreates += 1;
         return { token: `ticket_${ticketCreates}` };
       },
     },
   };
-  return { client, counts: () => ({ userCreates, ticketCreates }), organizations, memberships };
+  return { client, counts: () => ({ userCreates, ticketCreates }) };
 }
 
 test("accepts the configured OTP only in an explicitly enabled development environment", () => {
@@ -94,14 +68,12 @@ test("accepts the configured OTP only in an explicitly enabled development envir
   }
 });
 
-test("creates one dedicated Clerk demo user, canonical membership, and short-lived tickets", async () => {
+test("creates one dedicated Clerk demo user and organization-independent short-lived tickets", async () => {
   const fake = fakeClient();
   const first = await createDemoSignIn("246810", fake.client, safeEnv);
   const second = await createDemoSignIn("246810", fake.client, safeEnv);
   assert.equal(first.userId, "user_demo");
-  assert.equal(first.organizationId, "org_clients");
-  assert.equal(second.organizationId, "org_clients");
+  assert.equal(first.ticket, "ticket_1");
+  assert.equal(second.ticket, "ticket_2");
   assert.deepEqual(fake.counts(), { userCreates: 1, ticketCreates: 2 });
-  assert.equal(fake.organizations.length, 1);
-  assert.equal(fake.memberships.size, 1);
 });
