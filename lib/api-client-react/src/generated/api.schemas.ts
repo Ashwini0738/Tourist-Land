@@ -1586,6 +1586,22 @@ export interface OrganizationProvisioningResult {
   organizationId: string;
 }
 
+export interface DemoAuthInput {
+  /**
+     * @minLength 6
+     * @maxLength 32
+     */
+  otp: string;
+}
+
+export interface DemoAuthResult {
+  email: string;
+  /** @minLength 1 */
+  ticket: string;
+  /** @minLength 1 */
+  organizationId: string;
+}
+
 export interface IdentityLinkAttempt {
   attemptId: string;
   expiresAt: string;

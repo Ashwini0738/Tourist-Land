@@ -2199,7 +2199,37 @@ export const GetAuthSessionResponse = zod.object({
 
 
 
+export const ProvisionDefaultOrganizationHeader = zod.object({
+  "X-Clerk-Session-Id": zod.string().min(1)
+})
+
+
+
+
 export const ProvisionDefaultOrganizationResponse = zod.object({
+  "organizationId": zod.string().min(1)
+})
+
+
+/**
+ * @summary Create a short-lived Clerk sign-in ticket in an explicitly enabled development environment
+ */
+export const createDemoAuthSessionBodyOtpMin = 6;
+export const createDemoAuthSessionBodyOtpMax = 32;
+
+
+
+export const CreateDemoAuthSessionBody = zod.object({
+  "otp": zod.string().min(createDemoAuthSessionBodyOtpMin).max(createDemoAuthSessionBodyOtpMax)
+})
+
+
+
+
+
+export const CreateDemoAuthSessionResponse = zod.object({
+  "email": zod.string().email(),
+  "ticket": zod.string().min(1),
   "organizationId": zod.string().min(1)
 })
 

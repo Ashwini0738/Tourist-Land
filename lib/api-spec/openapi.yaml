@@ -937,6 +937,11 @@ paths:
       tags: [auth]
       security: [{ bearerAuth: [] }]
       summary: Idempotently assign the authenticated user to the canonical client organization
+      parameters:
+        - name: X-Clerk-Session-Id
+          in: header
+          required: true
+          schema: { type: string, minLength: 1 }
       responses:
         "200":
           description: Canonical organization membership exists
@@ -945,6 +950,24 @@ paths:
               schema: { $ref: "#/components/schemas/OrganizationProvisioningResult" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /v1/auth/demo:
+    post:
+      operationId: createDemoAuthSession
+      tags: [auth]
+      summary: Create a short-lived Clerk sign-in ticket in an explicitly enabled development environment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DemoAuthInput" }
+      responses:
+        "200":
+          description: Development-only Clerk sign-in ticket
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DemoAuthResult" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /v1/auth/identity-link/attempts:
     post:
       operationId: startIdentityLink
@@ -3613,6 +3636,20 @@ components:
       properties:
         organizationId: { type: string, minLength: 1 }
       required: [organizationId]
+    DemoAuthInput:
+      type: object
+      additionalProperties: false
+      properties:
+        otp: { type: string, minLength: 6, maxLength: 32 }
+      required: [otp]
+    DemoAuthResult:
+      type: object
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email }
+        ticket: { type: string, minLength: 1 }
+        organizationId: { type: string, minLength: 1 }
+      required: [email, ticket, organizationId]
     IdentityLinkAttempt:
       type: object
       properties:

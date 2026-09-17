@@ -65,6 +65,8 @@ import type {
   CreateReviewInput,
   CurrentUser,
   DeleteAdminFeaturedContent200,
+  DemoAuthInput,
+  DemoAuthResult,
   DestinationDetail,
   DestinationList,
   EligibleReviewList,
@@ -4259,6 +4261,77 @@ export const useProvisionDefaultOrganization = <TError = ErrorType<Unauthenticat
         TContext
       > => {
       return useMutation(getProvisionDefaultOrganizationMutationOptions(options));
+    }
+
+export const getCreateDemoAuthSessionUrl = () => {
+
+
+
+
+  return `/api/v1/auth/demo`
+}
+
+/**
+ * @summary Create a short-lived Clerk sign-in ticket in an explicitly enabled development environment
+ */
+export const createDemoAuthSession = async (demoAuthInput: DemoAuthInput, options?: Parameters<typeof customFetch>[1]): Promise<DemoAuthResult> => {
+
+  return customFetch<DemoAuthResult>(getCreateDemoAuthSessionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(demoAuthInput)
+  }
+);}
+
+
+
+
+
+export const getCreateDemoAuthSessionMutationOptions = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDemoAuthSession>>, TError,{data: BodyType<DemoAuthInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDemoAuthSession>>, TError,{data: BodyType<DemoAuthInput>}, TContext> => {
+
+const mutationKey = ['createDemoAuthSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDemoAuthSession>>, {data: BodyType<DemoAuthInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDemoAuthSession(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDemoAuthSessionMutationResult = NonNullable<Awaited<ReturnType<typeof createDemoAuthSession>>>
+    export type CreateDemoAuthSessionMutationBody = BodyType<DemoAuthInput>
+    export type CreateDemoAuthSessionMutationError = ErrorType<UnauthenticatedResponse | NotFoundResponse>
+
+    /**
+ * @summary Create a short-lived Clerk sign-in ticket in an explicitly enabled development environment
+ */
+export const useCreateDemoAuthSession = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDemoAuthSession>>, TError,{data: BodyType<DemoAuthInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDemoAuthSession>>,
+        TError,
+        {data: BodyType<DemoAuthInput>},
+        TContext
+      > => {
+      return useMutation(getCreateDemoAuthSessionMutationOptions(options));
     }
 
 export const getStartIdentityLinkUrl = () => {

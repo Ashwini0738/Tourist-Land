@@ -93,6 +93,8 @@ export * from './createReviewInput';
 export * from './createReviewInputEntityType';
 export * from './currentUser';
 export * from './deleteAdminFeaturedContent200';
+export * from './demoAuthInput';
+export * from './demoAuthResult';
 export * from './destination';
 export * from './destinationDetail';
 export * from './destinationList';

@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useMobileAuth } from '@/context/AuthContext';
-import { provisionDefaultOrganization } from '@workspace/api-client-react';
+import { createDemoAuthSession, provisionDefaultOrganization } from '@workspace/api-client-react';
 
 type PendingOrganizationChoice = {
   sessionId: string;
@@ -50,6 +50,7 @@ export default function LoginScreen() {
   const [signInCode, setSignInCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [isDemoLogin, setIsDemoLogin] = useState(false);
   const [pendingOrganizationChoice, setPendingOrganizationChoice] = useState<PendingOrganizationChoice | null>(null);
 
   const loading = !isLoaded || signInStatus === 'fetching' || isSubmitting || isResending;
@@ -108,7 +109,10 @@ export default function LoginScreen() {
               throw new Error('The pending Clerk session did not provide an authentication token.');
             }
             const provisioned = await provisionDefaultOrganization({
-              headers: { Authorization: `Bearer ${token}` },
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'X-Clerk-Session-Id': sessionId,
+              },
             });
             await setActive({
               session: sessionId,
@@ -263,6 +267,39 @@ export default function LoginScreen() {
     }
   };
 
+  const openDemoLogin = () => {
+    setMessage('');
+    setSignInCode('');
+    setIsDemoLogin(true);
+    setSignInVerificationOpen(true);
+  };
+
+  const verifyDemoCode = async () => {
+    if (isSubmitting || signInCode.length !== 6) return;
+    setMessage('');
+    setIsSubmitting(true);
+    try {
+      const demo = await createDemoAuthSession({ otp: signInCode });
+      const result = await signIn.create({ strategy: 'ticket', ticket: demo.ticket });
+      if (result.error) {
+        setMessage(authErrorMessage(result.error, 'Demo sign in could not be completed.'));
+        return;
+      }
+      if (signIn.status !== 'complete') {
+        setMessage('Demo sign in could not be completed.');
+        return;
+      }
+      if (!await finalizeAndVerifyActiveSession()) return;
+      setSignInVerificationOpen(false);
+      setIsDemoLogin(false);
+      setSignInCode('');
+    } catch (error) {
+      setMessage(authErrorMessage(error, 'The demo verification code was not accepted.'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const selectOrganization = async (organizationId: string) => {
     if (!pendingOrganizationChoice || isSubmitting) return;
     setMessage('');
@@ -321,13 +358,17 @@ export default function LoginScreen() {
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable testID="login-code-back" onPress={() => { signIn.reset(); setSignInVerificationOpen(false); setSignInCode(''); setMessage(''); }} style={{ padding: 8, marginLeft: -8, alignSelf: 'flex-start' }}>
+        <Pressable testID="login-code-back" onPress={() => { signIn.reset(); setSignInVerificationOpen(false); setIsDemoLogin(false); setSignInCode(''); setMessage(''); }} style={{ padding: 8, marginLeft: -8, alignSelf: 'flex-start' }}>
           <Feather name="arrow-left" size={24} color={colors.foreground} />
         </Pressable>
         <View style={styles.copy}>
-          <Text style={[styles.kicker, { color: colors.primary }]}>VERIFY YOUR SIGN IN</Text>
-          <Text style={[styles.title, { color: colors.foreground }]}>Check your email.</Text>
-          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>We sent a verification code to finish signing you in securely.</Text>
+          <Text style={[styles.kicker, { color: colors.primary }]}>{isDemoLogin ? 'DEVELOPMENT DEMO' : 'VERIFY YOUR SIGN IN'}</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>{isDemoLogin ? 'Enter the demo code.' : 'Check your email.'}</Text>
+          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+            {isDemoLogin
+              ? `Demo account: ${process.env.EXPO_PUBLIC_DEMO_EMAIL ?? 'configured development account'}`
+              : 'We sent a verification code to finish signing you in securely.'}
+          </Text>
           <TextInput
             testID="sign-in-verification-code"
             value={signInCode}
@@ -339,13 +380,13 @@ export default function LoginScreen() {
             style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card, textAlign: 'center', letterSpacing: 8, fontWeight: '700', fontSize: 20 }]}
           />
           {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
-          <Pressable testID="verify-sign-in-code" disabled={signInCode.length !== 6 || loading} onPress={verifySignInCode} style={[styles.button, { backgroundColor: signInCode.length === 6 && !loading ? '#064E3B' : colors.muted, marginTop: 24 }]}>
+          <Pressable testID={isDemoLogin ? 'verify-demo-code' : 'verify-sign-in-code'} disabled={signInCode.length !== 6 || loading} onPress={isDemoLogin ? verifyDemoCode : verifySignInCode} style={[styles.button, { backgroundColor: signInCode.length === 6 && !loading ? '#064E3B' : colors.muted, marginTop: 24 }]}>
             {loading ? <ActivityIndicator color="#fff" /> : <><Text style={[styles.buttonText, { color: '#fff' }]}>Verify and continue</Text><Feather name="arrow-right" size={17} color="#fff" /></>}
           </Pressable>
-          <Pressable testID="resend-sign-in-code" onPress={resendSignInCode} style={styles.secondary}>
+          {!isDemoLogin && <Pressable testID="resend-sign-in-code" onPress={resendSignInCode} style={styles.secondary}>
             <Text style={[styles.secondaryText, { color: colors.primary }]}>Send a new code</Text>
-          </Pressable>
-          <Pressable testID="change-sign-in-identifier" onPress={() => { signIn.reset(); setSignInVerificationOpen(false); setSignInCode(''); setMessage(''); }} style={styles.secondary}>
+          </Pressable>}
+          <Pressable testID="change-sign-in-identifier" onPress={() => { signIn.reset(); setSignInVerificationOpen(false); setIsDemoLogin(false); setSignInCode(''); setMessage(''); }} style={styles.secondary}>
             <Text style={[styles.secondaryText, { color: colors.primary }]}>Use a different email address</Text>
           </Pressable>
         </View>
@@ -379,6 +420,11 @@ export default function LoginScreen() {
           <Pressable onPress={() => { setNew(!isNew); setMessage(''); }} style={styles.secondary}>
             <Text style={[styles.secondaryText, { color: colors.primary }]}>{isNew ? 'Already have an account? Sign in' : 'New here? Create an account'}</Text>
           </Pressable>
+          {__DEV__ && process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED === 'true' && (
+            <Pressable testID="demo-login" onPress={openDemoLogin} style={styles.secondary}>
+              <Text style={[styles.secondaryText, { color: colors.primary }]}>Demo Login</Text>
+            </Pressable>
+          )}
           <Pressable onPress={() => router.push('/vendor-application')} style={styles.vendorLink}>
             <Text style={[styles.vendorLinkText, { color: colors.foreground }]}>Are you a travel business? Apply as a vendor</Text>
           </Pressable>
