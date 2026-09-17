@@ -21,23 +21,6 @@
     "android": {
       "package": "com.arohagroup.travelandland",
       "versionCode": 3,
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": false,
-          "data": [
-            {
-              "scheme": "travel-land-app",
-              "host": "auth",
-              "pathPrefix": "/callback"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        }
-      ],
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
