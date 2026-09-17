@@ -1,0 +1,301 @@
+Fix the current Travel & Land authentication issue completely in one pass.
+
+CURRENT ERROR
+
+The mobile login flow reaches organization provisioning but fails:
+
+[auth] Organization provisioning failed
+{
+  "status": 401,
+  "message": "HTTP 401 Unauthorized"
+}
+
+Source:
+`app/login.tsx`, inside `activateAvailableSession`
+
+The current architecture is:
+
+Email-only Clerk authentication
+→ pending Clerk session
+→ zero-organization provisioning endpoint
+→ canonical "Travel & Land Clients" organization
+→ normal `org:member`
+→ `/v1/me`
+→ client home.
+
+Do NOT undo the email-only authentication change.
+
+==================================================
+PART 1 — FIX THE 401 PROPERLY
+==================================================
+
+Trace the exact request from:
+
+`app/login.tsx`
+→ organization provisioning client
+→ HTTP request
+→ backend route
+→ Clerk identity verification
+→ organization provisioning.
+
+Determine why the backend returns HTTP 401.
+
+IMPORTANT:
+
+The mobile client currently has a pending Clerk session and the implementation was designed around the pending session token.
+
+Do not assume that a pending-session token can simply be placed in an arbitrary Authorization header.
+
+Verify the installed Clerk SDK's actual supported mechanism for:
+
+- obtaining the pending session token;
+- sending it to the backend;
+- validating that token server-side;
+- resolving the authenticated Clerk user ID.
+
+Use the existing installed SDK/API rather than inventing an unsupported authentication mechanism.
+
+The server must verify the Clerk identity cryptographically/server-side.
+
+DO NOT:
+
+- disable authentication;
+- accept an unverified user ID from the client;
+- accept a client-supplied organization ID;
+- accept a client-supplied role;
+- make the endpoint public;
+- use a Clerk secret in the Expo application;
+- bypass Clerk verification.
+
+The only organization permitted by this endpoint must remain the server-owned canonical organization:
+
+`Travel & Land Clients`
+
+with the existing unique slug:
+
+`travel-land-clients`
+
+The only membership role permitted must remain:
+
+`org:member`
+
+==================================================
+PENDING SESSION REQUIREMENT
+==================================================
+
+The flow must support this exact situation:
+
+1. User enters email.
+2. Clerk sends the email verification code.
+3. User enters the valid code.
+4. Clerk creates a valid pending session.
+5. Clerk reports a `choose-organization` task because the user has zero organizations.
+6. Mobile app calls the server organization-provisioning endpoint.
+7. Server verifies the authenticated Clerk identity.
+8. Server finds/creates the canonical client organization.
+9. Server adds the authenticated user as `org:member`.
+10. Server returns success.
+11. Mobile activates the now-available organization/session.
+12. `/v1/me` resolves.
+13. User enters the normal client home screen.
+
+Do not show:
+
+"Your account must be added to an organization before you can sign in"
+
+when the user can safely be provisioned.
+
+==================================================
+ZERO-ORGANIZATION SAFETY
+==================================================
+
+Keep provisioning idempotent.
+
+If:
+
+- organization already exists → reuse it;
+- membership already exists → reuse it;
+- organization does not exist → create it;
+- membership does not exist → add it;
+- concurrent requests occur → recover from conflict and reuse the existing organization/membership.
+
+Never create duplicate organizations.
+
+Never create duplicate memberships.
+
+Never let the mobile client select the organization or role.
+
+==================================================
+PART 2 — DEVELOPMENT-ONLY DEMO LOGIN
+==================================================
+
+Create a dedicated development/demo authentication path for client testing.
+
+This is ONLY for development/testing.
+
+Create a demo account with:
+
+Display name:
+`Travel & Land Demo`
+
+Email:
+use a clearly reserved development/demo email configured through environment variables, not a real user's email.
+
+Role:
+normal client/user/customer role only.
+
+Organization:
+`Travel & Land Clients`
+
+The demo verification code should be configurable through an environment variable, for example:
+
+`TRAVEL_LAND_DEMO_OTP`
+
+Set a default development-only test value if the project convention allows it.
+
+IMPORTANT SECURITY RULE:
+
+The fixed demo OTP must NEVER work in production.
+
+The server must reject the demo OTP when:
+
+- NODE_ENV=production
+- TRAVEL_LAND_BUILD_ENV=production
+- TRAVEL_LAND_BUILD_ENV=release
+- EAS_BUILD_PROFILE=production
+
+Also reject the demo authentication path unless the application is explicitly running in the development/demo environment.
+
+Do NOT put the fixed demo code directly into production client code.
+
+Do NOT log the demo OTP.
+
+Do NOT store a real password in source control.
+
+Do NOT create a fake local session.
+
+Do NOT bypass Clerk for normal users.
+
+The demo path should still establish a legitimate authenticated development session and then use the same organization, role, `/v1/me`, navigation, and home-screen flow as a normal client.
+
+==================================================
+DEMO UX
+==================================================
+
+On the existing EMAIL-ONLY login screen, provide a clearly development-only demo option.
+
+For example:
+
+"Demo Login"
+
+When selected in a development build:
+
+1. Show the demo email.
+2. Allow the tester to enter the fixed development OTP.
+3. Validate the OTP through the development-only server/demo mechanism.
+4. Establish the demo authenticated session.
+5. Ensure the demo user belongs to `Travel & Land Clients`.
+6. Activate the organization.
+7. Resolve `/v1/me`.
+8. Navigate directly to the normal client Home screen.
+
+The normal email login UI must remain unchanged.
+
+Do NOT restore:
+
+- Mobile Number selector
+- Phone number input
+- Phone OTP
+- Phone resend
+- mobile login.
+
+==================================================
+PRODUCTION SAFETY
+==================================================
+
+Add automated tests proving:
+
+1. Normal authenticated user with one organization works.
+2. Zero-organization user is provisioned correctly.
+3. Organization provisioning endpoint rejects unauthenticated requests.
+4. Organization provisioning does not trust a client-supplied organization ID.
+5. Organization provisioning does not trust a client-supplied role.
+6. Repeated provisioning is idempotent.
+7. Concurrent provisioning does not create duplicates.
+8. Existing multi-organization behavior is preserved.
+9. `session_exists` recovery still works.
+10. Email-only login remains unchanged.
+11. Demo OTP works in development.
+12. Wrong demo OTP is rejected.
+13. Demo OTP is rejected in production.
+14. Demo endpoint/path is unavailable or rejected in production.
+15. Demo user receives only the normal client role.
+16. Demo user cannot access admin/vendor routes.
+17. Demo user reaches the normal client Home screen.
+18. No demo credentials or OTP values are printed to logs.
+
+==================================================
+IMPORTANT DIAGNOSTIC REQUIREMENT
+==================================================
+
+Before changing the implementation, identify the exact reason for the existing 401.
+
+Return in the final report:
+
+- Current request authentication method.
+- Why it produced 401.
+- Correct Clerk-supported authentication method used.
+- Backend identity verification result.
+- Organization provisioning result.
+
+Do not hide the 401 by retrying indefinitely or suppressing the warning.
+
+==================================================
+VALIDATION
+==================================================
+
+Run:
+
+- focused authentication tests
+- organization provisioning tests
+- demo authentication tests
+- full mobile test suite
+- full API test suite as far as the available test database permits
+- TypeScript typecheck
+- OpenAPI generation/validation if applicable
+- Expo workflow health check
+
+Then perform a development live-flow test:
+
+Demo Login
+→ fixed development OTP
+→ authenticated session
+→ canonical organization activated
+→ `/v1/me`
+→ normal client role
+→ Home screen.
+
+Also test a normal email authentication flow if an accessible test inbox/session is available.
+
+Do NOT claim real OTP verification if no inbox is available.
+
+Do NOT create or expose production credentials.
+
+FINAL REPORT
+
+Return:
+
+A. Exact root cause of 401
+B. Authentication mechanism corrected
+C. Organization provisioning result
+D. Demo account identifier
+E. Demo OTP configuration location (do not reveal the OTP)
+F. Confirmation that demo OTP is development-only
+G. Production rejection test result
+H. Test counts
+I. Typecheck result
+J. Live demo-login result
+K. Files changed
+L. Any database migration required
+
+Do not make unrelated UI, payment, Supabase, Clerk production, or navigation changes.
