@@ -482,6 +482,30 @@ it('starts Clerk email-code signup and opens reusable verification', async () =>
   expect(router.push).toHaveBeenCalledWith({ pathname: '/verify', params: { email: 'traveller@example.com', mode: 'signup' } });
 });
 
+it('shows account-creation errors and allows a fresh signup attempt', async () => {
+  const signUp = signUpFixture();
+  signUp.create
+    .mockResolvedValueOnce({ error: { code: 'identifier_exists' } })
+    .mockResolvedValueOnce({ error: null });
+  mockUseSignUp.mockReturnValue({ signUp, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.press(screen.getByText('New here? Create an account'));
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByText('An account with this email already exists. Switch to sign in instead.')).toBeTruthy());
+  expect(signUp.verifications.sendEmailCode).not.toHaveBeenCalled();
+  expect(signUp.reset).toHaveBeenCalledTimes(1);
+
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(signUp.create).toHaveBeenCalledTimes(2));
+  expect(signUp.create).toHaveBeenLastCalledWith({ emailAddress: 'traveller@example.com' });
+  expect(signUp.verifications.sendEmailCode).toHaveBeenCalledTimes(1);
+  expect(router.push).toHaveBeenCalledWith({ pathname: '/verify', params: { email: 'traveller@example.com', mode: 'signup' } });
+});
+
 it('does not duplicate a slow initial signup request or verification code send', async () => {
   const signUp = signUpFixture();
   let resolveInitialSignup: (result: { error: null }) => void = () => undefined;

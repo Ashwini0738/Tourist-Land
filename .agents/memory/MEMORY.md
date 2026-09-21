@@ -1,4 +1,5 @@
 - [Authentication authority](authentication-authority.md) — mobile account authentication uses Clerk email OTP only; local device unlock gates restored Clerk sessions.
+- [Clerk signup recovery](clerk-signup-recovery.md) — reset a failed signup attempt before allowing the same email to retry account creation.
 - [Existing Clerk onboarding](existing-clerk-onboarding.md) — a Clerk account can predate local provisioning; vendor approval must activate that identity instead of retrying an invitation.
 - [Native location verification](native-location-verification.md) — browser previews and mocks cannot confirm native prompts, GPS settings, or platform map-app launch.
 - [Native unlock verification](native-unlock-verification.md) — mocked Expo tests protect routing logic but do not confirm biometric or device-passcode behavior.

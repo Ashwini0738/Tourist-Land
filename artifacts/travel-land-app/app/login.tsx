@@ -169,6 +169,7 @@ export default function LoginScreen() {
       if (isNew) {
         const created = await signUp.create({ emailAddress: email.trim() });
         if (created.error) {
+          signUp.reset();
           setMessage(authErrorMessage(created.error, 'We could not create your account. Please try again.'));
           return;
         }
