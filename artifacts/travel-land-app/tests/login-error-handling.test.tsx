@@ -68,6 +68,30 @@ it('starts Clerk email-code sign in without password or Supabase APIs', async ()
   expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy();
 });
 
+it('does not duplicate a slow initial sign-in request or verification code send', async () => {
+  const signIn = signInFixture();
+  let resolveInitialSignIn: (result: { error: null }) => void = () => undefined;
+  const delayedInitialSignIn = new Promise<{ error: null }>((resolve) => {
+    resolveInitialSignIn = resolve;
+  });
+  signIn.create.mockReturnValue(delayedInitialSignIn);
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  const signInButton = screen.getByTestId('login-continue');
+  fireEvent.press(signInButton);
+  fireEvent.press(signInButton);
+
+  expect(signIn.create).toHaveBeenCalledTimes(1);
+  expect(signIn.create).toHaveBeenCalledWith({ identifier: 'traveller@example.com' });
+  expect(signIn.emailCode.sendCode).not.toHaveBeenCalled();
+
+  resolveInitialSignIn({ error: null });
+  await waitFor(() => expect(signIn.emailCode.sendCode).toHaveBeenCalledTimes(1));
+  expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy();
+});
+
 it('offers a direct recovery action when the initial code delivery fails', async () => {
   const signIn = signInFixture();
   signIn.emailCode.sendCode.mockResolvedValueOnce({ error: {} });
