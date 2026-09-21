@@ -150,12 +150,17 @@ it('resets an unavailable interrupted email session so sign-in can be retried', 
   fireEvent.press(screen.getByTestId('login-continue'));
 
   await waitFor(() => expect(screen.getByText('Your previous sign-in attempt was interrupted. We reset it so you can try again.')).toBeTruthy());
+  expect(screen.getByTestId('login-email').props.value).toBe('traveller@example.com');
+  expect(screen.getByTestId('login-retry')).toBeTruthy();
+  expect(screen.getByText('Retry sign in')).toBeTruthy();
   expect(signIn.reset).toHaveBeenCalledTimes(1);
   expect(setActive).not.toHaveBeenCalled();
 
-  fireEvent.press(screen.getByTestId('login-continue'));
+  fireEvent.press(screen.getByTestId('login-retry'));
   await waitFor(() => expect(signIn.create).toHaveBeenCalledTimes(2));
+  expect(signIn.create).toHaveBeenLastCalledWith({ identifier: 'traveller@example.com' });
   expect(signIn.emailCode.sendCode).toHaveBeenCalled();
+  expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy();
 });
 
 it('does not provision an organization for a restored pending session', async () => {

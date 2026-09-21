@@ -46,6 +46,7 @@ export default function LoginScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [isDemoLogin, setIsDemoLogin] = useState(false);
+  const [showInterruptedRecovery, setShowInterruptedRecovery] = useState(false);
 
   const loading = !isLoaded || signInStatus === 'fetching' || isSubmitting || isResending;
 
@@ -124,6 +125,7 @@ export default function LoginScreen() {
       signIn.reset();
       setSignInVerificationOpen(false);
       setSignInCode('');
+      setShowInterruptedRecovery(true);
       setMessage('Your previous sign-in attempt was interrupted. We reset it so you can try again.');
     }
     return true;
@@ -138,6 +140,7 @@ export default function LoginScreen() {
         signInStatus,
       });
     }
+    setShowInterruptedRecovery(false);
     setMessage('');
     if (isSignedIn) {
       await activateAvailableSession();
@@ -366,12 +369,17 @@ export default function LoginScreen() {
           <Text style={[styles.kicker, { color: colors.primary }]}>{isNew ? 'JOIN THE JOURNEY' : 'WELCOME BACK'}</Text>
           <Text style={[styles.title, { color: colors.foreground }]}>{isNew ? 'Start exploring.' : 'Your next chapter\nstarts here.'}</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{isNew ? 'Create an account to save the places that feel like home.' : 'Sign in to keep your stays, bookings, and saved places together.'}</Text>
-          <TextInput testID="login-email" value={email} onChangeText={(value) => { setEmail(value); setMessage(''); }} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
+          <TextInput testID="login-email" value={email} onChangeText={(value) => { setEmail(value); setMessage(''); setShowInterruptedRecovery(false); }} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
           {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
+          {showInterruptedRecovery && (
+            <Pressable testID="login-retry" disabled={loading} onPress={() => void submit()} style={[styles.retryButton, { borderColor: colors.primary }]}>
+              <Text style={[styles.secondaryText, { color: colors.primary }]}>Retry sign in</Text>
+            </Pressable>
+          )}
           <Pressable testID="login-continue" disabled={loading} onPress={() => void submit()} style={[styles.button, { backgroundColor: email.trim() && !loading ? colors.primary : colors.muted, marginTop: 24 }]}>
             {loading ? <><ActivityIndicator color="#fff" /><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Creating account...' : 'Signing in...'}</Text></> : <><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Create account' : 'Sign in'}</Text><Feather name="arrow-right" size={17} color="#fff" /></>}
           </Pressable>
-          <Pressable onPress={() => { setNew(!isNew); setMessage(''); }} style={styles.secondary}>
+          <Pressable onPress={() => { setNew(!isNew); setMessage(''); setShowInterruptedRecovery(false); }} style={styles.secondary}>
             <Text style={[styles.secondaryText, { color: colors.primary }]}>{isNew ? 'Already have an account? Sign in' : 'New here? Create an account'}</Text>
           </Pressable>
           {__DEV__ && process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED === 'true' && (
@@ -404,6 +412,7 @@ const styles = StyleSheet.create({
   buttonText: { fontSize: 16, fontWeight: '700' },
   secondary: { alignItems: 'center', marginTop: 24 },
   secondaryText: { fontSize: 14, fontWeight: '600' },
+  retryButton: { height: 50, borderWidth: 1, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 16 },
   vendorLink: { alignItems: 'center', marginTop: 28, paddingVertical: 8 },
   vendorLinkText: { fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
 });
