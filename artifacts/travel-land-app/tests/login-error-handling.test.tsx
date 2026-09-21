@@ -134,6 +134,32 @@ it('keeps email-code recovery available when the direct retry also fails', async
   expect(screen.queryByTestId('sign-in-verification-code')).toBeNull();
 });
 
+it('recovers email-code sign-in after repeated delivery failures', async () => {
+  const signIn = signInFixture();
+  signIn.emailCode.sendCode
+    .mockResolvedValueOnce({ error: {} })
+    .mockResolvedValueOnce({ error: {} })
+    .mockResolvedValueOnce({ error: null });
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByTestId('login-retry-delivery')).toBeTruthy());
+  fireEvent.press(screen.getByTestId('login-retry-delivery'));
+  await waitFor(() => expect(signIn.emailCode.sendCode).toHaveBeenCalledTimes(2));
+  expect(screen.getByTestId('login-retry-delivery')).toBeTruthy();
+  expect(screen.getByTestId('login-email').props.value).toBe('traveller@example.com');
+
+  fireEvent.press(screen.getByTestId('login-retry-delivery'));
+
+  await waitFor(() => expect(signIn.emailCode.sendCode).toHaveBeenCalledTimes(3));
+  expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy();
+  expect(screen.queryByTestId('login-retry-delivery')).toBeNull();
+  expect(screen.queryByTestId('login-email')).toBeNull();
+});
+
 it('keeps email-code recovery available when the direct retry throws', async () => {
   const signIn = signInFixture();
   signIn.emailCode.sendCode
