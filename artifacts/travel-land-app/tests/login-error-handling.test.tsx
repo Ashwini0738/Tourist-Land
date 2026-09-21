@@ -230,6 +230,33 @@ it('does not duplicate a slow retry request or verification code send', async ()
   expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy();
 });
 
+it('does not duplicate a slow resend request or success message', async () => {
+  const signIn = signInFixture();
+  let resolveResend: (result: { error: null }) => void = () => undefined;
+  const delayedResend = new Promise<{ error: null }>((resolve) => {
+    resolveResend = resolve;
+  });
+  signIn.emailCode.sendCode
+    .mockResolvedValueOnce({ error: null })
+    .mockReturnValueOnce(delayedResend);
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+  await waitFor(() => expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy());
+
+  const resendButton = screen.getByTestId('resend-sign-in-code');
+  fireEvent.press(resendButton);
+  fireEvent.press(resendButton);
+
+  expect(signIn.emailCode.sendCode).toHaveBeenCalledTimes(2);
+
+  resolveResend({ error: null });
+  await waitFor(() => expect(screen.getByText('A new verification code was sent.')).toBeTruthy());
+  expect(screen.getAllByText('A new verification code was sent.')).toHaveLength(1);
+});
+
 it('does not provision an organization for a restored pending session', async () => {
   const pendingSession = {
     id: 'session_pending',

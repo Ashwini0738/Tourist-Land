@@ -49,6 +49,7 @@ export default function LoginScreen() {
   const [showInterruptedRecovery, setShowInterruptedRecovery] = useState(false);
   const [showDeliveryRecovery, setShowDeliveryRecovery] = useState(false);
   const submitInFlight = useRef(false);
+  const resendInFlight = useRef(false);
 
   const loading = !isLoaded || signInStatus === 'fetching' || isSubmitting || isResending;
 
@@ -249,7 +250,8 @@ export default function LoginScreen() {
   };
 
   const resendSignInCode = async () => {
-    if (isResending) return;
+    if (isResending || resendInFlight.current) return;
+    resendInFlight.current = true;
     setMessage('');
     setIsResending(true);
     try {
@@ -264,6 +266,7 @@ export default function LoginScreen() {
     } catch (error) {
       setMessage(authErrorMessage(error, 'We could not send a new code. Please try again.'));
     } finally {
+      resendInFlight.current = false;
       setIsResending(false);
     }
   };
