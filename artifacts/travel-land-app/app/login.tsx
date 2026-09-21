@@ -121,7 +121,10 @@ export default function LoginScreen() {
 
     const resumed = await activateAvailableSession();
     if (!resumed) {
-      setMessage('Your existing session could not be restored. Close and reopen the app, then try again.');
+      signIn.reset();
+      setSignInVerificationOpen(false);
+      setSignInCode('');
+      setMessage('Your previous sign-in attempt was interrupted. We reset it so you can try again.');
     }
     return true;
   };

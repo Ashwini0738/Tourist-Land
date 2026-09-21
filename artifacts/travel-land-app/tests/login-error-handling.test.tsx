@@ -120,7 +120,7 @@ it('resumes an existing Clerk session instead of showing the already-signed-in e
   expect(screen.queryByText('You are already signed in. Opening your account.')).toBeNull();
 });
 
-it('does not activate a restored pending session or use organization membership', async () => {
+it('resets an unavailable interrupted email session so sign-in can be retried', async () => {
   const pendingSession = {
     id: 'session_pending',
     status: 'pending',
@@ -134,9 +134,9 @@ it('does not activate a restored pending session or use organization membership'
   };
   const setActive = jest.fn().mockResolvedValue(undefined);
   const signIn = signInFixture();
-  signIn.create.mockRejectedValue({
-    errors: [{ code: 'session_exists', message: 'Session already exists' }],
-  });
+  signIn.create
+    .mockRejectedValueOnce({ errors: [{ code: 'session_exists', message: 'Session already exists' }] })
+    .mockResolvedValueOnce({ error: null });
   mockUseClerk.mockReturnValue({
     setActive,
     session: pendingSession,
@@ -149,8 +149,13 @@ it('does not activate a restored pending session or use organization membership'
   fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
   fireEvent.press(screen.getByTestId('login-continue'));
 
-  await waitFor(() => expect(screen.getByText('Your existing session could not be restored. Close and reopen the app, then try again.')).toBeTruthy());
+  await waitFor(() => expect(screen.getByText('Your previous sign-in attempt was interrupted. We reset it so you can try again.')).toBeTruthy());
+  expect(signIn.reset).toHaveBeenCalledTimes(1);
   expect(setActive).not.toHaveBeenCalled();
+
+  fireEvent.press(screen.getByTestId('login-continue'));
+  await waitFor(() => expect(signIn.create).toHaveBeenCalledTimes(2));
+  expect(signIn.emailCode.sendCode).toHaveBeenCalled();
 });
 
 it('does not provision an organization for a restored pending session', async () => {
@@ -176,7 +181,8 @@ it('does not provision an organization for a restored pending session', async ()
   fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
   fireEvent.press(screen.getByTestId('login-continue'));
 
-  await waitFor(() => expect(screen.getByText('Your existing session could not be restored. Close and reopen the app, then try again.')).toBeTruthy());
+  await waitFor(() => expect(screen.getByText('Your previous sign-in attempt was interrupted. We reset it so you can try again.')).toBeTruthy());
+  expect(signIn.reset).toHaveBeenCalled();
   expect(setActive).not.toHaveBeenCalled();
 });
 
