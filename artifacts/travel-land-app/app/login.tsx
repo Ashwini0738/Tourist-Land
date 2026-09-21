@@ -48,6 +48,7 @@ export default function LoginScreen() {
   const [isDemoLogin, setIsDemoLogin] = useState(false);
   const [showInterruptedRecovery, setShowInterruptedRecovery] = useState(false);
   const [showDeliveryRecovery, setShowDeliveryRecovery] = useState(false);
+  const [showSignupDeliveryRecovery, setShowSignupDeliveryRecovery] = useState(false);
   const submitInFlight = useRef(false);
   const resendInFlight = useRef(false);
 
@@ -145,6 +146,7 @@ export default function LoginScreen() {
     }
     setShowInterruptedRecovery(false);
     setShowDeliveryRecovery(false);
+    setShowSignupDeliveryRecovery(false);
     setMessage('');
     if (isSignedIn) {
       await activateAvailableSession();
@@ -158,6 +160,7 @@ export default function LoginScreen() {
     submitInFlight.current = true;
     setIsSubmitting(true);
     let signInCodeDeliveryStarted = false;
+    let signupCodeDeliveryStarted = false;
     try {
       if (isNew) {
         const created = await signUp.create({ emailAddress: email.trim() });
@@ -165,9 +168,11 @@ export default function LoginScreen() {
           setMessage(authErrorMessage(created.error, 'We could not create your account. Please try again.'));
           return;
         }
+        signupCodeDeliveryStarted = true;
         const verification = await signUp.verifications.sendEmailCode();
         if (verification.error) {
           setMessage(authErrorMessage(verification.error, 'We could not send your verification code. Please try again.'));
+          setShowSignupDeliveryRecovery(true);
           return;
         }
         router.push({ pathname: '/verify', params: { email: email.trim(), mode: 'signup' } });
@@ -200,6 +205,9 @@ export default function LoginScreen() {
       if (signInCodeDeliveryStarted) {
         setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
         setShowDeliveryRecovery(true);
+      } else if (signupCodeDeliveryStarted) {
+        setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
+        setShowSignupDeliveryRecovery(true);
       } else {
         setMessage(authErrorMessage(error, isNew ? 'We could not create your account. Please try again.' : 'We could not complete sign in. Please try again.'));
       }
@@ -222,6 +230,25 @@ export default function LoginScreen() {
       setSignInCode('');
       setShowDeliveryRecovery(false);
       setSignInVerificationOpen(true);
+    } catch (error) {
+      setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const retrySignupCodeDelivery = async () => {
+    if (isResending || isSubmitting) return;
+    setMessage('');
+    setIsResending(true);
+    try {
+      const { error } = await signUp.verifications.sendEmailCode();
+      if (error) {
+        setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
+        return;
+      }
+      setShowSignupDeliveryRecovery(false);
+      router.push({ pathname: '/verify', params: { email: email.trim(), mode: 'signup' } });
     } catch (error) {
       setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
     } finally {
@@ -415,6 +442,11 @@ export default function LoginScreen() {
           {showDeliveryRecovery && (
             <Pressable testID="login-retry-delivery" disabled={loading} onPress={() => void retrySignInCodeDelivery()} style={[styles.retryButton, { borderColor: colors.primary }]}>
               <Text style={[styles.secondaryText, { color: colors.primary }]}>Retry sending code</Text>
+            </Pressable>
+          )}
+          {showSignupDeliveryRecovery && (
+            <Pressable testID="signup-retry-delivery" disabled={loading} onPress={() => void retrySignupCodeDelivery()} style={[styles.retryButton, { borderColor: colors.primary }]}>
+              <Text style={[styles.secondaryText, { color: colors.primary }]}>Retry sending signup code</Text>
             </Pressable>
           )}
           <Pressable testID="login-continue" disabled={loading} onPress={() => void submit()} style={[styles.button, { backgroundColor: email.trim() && !loading ? colors.primary : colors.muted, marginTop: 24 }]}>
