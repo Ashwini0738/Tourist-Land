@@ -433,6 +433,31 @@ it('starts Clerk email-code signup and opens reusable verification', async () =>
   expect(router.push).toHaveBeenCalledWith({ pathname: '/verify', params: { email: 'traveller@example.com', mode: 'signup' } });
 });
 
+it('does not duplicate a slow initial signup request or verification code send', async () => {
+  const signUp = signUpFixture();
+  let resolveInitialSignup: (result: { error: null }) => void = () => undefined;
+  const delayedInitialSignup = new Promise<{ error: null }>((resolve) => {
+    resolveInitialSignup = resolve;
+  });
+  signUp.create.mockReturnValue(delayedInitialSignup);
+  mockUseSignUp.mockReturnValue({ signUp, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.press(screen.getByText('New here? Create an account'));
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  const signupButton = screen.getByTestId('login-continue');
+  fireEvent.press(signupButton);
+  fireEvent.press(signupButton);
+
+  expect(signUp.create).toHaveBeenCalledTimes(1);
+  expect(signUp.create).toHaveBeenCalledWith({ emailAddress: 'traveller@example.com' });
+  expect(signUp.verifications.sendEmailCode).not.toHaveBeenCalled();
+
+  resolveInitialSignup({ error: null });
+  await waitFor(() => expect(signUp.verifications.sendEmailCode).toHaveBeenCalledTimes(1));
+  expect(router.push).toHaveBeenCalledWith({ pathname: '/verify', params: { email: 'traveller@example.com', mode: 'signup' } });
+});
+
 it('offers a direct recovery action when the initial signup code delivery fails', async () => {
   const signUp = signUpFixture();
   signUp.verifications.sendEmailCode.mockResolvedValueOnce({ error: {} });
