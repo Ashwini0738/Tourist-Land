@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { useClerk, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import { useMobileAuth } from '@/context/AuthContext';
@@ -158,6 +158,61 @@ it('recovers email-code sign-in after repeated delivery failures', async () => {
   expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy();
   expect(screen.queryByTestId('login-retry-delivery')).toBeNull();
   expect(screen.queryByTestId('login-email')).toBeNull();
+});
+
+it('finalizes recovered email-code sign-in before closing verification', async () => {
+  const signIn = signInFixture();
+  signIn.emailCode.sendCode
+    .mockResolvedValueOnce({ error: {} })
+    .mockResolvedValueOnce({ error: {} })
+    .mockResolvedValueOnce({ error: null });
+  signIn.emailCode.verifyCode.mockImplementation(async () => {
+    signIn.status = 'complete';
+    return { error: null };
+  });
+  const recoveredSession = {
+    id: 'session_recovered',
+    status: 'active',
+    currentTask: null,
+    user: { organizationMemberships: [] },
+    lastActiveOrganizationId: null,
+  };
+  let resolveActivation: () => void = () => undefined;
+  const activation = new Promise<void>((resolve) => {
+    resolveActivation = resolve;
+  });
+  const setActive = jest.fn().mockReturnValue(activation);
+  mockUseClerk.mockReturnValue({
+    setActive,
+    session: null,
+    client: { sessions: [recoveredSession], lastActiveSessionId: recoveredSession.id },
+    redirectToTasks: jest.fn(),
+  });
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByTestId('login-retry-delivery')).toBeTruthy());
+  fireEvent.press(screen.getByTestId('login-retry-delivery'));
+  await waitFor(() => expect(signIn.emailCode.sendCode).toHaveBeenCalledTimes(2));
+  fireEvent.press(screen.getByTestId('login-retry-delivery'));
+  await waitFor(() => expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy());
+
+  fireEvent.changeText(screen.getByTestId('sign-in-verification-code'), '123456');
+  fireEvent.press(screen.getByTestId('verify-sign-in-code'));
+
+  await waitFor(() => expect(signIn.emailCode.verifyCode).toHaveBeenCalledWith({ code: '123456' }));
+  await waitFor(() => expect(signIn.finalize).toHaveBeenCalledWith({}));
+  expect(setActive).toHaveBeenCalledWith({ session: recoveredSession.id });
+  expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy();
+
+  await act(async () => {
+    resolveActivation();
+    await activation;
+  });
+  await waitFor(() => expect(screen.queryByTestId('sign-in-verification-code')).toBeNull());
 });
 
 it('keeps email-code recovery available when the direct retry throws', async () => {
