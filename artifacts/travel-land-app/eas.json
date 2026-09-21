@@ -6,6 +6,9 @@
     "preview": {
       "distribution": "internal",
       "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_DEMO_AUTH_ENABLED": "true"
+      },
       "android": {
         "buildType": "apk"
       }

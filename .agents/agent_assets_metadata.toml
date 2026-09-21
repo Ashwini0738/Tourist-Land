@@ -28,3 +28,17 @@ mtime_ms = 1789988622066
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:af4e74e8-9a1a-49b7-9460-9edfc0f5a485/c27a5aa8-28ec-4652-8995-c5d9065cc7c7/0af164d4-d5c0-4d24-a3ff-1105ec3b58d7"
 storage_version_token = "1789988632135806"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "IUze881wq3pHIyBX2yYVU"
+uri = "file://artifacts/travel-land-app/builds/travel-land-preview-fixed.apk.zip"
+type = "unspecified"
+title = "Travel & Land Android preview APK"
+description = "Replacement internal preview APK with Demo Login enabled for the preview build and hardened Clerk email-code sign-in completion. Extract the ZIP, then install the APK on Android."
+logical_id = "959a7a6e-a2f8-40d6-b1c2-272fe2e7e1e7"
+content_hash = "sha256:b540f4ba7ab71ccbd5ed3b388fb6c64d2e4f7b9f58610d4701c1b5b0fd1275b1"
+size = 61003718
+mtime_ms = 1790007933822
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:af4e74e8-9a1a-49b7-9460-9edfc0f5a485/959a7a6e-a2f8-40d6-b1c2-272fe2e7e1e7/28e54924-8e0c-4f99-8388-a6fe75e41665"
+storage_version_token = "1790007948486856"
+content_type = "application/octet-stream"

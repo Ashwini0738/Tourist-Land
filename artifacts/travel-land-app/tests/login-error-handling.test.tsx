@@ -312,6 +312,34 @@ it('verifies a Clerk email-code sign-in and keeps the existing finalization path
   await waitFor(() => expect(signIn.emailCode.verifyCode).toHaveBeenCalledWith({ code: '123456' }));
 });
 
+it('finalizes email-code sign-in when Clerk returns completion before the hook status updates', async () => {
+  const signIn = signInFixture();
+  signIn.emailCode.verifyCode.mockResolvedValue({
+    error: null,
+    status: 'complete',
+    createdSessionId: 'session_email_code',
+  });
+  const setActive = jest.fn().mockResolvedValue(undefined);
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+  mockUseClerk.mockReturnValue({
+    setActive,
+    session: null,
+    client: { sessions: [], lastActiveSessionId: null },
+    redirectToTasks: jest.fn(),
+  });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+  await waitFor(() => expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy());
+  fireEvent.changeText(screen.getByTestId('sign-in-verification-code'), '123456');
+  fireEvent.press(screen.getByTestId('verify-sign-in-code'));
+
+  await waitFor(() => expect(signIn.finalize).toHaveBeenCalledWith({}));
+  expect(setActive).toHaveBeenCalledWith({ session: 'session_email_code' });
+  expect(screen.queryByTestId('sign-in-verification-code')).toBeNull();
+});
+
 it('shows email authentication without a mobile-number option', () => {
   const screen = render(<LoginScreen />);
 

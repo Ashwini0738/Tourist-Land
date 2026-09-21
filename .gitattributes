@@ -1,2 +1,4 @@
 artifacts/travel-land-app/builds/travel-land-preview.apk filter=lfs diff=lfs merge=lfs -text
 artifacts/travel-land-app/builds/travel-land-preview.apk.zip filter=lfs diff=lfs merge=lfs -text
+artifacts/travel-land-app/builds/travel-land-preview-fixed.apk filter=lfs diff=lfs merge=lfs -text
+artifacts/travel-land-app/builds/travel-land-preview-fixed.apk.zip filter=lfs diff=lfs merge=lfs -text

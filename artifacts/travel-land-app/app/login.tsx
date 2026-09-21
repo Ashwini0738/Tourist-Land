@@ -124,7 +124,13 @@ export default function LoginScreen() {
       return false;
     }
 
-    const activated = await activateAvailableSession(preferredSessionId ?? signIn.createdSessionId);
+    const finalizedSessionId = finalization && typeof finalization === 'object' && 'createdSessionId' in finalization
+      && typeof finalization.createdSessionId === 'string'
+      ? finalization.createdSessionId
+      : null;
+    const activated = await activateAvailableSession(
+      preferredSessionId ?? finalizedSessionId ?? signIn.createdSessionId,
+    );
     if (!activated) setMessage('We could not complete sign in. Please try again.');
     return activated;
   };
@@ -296,12 +302,23 @@ export default function LoginScreen() {
     setMessage('');
     setIsSubmitting(true);
     try {
-      const { error } = signIn.status === 'needs_second_factor'
+      const verification = signIn.status === 'needs_second_factor'
         ? await signIn.mfa.verifyEmailCode({ code: signInCode })
         : await signIn.emailCode.verifyCode({ code: signInCode });
-      if (error) return setMessage(authErrorMessage(error, 'That verification code did not work. Please try again.'));
-      if (signIn.status !== 'complete') return setMessage('The code was accepted, but sign in is not complete yet. Please try again.');
-      if (!await finalizeAndVerifyActiveSession()) return;
+      if (verification?.error) {
+        setMessage(authErrorMessage(verification.error, 'That verification code did not work. Please try again.'));
+        return;
+      }
+
+      // Clerk's native SDK can resolve the verification request before the
+      // hook resource reflects its new status. Finalize the successful
+      // verification directly instead of dropping it when that status update
+      // is one render behind.
+      const verificationSessionId = verification && typeof verification === 'object' && 'createdSessionId' in verification
+        && typeof verification.createdSessionId === 'string'
+        ? verification.createdSessionId
+        : null;
+      if (!await finalizeAndVerifyActiveSession(verificationSessionId)) return;
       setSignInVerificationOpen(false);
       setSignInCode('');
     } catch (error) {
@@ -515,7 +532,7 @@ export default function LoginScreen() {
           <Pressable onPress={switchAuthMode} style={styles.secondary}>
             <Text style={[styles.secondaryText, { color: colors.primary }]}>{isNew ? 'Already have an account? Sign in' : 'New here? Create an account'}</Text>
           </Pressable>
-          {__DEV__ && process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED === 'true' && (
+          {process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED === 'true' && (
             <Pressable testID="demo-login" onPress={openDemoLogin} style={styles.secondary}>
               <Text style={[styles.secondaryText, { color: colors.primary }]}>Demo Login</Text>
             </Pressable>
