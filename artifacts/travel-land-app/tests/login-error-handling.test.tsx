@@ -238,6 +238,65 @@ it('keeps email-code recovery available when the direct retry throws', async () 
   expect(screen.queryByTestId('sign-in-verification-code')).toBeNull();
 });
 
+it('resets delivery recovery and starts a fresh attempt after correcting the email', async () => {
+  const signIn = signInFixture();
+  signIn.emailCode.sendCode
+    .mockResolvedValueOnce({ error: {} })
+    .mockResolvedValueOnce({ error: {} });
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'typo@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByTestId('login-retry-delivery')).toBeTruthy());
+  expect(screen.getByText('We could not send your verification code. Please try again.')).toBeTruthy();
+
+  fireEvent.changeText(screen.getByTestId('login-email'), 'correct@example.com');
+
+  expect(signIn.reset).toHaveBeenCalledTimes(1);
+  expect(screen.queryByTestId('login-retry-delivery')).toBeNull();
+  expect(screen.queryByText('We could not send your verification code. Please try again.')).toBeNull();
+
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(signIn.create).toHaveBeenLastCalledWith({ identifier: 'correct@example.com' }));
+  await waitFor(() => expect(screen.getByTestId('login-retry-delivery')).toBeTruthy());
+  expect(signIn.emailCode.sendCode).toHaveBeenCalledTimes(2);
+  expect(screen.getByText('We could not send your verification code. Please try again.')).toBeTruthy();
+});
+
+it('ignores a delayed delivery failure after correcting the email', async () => {
+  const signIn = signInFixture();
+  let resolveDelivery: (result: { error: object }) => void = () => undefined;
+  const delayedDelivery = new Promise<{ error: object }>((resolve) => {
+    resolveDelivery = resolve;
+  });
+  signIn.emailCode.sendCode
+    .mockReturnValueOnce(delayedDelivery)
+    .mockResolvedValueOnce({ error: {} });
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'typo@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+  await waitFor(() => expect(signIn.emailCode.sendCode).toHaveBeenCalledTimes(1));
+
+  fireEvent.changeText(screen.getByTestId('login-email'), 'correct@example.com');
+  expect(signIn.reset).toHaveBeenCalledTimes(1);
+  expect(screen.queryByTestId('login-retry-delivery')).toBeNull();
+
+  resolveDelivery({ error: {} });
+  await waitFor(() => expect(screen.getByTestId('login-continue').props.disabled).toBeFalsy());
+  expect(screen.queryByTestId('login-retry-delivery')).toBeNull();
+  expect(screen.queryByText('We could not send your verification code. Please try again.')).toBeNull();
+
+  fireEvent.press(screen.getByTestId('login-continue'));
+  await waitFor(() => expect(signIn.create).toHaveBeenLastCalledWith({ identifier: 'correct@example.com' }));
+  await waitFor(() => expect(screen.getByTestId('login-retry-delivery')).toBeTruthy());
+  expect(screen.getByText('We could not send your verification code. Please try again.')).toBeTruthy();
+});
+
 it('verifies a Clerk email-code sign-in and keeps the existing finalization path', async () => {
   const screen = render(<LoginScreen />);
   const { signIn } = (useSignIn as jest.Mock).mock.results[0]?.value ?? {};

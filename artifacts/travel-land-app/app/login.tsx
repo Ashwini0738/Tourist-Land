@@ -51,6 +51,7 @@ export default function LoginScreen() {
   const [showSignupDeliveryRecovery, setShowSignupDeliveryRecovery] = useState(false);
   const submitInFlight = useRef(false);
   const resendInFlight = useRef(false);
+  const authAttemptStartedRef = useRef(false);
   const authModeRef = useRef<'signin' | 'signup'>('signin');
   const authModeVersionRef = useRef(0);
 
@@ -166,6 +167,7 @@ export default function LoginScreen() {
       return;
     }
     submitInFlight.current = true;
+    authAttemptStartedRef.current = true;
     setIsSubmitting(true);
     const submittedMode = isNew ? 'signup' : 'signin';
     const submittedModeVersion = authModeVersionRef.current;
@@ -347,7 +349,23 @@ export default function LoginScreen() {
     const nextIsNew = !isNew;
     authModeRef.current = nextIsNew ? 'signup' : 'signin';
     authModeVersionRef.current += 1;
+    authAttemptStartedRef.current = false;
     setNew(nextIsNew);
+    setMessage('');
+    clearRecoveryState();
+  };
+
+  const changeEmail = (value: string) => {
+    authModeVersionRef.current += 1;
+    if (authAttemptStartedRef.current) {
+      if (authModeRef.current === 'signup') {
+        signUp.reset();
+      } else {
+        signIn.reset();
+      }
+    }
+    authAttemptStartedRef.current = false;
+    setEmail(value);
     setMessage('');
     clearRecoveryState();
   };
@@ -473,7 +491,7 @@ export default function LoginScreen() {
           <Text style={[styles.kicker, { color: colors.primary }]}>{isNew ? 'JOIN THE JOURNEY' : 'WELCOME BACK'}</Text>
           <Text style={[styles.title, { color: colors.foreground }]}>{isNew ? 'Start exploring.' : 'Your next chapter\nstarts here.'}</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{isNew ? 'Create an account to save the places that feel like home.' : 'Sign in to keep your stays, bookings, and saved places together.'}</Text>
-          <TextInput testID="login-email" value={email} onChangeText={(value) => { setEmail(value); setMessage(''); clearRecoveryState(); }} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
+          <TextInput testID="login-email" value={email} onChangeText={changeEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
           {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
           {showInterruptedRecovery && (
             <Pressable testID="login-retry" disabled={loading} onPress={() => void submit()} style={[styles.retryButton, { borderColor: colors.primary }]}>
