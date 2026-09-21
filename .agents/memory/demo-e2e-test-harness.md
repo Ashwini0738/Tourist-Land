@@ -51,3 +51,12 @@ recipient configuration.
 **How to apply:** Treat these delivery logs as a separate integration warning;
 use the test result and assertions to judge the database-backed journey unless
 the task specifically covers email delivery.
+
+Local PostgreSQL instances in this workspace need an explicit Unix socket
+directory (for example, the database data directory) when started manually.
+
+**Why:** The container may not have `/run/postgresql`, causing `pg_ctl` startup
+to fail before the disposable test database can be created.
+
+**How to apply:** Pass `-k <socket-directory>` in the server options and use
+TCP in `DEMO_E2E_DATABASE_URL` when running the harness from an agent shell.
