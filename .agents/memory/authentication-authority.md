@@ -32,3 +32,9 @@ Email signup and login use Clerk email-code verification. Phone-number login is 
 **Why:** Competing sessions make API identity, logout, and restoration ambiguous.
 
 **How to apply:** Send the verified Clerk bearer token on mobile API calls. The backend verifies Clerk, provisions or resolves the local user, loads local roles, and fails closed for inactive accounts. Never add organization provisioning to session activation.
+
+Clerk ticket sign-in can return `session_exists` after an earlier partial attempt, including on a physical Expo Go device. The mobile demo flow should first activate the locally available session and only clear the attempt when activation is not possible.
+
+**Why:** Clearing a recoverable session converted a successful native authentication state into a red login error, while activating it allowed the authenticated navigator and Profile tab to load.
+
+**How to apply:** Treat `session_exists` as a recovery branch in ticket-based demo login; preserve the existing local-session checks so an unavailable or non-active session still fails explicitly.

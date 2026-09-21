@@ -60,6 +60,11 @@ export default function LoginScreen() {
   }, [clerk.session?.currentTask?.key, clerk.session?.status, isLoaded, isSignedIn]);
 
   const activateAvailableSession = async (preferredSessionId?: string | null) => {
+    if (preferredSessionId) {
+      await setActive({ session: preferredSessionId });
+      return true;
+    }
+
     const sessions = clerk.client?.sessions ?? [];
     const sessionId = preferredSessionId
       ?? clerk.session?.id
@@ -98,14 +103,14 @@ export default function LoginScreen() {
     return true;
   };
 
-  const finalizeAndVerifyActiveSession = async () => {
+  const finalizeAndVerifyActiveSession = async (preferredSessionId?: string | null) => {
     const finalization = await signIn.finalize({});
     if (finalization?.error) {
       setMessage(authErrorMessage(finalization.error, 'We could not complete sign in. Please try again.'));
       return false;
     }
 
-    const activated = await activateAvailableSession(signIn.createdSessionId);
+    const activated = await activateAvailableSession(preferredSessionId ?? signIn.createdSessionId);
     if (!activated) setMessage('We could not complete sign in. Please try again.');
     return activated;
   };
@@ -231,6 +236,12 @@ export default function LoginScreen() {
     setSignInVerificationOpen(true);
   };
 
+  const finishDemoLogin = () => {
+    setSignInVerificationOpen(false);
+    setIsDemoLogin(false);
+    setSignInCode('');
+  };
+
   const clearFailedDemoSession = async () => {
     const hasSessionToClear = Boolean(
       clerk.session?.id ||
@@ -258,22 +269,28 @@ export default function LoginScreen() {
       const demo = await createDemoAuthSession({ otp: signInCode });
       const result = await signIn.create({ strategy: 'ticket', ticket: demo.ticket });
       if (result.error) {
+        if (authErrorCodes(result.error).some((code) => code.includes('session_exists'))) {
+          const resumed = await activateAvailableSession();
+          if (resumed) {
+            finishDemoLogin();
+            return;
+          }
+        }
         await clearFailedDemoSession();
         setMessage(authErrorMessage(result.error, 'Demo sign in could not be completed.'));
         return;
       }
+      const createdSessionId = signIn.createdSessionId;
       if (signIn.status !== 'complete') {
         await clearFailedDemoSession();
         setMessage('Demo sign in could not be completed.');
         return;
       }
-      if (!await finalizeAndVerifyActiveSession()) {
+      if (!await finalizeAndVerifyActiveSession(createdSessionId)) {
         await clearFailedDemoSession();
         return;
       }
-      setSignInVerificationOpen(false);
-      setIsDemoLogin(false);
-      setSignInCode('');
+      finishDemoLogin();
     } catch (error) {
       await clearFailedDemoSession();
       setMessage(authErrorMessage(error, 'The demo verification code was not accepted.'));

@@ -191,19 +191,12 @@ it('uses a Clerk sign-in ticket for the development demo login', async () => {
     }
     return { error: null };
   });
-  const demoSession = {
-    id: 'session_demo',
-    status: 'active',
-    currentTask: null,
-    user: { organizationMemberships: [] },
-    lastActiveOrganizationId: null,
-  };
   const setActive = jest.fn();
   mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
   mockUseClerk.mockReturnValue({
     setActive,
-    session: demoSession,
-    client: { sessions: [demoSession], lastActiveSessionId: demoSession.id },
+    session: null,
+    client: { sessions: [], lastActiveSessionId: null },
     redirectToTasks: jest.fn(),
   });
 
@@ -215,6 +208,39 @@ it('uses a Clerk sign-in ticket for the development demo login', async () => {
   await waitFor(() => expect(mockCreateDemoAuthSession).toHaveBeenCalledWith({ otp: '246810' }));
   expect(signIn.create).toHaveBeenCalledWith({ strategy: 'ticket', ticket: 'ticket_demo' });
   expect(setActive).toHaveBeenCalledWith({ session: 'session_demo' });
+  process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED = previousEnabled;
+});
+
+it('resumes an active session when a demo ticket reports an existing session', async () => {
+  const previousEnabled = process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED;
+  process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED = 'true';
+  const signIn = signInFixture();
+  signIn.create.mockResolvedValue({
+    error: { errors: [{ code: 'session_exists', message: 'Session already exists' }] },
+  });
+  const existingSession = {
+    id: 'session_existing',
+    status: 'active',
+    currentTask: null,
+  };
+  const setActive = jest.fn().mockResolvedValue(undefined);
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+  mockUseClerk.mockReturnValue({
+    setActive,
+    session: existingSession,
+    client: { sessions: [existingSession], lastActiveSessionId: existingSession.id },
+    signOut: jest.fn().mockResolvedValue(undefined),
+    redirectToTasks: jest.fn(),
+  });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.press(screen.getByTestId('demo-login'));
+  fireEvent.changeText(screen.getByTestId('sign-in-verification-code'), '246810');
+  fireEvent.press(screen.getByTestId('verify-demo-code'));
+
+  await waitFor(() => expect(setActive).toHaveBeenCalledWith({ session: existingSession.id }));
+  expect(screen.queryByTestId('sign-in-verification-code')).toBeNull();
+  expect(screen.queryByText('You are already signed in. Opening your account.')).toBeNull();
   process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED = previousEnabled;
 });
 
