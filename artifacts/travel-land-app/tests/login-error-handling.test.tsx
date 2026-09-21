@@ -582,6 +582,37 @@ it('recovers when the initial signup code delivery throws', async () => {
   expect(screen.queryByTestId('signup-retry-delivery')).toBeNull();
 });
 
+it('keeps signup recovery available when the direct retry throws', async () => {
+  const signUp = signUpFixture();
+  signUp.verifications.sendEmailCode
+    .mockResolvedValueOnce({ error: {} })
+    .mockRejectedValueOnce({
+      errors: [{ longMessage: 'The email provider is temporarily unavailable.' }],
+    })
+    .mockResolvedValueOnce({ error: null });
+  mockUseSignUp.mockReturnValue({ signUp, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.press(screen.getByText('New here? Create an account'));
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByTestId('signup-retry-delivery')).toBeTruthy());
+  fireEvent.press(screen.getByTestId('signup-retry-delivery'));
+
+  await waitFor(() => expect(signUp.verifications.sendEmailCode).toHaveBeenCalledTimes(2));
+  expect(screen.getByText('The email provider is temporarily unavailable.')).toBeTruthy();
+  expect(screen.getByTestId('signup-retry-delivery')).toBeTruthy();
+  expect(screen.getByTestId('login-email').props.value).toBe('traveller@example.com');
+  expect(router.push).not.toHaveBeenCalled();
+
+  fireEvent.press(screen.getByTestId('signup-retry-delivery'));
+
+  await waitFor(() => expect(signUp.verifications.sendEmailCode).toHaveBeenCalledTimes(3));
+  expect(router.push).toHaveBeenCalledWith({ pathname: '/verify', params: { email: 'traveller@example.com', mode: 'signup' } });
+  expect(screen.queryByTestId('signup-retry-delivery')).toBeNull();
+});
+
 it('ignores a delayed sign-in recovery response after switching to signup', async () => {
   const signIn = signInFixture();
   let resolveDelivery: (result: { error: object }) => void = () => undefined;
