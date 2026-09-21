@@ -49,7 +49,7 @@ function signUpFixture() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseMobileAuth.mockReturnValue({ isLoaded: true, isSignedIn: false });
-  mockUseClerk.mockReturnValue({ setActive: jest.fn(), session: null, client: { sessions: [], lastActiveSessionId: null }, redirectToTasks: jest.fn() });
+  mockUseClerk.mockReturnValue({ setActive: jest.fn(), signOut: jest.fn().mockResolvedValue(undefined), session: null, client: { sessions: [], lastActiveSessionId: null }, redirectToTasks: jest.fn() });
   mockUseSignIn.mockReturnValue({ signIn: signInFixture(), fetchStatus: 'idle' });
   mockUseSignUp.mockReturnValue({ signUp: signUpFixture(), fetchStatus: 'idle' });
   mockCreateDemoAuthSession.mockResolvedValue({
@@ -215,6 +215,34 @@ it('uses a Clerk sign-in ticket for the development demo login', async () => {
   await waitFor(() => expect(mockCreateDemoAuthSession).toHaveBeenCalledWith({ otp: '246810' }));
   expect(signIn.create).toHaveBeenCalledWith({ strategy: 'ticket', ticket: 'ticket_demo' });
   expect(setActive).toHaveBeenCalledWith({ session: 'session_demo' });
+  process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED = previousEnabled;
+});
+
+it('clears a failed demo session and shows a recovery message', async () => {
+  const previousEnabled = process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED;
+  process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED = 'true';
+  const signIn = signInFixture();
+  signIn.createdSessionId = 'session_demo';
+  signIn.create.mockResolvedValue({ error: { code: 'invalid_ticket' } });
+  const signOut = jest.fn().mockResolvedValue(undefined);
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+  mockUseClerk.mockReturnValue({
+    setActive: jest.fn(),
+    signOut,
+    session: { id: 'session_demo', status: 'active' },
+    client: { sessions: [], lastActiveSessionId: 'session_demo' },
+    redirectToTasks: jest.fn(),
+  });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.press(screen.getByTestId('demo-login'));
+  fireEvent.changeText(screen.getByTestId('sign-in-verification-code'), '246810');
+  fireEvent.press(screen.getByTestId('verify-demo-code'));
+
+  await waitFor(() => expect(screen.getByText('Demo sign in could not be completed.')).toBeTruthy());
+  expect(signIn.reset).toHaveBeenCalled();
+  expect(signOut).toHaveBeenCalled();
+  expect(screen.queryByTestId('sign-in-verification-code')).toBeNull();
   process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED = previousEnabled;
 });
 

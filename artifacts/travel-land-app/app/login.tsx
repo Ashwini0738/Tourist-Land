@@ -231,6 +231,25 @@ export default function LoginScreen() {
     setSignInVerificationOpen(true);
   };
 
+  const clearFailedDemoSession = async () => {
+    const hasSessionToClear = Boolean(
+      clerk.session?.id ||
+      clerk.client?.lastActiveSessionId ||
+      signIn.createdSessionId,
+    );
+    signIn.reset();
+    setSignInVerificationOpen(false);
+    setIsDemoLogin(false);
+    setSignInCode('');
+    if (hasSessionToClear) {
+      try {
+        await clerk.signOut();
+      } catch {
+        // Keep the original recovery message visible if Clerk cleanup fails.
+      }
+    }
+  };
+
   const verifyDemoCode = async () => {
     if (isSubmitting || signInCode.length !== 6) return;
     setMessage('');
@@ -239,18 +258,24 @@ export default function LoginScreen() {
       const demo = await createDemoAuthSession({ otp: signInCode });
       const result = await signIn.create({ strategy: 'ticket', ticket: demo.ticket });
       if (result.error) {
+        await clearFailedDemoSession();
         setMessage(authErrorMessage(result.error, 'Demo sign in could not be completed.'));
         return;
       }
       if (signIn.status !== 'complete') {
+        await clearFailedDemoSession();
         setMessage('Demo sign in could not be completed.');
         return;
       }
-      if (!await finalizeAndVerifyActiveSession()) return;
+      if (!await finalizeAndVerifyActiveSession()) {
+        await clearFailedDemoSession();
+        return;
+      }
       setSignInVerificationOpen(false);
       setIsDemoLogin(false);
       setSignInCode('');
     } catch (error) {
+      await clearFailedDemoSession();
       setMessage(authErrorMessage(error, 'The demo verification code was not accepted.'));
     } finally {
       setIsSubmitting(false);
