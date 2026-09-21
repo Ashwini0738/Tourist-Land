@@ -3,7 +3,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { authErrorCodes, authErrorMessage, emailValidationMessage } from '@/features/auth/authErrorMessage';
 import { useClerk, useSignIn, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,6 +47,7 @@ export default function LoginScreen() {
   const [isResending, setIsResending] = useState(false);
   const [isDemoLogin, setIsDemoLogin] = useState(false);
   const [showInterruptedRecovery, setShowInterruptedRecovery] = useState(false);
+  const submitInFlight = useRef(false);
 
   const loading = !isLoaded || signInStatus === 'fetching' || isSubmitting || isResending;
 
@@ -132,7 +133,7 @@ export default function LoginScreen() {
   };
 
   const submit = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || submitInFlight.current) return;
     if (__DEV__) {
       console.info('[auth] Email OTP submit started', {
         isLoaded,
@@ -151,6 +152,7 @@ export default function LoginScreen() {
       setMessage(emailMessage);
       return;
     }
+    submitInFlight.current = true;
     setIsSubmitting(true);
     try {
       if (isNew) {
@@ -191,6 +193,7 @@ export default function LoginScreen() {
       if (await resumeExistingSession(error)) return;
       setMessage(authErrorMessage(error, isNew ? 'We could not create your account. Please try again.' : 'We could not complete sign in. Please try again.'));
     } finally {
+      submitInFlight.current = false;
       setIsSubmitting(false);
     }
   };

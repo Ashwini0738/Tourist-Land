@@ -163,6 +163,52 @@ it('resets an unavailable interrupted email session so sign-in can be retried', 
   expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy();
 });
 
+it('does not duplicate a slow retry request or verification code send', async () => {
+  const pendingSession = {
+    id: 'session_pending',
+    status: 'pending',
+    currentTask: { key: 'choose-organization' },
+    user: {
+      organizationMemberships: [
+        { organization: { id: 'organization_travel', name: 'Travel & Land' } },
+      ],
+    },
+    lastActiveOrganizationId: null,
+  };
+  const setActive = jest.fn().mockResolvedValue(undefined);
+  const signIn = signInFixture();
+  let resolveRetry: (result: { error: null }) => void = () => undefined;
+  const delayedRetry = new Promise<{ error: null }>((resolve) => {
+    resolveRetry = resolve;
+  });
+  signIn.create
+    .mockRejectedValueOnce({ errors: [{ code: 'session_exists', message: 'Session already exists' }] })
+    .mockReturnValueOnce(delayedRetry);
+  mockUseClerk.mockReturnValue({
+    setActive,
+    session: pendingSession,
+    client: { sessions: [pendingSession], lastActiveSessionId: pendingSession.id },
+    redirectToTasks: jest.fn(),
+  });
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+  await waitFor(() => expect(screen.getByTestId('login-retry')).toBeTruthy());
+
+  const retryButton = screen.getByTestId('login-retry');
+  fireEvent.press(retryButton);
+  fireEvent.press(retryButton);
+
+  expect(signIn.create).toHaveBeenCalledTimes(2);
+  expect(signIn.emailCode.sendCode).not.toHaveBeenCalled();
+
+  resolveRetry({ error: null });
+  await waitFor(() => expect(signIn.emailCode.sendCode).toHaveBeenCalledTimes(1));
+  expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy();
+});
+
 it('does not provision an organization for a restored pending session', async () => {
   const pendingSession = {
     id: 'session_pending',
