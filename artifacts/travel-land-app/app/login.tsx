@@ -231,6 +231,7 @@ export default function LoginScreen() {
         setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
         setShowSignupDeliveryRecovery(true);
       } else {
+        if (isNew) signUp.reset();
         setMessage(authErrorMessage(error, isNew ? 'We could not create your account. Please try again.' : 'We could not complete sign in. Please try again.'));
       }
     } finally {
