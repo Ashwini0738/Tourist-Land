@@ -47,6 +47,7 @@ export default function LoginScreen() {
   const [isResending, setIsResending] = useState(false);
   const [isDemoLogin, setIsDemoLogin] = useState(false);
   const [showInterruptedRecovery, setShowInterruptedRecovery] = useState(false);
+  const [showDeliveryRecovery, setShowDeliveryRecovery] = useState(false);
   const submitInFlight = useRef(false);
 
   const loading = !isLoaded || signInStatus === 'fetching' || isSubmitting || isResending;
@@ -142,6 +143,7 @@ export default function LoginScreen() {
       });
     }
     setShowInterruptedRecovery(false);
+    setShowDeliveryRecovery(false);
     setMessage('');
     if (isSignedIn) {
       await activateAvailableSession();
@@ -154,6 +156,7 @@ export default function LoginScreen() {
     }
     submitInFlight.current = true;
     setIsSubmitting(true);
+    let signInCodeDeliveryStarted = false;
     try {
       if (isNew) {
         const created = await signUp.create({ emailAddress: email.trim() });
@@ -181,9 +184,11 @@ export default function LoginScreen() {
         setMessage('Email code sign in is not enabled for this account. Try another sign-in method.');
         return;
       }
+      signInCodeDeliveryStarted = true;
       const verification = await signIn.emailCode.sendCode();
       if (verification.error) {
         setMessage(authErrorMessage(verification.error, 'We could not send your verification code. Please try again.'));
+        setShowDeliveryRecovery(true);
         return;
       }
       setSignInCode('');
@@ -191,10 +196,35 @@ export default function LoginScreen() {
     } catch (error) {
       if (__DEV__) console.warn('[auth] Email OTP submit threw', authErrorDiagnostic(error));
       if (await resumeExistingSession(error)) return;
-      setMessage(authErrorMessage(error, isNew ? 'We could not create your account. Please try again.' : 'We could not complete sign in. Please try again.'));
+      if (signInCodeDeliveryStarted) {
+        setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
+        setShowDeliveryRecovery(true);
+      } else {
+        setMessage(authErrorMessage(error, isNew ? 'We could not create your account. Please try again.' : 'We could not complete sign in. Please try again.'));
+      }
     } finally {
       submitInFlight.current = false;
       setIsSubmitting(false);
+    }
+  };
+
+  const retrySignInCodeDelivery = async () => {
+    if (isResending || isSubmitting) return;
+    setMessage('');
+    setIsResending(true);
+    try {
+      const { error } = await signIn.emailCode.sendCode();
+      if (error) {
+        setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
+        return;
+      }
+      setSignInCode('');
+      setShowDeliveryRecovery(false);
+      setSignInVerificationOpen(true);
+    } catch (error) {
+      setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -377,6 +407,11 @@ export default function LoginScreen() {
           {showInterruptedRecovery && (
             <Pressable testID="login-retry" disabled={loading} onPress={() => void submit()} style={[styles.retryButton, { borderColor: colors.primary }]}>
               <Text style={[styles.secondaryText, { color: colors.primary }]}>Retry sign in</Text>
+            </Pressable>
+          )}
+          {showDeliveryRecovery && (
+            <Pressable testID="login-retry-delivery" disabled={loading} onPress={() => void retrySignInCodeDelivery()} style={[styles.retryButton, { borderColor: colors.primary }]}>
+              <Text style={[styles.secondaryText, { color: colors.primary }]}>Retry sending code</Text>
             </Pressable>
           )}
           <Pressable testID="login-continue" disabled={loading} onPress={() => void submit()} style={[styles.button, { backgroundColor: email.trim() && !loading ? colors.primary : colors.muted, marginTop: 24 }]}>

@@ -68,6 +68,27 @@ it('starts Clerk email-code sign in without password or Supabase APIs', async ()
   expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy();
 });
 
+it('offers a direct recovery action when the initial code delivery fails', async () => {
+  const signIn = signInFixture();
+  signIn.emailCode.sendCode.mockResolvedValueOnce({ error: {} });
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByText('We could not send your verification code. Please try again.')).toBeTruthy());
+  expect(screen.getByTestId('login-email').props.value).toBe('traveller@example.com');
+  expect(screen.getByTestId('login-retry-delivery')).toBeTruthy();
+  expect(screen.getByText('Retry sending code')).toBeTruthy();
+
+  fireEvent.press(screen.getByTestId('login-retry-delivery'));
+
+  await waitFor(() => expect(signIn.emailCode.sendCode).toHaveBeenCalledTimes(2));
+  expect(screen.getByTestId('sign-in-verification-code')).toBeTruthy();
+  expect(screen.queryByTestId('login-retry-delivery')).toBeNull();
+});
+
 it('verifies a Clerk email-code sign-in and keeps the existing finalization path', async () => {
   const screen = render(<LoginScreen />);
   const { signIn } = (useSignIn as jest.Mock).mock.results[0]?.value ?? {};
