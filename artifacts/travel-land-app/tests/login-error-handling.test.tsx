@@ -649,6 +649,41 @@ it('recovers when initial signup creation throws', async () => {
   expect(router.push).toHaveBeenCalledWith({ pathname: '/verify', params: { email: 'traveller@example.com', mode: 'signup' } });
 });
 
+it('keeps signup recovery available after repeated account-creation throws', async () => {
+  const signUp = signUpFixture();
+  signUp.create
+    .mockRejectedValueOnce(new Error('network unavailable'))
+    .mockRejectedValueOnce(new Error('network still unavailable'))
+    .mockResolvedValueOnce({ error: null });
+  mockUseSignUp.mockReturnValue({ signUp, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.press(screen.getByText('New here? Create an account'));
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByText('We could not create your account. Please try again.')).toBeTruthy());
+  expect(signUp.verifications.sendEmailCode).not.toHaveBeenCalled();
+  expect(signUp.reset).toHaveBeenCalledTimes(1);
+  expect(screen.getByTestId('login-email').props.value).toBe('traveller@example.com');
+  expect(router.push).not.toHaveBeenCalled();
+
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(signUp.create).toHaveBeenCalledTimes(2));
+  expect(screen.getByText('We could not create your account. Please try again.')).toBeTruthy();
+  expect(signUp.verifications.sendEmailCode).not.toHaveBeenCalled();
+  expect(signUp.reset).toHaveBeenCalledTimes(2);
+  expect(screen.getByTestId('login-email').props.value).toBe('traveller@example.com');
+  expect(router.push).not.toHaveBeenCalled();
+
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(signUp.create).toHaveBeenCalledTimes(3));
+  expect(signUp.verifications.sendEmailCode).toHaveBeenCalledTimes(1);
+  expect(router.push).toHaveBeenCalledWith({ pathname: '/verify', params: { email: 'traveller@example.com', mode: 'signup' } });
+});
+
 it('does not duplicate a slow initial signup request or verification code send', async () => {
   const signUp = signUpFixture();
   let resolveInitialSignup: (result: { error: null }) => void = () => undefined;
