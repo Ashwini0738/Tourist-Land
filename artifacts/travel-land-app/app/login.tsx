@@ -54,6 +54,12 @@ export default function LoginScreen() {
 
   const loading = !isLoaded || signInStatus === 'fetching' || isSubmitting || isResending;
 
+  const clearRecoveryState = () => {
+    setShowInterruptedRecovery(false);
+    setShowDeliveryRecovery(false);
+    setShowSignupDeliveryRecovery(false);
+  };
+
   useEffect(() => {
     if (!__DEV__) return;
     console.info('[auth] Login session state', {
@@ -144,9 +150,7 @@ export default function LoginScreen() {
         signInStatus,
       });
     }
-    setShowInterruptedRecovery(false);
-    setShowDeliveryRecovery(false);
-    setShowSignupDeliveryRecovery(false);
+    clearRecoveryState();
     setMessage('');
     if (isSignedIn) {
       await activateAvailableSession();
@@ -434,7 +438,7 @@ export default function LoginScreen() {
           <Text style={[styles.kicker, { color: colors.primary }]}>{isNew ? 'JOIN THE JOURNEY' : 'WELCOME BACK'}</Text>
           <Text style={[styles.title, { color: colors.foreground }]}>{isNew ? 'Start exploring.' : 'Your next chapter\nstarts here.'}</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{isNew ? 'Create an account to save the places that feel like home.' : 'Sign in to keep your stays, bookings, and saved places together.'}</Text>
-          <TextInput testID="login-email" value={email} onChangeText={(value) => { setEmail(value); setMessage(''); setShowInterruptedRecovery(false); }} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
+          <TextInput testID="login-email" value={email} onChangeText={(value) => { setEmail(value); setMessage(''); clearRecoveryState(); }} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="Email address" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]} />
           {!!message && <Text style={[styles.error, { color: colors.destructive }]}>{message}</Text>}
           {showInterruptedRecovery && (
             <Pressable testID="login-retry" disabled={loading} onPress={() => void submit()} style={[styles.retryButton, { borderColor: colors.primary }]}>
@@ -454,7 +458,7 @@ export default function LoginScreen() {
           <Pressable testID="login-continue" disabled={loading} onPress={() => void submit()} style={[styles.button, { backgroundColor: email.trim() && !loading ? colors.primary : colors.muted, marginTop: 24 }]}>
             {loading ? <><ActivityIndicator color="#fff" /><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Creating account...' : 'Signing in...'}</Text></> : <><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Create account' : 'Sign in'}</Text><Feather name="arrow-right" size={17} color="#fff" /></>}
           </Pressable>
-          <Pressable onPress={() => { setNew(!isNew); setMessage(''); setShowInterruptedRecovery(false); }} style={styles.secondary}>
+          <Pressable onPress={() => { setNew(!isNew); setMessage(''); clearRecoveryState(); }} style={styles.secondary}>
             <Text style={[styles.secondaryText, { color: colors.primary }]}>{isNew ? 'Already have an account? Sign in' : 'New here? Create an account'}</Text>
           </Pressable>
           {__DEV__ && process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED === 'true' && (

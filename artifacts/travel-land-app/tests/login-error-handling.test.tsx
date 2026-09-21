@@ -481,6 +481,47 @@ it('offers a direct recovery action when the initial signup code delivery fails'
   expect(screen.queryByTestId('signup-retry-delivery')).toBeNull();
 });
 
+it('clears signup recovery when switching back to sign in', async () => {
+  const signUp = signUpFixture();
+  signUp.verifications.sendEmailCode.mockResolvedValueOnce({ error: {} });
+  mockUseSignUp.mockReturnValue({ signUp, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.press(screen.getByText('New here? Create an account'));
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByTestId('signup-retry-delivery')).toBeTruthy());
+  expect(screen.getByText('We could not send your verification code. Please try again.')).toBeTruthy();
+
+  fireEvent.press(screen.getByText('Already have an account? Sign in'));
+
+  expect(screen.getByText('WELCOME BACK')).toBeTruthy();
+  expect(screen.queryByTestId('signup-retry-delivery')).toBeNull();
+  expect(screen.queryByText('We could not send your verification code. Please try again.')).toBeNull();
+  expect(screen.getByTestId('login-email').props.value).toBe('traveller@example.com');
+});
+
+it('clears sign-in recovery when switching to signup', async () => {
+  const signIn = signInFixture();
+  signIn.emailCode.sendCode.mockResolvedValueOnce({ error: {} });
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByTestId('login-retry-delivery')).toBeTruthy());
+  expect(screen.getByText('We could not send your verification code. Please try again.')).toBeTruthy();
+
+  fireEvent.press(screen.getByText('New here? Create an account'));
+
+  expect(screen.getByText('JOIN THE JOURNEY')).toBeTruthy();
+  expect(screen.queryByTestId('login-retry-delivery')).toBeNull();
+  expect(screen.queryByText('We could not send your verification code. Please try again.')).toBeNull();
+  expect(screen.getByTestId('login-email').props.value).toBe('traveller@example.com');
+});
+
 it('verifies and finalizes the Clerk signup code', async () => {
   const screen = render(<VerifyScreen />);
   const { signUp } = (useSignUp as jest.Mock).mock.results[0]?.value ?? {};
