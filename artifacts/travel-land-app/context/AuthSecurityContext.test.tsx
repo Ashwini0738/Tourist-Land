@@ -83,6 +83,32 @@ describe('AuthSecurityProvider', () => {
     await waitFor(() => expect(result.getByText('true:true:true:false:none')).toBeTruthy());
   });
 
+  it('restores the same locked device-auth state after a cold remount', async () => {
+    (SecureStore.getItemAsync as jest.Mock).mockImplementation((key: string) => {
+      if (key.includes('biometrics-enabled')) return Promise.resolve('true');
+      if (key.includes('device-auth-setup-complete')) return Promise.resolve('true');
+      return Promise.resolve(null);
+    });
+
+    const firstLaunch = render(
+      <AuthSecurityProvider>
+        <SecurityState />
+      </AuthSecurityProvider>,
+    );
+
+    await waitFor(() => expect(firstLaunch.getByText('true:true:true:false:none')).toBeTruthy());
+    firstLaunch.unmount();
+
+    const reopenedLaunch = render(
+      <AuthSecurityProvider>
+        <SecurityState />
+      </AuthSecurityProvider>,
+    );
+
+    await waitFor(() => expect(reopenedLaunch.getByText('true:true:true:false:none')).toBeTruthy());
+    expect(SecureStore.getItemAsync).toHaveBeenCalledTimes(6);
+  });
+
   it('fails closed when SecureStore cannot be read', async () => {
     (SecureStore.getItemAsync as jest.Mock).mockRejectedValue(new Error('native storage details'));
 

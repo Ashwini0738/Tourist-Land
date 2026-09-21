@@ -86,3 +86,40 @@ it('loads the authenticated server profile after Clerk sign-in', async () => {
   expect(requestUrl).toBe('https://api.example.test/api/v1/me');
   expect(new Headers(requestInit?.headers).get('authorization')).toBe('Bearer clerk-demo-token');
 });
+
+it('loads the traveller role after a restored session is unlocked', async () => {
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  mockUseAuthSecurity.mockReturnValue({
+    isReady: true,
+    isUnlocked: false,
+  });
+  const screen = render(
+    <QueryClientProvider client={queryClient}>
+      <RoleProvider>
+        <Probe />
+      </RoleProvider>
+    </QueryClientProvider>,
+  );
+
+  expect(mockFetch).not.toHaveBeenCalled();
+  expect(screen.getByTestId('profile').props.children).toBe('true:none:none:none');
+
+  mockUseAuthSecurity.mockReturnValue({
+    isReady: true,
+    isUnlocked: true,
+  });
+  screen.rerender(
+    <QueryClientProvider client={queryClient}>
+      <RoleProvider>
+        <Probe />
+      </RoleProvider>
+    </QueryClientProvider>,
+  );
+
+  await waitFor(() => {
+    expect(screen.getByTestId('profile').props.children).toBe(
+      'true:user:demo@travel-land.example:Travel & Land Demo',
+    );
+  });
+  expect(mockFetch).toHaveBeenCalledTimes(1);
+});

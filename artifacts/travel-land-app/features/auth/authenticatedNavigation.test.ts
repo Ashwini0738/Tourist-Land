@@ -82,6 +82,26 @@ describe('authenticated navigation state machine', () => {
     }))).toBe('/(tabs)');
   });
 
+  it('restores a biometric traveller through the unlock gate to the profile-capable app', () => {
+    const coldLaunch = state({
+      route: 'splash',
+      deviceAuthSetupComplete: true,
+      biometricsEnabled: true,
+      isUnlocked: false,
+      roleReady: false,
+      roleLoading: true,
+    });
+
+    expect(resolveAuthenticatedNavigation(coldLaunch)).toBe('/biometric-login');
+    expect(resolveAuthenticatedNavigation({
+      ...coldLaunch,
+      route: 'biometric-login',
+      isUnlocked: true,
+      roleReady: true,
+      roleLoading: false,
+    })).toBe('/(tabs)');
+  });
+
   it('falls back to password login when a restored biometric session is no longer signed in', () => {
     expect(resolveAuthenticatedNavigation(state({
       route: 'biometric-login',
