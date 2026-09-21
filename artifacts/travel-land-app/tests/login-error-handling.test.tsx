@@ -649,6 +649,34 @@ it('recovers when initial signup creation throws', async () => {
   expect(router.push).toHaveBeenCalledWith({ pathname: '/verify', params: { email: 'traveller@example.com', mode: 'signup' } });
 });
 
+it('keeps an interrupted remote signup out of verification when Continue finds the account', async () => {
+  const signUp = signUpFixture();
+  signUp.create
+    .mockRejectedValueOnce(new Error('response lost after remote account creation'))
+    .mockResolvedValueOnce({ error: { errors: [{ code: 'identifier_exists' }] } });
+  mockUseSignUp.mockReturnValue({ signUp, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.press(screen.getByText('New here? Create an account'));
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByText('We could not create your account. Please try again.')).toBeTruthy());
+  expect(signUp.verifications.sendEmailCode).not.toHaveBeenCalled();
+  expect(router.push).not.toHaveBeenCalled();
+
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByText('An account with this email already exists. Switch to sign in instead.')).toBeTruthy());
+  expect(signUp.create).toHaveBeenCalledTimes(2);
+  expect(signUp.reset).toHaveBeenCalledTimes(2);
+  expect(signUp.verifications.sendEmailCode).not.toHaveBeenCalled();
+  expect(screen.getByTestId('login-email').props.value).toBe('traveller@example.com');
+  expect(screen.getByText('Already have an account? Sign in')).toBeTruthy();
+  expect(screen.queryByTestId('verification-code')).toBeNull();
+  expect(router.push).not.toHaveBeenCalled();
+});
+
 it('keeps signup recovery available after repeated account-creation throws', async () => {
   const signUp = signUpFixture();
   signUp.create
