@@ -225,6 +225,7 @@ export default function LoginScreen() {
       const { error } = await signIn.emailCode.sendCode();
       if (error) {
         setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
+        setShowDeliveryRecovery(true);
         return;
       }
       setSignInCode('');
@@ -232,6 +233,7 @@ export default function LoginScreen() {
       setSignInVerificationOpen(true);
     } catch (error) {
       setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
+      setShowDeliveryRecovery(true);
     } finally {
       setIsResending(false);
     }

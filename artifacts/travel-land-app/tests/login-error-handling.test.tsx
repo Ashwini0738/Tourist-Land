@@ -113,6 +113,27 @@ it('offers a direct recovery action when the initial code delivery fails', async
   expect(screen.queryByTestId('login-retry-delivery')).toBeNull();
 });
 
+it('keeps email-code recovery available when the direct retry also fails', async () => {
+  const signIn = signInFixture();
+  signIn.emailCode.sendCode
+    .mockResolvedValueOnce({ error: {} })
+    .mockResolvedValueOnce({ error: {} });
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByTestId('login-retry-delivery')).toBeTruthy());
+  fireEvent.press(screen.getByTestId('login-retry-delivery'));
+
+  await waitFor(() => expect(signIn.emailCode.sendCode).toHaveBeenCalledTimes(2));
+  expect(screen.getByText('We could not send your verification code. Please try again.')).toBeTruthy();
+  expect(screen.getByTestId('login-retry-delivery')).toBeTruthy();
+  expect(screen.getByTestId('login-email').props.value).toBe('traveller@example.com');
+  expect(screen.queryByTestId('sign-in-verification-code')).toBeNull();
+});
+
 it('verifies a Clerk email-code sign-in and keeps the existing finalization path', async () => {
   const screen = render(<LoginScreen />);
   const { signIn } = (useSignIn as jest.Mock).mock.results[0]?.value ?? {};
