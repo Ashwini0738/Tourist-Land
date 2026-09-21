@@ -497,6 +497,9 @@ it('shows account-creation errors and allows a fresh signup attempt', async () =
   await waitFor(() => expect(screen.getByText('An account with this email already exists. Switch to sign in instead.')).toBeTruthy());
   expect(signUp.verifications.sendEmailCode).not.toHaveBeenCalled();
   expect(signUp.reset).toHaveBeenCalledTimes(1);
+  expect(screen.getByTestId('login-email')).toBeTruthy();
+  expect(screen.getByText('Already have an account? Sign in')).toBeTruthy();
+  expect(router.push).not.toHaveBeenCalled();
 
   fireEvent.press(screen.getByTestId('login-continue'));
 
