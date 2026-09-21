@@ -481,6 +481,31 @@ it('offers a direct recovery action when the initial signup code delivery fails'
   expect(screen.queryByTestId('signup-retry-delivery')).toBeNull();
 });
 
+it('recovers when the initial signup code delivery throws', async () => {
+  const signUp = signUpFixture();
+  signUp.verifications.sendEmailCode
+    .mockRejectedValueOnce(new Error('network unavailable'))
+    .mockResolvedValueOnce({ error: null });
+  mockUseSignUp.mockReturnValue({ signUp, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.press(screen.getByText('New here? Create an account'));
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+
+  await waitFor(() => expect(screen.getByText('We could not send your verification code. Please try again.')).toBeTruthy());
+  expect(screen.getByTestId('login-email').props.value).toBe('traveller@example.com');
+  expect(screen.getByTestId('signup-retry-delivery')).toBeTruthy();
+  expect(screen.getByText('Retry sending signup code')).toBeTruthy();
+  expect(router.push).not.toHaveBeenCalled();
+
+  fireEvent.press(screen.getByTestId('signup-retry-delivery'));
+
+  await waitFor(() => expect(signUp.verifications.sendEmailCode).toHaveBeenCalledTimes(2));
+  expect(router.push).toHaveBeenCalledWith({ pathname: '/verify', params: { email: 'traveller@example.com', mode: 'signup' } });
+  expect(screen.queryByTestId('signup-retry-delivery')).toBeNull();
+});
+
 it('clears signup recovery when switching back to sign in', async () => {
   const signUp = signUpFixture();
   signUp.verifications.sendEmailCode.mockResolvedValueOnce({ error: {} });
