@@ -582,6 +582,53 @@ it('recovers when the initial signup code delivery throws', async () => {
   expect(screen.queryByTestId('signup-retry-delivery')).toBeNull();
 });
 
+it('ignores a delayed sign-in recovery response after switching to signup', async () => {
+  const signIn = signInFixture();
+  let resolveDelivery: (result: { error: object }) => void = () => undefined;
+  const delayedDelivery = new Promise<{ error: object }>((resolve) => {
+    resolveDelivery = resolve;
+  });
+  signIn.emailCode.sendCode.mockReturnValue(delayedDelivery);
+  mockUseSignIn.mockReturnValue({ signIn, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+  await waitFor(() => expect(signIn.emailCode.sendCode).toHaveBeenCalledTimes(1));
+
+  fireEvent.press(screen.getByText('New here? Create an account'));
+  resolveDelivery({ error: {} });
+
+  await waitFor(() => expect(screen.queryByTestId('login-retry-delivery')).toBeNull());
+  expect(screen.getByText('JOIN THE JOURNEY')).toBeTruthy();
+  expect(screen.queryByTestId('signup-retry-delivery')).toBeNull();
+  expect(screen.queryByText('We could not send your verification code. Please try again.')).toBeNull();
+});
+
+it('ignores a delayed signup recovery response after switching to sign in', async () => {
+  const signUp = signUpFixture();
+  let resolveDelivery: (result: { error: object }) => void = () => undefined;
+  const delayedDelivery = new Promise<{ error: object }>((resolve) => {
+    resolveDelivery = resolve;
+  });
+  signUp.verifications.sendEmailCode.mockReturnValue(delayedDelivery);
+  mockUseSignUp.mockReturnValue({ signUp, fetchStatus: 'idle' });
+
+  const screen = render(<LoginScreen />);
+  fireEvent.press(screen.getByText('New here? Create an account'));
+  fireEvent.changeText(screen.getByTestId('login-email'), 'traveller@example.com');
+  fireEvent.press(screen.getByTestId('login-continue'));
+  await waitFor(() => expect(signUp.verifications.sendEmailCode).toHaveBeenCalledTimes(1));
+
+  fireEvent.press(screen.getByText('Already have an account? Sign in'));
+  resolveDelivery({ error: {} });
+
+  await waitFor(() => expect(screen.queryByTestId('signup-retry-delivery')).toBeNull());
+  expect(screen.getByText('WELCOME BACK')).toBeTruthy();
+  expect(screen.queryByTestId('login-retry-delivery')).toBeNull();
+  expect(screen.queryByText('We could not send your verification code. Please try again.')).toBeNull();
+});
+
 it('clears signup recovery when switching back to sign in', async () => {
   const signUp = signUpFixture();
   signUp.verifications.sendEmailCode.mockResolvedValueOnce({ error: {} });

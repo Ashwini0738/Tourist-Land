@@ -51,6 +51,8 @@ export default function LoginScreen() {
   const [showSignupDeliveryRecovery, setShowSignupDeliveryRecovery] = useState(false);
   const submitInFlight = useRef(false);
   const resendInFlight = useRef(false);
+  const authModeRef = useRef<'signin' | 'signup'>('signin');
+  const authModeVersionRef = useRef(0);
 
   const loading = !isLoaded || signInStatus === 'fetching' || isSubmitting || isResending;
 
@@ -126,11 +128,13 @@ export default function LoginScreen() {
     return activated;
   };
 
-  const resumeExistingSession = async (error: unknown) => {
+  const resumeExistingSession = async (error: unknown, isCurrentAttempt: () => boolean) => {
+    if (!isCurrentAttempt()) return true;
     const sessionExists = authErrorCodes(error).some((code) => code.includes('session_exists'));
     if (!sessionExists) return false;
 
     const resumed = await activateAvailableSession();
+    if (!isCurrentAttempt()) return true;
     if (!resumed) {
       signIn.reset();
       setSignInVerificationOpen(false);
@@ -163,11 +167,16 @@ export default function LoginScreen() {
     }
     submitInFlight.current = true;
     setIsSubmitting(true);
+    const submittedMode = isNew ? 'signup' : 'signin';
+    const submittedModeVersion = authModeVersionRef.current;
+    const isCurrentAttempt = () =>
+      authModeRef.current === submittedMode && authModeVersionRef.current === submittedModeVersion;
     let signInCodeDeliveryStarted = false;
     let signupCodeDeliveryStarted = false;
     try {
       if (isNew) {
         const created = await signUp.create({ emailAddress: email.trim() });
+        if (!isCurrentAttempt()) return;
         if (created.error) {
           signUp.reset();
           setMessage(authErrorMessage(created.error, 'We could not create your account. Please try again.'));
@@ -175,6 +184,7 @@ export default function LoginScreen() {
         }
         signupCodeDeliveryStarted = true;
         const verification = await signUp.verifications.sendEmailCode();
+        if (!isCurrentAttempt()) return;
         if (verification.error) {
           setMessage(authErrorMessage(verification.error, 'We could not send your verification code. Please try again.'));
           setShowSignupDeliveryRecovery(true);
@@ -185,8 +195,10 @@ export default function LoginScreen() {
       }
 
       const result = await signIn.create({ identifier: email.trim() });
+      if (!isCurrentAttempt()) return;
       if (result.error) {
-        if (await resumeExistingSession(result.error)) return;
+        if (await resumeExistingSession(result.error, isCurrentAttempt)) return;
+        if (!isCurrentAttempt()) return;
         setMessage(authErrorMessage(result.error, 'We could not start email sign in. Please try again.'));
         return;
       }
@@ -197,6 +209,7 @@ export default function LoginScreen() {
       }
       signInCodeDeliveryStarted = true;
       const verification = await signIn.emailCode.sendCode();
+      if (!isCurrentAttempt()) return;
       if (verification.error) {
         setMessage(authErrorMessage(verification.error, 'We could not send your verification code. Please try again.'));
         setShowDeliveryRecovery(true);
@@ -206,7 +219,9 @@ export default function LoginScreen() {
       setSignInVerificationOpen(true);
     } catch (error) {
       if (__DEV__) console.warn('[auth] Email OTP submit threw', authErrorDiagnostic(error));
-      if (await resumeExistingSession(error)) return;
+      if (!isCurrentAttempt()) return;
+      if (await resumeExistingSession(error, isCurrentAttempt)) return;
+      if (!isCurrentAttempt()) return;
       if (signInCodeDeliveryStarted) {
         setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
         setShowDeliveryRecovery(true);
@@ -224,10 +239,14 @@ export default function LoginScreen() {
 
   const retrySignInCodeDelivery = async () => {
     if (isResending || isSubmitting) return;
+    const retryModeVersion = authModeVersionRef.current;
+    const isCurrentAttempt = () =>
+      authModeRef.current === 'signin' && authModeVersionRef.current === retryModeVersion;
     setMessage('');
     setIsResending(true);
     try {
       const { error } = await signIn.emailCode.sendCode();
+      if (!isCurrentAttempt()) return;
       if (error) {
         setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
         setShowDeliveryRecovery(true);
@@ -237,6 +256,7 @@ export default function LoginScreen() {
       setShowDeliveryRecovery(false);
       setSignInVerificationOpen(true);
     } catch (error) {
+      if (!isCurrentAttempt()) return;
       setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
       setShowDeliveryRecovery(true);
     } finally {
@@ -246,10 +266,14 @@ export default function LoginScreen() {
 
   const retrySignupCodeDelivery = async () => {
     if (isResending || isSubmitting) return;
+    const retryModeVersion = authModeVersionRef.current;
+    const isCurrentAttempt = () =>
+      authModeRef.current === 'signup' && authModeVersionRef.current === retryModeVersion;
     setMessage('');
     setIsResending(true);
     try {
       const { error } = await signUp.verifications.sendEmailCode();
+      if (!isCurrentAttempt()) return;
       if (error) {
         setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
         return;
@@ -257,6 +281,7 @@ export default function LoginScreen() {
       setShowSignupDeliveryRecovery(false);
       router.push({ pathname: '/verify', params: { email: email.trim(), mode: 'signup' } });
     } catch (error) {
+      if (!isCurrentAttempt()) return;
       setMessage(authErrorMessage(error, 'We could not send your verification code. Please try again.'));
     } finally {
       setIsResending(false);
@@ -316,6 +341,15 @@ export default function LoginScreen() {
     setSignInVerificationOpen(false);
     setIsDemoLogin(false);
     setSignInCode('');
+  };
+
+  const switchAuthMode = () => {
+    const nextIsNew = !isNew;
+    authModeRef.current = nextIsNew ? 'signup' : 'signin';
+    authModeVersionRef.current += 1;
+    setNew(nextIsNew);
+    setMessage('');
+    clearRecoveryState();
   };
 
   const clearFailedDemoSession = async () => {
@@ -459,7 +493,7 @@ export default function LoginScreen() {
           <Pressable testID="login-continue" disabled={loading} onPress={() => void submit()} style={[styles.button, { backgroundColor: email.trim() && !loading ? colors.primary : colors.muted, marginTop: 24 }]}>
             {loading ? <><ActivityIndicator color="#fff" /><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Creating account...' : 'Signing in...'}</Text></> : <><Text style={[styles.buttonText, { color: '#fff' }]}>{isNew ? 'Create account' : 'Sign in'}</Text><Feather name="arrow-right" size={17} color="#fff" /></>}
           </Pressable>
-          <Pressable onPress={() => { setNew(!isNew); setMessage(''); clearRecoveryState(); }} style={styles.secondary}>
+          <Pressable onPress={switchAuthMode} style={styles.secondary}>
             <Text style={[styles.secondaryText, { color: colors.primary }]}>{isNew ? 'Already have an account? Sign in' : 'New here? Create an account'}</Text>
           </Pressable>
           {__DEV__ && process.env.EXPO_PUBLIC_DEMO_AUTH_ENABLED === 'true' && (
