@@ -70,6 +70,9 @@ autoInstallPeers: false
 
 onlyBuiltDependencies:
   - '@swc/core'
+  - '@clerk/shared'
+  - browser-tabs-lock
+  - core-js
   - esbuild
   - msw
   - unrs-resolver
@@ -158,3 +161,9 @@ overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
   "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
   esbuild: "0.27.3"
+
+allowBuilds:
+  '@clerk/shared': true
+  browser-tabs-lock: true
+  core-js: true
+  esbuild: true

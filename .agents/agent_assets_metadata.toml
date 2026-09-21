@@ -4,7 +4,7 @@ generated = []
 [[outputs]]
 id = "qQwjnNQ5tljXP3XeNm054"
 uri = "file://docs/qa/TRAVEL_LAND_PERFORMANCE_TESTING_REPORT.html"
-type = "text"
+type = "html"
 title = "Travel & Land Performance & Testing Report"
 description = "Print-ready page-by-page performance and QA report covering the Expo mobile app, web admin portal, API services, build metrics, resolved defects, and explicitly blocked acceptance checks."
 logical_id = "25ce394f-0077-4d03-9dae-e6ad41a6f8fa"
@@ -14,3 +14,17 @@ mtime_ms = 1788164242252
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:6c597a96-9d5b-4754-8629-2ef91901e58a/25ce394f-0077-4d03-9dae-e6ad41a6f8fa/b8668f52-749b-44c6-95ac-54e525f37a3d"
 storage_version_token = "1788164249222490"
 content_type = "text/html"
+
+[[outputs]]
+id = "lgPUKrob7lsheK03wraVR"
+uri = "file://artifacts/travel-land-app/builds/travel-land-preview.apk.zip"
+type = "unspecified"
+title = "Travel & Land Android APK (ZIP)"
+description = "The verified 120 MB APK compressed to a 61 MB ZIP so it can be downloaded here. Extract the ZIP, then install travel-land-preview.apk on an Android device."
+logical_id = "c27a5aa8-28ec-4652-8995-c5d9065cc7c7"
+content_hash = "sha256:e577362a6f44e7009e1834bb784b3e49320cba1ad7a6a40173fd901397681136"
+size = 61002891
+mtime_ms = 1789988622066
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:af4e74e8-9a1a-49b7-9460-9edfc0f5a485/c27a5aa8-28ec-4652-8995-c5d9065cc7c7/0af164d4-d5c0-4d24-a3ff-1105ec3b58d7"
+storage_version_token = "1789988632135806"
+content_type = "application/octet-stream"
