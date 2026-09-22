@@ -956,7 +956,7 @@ export const GetBookingResponse = zod.object({
 
 
 /**
- * @summary Start Stripe Checkout for an owned payment-pending booking
+ * @summary Create or reuse a Razorpay order for an owned payment-pending booking
  */
 export const createBookingCheckoutPathReferenceMin = 8;
 export const createBookingCheckoutPathReferenceMax = 32;
@@ -978,6 +978,12 @@ export const CreateBookingCheckoutHeader = zod.object({
 
 
 
+
+export const createBookingCheckoutResponseCurrencyMin = 3;
+export const createBookingCheckoutResponseCurrencyMax = 3;
+
+
+
 export const createBookingCheckoutResponseBookingChildrenMin = 0;
 
 
@@ -992,7 +998,18 @@ export const createBookingCheckoutResponseBookingTotalMin = 0;
 
 
 export const CreateBookingCheckoutResponse = zod.object({
-  "checkoutUrl": zod.string().url(),
+  "provider": zod.enum(['razorpay']),
+  "keyId": zod.string().min(1),
+  "orderId": zod.string().min(1),
+  "amount": zod.number().int().min(1),
+  "currency": zod.string().min(createBookingCheckoutResponseCurrencyMin).max(createBookingCheckoutResponseCurrencyMax),
+  "name": zod.string(),
+  "description": zod.string(),
+  "prefill": zod.object({
+  "name": zod.string(),
+  "email": zod.string().email(),
+  "contact": zod.string()
+}),
   "booking": zod.object({
   "reference": zod.string(),
   "hotel": zod.object({
@@ -1022,6 +1039,87 @@ export const CreateBookingCheckoutResponse = zod.object({
   "currency": zod.string()
 })),
   "total": zod.number().min(createBookingCheckoutResponseBookingTotalMin),
+  "currency": zod.string(),
+  "status": zod.enum(['pending_payment', 'confirmed', 'cancelled']),
+  "paymentStatus": zod.enum(['unpaid', 'processing', 'paid', 'failed', 'cancelled']),
+  "sourceNotice": zod.string(),
+  "canCancel": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Verify a Razorpay payment for an owned booking
+ */
+export const verifyBookingPaymentPathReferenceMin = 8;
+export const verifyBookingPaymentPathReferenceMax = 32;
+
+
+
+export const VerifyBookingPaymentParams = zod.object({
+  "reference": zod.coerce.string().min(verifyBookingPaymentPathReferenceMin).max(verifyBookingPaymentPathReferenceMax)
+})
+
+export const verifyBookingPaymentBodyRazorpayOrderIdMax = 128;
+
+export const verifyBookingPaymentBodyRazorpayPaymentIdMax = 128;
+
+export const verifyBookingPaymentBodyRazorpaySignatureRegExp = new RegExp('^[0-9a-f]{64}$');
+
+
+export const VerifyBookingPaymentBody = zod.object({
+  "razorpay_order_id": zod.string().min(1).max(verifyBookingPaymentBodyRazorpayOrderIdMax),
+  "razorpay_payment_id": zod.string().min(1).max(verifyBookingPaymentBodyRazorpayPaymentIdMax),
+  "razorpay_signature": zod.string().regex(verifyBookingPaymentBodyRazorpaySignatureRegExp)
+})
+
+
+
+export const verifyBookingPaymentResponseBookingChildrenMin = 0;
+
+
+
+
+export const verifyBookingPaymentResponseBookingItemsItemNightlyRateMin = 0;
+
+export const verifyBookingPaymentResponseBookingItemsItemRoomTotalMin = 0;
+
+export const verifyBookingPaymentResponseBookingTotalMin = 0;
+
+
+
+export const VerifyBookingPaymentResponse = zod.object({
+  "booking": zod.object({
+  "reference": zod.string(),
+  "hotel": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "location": zod.string(),
+  "imageKey": zod.string()
+}),
+  "startsOn": zod.coerce.date(),
+  "endsOn": zod.coerce.date(),
+  "nights": zod.number().int().min(1),
+  "adults": zod.number().int().min(1),
+  "children": zod.number().int().min(verifyBookingPaymentResponseBookingChildrenMin),
+  "guestCount": zod.number().int().min(1),
+  "roomCount": zod.number().int().min(1),
+  "guest": zod.object({
+  "name": zod.string(),
+  "email": zod.string().email(),
+  "phone": zod.string().nullable()
+}),
+  "items": zod.array(zod.object({
+  "roomId": zod.string(),
+  "name": zod.string(),
+  "quantity": zod.number().int().min(1),
+  "nightlyRate": zod.number().min(verifyBookingPaymentResponseBookingItemsItemNightlyRateMin),
+  "roomTotal": zod.number().min(verifyBookingPaymentResponseBookingItemsItemRoomTotalMin),
+  "currency": zod.string()
+})),
+  "total": zod.number().min(verifyBookingPaymentResponseBookingTotalMin),
   "currency": zod.string(),
   "status": zod.enum(['pending_payment', 'confirmed', 'cancelled']),
   "paymentStatus": zod.enum(['unpaid', 'processing', 'paid', 'failed', 'cancelled']),

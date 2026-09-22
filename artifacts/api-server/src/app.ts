@@ -37,17 +37,17 @@ app.use(
     },
   }),
 );
-app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res): Promise<void> => {
-  const signature = req.headers["stripe-signature"];
+app.post("/api/razorpay/webhook", express.raw({ type: "application/json" }), async (req, res): Promise<void> => {
+  const signature = req.headers["x-razorpay-signature"];
   if (!signature) {
-    res.status(400).json({ error: "Missing stripe-signature" });
+    res.status(400).json({ error: "Missing webhook signature" });
     return;
   }
   try {
     await WebhookHandlers.processWebhook(req.body as Buffer, Array.isArray(signature) ? signature[0] : signature);
     res.status(200).json({ received: true });
   } catch (error) {
-    logger.warn({ err: error }, "Stripe webhook verification or processing failed");
+    logger.warn({ err: error }, "Razorpay webhook verification or processing failed");
     res.status(400).json({ error: "Webhook processing error" });
   }
 });

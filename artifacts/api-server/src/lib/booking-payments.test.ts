@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import Stripe from "stripe";
 import {
   BookingConflictError,
   BookingNotFoundError,
   BookingProviderUnavailableError,
 } from "../routes/booking.ts";
+import type { PaymentProvider } from "./payment-provider.ts";
 import { startBookingCheckout } from "./booking-payments.ts";
 
 const booking = {
@@ -15,7 +15,7 @@ const booking = {
   status: "pending_payment",
   guestEmail: "traveller@example.com",
   guestName: "A Traveller",
-  guestPhone: null,
+  guestPhone: "+919999999999",
   hotelCatalogId: "01",
   startsOn: "2026-10-18",
   endsOn: "2026-10-21",
@@ -30,13 +30,35 @@ const booking = {
   updatedAt: new Date("2026-08-30T07:00:00Z"),
 } as any;
 
+const bookingPayload = {
+  reference: booking.reference,
+  hotel: { id: booking.hotelCatalogId, name: "Test Hotel", location: "Goa", imageKey: "coastline" },
+  startsOn: booking.startsOn,
+  endsOn: booking.endsOn,
+  nights: 3,
+  adults: booking.adults,
+  children: booking.children,
+  guestCount: booking.guestCount,
+  roomCount: booking.roomCount,
+  guest: { name: booking.guestName, email: booking.guestEmail, phone: booking.guestPhone },
+  items: [],
+  total: Number(booking.totalAmount),
+  currency: booking.currency,
+  status: "pending_payment" as const,
+  paymentStatus: "processing" as const,
+  sourceNotice: "Development inventory.",
+  canCancel: false,
+  createdAt: booking.createdAt.toISOString(),
+  updatedAt: booking.updatedAt.toISOString(),
+};
+
 function payment(overrides: Record<string, unknown> = {}) {
   return {
     id: "payment-1",
     bookingId: booking.id,
     userId: booking.userId,
-    provider: "stripe",
-    providerReference: "cs_current",
+    provider: "razorpay",
+    providerReference: "order_current",
     amount: booking.totalAmount,
     currency: booking.currency,
     status: "processing",
@@ -46,95 +68,154 @@ function payment(overrides: Record<string, unknown> = {}) {
   } as any;
 }
 
-function stripeWithExistingSession(session: Record<string, unknown>) {
-  let createCalled = false;
-  const stripe = {
-    checkout: {
-      sessions: {
-        retrieve: async () => session,
-        create: async () => {
-          createCalled = true;
-          throw new Error("A new Stripe session should not be created.");
-        },
-      },
-    },
-  } as unknown as Stripe;
-  return { stripe, wasCreateCalled: () => createCalled };
+function provider(overrides: Partial<PaymentProvider> = {}): PaymentProvider {
+  return {
+    name: "razorpay",
+    publicKeyId: "rzp_test_public",
+    createOrder: async (input) => ({
+      id: "order_new",
+      amount: input.amount,
+      amountPaid: 0,
+      currency: input.currency,
+      receipt: input.receipt,
+      status: "created",
+      notes: input.notes,
+    }),
+    getOrder: async () => ({
+      id: "order_current",
+      amount: 23_400,
+      amountPaid: 0,
+      currency: "INR",
+      receipt: booking.reference,
+      status: "created",
+      notes: { bookingId: booking.id, bookingReference: booking.reference, userId: booking.userId },
+    }),
+    getPayment: async () => { throw new Error("unused"); },
+    verifyPayment: () => false,
+    capturePayment: async () => { throw new Error("unused"); },
+    refundPayment: async () => { throw new Error("unused"); },
+    handleWebhook: () => { throw new Error("unused"); },
+    ...overrides,
+  };
 }
 
-test("checkout ownership is enforced before any Stripe call", async () => {
-  let stripeCalled = false;
-  const stripe = {} as Stripe;
+test("checkout ownership is enforced before any provider call", async () => {
+  let providerCalled = false;
   const ownerOnlyLookup = async (userId: string, reference: string) => {
     if (userId !== booking.userId || reference !== booking.reference) return null;
-    stripeCalled = true;
     return { booking, payment: payment() };
   };
+  const paymentProvider = provider({
+    getOrder: async () => {
+      providerCalled = true;
+      throw new Error("should not be called");
+    },
+  });
 
   await assert.rejects(
     startBookingCheckout("another-traveller", booking.reference, "retry-key", {
-      stripe,
+      provider: paymentProvider,
       loadBookingPayment: ownerOnlyLookup,
       inventoryEnv: { NODE_ENV: "development" },
     }),
     (error: unknown) => error instanceof BookingNotFoundError,
   );
-  assert.equal(stripeCalled, false);
+  assert.equal(providerCalled, false);
 });
 
-test("retry reuses an open Checkout Session without creating another payment", async () => {
-  const { stripe, wasCreateCalled } = stripeWithExistingSession({
-    id: "cs_current",
-    status: "open",
-    url: "https://checkout.stripe.test/cs_current",
+test("checkout creates a Razorpay order from trusted booking values", async () => {
+  let capturedInput: unknown;
+  const paymentProvider = provider({
+    createOrder: async (input) => {
+      capturedInput = input;
+      return {
+        id: "order_new",
+        amount: input.amount,
+        amountPaid: 0,
+        currency: input.currency,
+        receipt: input.receipt,
+        status: "created",
+        notes: input.notes,
+      };
+    },
   });
+
   const result = await startBookingCheckout(booking.userId, booking.reference, "retry-key", {
-    stripe,
-    loadBookingPayment: async () => ({ booking, payment: payment() }),
-    findBooking: async () => booking,
+    provider: paymentProvider,
+    loadBookingPayment: async () => ({ booking, payment: payment({ status: "unpaid", providerReference: null }) }),
+    findBooking: async () => bookingPayload,
     inventoryEnv: { NODE_ENV: "development" },
   });
-  assert.equal(result.checkoutUrl, "https://checkout.stripe.test/cs_current");
-  assert.equal(wasCreateCalled(), false);
+
+  assert.deepEqual(capturedInput, {
+    amount: 23_400,
+    currency: "INR",
+    receipt: booking.reference,
+    notes: {
+      bookingId: booking.id,
+      bookingReference: booking.reference,
+      userId: booking.userId,
+    },
+  });
+  assert.equal(result.provider, "razorpay");
+  assert.equal(result.orderId, "order_new");
+  assert.equal(result.keyId, "rzp_test_public");
+  assert.equal(result.amount, 23_400);
 });
 
-test("retry does not create a second Checkout Session while the existing one is complete", async () => {
-  const { stripe, wasCreateCalled } = stripeWithExistingSession({
-    id: "cs_current",
-    status: "complete",
-    url: "https://checkout.stripe.test/cs_current",
+test("checkout retry reuses a matching unpaid Razorpay order", async () => {
+  let createCalled = false;
+  const result = await startBookingCheckout(booking.userId, booking.reference, "retry-key", {
+    provider: provider({
+      createOrder: async () => {
+        createCalled = true;
+        throw new Error("A second order should not be created.");
+      },
+    }),
+    loadBookingPayment: async () => ({ booking, payment: payment() }),
+    findBooking: async () => bookingPayload,
+    inventoryEnv: { NODE_ENV: "development" },
   });
+
+  assert.equal(result.orderId, "order_current");
+  assert.equal(createCalled, false);
+});
+
+test("checkout does not create another order while the current order is paid", async () => {
   await assert.rejects(
     startBookingCheckout(booking.userId, booking.reference, "retry-key", {
-      stripe,
+      provider: provider({
+        getOrder: async () => ({
+          id: "order_current",
+          amount: 23_400,
+          amountPaid: 23_400,
+          currency: "INR",
+          receipt: booking.reference,
+          status: "paid",
+          notes: {},
+        }),
+      }),
       loadBookingPayment: async () => ({ booking, payment: payment() }),
       inventoryEnv: { NODE_ENV: "development" },
     }),
     (error: unknown) => error instanceof BookingConflictError,
   );
-  assert.equal(wasCreateCalled(), false);
 });
 
-test("checkout fails explicitly before Stripe when live inventory is unavailable", async () => {
-  let stripeCalled = false;
-  const stripe = {
-    checkout: {
-      sessions: {
-        retrieve: async () => {
-          stripeCalled = true;
-          return {};
-        },
-      },
-    },
-  } as unknown as Stripe;
-
+test("checkout fails before the payment provider when live inventory is unavailable", async () => {
+  let providerCalled = false;
   await assert.rejects(
     startBookingCheckout(booking.userId, booking.reference, "retry-key", {
-      stripe,
+      provider: provider({
+        getOrder: async () => {
+          providerCalled = true;
+          throw new Error("should not be called");
+        },
+      }),
       loadBookingPayment: async () => ({ booking, payment: payment() }),
       inventoryEnv: { NODE_ENV: "production" },
     }),
     (error: unknown) => error instanceof BookingProviderUnavailableError,
   );
-  assert.equal(stripeCalled, false);
+  assert.equal(providerCalled, false);
 });

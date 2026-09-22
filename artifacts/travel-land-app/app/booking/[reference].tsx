@@ -1,11 +1,11 @@
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { ImageWithFallback, NoticeBanner } from '@/features/hotels/HotelUI';
 import { useColors } from '@/hooks/useColors';
-import { cancelBooking, createBookingCheckout, getGetBookingQueryKey, useGetBooking, type Booking } from '@workspace/api-client-react';
+import { cancelBooking, createBookingCheckout, getGetBookingQueryKey, useGetBooking, verifyBookingPayment, type Booking, type BookingCheckoutResponse } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, AppState, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function firstParam(value?: string | string[]) {
@@ -19,6 +19,43 @@ function formatDate(value: string) {
 
 function errorMessage(error: unknown) {
   return error instanceof Error && error.message ? error.message : 'The booking action could not be completed. Nothing was charged.';
+}
+
+type RazorpayCheckoutSuccess = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+async function openRazorpayCheckout(order: BookingCheckoutResponse): Promise<RazorpayCheckoutSuccess> {
+  try {
+    const module = require('react-native-razorpay') as {
+      default?: { open(options: Record<string, unknown>): Promise<RazorpayCheckoutSuccess> };
+      open?: (options: Record<string, unknown>) => Promise<RazorpayCheckoutSuccess>;
+    };
+    const checkout = module.default ?? module;
+    if (typeof checkout.open !== 'function') throw new Error('RAZORPAY_NATIVE_MODULE_UNAVAILABLE');
+    return await checkout.open({
+      key: order.keyId,
+      order_id: order.orderId,
+      amount: order.amount,
+      currency: order.currency,
+      name: order.name,
+      description: order.description,
+      prefill: order.prefill,
+      theme: { color: '#2E6B4F' },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      message.includes('RAZORPAY_NATIVE_MODULE_UNAVAILABLE') ||
+      message.includes('RazorpayCheckout') ||
+      message.includes('native module')
+    ) {
+      throw new Error('Razorpay checkout requires the Travel & Land EAS development or preview build; it is not available in Expo Go.');
+    }
+    throw error;
+  }
 }
 
 export default function BookingDetailScreen() {
@@ -55,8 +92,10 @@ export default function BookingDetailScreen() {
         headers: { 'Idempotency-Key': `mobile-checkout-${reference}-${Date.now()}` },
       });
       setBooking(response.booking);
+      const result = await openRazorpayCheckout(response);
+      const verified = await verifyBookingPayment(reference, result);
+      setBooking(verified.booking);
       await queryClient.invalidateQueries({ queryKey: getGetBookingQueryKey(reference) });
-      await Linking.openURL(response.checkoutUrl);
     } catch (checkoutError) {
       setError(errorMessage(checkoutError));
     } finally {
@@ -90,7 +129,7 @@ export default function BookingDetailScreen() {
      <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}><InfoRow label="Stay" value={`${formatDate(current.startsOn)} – ${formatDate(current.endsOn)} · ${current.nights} night${current.nights === 1 ? '' : 's'}`} colors={colors} /><InfoRow label="Travellers" value={`${current.adults} adult${current.adults === 1 ? '' : 's'} · ${current.children} child${current.children === 1 ? '' : 'ren'} · ${current.roomCount} room${current.roomCount === 1 ? '' : 's'}`} colors={colors} /><InfoRow label="Guest" value={`${current.guest.name}\n${current.guest.email}`} colors={colors} /><InfoRow label="Total" value={`${current.currency} ${current.total.toLocaleString()}`} colors={colors} strong /><InfoRow label="Status" value={formatBookingStatus(current)} colors={colors} /></View>
     {current.items.map((item) => <View key={item.roomId} style={[styles.roomRow, { borderColor: colors.border, backgroundColor: colors.card }]}><View style={{ flex: 1 }}><Text style={[styles.roomName, { color: colors.foreground }]}>{item.name}</Text><Text style={[styles.roomMeta, { color: colors.mutedForeground }]}>{item.quantity} room{item.quantity === 1 ? '' : 's'} · {current.nights} night{current.nights === 1 ? '' : 's'}</Text></View><Text style={[styles.roomTotal, { color: colors.foreground }]}>{current.currency} {item.roomTotal.toLocaleString()}</Text></View>)}
     {error ? <NoticeBanner error>{error}</NoticeBanner> : null}
-     {current.status !== 'cancelled' && current.paymentStatus !== 'paid' && current.paymentStatus !== 'processing' ? <View style={[styles.paymentCard, { backgroundColor: colors.secondary }]}><Text style={[styles.paymentTitle, { color: colors.foreground }]}>{current.paymentStatus === 'failed' ? 'Payment failed' : current.paymentStatus === 'cancelled' ? 'Checkout cancelled' : 'Payment due'}</Text><Text style={[styles.paymentText, { color: colors.mutedForeground }]}>{current.paymentStatus === 'failed' ? 'Stripe could not complete this payment. No booking was confirmed; you can try again.' : 'Continue to Stripe Checkout to securely pay for this saved booking request.'}</Text><Pressable testID="booking-pay" disabled={paying} onPress={() => void startCheckout()} style={[styles.primaryButton, { backgroundColor: paying ? colors.muted : colors.primary }]}>{paying ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={[styles.primaryButtonText, { color: colors.primaryForeground }]}>{current.paymentStatus === 'failed' || current.paymentStatus === 'cancelled' ? 'Try payment again' : 'Pay securely with Stripe'}</Text>}</Pressable></View> : current.paymentStatus === 'processing' ? <View style={[styles.paymentCard, { backgroundColor: colors.secondary }]}><Text style={[styles.paymentTitle, { color: colors.foreground }]}>Payment processing</Text><Text style={[styles.paymentText, { color: colors.mutedForeground }]}>Stripe is confirming your payment. This page will update when the server receives the verified result.</Text></View> : current.paymentStatus === 'paid' ? <View style={[styles.paymentCard, { backgroundColor: colors.secondary }]}><Text style={[styles.paymentTitle, { color: colors.foreground }]}>Payment received</Text><Text style={[styles.paymentText, { color: colors.mutedForeground }]}>Your payment was verified by Stripe. The booking request is confirmed; supplier reservation is still a development preview.</Text></View> : null}
+      {current.status !== 'cancelled' && current.paymentStatus !== 'paid' && current.paymentStatus !== 'processing' ? <View style={[styles.paymentCard, { backgroundColor: colors.secondary }]}><Text style={[styles.paymentTitle, { color: colors.foreground }]}>{current.paymentStatus === 'failed' ? 'Payment failed' : current.paymentStatus === 'cancelled' ? 'Checkout cancelled' : 'Payment due'}</Text><Text style={[styles.paymentText, { color: colors.mutedForeground }]}>{current.paymentStatus === 'failed' ? 'Razorpay could not complete this payment. No booking was confirmed; you can try again.' : 'Continue to secure Razorpay checkout. Available methods depend on the merchant account and may include UPI, cards, and net banking.'}</Text><Pressable testID="booking-pay" disabled={paying} onPress={() => void startCheckout()} style={[styles.primaryButton, { backgroundColor: paying ? colors.muted : colors.primary }]}>{paying ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={[styles.primaryButtonText, { color: colors.primaryForeground }]}>{current.paymentStatus === 'failed' || current.paymentStatus === 'cancelled' ? 'Try payment again' : 'Pay securely with Razorpay'}</Text>}</Pressable></View> : current.paymentStatus === 'processing' ? <View style={[styles.paymentCard, { backgroundColor: colors.secondary }]}><Text style={[styles.paymentTitle, { color: colors.foreground }]}>Payment processing</Text><Text style={[styles.paymentText, { color: colors.mutedForeground }]}>Razorpay is confirming your payment. This page will update when the server receives the verified result.</Text></View> : current.paymentStatus === 'paid' ? <View style={[styles.paymentCard, { backgroundColor: colors.secondary }]}><Text style={[styles.paymentTitle, { color: colors.foreground }]}>Payment received</Text><Text style={[styles.paymentText, { color: colors.mutedForeground }]}>Your payment was verified by the payment provider. The booking request is confirmed; supplier reservation is still a development preview.</Text></View> : null}
     {current.canCancel ? confirming ? <View style={[styles.confirmCard, { backgroundColor: colors.secondary }]}><Text style={[styles.confirmTitle, { color: colors.foreground }]}>Cancel this booking request?</Text><Text style={[styles.confirmText, { color: colors.mutedForeground }]}>No payment was taken. This removes the payment-pending request from availability.</Text><View style={styles.confirmActions}><Pressable onPress={() => setConfirming(false)} style={[styles.secondaryButton, { borderColor: colors.border }]}><Text style={[styles.secondaryButtonText, { color: colors.foreground }]}>Keep it</Text></Pressable><Pressable disabled={cancelling} onPress={() => void cancel()} style={[styles.cancelButton, { backgroundColor: colors.destructive }]}><Text style={[styles.primaryButtonText, { color: colors.primaryForeground }]}>{cancelling ? 'Cancelling…' : 'Cancel booking'}</Text></Pressable></View></View> : <Pressable testID="booking-cancel" onPress={() => setConfirming(true)} style={[styles.cancelOutline, { borderColor: colors.destructive }]}><Text style={[styles.cancelText, { color: colors.destructive }]}>Cancel booking request</Text></Pressable> : null}
   </ScrollView>;
 }

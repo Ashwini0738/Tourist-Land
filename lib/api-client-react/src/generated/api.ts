@@ -140,6 +140,7 @@ import type {
   PushTokenInput,
   PushTokenResponse,
   PushTokenRevokeInput,
+  RazorpayPaymentVerificationInput,
   RefreshStatus,
   Review,
   ReviewList,
@@ -1428,7 +1429,7 @@ export const getCreateBookingCheckoutUrl = (reference: string,) => {
 }
 
 /**
- * @summary Start Stripe Checkout for an owned payment-pending booking
+ * @summary Create or reuse a Razorpay order for an owned payment-pending booking
  */
 export const createBookingCheckout = async (reference: string, options?: Parameters<typeof customFetch>[1]): Promise<BookingCheckoutResponse> => {
 
@@ -1477,7 +1478,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateBookingCheckoutMutationError = ErrorType<UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>
 
     /**
- * @summary Start Stripe Checkout for an owned payment-pending booking
+ * @summary Create or reuse a Razorpay order for an owned payment-pending booking
  */
 export const useCreateBookingCheckout = <TError = ErrorType<UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBookingCheckout>>, TError,{reference: string}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1488,6 +1489,78 @@ export const useCreateBookingCheckout = <TError = ErrorType<UnauthenticatedRespo
         TContext
       > => {
       return useMutation(getCreateBookingCheckoutMutationOptions(options));
+    }
+
+export const getVerifyBookingPaymentUrl = (reference: string,) => {
+
+
+
+
+  return `/api/v1/bookings/${reference}/payment/verify`
+}
+
+/**
+ * @summary Verify a Razorpay payment for an owned booking
+ */
+export const verifyBookingPayment = async (reference: string,
+    razorpayPaymentVerificationInput: RazorpayPaymentVerificationInput, options?: Parameters<typeof customFetch>[1]): Promise<BookingResponse> => {
+
+  return customFetch<BookingResponse>(getVerifyBookingPaymentUrl(reference),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(razorpayPaymentVerificationInput)
+  }
+);}
+
+
+
+
+
+export const getVerifyBookingPaymentMutationOptions = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyBookingPayment>>, TError,{reference: string;data: BodyType<RazorpayPaymentVerificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyBookingPayment>>, TError,{reference: string;data: BodyType<RazorpayPaymentVerificationInput>}, TContext> => {
+
+const mutationKey = ['verifyBookingPayment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyBookingPayment>>, {reference: string;data: BodyType<RazorpayPaymentVerificationInput>}> = (props) => {
+          const {reference,data} = props ?? {};
+
+          return  verifyBookingPayment(reference,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyBookingPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof verifyBookingPayment>>>
+    export type VerifyBookingPaymentMutationBody = BodyType<RazorpayPaymentVerificationInput>
+    export type VerifyBookingPaymentMutationError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Verify a Razorpay payment for an owned booking
+ */
+export const useVerifyBookingPayment = <TError = ErrorType<InvalidInputResponse | UnauthenticatedResponse | NotFoundResponse | ConflictResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyBookingPayment>>, TError,{reference: string;data: BodyType<RazorpayPaymentVerificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyBookingPayment>>,
+        TError,
+        {reference: string;data: BodyType<RazorpayPaymentVerificationInput>},
+        TContext
+      > => {
+      return useMutation(getVerifyBookingPaymentMutationOptions(options));
     }
 
 export const getCancelBookingUrl = (reference: string,) => {

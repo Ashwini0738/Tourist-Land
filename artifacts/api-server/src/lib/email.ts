@@ -55,7 +55,7 @@ export type BookingEmail = {
 export type BookingEmailSender = (input: BookingEmail) => Promise<void>;
 
 const bookingDevelopmentNotice =
-  "Development hotel inventory only. Stripe payment confirms this booking request, but not a live supplier reservation.";
+  "Development hotel inventory only. Verified payment confirms this booking request, but not a live supplier reservation.";
 
 function bookingMessage(input: BookingEmail): { subject: string; title: string; body: string; paymentNotice?: string } {
   switch (input.kind) {
@@ -77,27 +77,27 @@ function bookingMessage(input: BookingEmail): { subject: string; title: string; 
       return {
         subject: `Payment is being processed for Travel & Land booking ${input.reference}`,
         title: "Your payment is being processed",
-        body: "Stripe is still processing payment for this booking request. We’ll send another update when the result is available.",
+        body: "The payment provider is still processing payment for this booking request. We’ll send another update when the result is available.",
         paymentNotice: "Payment is not confirmed yet. Please do not submit another payment while this update is pending.",
       };
     case "payment_confirmed":
       return {
         subject: `Payment confirmed for Travel & Land booking ${input.reference}`,
         title: "Your payment was confirmed",
-        body: "Stripe confirmed payment for this booking request. Keep this reference for your records.",
+        body: "The payment provider confirmed payment for this booking request. Keep this reference for your records.",
       };
     case "payment_failed":
       return {
         subject: `Payment could not be completed for Travel & Land booking ${input.reference}`,
         title: "Your payment could not be completed",
-        body: "Stripe could not complete payment for this booking request. You can return to the Travel & Land app and try checkout again.",
+        body: "The payment provider could not complete payment for this booking request. You can return to the Travel & Land app and try checkout again.",
         paymentNotice: "Payment is not complete, so this booking request is not confirmed.",
       };
     case "payment_expired":
       return {
         subject: `Payment window expired for Travel & Land booking ${input.reference}`,
         title: "Your payment window expired",
-        body: "The Stripe checkout window for this booking request expired. You can return to the Travel & Land app to start checkout again.",
+        body: "The payment checkout window for this booking request expired. You can return to the Travel & Land app to start checkout again.",
         paymentNotice: "Payment is not complete, so this booking request is not confirmed.",
       };
   }

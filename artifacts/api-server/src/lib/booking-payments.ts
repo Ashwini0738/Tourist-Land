@@ -1,5 +1,4 @@
 import { and, eq, inArray, lt, or } from "drizzle-orm";
-import Stripe from "stripe";
 import { db, bookings, payments } from "@workspace/db";
 import { logger } from "./logger.ts";
 import {
@@ -7,7 +6,6 @@ import {
   type BookingEmail,
   type BookingNotificationKind,
 } from "./email.ts";
-import { getUncachableStripeClient } from "./stripeClient.ts";
 import { createNotification } from "./notifications.ts";
 import {
   BookingConflictError,
@@ -18,111 +16,137 @@ import {
 import { getHotelCatalogRecord } from "../routes/hotel-catalog.ts";
 import { inventoryOffersEnabled } from "../routes/hotel-inventory-policy.ts";
 import {
-  isCurrentStripeCheckoutAttempt,
-  nextStripePaymentStatus,
-  stripePaymentAmountMatches,
-  stripePaymentDetails,
-  stripePaymentOutcome,
-  type PaymentStatus,
-} from "./stripe-payment-state.ts";
+  getRazorpayPaymentProvider,
+} from "./razorpay-provider.ts";
+import type {
+  PaymentProvider,
+  PaymentWebhookEvent,
+  ProviderPayment,
+} from "./payment-provider.ts";
 
-const MINOR_UNIT_CURRENCIES = new Set(["bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "mga", "pyg", "rwf", "ugx", "vnd", "vuv", "xaf", "xof", "xpf"]);
-export type BookingCheckoutDependencies = {
-  stripe?: Stripe;
-  findBooking?: typeof findBooking;
-  loadBookingPayment?: (userId: string, reference: string) => Promise<BookingPaymentRow | null>;
-  inventoryEnv?: NodeJS.ProcessEnv;
-};
+const MINOR_UNIT_CURRENCIES = new Set(["bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "ugx", "vnd", "vuv", "xaf", "xof", "xpf"]);
+const checkoutClaimPrefix = "checkout-pending:";
+const checkoutClaimTimeoutMs = 5 * 60 * 1000;
+const checkoutLocks = new Map<string, Promise<unknown>>();
 
 type BookingPaymentRow = {
   booking: typeof bookings.$inferSelect;
   payment: typeof payments.$inferSelect | null;
 };
 
-const checkoutLocks = new Map<string, Promise<unknown>>();
-const checkoutClaimPrefix = "checkout-pending:";
-const checkoutClaimTimeoutMs = 5 * 60 * 1000;
+export type BookingCheckoutDependencies = {
+  provider?: PaymentProvider;
+  findBooking?: typeof findBooking;
+  loadBookingPayment?: (userId: string, reference: string) => Promise<BookingPaymentRow | null>;
+  inventoryEnv?: NodeJS.ProcessEnv;
+};
 
-function toMinorUnits(amount: string, currency: string) {
+export type VerifyBookingPaymentInput = {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+};
+
+function toMinorUnits(amount: string, currency: string): number {
   const value = Number(amount);
   if (!Number.isFinite(value) || value <= 0) throw new BookingConflictError("This booking has an invalid payment amount.");
   return Math.round(value * (MINOR_UNIT_CURRENCIES.has(currency.toLowerCase()) ? 1 : 100));
 }
 
-function appReturnUrl(reference: string, result: "success" | "cancel") {
-  return `travel-land-app://booking/${encodeURIComponent(reference)}?checkout=${result}`;
+function paymentReference(orderId: string, paymentId?: string): string {
+  return paymentId ? `${orderId}|${paymentId}` : orderId;
 }
 
-async function createBookingPrice(stripe: Stripe, booking: typeof bookings.$inferSelect, idempotencyKey: string) {
-  const product = await stripe.products.create(
-    {
-      name: `Travel & Land booking ${booking.reference}`,
-      metadata: { bookingReference: booking.reference, bookingId: booking.id, kind: "hotel_booking" },
-    },
-    { idempotencyKey: `${idempotencyKey}-product` },
-  );
-  return stripe.prices.create(
-    {
-      product: product.id,
-      unit_amount: toMinorUnits(String(booking.totalAmount), booking.currency),
-      currency: booking.currency.toLowerCase(),
-      metadata: { bookingReference: booking.reference, bookingId: booking.id },
-    },
-    { idempotencyKey: `${idempotencyKey}-price` },
-  );
+function parsePaymentReference(value: string | null): { orderId: string | null; paymentId: string | null } {
+  if (!value || value.startsWith(checkoutClaimPrefix)) return { orderId: null, paymentId: null };
+  const [orderId, paymentId] = value.split("|", 2);
+  return { orderId: orderId || null, paymentId: paymentId || null };
 }
 
-async function startBookingCheckoutUnlocked(
-  userId: string,
-  reference: string,
-  idempotencyKey: string,
-  dependencies: BookingCheckoutDependencies = {},
-) {
-  const loadBookingPayment = dependencies.loadBookingPayment ?? (async (requestedUserId: string, requestedReference: string) => {
-    const [row] = await db
-      .select({ booking: bookings, payment: payments })
-      .from(bookings)
-      .leftJoin(payments, eq(payments.bookingId, bookings.id))
-      .where(and(eq(bookings.userId, requestedUserId), eq(bookings.reference, requestedReference)));
-    return row ?? null;
-  });
-  const row = await loadBookingPayment(userId, reference);
+async function defaultLoadBookingPayment(userId: string, reference: string): Promise<BookingPaymentRow | null> {
+  const [row] = await db
+    .select({ booking: bookings, payment: payments })
+    .from(bookings)
+    .leftJoin(payments, eq(payments.bookingId, bookings.id))
+    .where(and(eq(bookings.userId, userId), eq(bookings.reference, reference)));
+  return row ?? null;
+}
+
+function validateOwnedPayableBooking(row: BookingPaymentRow | null): asserts row is BookingPaymentRow & { payment: NonNullable<BookingPaymentRow["payment"]> } {
   if (!row) throw new BookingNotFoundError("Booking not found.");
   if (row.booking.status === "cancelled") throw new BookingConflictError("This booking has been cancelled.");
   if (row.payment?.status === "paid" || row.booking.status === "confirmed") {
     throw new BookingConflictError("This booking has already been paid.");
   }
   if (!row.payment) throw new BookingNotFoundError("The booking payment could not be found.");
+}
+
+function checkoutResponse(
+  provider: PaymentProvider,
+  order: { id: string; amount: number; currency: string },
+  booking: NonNullable<Awaited<ReturnType<typeof findBooking>>>,
+) {
+  return {
+    provider: provider.name,
+    keyId: provider.publicKeyId,
+    orderId: order.id,
+    amount: order.amount,
+    currency: order.currency,
+    name: "Travel & Land",
+    description: `Booking ${booking.reference}`,
+    prefill: {
+      name: booking.guest.name,
+      email: booking.guest.email,
+      contact: booking.guest.phone ?? "",
+    },
+    booking,
+  };
+}
+
+async function startBookingCheckoutUnlocked(
+  userId: string,
+  reference: string,
+  idempotencyKey: string,
+  dependencies: BookingCheckoutDependencies,
+) {
+  const loadBookingPayment = dependencies.loadBookingPayment ?? defaultLoadBookingPayment;
+  const row = await loadBookingPayment(userId, reference);
+  validateOwnedPayableBooking(row);
   if (!inventoryOffersEnabled(dependencies.inventoryEnv)) {
     throw new BookingProviderUnavailableError(
       "A managed live inventory provider is not connected. Checkout was not started.",
     );
   }
 
-  const stripe = dependencies.stripe ?? await getUncachableStripeClient();
+  const provider = dependencies.provider ?? getRazorpayPaymentProvider();
   const lookupBooking = dependencies.findBooking ?? findBooking;
-  if (row.payment.status === "processing" && row.payment.providerReference) {
-    if (row.payment.providerReference.startsWith(checkoutClaimPrefix)) {
-      const claimAge = Date.now() - row.payment.updatedAt.getTime();
-      if (claimAge < checkoutClaimTimeoutMs) {
-        throw new BookingConflictError("Checkout is already being started. Please retry in a moment.");
-      }
-    }
-    let existing: Stripe.Checkout.Session | undefined;
-    try {
-      existing = await stripe.checkout.sessions.retrieve(row.payment.providerReference);
-      if (existing.status === "open" && existing.url) {
-        const booking = await lookupBooking(userId, reference);
-        if (!booking) throw new BookingNotFoundError("Booking not found.");
-        return { checkoutUrl: existing.url, booking };
-      }
-    } catch (error) {
-      if (error instanceof BookingConflictError) throw error;
-      logger.warn({ err: error, bookingReference: reference }, "Existing Stripe checkout session could not be reused");
-    }
-    if (existing?.status === "complete") {
+  const currentReference = parsePaymentReference(row.payment.providerReference);
+
+  if (
+    row.payment.status === "processing" &&
+    row.payment.provider === provider.name &&
+    currentReference.orderId
+  ) {
+    const existingOrder = await provider.getOrder(currentReference.orderId);
+    if (existingOrder.status === "paid") {
       throw new BookingConflictError("This payment is still being confirmed. Refresh the booking before trying again.");
     }
+    const expectedAmount = toMinorUnits(String(row.booking.totalAmount), row.booking.currency);
+    if (existingOrder.amount !== expectedAmount || existingOrder.currency !== row.booking.currency.toUpperCase()) {
+      throw new BookingConflictError("The existing payment order does not match this booking.");
+    }
+    const booking = await lookupBooking(userId, reference);
+    if (!booking) throw new BookingNotFoundError("Booking not found.");
+    return checkoutResponse(provider, existingOrder, booking);
+  }
+
+  if (row.payment.status === "processing" && row.payment.providerReference?.startsWith(checkoutClaimPrefix)) {
+    const claimAge = Date.now() - row.payment.updatedAt.getTime();
+    if (claimAge < checkoutClaimTimeoutMs) {
+      throw new BookingConflictError("Checkout is already being started. Please retry in a moment.");
+    }
+  } else if (row.payment.status === "processing") {
+    throw new BookingConflictError("A payment attempt is already being processed. Refresh the booking before trying again.");
   }
 
   const shouldClaimPayment = !dependencies.loadBookingPayment;
@@ -139,7 +163,7 @@ async function startBookingCheckoutUnlocked(
     const [claimed] = await db
       .update(payments)
       .set({
-        provider: "stripe",
+        provider: provider.name,
         providerReference: claimReference,
         status: "processing",
         updatedAt: new Date(),
@@ -148,34 +172,26 @@ async function startBookingCheckoutUnlocked(
         eq(payments.id, row.payment.id),
         eq(payments.userId, userId),
         or(
-          inArray(payments.status, ["unpaid", "failed", "cancelled"]),
+          inArray(payments.status, ["created", "unpaid", "failed", "cancelled"]),
           ...(staleClaim ? [staleClaim] : []),
         ),
       ))
       .returning();
-    if (!claimed) {
-      throw new BookingConflictError("Checkout is already being started. Please retry in a moment.");
-    }
+    if (!claimed) throw new BookingConflictError("Checkout is already being started. Please retry in a moment.");
   }
 
-  let session: Stripe.Checkout.Session;
+  let order;
   try {
-    const price = await createBookingPrice(stripe, row.booking, idempotencyKey);
-    session = await stripe.checkout.sessions.create(
-      {
-        mode: "payment",
-        line_items: [{ price: price.id, quantity: 1 }],
-        customer_email: row.booking.guestEmail,
-        client_reference_id: row.booking.reference,
-        metadata: { bookingId: row.booking.id, bookingReference: row.booking.reference, userId },
-        payment_intent_data: {
-          metadata: { bookingId: row.booking.id, bookingReference: row.booking.reference, userId },
-        },
-        success_url: appReturnUrl(row.booking.reference, "success"),
-        cancel_url: appReturnUrl(row.booking.reference, "cancel"),
+    order = await provider.createOrder({
+      amount: toMinorUnits(String(row.booking.totalAmount), row.booking.currency),
+      currency: row.booking.currency,
+      receipt: row.booking.reference,
+      notes: {
+        bookingId: row.booking.id,
+        bookingReference: row.booking.reference,
+        userId,
       },
-      { idempotencyKey },
-    );
+    }, idempotencyKey);
   } catch (error) {
     if (shouldClaimPayment) {
       await db.update(payments)
@@ -188,35 +204,30 @@ async function startBookingCheckoutUnlocked(
     }
     throw error;
   }
-  if (!session.url) {
-    if (shouldClaimPayment) {
-      await db.update(payments)
-        .set({ providerReference: null, status: "failed", updatedAt: new Date() })
-        .where(and(
-          eq(payments.id, row.payment.id),
-          eq(payments.userId, userId),
-          eq(payments.providerReference, claimReference),
-        ));
-    }
-    throw new Error("Stripe did not return a checkout URL.");
-  }
 
-  const [updatedPayment] = await db
-    .update(payments)
-    .set({ provider: "stripe", providerReference: session.id, status: "processing", updatedAt: new Date() })
-    .where(and(
-      eq(payments.id, row.payment.id),
-      eq(payments.userId, userId),
-      ...(shouldClaimPayment ? [eq(payments.providerReference, claimReference)] : []),
-    ))
-    .returning();
-  if (shouldClaimPayment && !updatedPayment) {
-    throw new BookingConflictError("Checkout changed before it could be saved. Please refresh your booking.");
+  if (shouldClaimPayment) {
+    const [updatedPayment] = await db
+      .update(payments)
+      .set({
+        provider: provider.name,
+        providerReference: paymentReference(order.id),
+        status: "processing",
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(payments.id, row.payment.id),
+        eq(payments.userId, userId),
+        eq(payments.providerReference, claimReference),
+      ))
+      .returning();
+    if (!updatedPayment) {
+      throw new BookingConflictError("Checkout changed before it could be saved. Please refresh your booking.");
+    }
   }
 
   const booking = await lookupBooking(userId, reference);
   if (!booking) throw new BookingNotFoundError("Booking not found.");
-  return { checkoutUrl: session.url, booking };
+  return checkoutResponse(provider, order, booking);
 }
 
 export async function startBookingCheckout(
@@ -238,14 +249,6 @@ export async function startBookingCheckout(
   }
 }
 
-function eventMetadata(event: Stripe.Event) {
-  const object = event.data.object as Stripe.Checkout.Session | Stripe.PaymentIntent;
-  return {
-    object,
-    metadata: object.metadata ?? {},
-  };
-}
-
 function paymentEmailInput(
   booking: typeof bookings.$inferSelect,
   kind: BookingNotificationKind,
@@ -263,136 +266,173 @@ function paymentEmailInput(
   };
 }
 
-export async function applyStripePaymentEvent(
-  event: Stripe.Event,
+function paymentMatchesBooking(payment: ProviderPayment, booking: typeof bookings.$inferSelect): boolean {
+  return (
+    payment.amount === toMinorUnits(String(booking.totalAmount), booking.currency) &&
+    payment.currency === booking.currency.toUpperCase()
+  );
+}
+
+async function notifyPaymentOutcome(
+  eventId: string,
+  userId: string,
+  reference: string,
+  outcome: "paid" | "failed",
+  email: BookingEmail | null,
+) {
+  await createNotification(userId, {
+    type: outcome === "paid" ? "payment_successful" : "payment_failed",
+    title: outcome === "paid" ? "Payment received" : "Payment failed",
+    body: outcome === "paid"
+      ? `Payment for booking ${reference} was received and the booking is confirmed.`
+      : `Payment for booking ${reference} failed. You can try checkout again.`,
+    relatedType: "booking",
+    relatedId: reference,
+    dedupeKey: `payment-event:${eventId}`,
+  });
+  if (email) await sendBookingEmailSafely(email);
+}
+
+export async function verifyBookingPayment(
+  userId: string,
+  reference: string,
+  input: VerifyBookingPaymentInput,
+  dependencies: BookingCheckoutDependencies = {},
+) {
+  const provider = dependencies.provider ?? getRazorpayPaymentProvider();
+  const loadBookingPayment = dependencies.loadBookingPayment ?? defaultLoadBookingPayment;
+  const row = await loadBookingPayment(userId, reference);
+  if (!row?.payment) throw new BookingNotFoundError("Booking payment not found.");
+  if (row.booking.status === "cancelled") throw new BookingConflictError("This booking has been cancelled.");
+  const stored = parsePaymentReference(row.payment.providerReference);
+  if (
+    row.payment.status === "paid" &&
+    stored.orderId === input.orderId &&
+    stored.paymentId === input.paymentId
+  ) {
+    const existing = await (dependencies.findBooking ?? findBooking)(userId, reference);
+    if (!existing) throw new BookingNotFoundError("Booking not found.");
+    return existing;
+  }
+  if (
+    row.payment.provider !== provider.name ||
+    stored.orderId !== input.orderId ||
+    !provider.verifyPayment(input)
+  ) {
+    throw new BookingConflictError("Payment verification failed.");
+  }
+
+  let payment = await provider.getPayment(input.paymentId);
+  if (payment.orderId !== input.orderId || !paymentMatchesBooking(payment, row.booking)) {
+    throw new BookingConflictError("Payment details do not match this booking.");
+  }
+  if (payment.status === "authorized" && !payment.captured) {
+    payment = await provider.capturePayment(payment.id, payment.amount, payment.currency);
+  }
+  if (payment.status !== "captured" || !payment.captured) {
+    throw new BookingConflictError("Payment has not been captured.");
+  }
+
+  const email = await db.transaction(async (tx) => {
+    const [updatedPayment] = await tx.update(payments)
+      .set({
+        provider: provider.name,
+        providerReference: paymentReference(input.orderId, input.paymentId),
+        status: "paid",
+      })
+      .where(and(
+        eq(payments.id, row.payment!.id),
+        eq(payments.userId, userId),
+        eq(payments.providerReference, input.orderId),
+        inArray(payments.status, ["processing", "failed"]),
+      ))
+      .returning();
+    if (!updatedPayment) return null;
+    if (inventoryOffersEnabled(dependencies.inventoryEnv)) {
+      await tx.update(bookings)
+        .set({ status: "confirmed", updatedAt: new Date() })
+        .where(and(eq(bookings.id, row.booking.id), eq(bookings.status, "pending_payment")));
+    }
+    return paymentEmailInput(row.booking, "payment_confirmed");
+  });
+
+  if (email) {
+    await notifyPaymentOutcome(`client:${input.paymentId}`, userId, reference, "paid", email);
+  }
+  const booking = await (dependencies.findBooking ?? findBooking)(userId, reference);
+  if (!booking) throw new BookingNotFoundError("Booking not found.");
+  return booking;
+}
+
+export async function applyRazorpayPaymentEvent(
+  event: PaymentWebhookEvent,
   dependencies: { inventoryEnv?: NodeJS.ProcessEnv } = {},
 ) {
-  const { object, metadata } = eventMetadata(event);
-  const outcome = stripePaymentOutcome(event);
-  if (!outcome) return;
-  const reference = metadata.bookingReference;
-  const bookingId = metadata.bookingId;
-  if (!reference && !bookingId) return;
+  if (!["payment.captured", "payment.failed"].includes(event.type) || !event.payment) return;
+  const providerPayment = event.payment;
+  const notes = { ...(event.order?.notes ?? {}), ...(providerPayment.notes ?? {}) };
+  const bookingId = notes.bookingId;
+  const reference = notes.bookingReference;
+  if (!bookingId && !reference) return;
 
-  let eventNotification: { userId: string; reference: string; type: "payment_successful" | "payment_failed" | "payment_pending"; title: string; body: string } | null = null;
-  const notification = await db.transaction(async (tx) => {
+  let outcome: "paid" | "failed" | null = null;
+  const email = await db.transaction(async (tx) => {
     const [row] = await tx
       .select({ booking: bookings, payment: payments })
       .from(bookings)
       .leftJoin(payments, eq(payments.bookingId, bookings.id))
       .where(bookingId ? eq(bookings.id, bookingId) : eq(bookings.reference, reference!));
-    if (!row?.payment) return null;
+    if (!row?.payment || row.payment.provider !== "razorpay") return null;
     if (
-      (metadata.bookingId && metadata.bookingId !== row.booking.id) ||
-      (metadata.bookingReference && metadata.bookingReference !== row.booking.reference) ||
-      (metadata.userId && metadata.userId !== row.booking.userId)
+      (bookingId && bookingId !== row.booking.id) ||
+      (reference && reference !== row.booking.reference) ||
+      (notes.userId && notes.userId !== row.booking.userId)
     ) {
-      logger.warn({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring Stripe event with mismatched booking metadata");
+      logger.warn({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring Razorpay event with mismatched booking metadata");
       return null;
     }
-    if (
-      !isCurrentStripeCheckoutAttempt(
-        event,
-        row.payment.providerReference,
-        row.payment.status as PaymentStatus,
-        row.payment.updatedAt,
-      )
-    ) {
-      logger.info({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring an event for an older Stripe checkout attempt");
+    const stored = parsePaymentReference(row.payment.providerReference);
+    if (stored.orderId !== providerPayment.orderId) {
+      logger.info({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring an event for an older Razorpay order");
       return null;
     }
 
-    if (outcome === "paid") {
-      const details = stripePaymentDetails(event);
-      const expectedAmount = toMinorUnits(String(row.booking.totalAmount), row.booking.currency);
-      if (!stripePaymentAmountMatches(details, expectedAmount, row.booking.currency)) {
-        logger.warn({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring Stripe payment with mismatched amount or currency");
+    if (event.type === "payment.captured") {
+      if (!paymentMatchesBooking(providerPayment, row.booking) || row.booking.status === "cancelled") {
+        logger.warn({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring Razorpay payment with invalid booking state, amount, or currency");
         return null;
       }
-      if (row.booking.status === "cancelled") {
-        logger.warn({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring payment for a cancelled booking");
-        return null;
-      }
-      const [updatedPayment] = await tx
-        .update(payments)
-        // Keep updatedAt as the checkout-attempt start marker. A webhook can
-        // arrive out of order, so refreshing it here would make a delayed
-        // event from the same attempt look newer than it really is.
-        .set({ status: "paid", provider: "stripe" })
-        .where(and(eq(payments.id, row.payment.id), eq(payments.status, row.payment.status)))
+      const [updatedPayment] = await tx.update(payments)
+        .set({
+          providerReference: paymentReference(providerPayment.orderId, providerPayment.id),
+          status: "paid",
+        })
+        .where(and(
+          eq(payments.id, row.payment.id),
+          inArray(payments.status, ["processing", "failed"]),
+        ))
         .returning();
       if (!updatedPayment) return null;
-      if (!inventoryOffersEnabled(dependencies.inventoryEnv)) {
-        eventNotification = {
-          userId: row.booking.userId,
-          reference: row.booking.reference,
-          type: "payment_pending",
-          title: "Payment received — booking not confirmed",
-          body: `Payment for booking ${row.booking.reference} was received, but no live inventory provider is connected. The booking was not confirmed.`,
-        };
-        return null;
+      if (inventoryOffersEnabled(dependencies.inventoryEnv)) {
+        await tx.update(bookings)
+          .set({ status: "confirmed", updatedAt: new Date() })
+          .where(and(eq(bookings.id, row.booking.id), eq(bookings.status, "pending_payment")));
       }
-      await tx.update(bookings).set({ status: "confirmed", updatedAt: new Date() }).where(and(eq(bookings.id, row.booking.id), eq(bookings.status, "pending_payment")));
-      eventNotification = {
-        userId: row.booking.userId,
-        reference: row.booking.reference,
-        type: "payment_successful",
-        title: "Payment received",
-        body: `Payment for booking ${row.booking.reference} was received and the booking is confirmed.`,
-      };
+      outcome = "paid";
       return paymentEmailInput(row.booking, "payment_confirmed");
     }
 
-    const nextStatus = nextStripePaymentStatus(row.payment.status as PaymentStatus, outcome);
-    if (!nextStatus) return null;
-    const [updatedPayment] = await tx
-      .update(payments)
-      .set({ status: nextStatus, provider: "stripe" })
-      .where(and(eq(payments.id, row.payment.id), eq(payments.status, row.payment.status)))
+    const [updatedPayment] = await tx.update(payments)
+      .set({ status: "failed" })
+      .where(and(eq(payments.id, row.payment.id), eq(payments.status, "processing")))
       .returning();
     if (!updatedPayment) return null;
-    const notificationKind: BookingNotificationKind =
-      outcome === "failed"
-        ? "payment_failed"
-        : outcome === "cancelled"
-          ? "payment_expired"
-          : "payment_processing";
-    eventNotification = {
-      userId: row.booking.userId,
-      reference: row.booking.reference,
-      type: outcome === "failed" ? "payment_failed" : "payment_pending",
-      title: outcome === "failed" ? "Payment failed" : "Payment update",
-      body: outcome === "failed"
-        ? `Payment for booking ${row.booking.reference} failed. You can try checkout again.`
-        : `Payment for booking ${row.booking.reference} is still being processed.`,
-    };
-    return paymentEmailInput(row.booking, notificationKind);
+    outcome = "failed";
+    return paymentEmailInput(row.booking, "payment_failed");
   });
-  const completedEventNotification: {
-    userId: string;
-    reference: string;
-    type: "payment_successful" | "payment_failed" | "payment_pending";
-    title: string;
-    body: string;
-  } | null = eventNotification as {
-    userId: string;
-    reference: string;
-    type: "payment_successful" | "payment_failed" | "payment_pending";
-    title: string;
-    body: string;
-  } | null;
-  if (completedEventNotification) {
-    await createNotification(completedEventNotification.userId, {
-      type: completedEventNotification.type,
-      title: completedEventNotification.title,
-      body: completedEventNotification.body,
-      relatedType: "booking",
-      relatedId: completedEventNotification.reference,
-      dedupeKey: `payment-event:${event.id}`,
-    });
+
+  if (outcome) {
+    await notifyPaymentOutcome(event.id, notes.userId ?? "", reference ?? "", outcome, email);
   }
-  if (notification) {
-    await sendBookingEmailSafely(notification);
-  }
-  return notification;
+  return email;
 }

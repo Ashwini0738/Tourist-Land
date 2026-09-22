@@ -6,8 +6,24 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Booking } from './booking';
+import type { BookingCheckoutResponsePrefill } from './bookingCheckoutResponsePrefill';
+import type { BookingCheckoutResponseProvider } from './bookingCheckoutResponseProvider';
 
 export interface BookingCheckoutResponse {
-  checkoutUrl: string;
+  provider: BookingCheckoutResponseProvider;
+  /** @minLength 1 */
+  keyId: string;
+  /** @minLength 1 */
+  orderId: string;
+  /** @minimum 1 */
+  amount: number;
+  /**
+     * @minLength 3
+     * @maxLength 3
+     */
+  currency: string;
+  name: string;
+  description: string;
+  prefill: BookingCheckoutResponsePrefill;
   booking: Booking;
 }

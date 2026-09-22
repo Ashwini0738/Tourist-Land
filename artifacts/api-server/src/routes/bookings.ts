@@ -9,6 +9,7 @@ import {
   GetBookingParams,
   GetBookingResponse,
   ListBookingsResponse,
+  VerifyBookingPaymentBody,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth.ts";
 import {
@@ -21,7 +22,7 @@ import {
   listUserBookings,
   parseBookingInput,
 } from "./booking.ts";
-import { startBookingCheckout } from "../lib/booking-payments.ts";
+import { startBookingCheckout, verifyBookingPayment } from "../lib/booking-payments.ts";
 
 const bookingsRouter: IRouter = Router();
 bookingsRouter.use(requireAuth);
@@ -54,7 +55,7 @@ bookingsRouter.get("/v1/bookings", async (req, res): Promise<void> => {
   try {
     const items = await listUserBookings(req.localUser!.id);
     res.json(ListBookingsResponse.parse({
-      notice: "These bookings belong to your authenticated Travel & Land account. Stripe confirms payment; supplier reservation remains a development preview.",
+      notice: "These bookings belong to your authenticated Travel & Land account. Verified payment confirms the request; supplier reservation remains a development preview.",
       items,
     }));
   } catch (error) {
@@ -77,6 +78,29 @@ bookingsRouter.post("/v1/bookings/:reference/checkout", async (req, res): Promis
   try {
     const checkout = await startBookingCheckout(req.localUser!.id, params.data.reference, idempotencyKey);
     res.json(CreateBookingCheckoutResponse.parse(checkout));
+  } catch (error) {
+    handleError(res, error);
+  }
+});
+
+bookingsRouter.post("/v1/bookings/:reference/payment/verify", async (req, res): Promise<void> => {
+  const params = GetBookingParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(404).json({ error: { code: "NOT_FOUND", message: "Booking not found." } });
+    return;
+  }
+  const body = VerifyBookingPaymentBody.safeParse(req.body);
+  if (!body.success) {
+    invalidInput(res, "Payment verification details are invalid.");
+    return;
+  }
+  try {
+    const booking = await verifyBookingPayment(req.localUser!.id, params.data.reference, {
+      orderId: body.data.razorpay_order_id,
+      paymentId: body.data.razorpay_payment_id,
+      signature: body.data.razorpay_signature,
+    });
+    res.json(GetBookingResponse.parse({ booking }));
   } catch (error) {
     handleError(res, error);
   }

@@ -517,7 +517,7 @@ test(
       .where(
         and(
           eq(payments.userId, demoIds.users.traveller),
-          eq(payments.provider, "stripe"),
+          eq(payments.provider, "razorpay"),
           gte(payments.createdAt, testStartedAt),
         ),
       );
@@ -634,7 +634,7 @@ test(
       .where(
         and(
           eq(payments.userId, demoIds.users.traveller),
-          eq(payments.provider, "stripe"),
+          eq(payments.provider, "razorpay"),
           gte(payments.createdAt, testStartedAt),
         ),
       );

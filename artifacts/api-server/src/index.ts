@@ -1,7 +1,6 @@
 import app from "./app";
-import { runMigrations } from "stripe-replit-sync";
-import { assertStripeStorageReady, getStripeSync } from "./lib/stripeClient";
 import { logger } from "./lib/logger";
+import { razorpayConfigured } from "./lib/razorpay-provider";
 
 const rawPort = process.env["PORT"];
 
@@ -17,20 +16,12 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-async function initializeStripe() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) throw new Error("DATABASE_URL is required for Stripe.");
-  await runMigrations({ databaseUrl, logger });
-  await assertStripeStorageReady();
-  const stripeSync = await getStripeSync();
-  const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
-  if (!domain) throw new Error("REPLIT_DOMAINS is required to configure Stripe webhooks.");
-  await stripeSync.findOrCreateManagedWebhook(`https://${domain}/api/stripe/webhook`);
-  await stripeSync.syncBackfill();
-  logger.info("Stripe initialized");
-}
-
-await initializeStripe();
+logger.info(
+  { provider: "razorpay", configured: razorpayConfigured() },
+  razorpayConfigured()
+    ? "Payment provider configuration detected"
+    : "Payment provider credentials are not configured; checkout remains unavailable",
+);
 
 app.listen(port, (err) => {
   if (err) {

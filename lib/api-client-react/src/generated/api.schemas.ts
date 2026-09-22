@@ -787,9 +787,51 @@ export interface BookingResponse {
   booking: Booking;
 }
 
+export type BookingCheckoutResponseProvider = typeof BookingCheckoutResponseProvider[keyof typeof BookingCheckoutResponseProvider];
+
+
+export const BookingCheckoutResponseProvider = {
+  razorpay: 'razorpay',
+} as const;
+
+export type BookingCheckoutResponsePrefill = {
+  name: string;
+  email: string;
+  contact: string;
+};
+
 export interface BookingCheckoutResponse {
-  checkoutUrl: string;
+  provider: BookingCheckoutResponseProvider;
+  /** @minLength 1 */
+  keyId: string;
+  /** @minLength 1 */
+  orderId: string;
+  /** @minimum 1 */
+  amount: number;
+  /**
+     * @minLength 3
+     * @maxLength 3
+     */
+  currency: string;
+  name: string;
+  description: string;
+  prefill: BookingCheckoutResponsePrefill;
   booking: Booking;
+}
+
+export interface RazorpayPaymentVerificationInput {
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  razorpay_order_id: string;
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  razorpay_payment_id: string;
+  /** @pattern ^[0-9a-f]{64}$ */
+  razorpay_signature: string;
 }
 
 export interface BookingList {

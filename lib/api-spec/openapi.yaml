@@ -316,16 +316,40 @@ paths:
       operationId: createBookingCheckout
       tags: [bookings]
       security: [{ bearerAuth: [] }]
-      summary: Start Stripe Checkout for an owned payment-pending booking
+      summary: Create or reuse a Razorpay order for an owned payment-pending booking
       parameters:
         - $ref: "#/components/parameters/BookingReference"
         - $ref: "#/components/parameters/IdempotencyKey"
       responses:
         "200":
-          description: Hosted checkout URL and the booking's processing payment state
+          description: Razorpay order details and the booking's processing payment state
           content:
             application/json:
               schema: { $ref: "#/components/schemas/BookingCheckoutResponse" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /v1/bookings/{reference}/payment/verify:
+    post:
+      operationId: verifyBookingPayment
+      tags: [bookings]
+      security: [{ bearerAuth: [] }]
+      summary: Verify a Razorpay payment for an owned booking
+      parameters:
+        - $ref: "#/components/parameters/BookingReference"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RazorpayPaymentVerificationInput" }
+      responses:
+        "200":
+          description: Verified booking payment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingResponse" }
+        "400": { $ref: "#/components/responses/InvalidInput" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
@@ -2976,9 +3000,30 @@ components:
     BookingCheckoutResponse:
       type: object
       properties:
-        checkoutUrl: { type: string, format: uri }
+        provider: { type: string, enum: [razorpay] }
+        keyId: { type: string, minLength: 1 }
+        orderId: { type: string, minLength: 1 }
+        amount: { type: integer, minimum: 1 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        name: { type: string }
+        description: { type: string }
+        prefill:
+          type: object
+          properties:
+            name: { type: string }
+            email: { type: string, format: email }
+            contact: { type: string }
+          required: [name, email, contact]
         booking: { $ref: "#/components/schemas/Booking" }
-      required: [checkoutUrl, booking]
+      required: [provider, keyId, orderId, amount, currency, name, description, prefill, booking]
+    RazorpayPaymentVerificationInput:
+      type: object
+      additionalProperties: false
+      properties:
+        razorpay_order_id: { type: string, minLength: 1, maxLength: 128 }
+        razorpay_payment_id: { type: string, minLength: 1, maxLength: 128 }
+        razorpay_signature: { type: string, pattern: "^[0-9a-f]{64}$" }
+      required: [razorpay_order_id, razorpay_payment_id, razorpay_signature]
     BookingList:
       type: object
       properties:

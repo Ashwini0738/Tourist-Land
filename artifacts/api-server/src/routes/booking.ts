@@ -26,7 +26,7 @@ export class BookingConflictError extends Error {}
 export class BookingProviderUnavailableError extends Error {}
 
 export const bookingDevelopmentNotice =
-  "Development hotel inventory only. Stripe payment confirms this booking request, but not a live supplier reservation.";
+  "Development hotel inventory only. Verified payment confirms this booking request, but not a live supplier reservation.";
 
 export { calculateBookingNights, canCancelBooking, parseBookingInput } from "./booking-logic.ts";
 
@@ -315,7 +315,7 @@ export async function createUserBooking(userId: string, input: BookingRequest, i
     await tx.insert(payments).values({
       bookingId: booking.id,
       userId,
-      provider: "stripe",
+      provider: "razorpay",
       amount: String(pricing.total),
       currency: pricing.currency,
       status: "unpaid",
