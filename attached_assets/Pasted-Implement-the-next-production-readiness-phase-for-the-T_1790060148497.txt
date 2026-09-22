@@ -1,0 +1,235 @@
+Implement the next production-readiness phase for the Travel & Land app.
+
+IMPORTANT:
+- Security dependency remediation has already been completed.
+- Do NOT modify Clerk authentication.
+- Do NOT modify database schema unless absolutely required for this specific payment-hardening task.
+- Do NOT modify booking business logic except where required to correctly protect payment state.
+- Do NOT configure Razorpay live mode.
+- Do NOT deploy.
+- Do NOT add Stripe back.
+- Do NOT replace Razorpay with another provider.
+- Preserve the existing Razorpay architecture and provider abstraction.
+
+## 1. Harden payment.captured validation
+
+Review the Razorpay webhook/event processing, especially the code that handles:
+
+`payment.captured`
+
+Do not mark a booking/payment as successfully paid based only on:
+
+- valid webhook signature
+- event type = payment.captured
+- matching amount
+- matching currency
+
+The normalized Razorpay payment object must also satisfy:
+
+- `status === "captured"`
+- `captured === true`
+
+If either condition is missing or false:
+
+- do not mark the booking as paid
+- do not transition payment state to successful/captured
+- safely record/log the event according to the existing architecture
+- preserve idempotency
+- return the appropriate webhook response without creating an invalid paid state
+
+Do not weaken any existing ownership, amount, currency, idempotency, replay, or checkout-lock protections.
+
+## 2. Verify Razorpay order/payment matching
+
+Review the existing verification flow:
+
+POST /v1/bookings/:reference/payment/verify
+
+Ensure that a payment can only be accepted when all existing required checks pass, including:
+
+- authenticated user owns the booking
+- booking/payment belongs to the expected Razorpay order
+- amount matches exactly
+- currency matches
+- payment is actually captured
+- Razorpay payment status is valid
+- signature is valid
+- payment has not already been consumed/replayed
+- booking state allows payment
+- existing idempotency protections remain intact
+
+Do not remove or weaken any existing security check.
+
+## 3. Fix mobile payment error messaging
+
+Review the Expo mobile Razorpay checkout flow.
+
+Currently, make sure the app distinguishes between these situations:
+
+### A. User cancelled payment
+Show a clear cancellation message.
+
+Example meaning:
+
+"Payment was cancelled."
+
+### B. Razorpay/provider explicitly reports payment failure
+Show a payment failure message.
+
+Example meaning:
+
+"Payment failed. Please try again."
+
+### C. Razorpay checkout appears to have completed, but the app cannot complete server verification because of:
+- network failure
+- API timeout
+- app interruption
+- temporary server communication problem
+- unknown verification response
+
+DO NOT tell the user:
+
+"Nothing was charged."
+
+because payment status may be uncertain.
+
+Instead show a safe message such as:
+
+"Payment status could not be confirmed. Please check My Bookings before trying again."
+
+The wording can follow the existing app design, but it must clearly distinguish "failed" from "status unknown".
+
+Do not automatically encourage the user to pay again when payment status is unknown, because this could create duplicate-payment risk.
+
+## 4. Expo Go protection
+
+Razorpay uses a native module and cannot perform real native Razorpay checkout inside standard Expo Go.
+
+Review the current mobile payment code.
+
+Before attempting to load/use the native Razorpay module, explicitly detect whether the required native module is available.
+
+If running in Expo Go:
+
+- do not attempt native checkout
+- show a clear message that Razorpay checkout requires the Travel & Land development/preview build
+- do not crash
+- do not create a booking payment state that implies payment was attempted successfully
+
+Preserve lazy loading of the Razorpay native module.
+
+Do not break normal app startup in Expo Go.
+
+## 5. Preserve dual payment recovery
+
+The application must continue supporting both:
+
+1. Mobile-side payment verification
+2. Razorpay webhook recovery
+
+The webhook remains important if:
+
+- app closes after payment
+- network fails after payment
+- mobile verification request fails
+- user leaves the app
+- device loses connectivity
+
+Do not remove webhook processing just because mobile verification exists.
+
+## 6. Add/update automated tests
+
+Add or update tests for at least:
+
+### Valid captured payment
+- correct Razorpay order
+- correct amount
+- correct currency
+- valid signature
+- status = captured
+- captured = true
+- payment becomes successfully captured
+
+### Invalid captured state
+Test:
+- status = authorized
+- captured = false
+- status = captured but captured = false
+- missing captured flag where applicable
+
+These must NOT result in a successful paid booking.
+
+### Invalid amount
+Payment must not be accepted.
+
+### Invalid currency
+Payment must not be accepted.
+
+### Wrong Razorpay order
+Payment must not be accepted.
+
+### Invalid signature
+Payment must not be accepted.
+
+### Replay/idempotency
+Processing the same valid payment event multiple times must not create duplicate payment state or duplicate booking effects.
+
+### Mobile error states
+Test/inspect that:
+- user cancellation ≠ provider failure
+- provider failure ≠ verification uncertainty
+- verification/network uncertainty does NOT display "Nothing was charged"
+- verification uncertainty does NOT automatically create another payment
+
+### Expo Go
+Verify that unavailable native Razorpay module is handled gracefully.
+
+## 7. Run full verification
+
+Run:
+
+- root typecheck
+- API typecheck
+- mobile typecheck
+- admin typecheck
+- database typecheck
+- API tests
+- mobile tests
+- workflow validation
+- git diff --check
+- API build
+- mobile/static build validation
+
+Also run the existing security/static checks if available.
+
+## 8. Do not make unrelated changes
+
+Do NOT:
+- upgrade Expo
+- upgrade React Native
+- upgrade Clerk
+- change authentication
+- change database architecture
+- change booking UI
+- change payment provider
+- configure production Razorpay
+- add live Razorpay credentials
+- deploy the application
+
+Only implement the Razorpay payment-state/error-handling hardening described above.
+
+## Final report
+
+After implementation, provide:
+
+1. Files changed
+2. Exact payment-security changes
+3. How payment.captured validation now works
+4. How mobile payment errors are now classified
+5. How Expo Go is protected
+6. Tests added/changed
+7. Full test results
+8. Any remaining warnings
+9. Confirmation that no live credentials, deployment, Clerk auth, or unrelated business logic was changed
+
+Do not proceed to Razorpay dashboard configuration yet. Stop after this verification phase.
