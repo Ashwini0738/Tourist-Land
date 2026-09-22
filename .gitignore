@@ -48,3 +48,7 @@ Thumbs.db
 .cache/
 .local/
 zipFile.zip
+
+# Generated Android build artifacts
+artifacts/travel-land-app/builds/*.apk
+artifacts/travel-land-app/builds/*.apk.zip
