@@ -39,6 +39,8 @@ export type BookingCheckoutDependencies = {
   findBooking?: typeof findBooking;
   loadBookingPayment?: (userId: string, reference: string) => Promise<BookingPaymentRow | null>;
   inventoryEnv?: NodeJS.ProcessEnv;
+  database?: typeof db;
+  notifyPaymentOutcome?: typeof notifyPaymentOutcome;
 };
 
 export type VerifyBookingPaymentInput = {
@@ -273,6 +275,10 @@ function paymentMatchesBooking(payment: ProviderPayment, booking: typeof booking
   );
 }
 
+export function isCapturedPayment(payment: Pick<ProviderPayment, "status" | "captured">): boolean {
+  return payment.status === "captured" && payment.captured === true;
+}
+
 async function notifyPaymentOutcome(
   eventId: string,
   userId: string,
@@ -334,11 +340,12 @@ export async function verifyBookingPayment(
   if (payment.status === "authorized" && !payment.captured) {
     payment = await provider.capturePayment(payment.id, payment.amount, payment.currency);
   }
-  if (payment.status !== "captured" || !payment.captured) {
+  if (!isCapturedPayment(payment) || payment.orderId !== input.orderId || !paymentMatchesBooking(payment, row.booking)) {
     throw new BookingConflictError("Payment has not been captured.");
   }
 
-  const email = await db.transaction(async (tx) => {
+  const database = dependencies.database ?? db;
+  const email = await database.transaction(async (tx) => {
     const [updatedPayment] = await tx.update(payments)
       .set({
         provider: provider.name,
@@ -362,7 +369,7 @@ export async function verifyBookingPayment(
   });
 
   if (email) {
-    await notifyPaymentOutcome(`client:${input.paymentId}`, userId, reference, "paid", email);
+    await (dependencies.notifyPaymentOutcome ?? notifyPaymentOutcome)(`client:${input.paymentId}`, userId, reference, "paid", email);
   }
   const booking = await (dependencies.findBooking ?? findBooking)(userId, reference);
   if (!booking) throw new BookingNotFoundError("Booking not found.");
@@ -371,17 +378,26 @@ export async function verifyBookingPayment(
 
 export async function applyRazorpayPaymentEvent(
   event: PaymentWebhookEvent,
-  dependencies: { inventoryEnv?: NodeJS.ProcessEnv } = {},
+  dependencies: {
+    inventoryEnv?: NodeJS.ProcessEnv;
+    database?: typeof db;
+    notifyPaymentOutcome?: typeof notifyPaymentOutcome;
+  } = {},
 ) {
   if (!["payment.captured", "payment.failed"].includes(event.type) || !event.payment) return;
   const providerPayment = event.payment;
+  if (event.type === "payment.captured" && !isCapturedPayment(providerPayment)) {
+    logger.warn({ eventId: event.id }, "Ignoring Razorpay payment.captured event without captured payment state");
+    return null;
+  }
   const notes = { ...(event.order?.notes ?? {}), ...(providerPayment.notes ?? {}) };
   const bookingId = notes.bookingId;
   const reference = notes.bookingReference;
   if (!bookingId && !reference) return;
 
   let outcome: "paid" | "failed" | null = null;
-  const email = await db.transaction(async (tx) => {
+  const database = dependencies.database ?? db;
+  const email = await database.transaction(async (tx) => {
     const [row] = await tx
       .select({ booking: bookings, payment: payments })
       .from(bookings)
@@ -403,8 +419,15 @@ export async function applyRazorpayPaymentEvent(
     }
 
     if (event.type === "payment.captured") {
-      if (!paymentMatchesBooking(providerPayment, row.booking) || row.booking.status === "cancelled") {
-        logger.warn({ bookingReference: row.booking.reference, eventId: event.id }, "Ignoring Razorpay payment with invalid booking state, amount, or currency");
+      if (
+        !isCapturedPayment(providerPayment) ||
+        !paymentMatchesBooking(providerPayment, row.booking) ||
+        row.booking.status === "cancelled"
+      ) {
+        logger.warn(
+          { bookingReference: row.booking.reference, eventId: event.id },
+          "Ignoring Razorpay payment that is not captured or does not match the booking",
+        );
         return null;
       }
       const [updatedPayment] = await tx.update(payments)
@@ -437,7 +460,7 @@ export async function applyRazorpayPaymentEvent(
   });
 
   if (outcome) {
-    await notifyPaymentOutcome(event.id, notes.userId ?? "", reference ?? "", outcome, email);
+    await (dependencies.notifyPaymentOutcome ?? notifyPaymentOutcome)(event.id, notes.userId ?? "", reference ?? "", outcome, email);
   }
   return email;
 }

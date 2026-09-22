@@ -6,7 +6,12 @@ import {
   BookingProviderUnavailableError,
 } from "../routes/booking.ts";
 import type { PaymentProvider } from "./payment-provider.ts";
-import { startBookingCheckout } from "./booking-payments.ts";
+import {
+  applyRazorpayPaymentEvent,
+  isCapturedPayment,
+  startBookingCheckout,
+  verifyBookingPayment,
+} from "./booking-payments.ts";
 
 const booking = {
   id: "booking-1",
@@ -96,6 +101,28 @@ function provider(overrides: Partial<PaymentProvider> = {}): PaymentProvider {
     refundPayment: async () => { throw new Error("unused"); },
     handleWebhook: () => { throw new Error("unused"); },
     ...overrides,
+  };
+}
+
+function paymentDatabase(updatedPayment: unknown) {
+  const updateValues: Record<string, unknown>[] = [];
+  const database = {
+    transaction: async (callback: (transaction: unknown) => unknown) => callback({
+      update: () => ({
+        set: (values: Record<string, unknown>) => {
+          updateValues.push(values);
+          return {
+            where: () => ({
+              returning: async () => [updatedPayment],
+            }),
+          };
+        },
+      }),
+    }),
+  } as any;
+  return {
+    database,
+    updateValues: () => updateValues[0],
   };
 }
 
@@ -242,6 +269,75 @@ test("a second different payment cannot replace an already paid payment", async 
   );
 });
 
+test("valid captured payment verification persists the successful payment state", async () => {
+  const savedPayment = payment({ status: "paid", providerReference: "order_current|pay_current" });
+  const fakeDatabase = paymentDatabase(savedPayment);
+  const result = await verifyBookingPayment(
+    booking.userId,
+    booking.reference,
+    { orderId: "order_current", paymentId: "pay_current", signature: "signature" },
+    {
+      provider: provider({
+        verifyPayment: () => true,
+        getPayment: async () => ({
+          id: "pay_current",
+          orderId: "order_current",
+          amount: 23_400,
+          currency: "INR",
+          status: "captured",
+          captured: true,
+          notes: {},
+        }),
+      }),
+      loadBookingPayment: async () => ({ booking, payment: payment() }),
+      findBooking: async () => bookingPayload,
+      database: fakeDatabase.database,
+      notifyPaymentOutcome: async () => undefined,
+      inventoryEnv: { NODE_ENV: "development" },
+    },
+  );
+
+  assert.deepEqual(result, bookingPayload);
+  assert.equal(fakeDatabase.updateValues()?.status, "paid");
+  assert.equal(isCapturedPayment({ status: "captured", captured: true }), true);
+});
+
+test("payment verification rejects every incomplete captured state", async () => {
+  const states = [
+    { status: "authorized", captured: false },
+    { status: "captured", captured: false },
+    { status: "captured" },
+  ];
+
+  for (const state of states) {
+    const paymentState = {
+      id: "pay_current",
+      orderId: "order_current",
+      amount: 23_400,
+      currency: "INR",
+      ...state,
+      notes: {},
+    };
+    await assert.rejects(
+      verifyBookingPayment(
+        booking.userId,
+        booking.reference,
+        { orderId: "order_current", paymentId: "pay_current", signature: "signature" },
+        {
+          provider: provider({
+            verifyPayment: () => true,
+            getPayment: async () => paymentState as any,
+            capturePayment: async () => paymentState as any,
+          }),
+          loadBookingPayment: async () => ({ booking, payment: payment() }),
+        },
+      ),
+      (error: unknown) => error instanceof BookingConflictError && /not been captured/i.test(error.message),
+    );
+    assert.equal(isCapturedPayment(paymentState as any), false);
+  }
+});
+
 test("payment verification rejects amount and currency mismatches before persistence", async () => {
   const mismatchProvider = provider({
     verifyPayment: () => true,
@@ -268,4 +364,80 @@ test("payment verification rejects amount and currency mismatches before persist
     )),
     (error: unknown) => error instanceof BookingConflictError && /do not match/i.test(error.message),
   );
+});
+
+test("payment verification rejects a wrong order and invalid signature", async () => {
+  let paymentLookupCalled = false;
+  await assert.rejects(
+    verifyBookingPayment(
+      booking.userId,
+      booking.reference,
+      { orderId: "order_other", paymentId: "pay_current", signature: "signature" },
+      {
+        provider: provider({
+          verifyPayment: () => true,
+          getPayment: async () => {
+            paymentLookupCalled = true;
+            return {
+              id: "pay_current",
+              orderId: "order_current",
+              amount: 23_400,
+              currency: "INR",
+              status: "captured",
+              captured: true,
+              notes: {},
+            };
+          },
+        }),
+        loadBookingPayment: async () => ({ booking, payment: payment() }),
+      },
+    ),
+    (error: unknown) => error instanceof BookingConflictError && /verification failed/i.test(error.message),
+  );
+  assert.equal(paymentLookupCalled, false);
+
+  await assert.rejects(
+    verifyBookingPayment(
+      booking.userId,
+      booking.reference,
+      { orderId: "order_current", paymentId: "pay_current", signature: "bad-signature" },
+      {
+        provider: provider({
+          verifyPayment: () => false,
+          getPayment: async () => {
+            paymentLookupCalled = true;
+            throw new Error("should not fetch an invalid signature");
+          },
+        }),
+        loadBookingPayment: async () => ({ booking, payment: payment() }),
+      },
+    ),
+    (error: unknown) => error instanceof BookingConflictError && /verification failed/i.test(error.message),
+  );
+  assert.equal(paymentLookupCalled, false);
+});
+
+test("webhook payment.captured requires both captured status and flag", async () => {
+  const basePayment = {
+    id: "pay_current",
+    orderId: "order_current",
+    amount: 23_400,
+    currency: "INR",
+    notes: { bookingId: booking.id, bookingReference: booking.reference, userId: booking.userId },
+  };
+
+  for (const state of [
+    { status: "authorized", captured: false },
+    { status: "captured", captured: false },
+    { status: "captured" },
+  ]) {
+    const result = await applyRazorpayPaymentEvent({
+      id: `event-${state.status}-${String(state.captured)}`,
+      type: "payment.captured",
+      createdAt: 1,
+      payment: { ...basePayment, ...state } as any,
+      order: null,
+    });
+    assert.equal(result, null);
+  }
 });

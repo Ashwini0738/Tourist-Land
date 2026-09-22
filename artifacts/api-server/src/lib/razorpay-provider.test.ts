@@ -73,6 +73,31 @@ test("Razorpay order creation sends only trusted order fields", async (t) => {
   });
 });
 
+test("Razorpay payment normalization requires the explicit captured flag", async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const provider = new RazorpayPaymentProvider(env);
+
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    id: "pay_current",
+    order_id: "order_current",
+    amount: 23_400,
+    currency: "INR",
+    status: "captured",
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+  assert.equal((await provider.getPayment("pay_current")).captured, false);
+
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    id: "pay_current",
+    order_id: "order_current",
+    amount: 23_400,
+    currency: "INR",
+    status: "captured",
+    captured: true,
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+  assert.equal((await provider.getPayment("pay_current")).captured, true);
+});
+
 test("Razorpay provider failures return safe errors without response bodies", async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });

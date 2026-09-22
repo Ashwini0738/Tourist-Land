@@ -1,8 +1,14 @@
 import { PlatformIcon as Feather } from '@/components/PlatformIcon';
 import { ImageWithFallback, NoticeBanner } from '@/features/hotels/HotelUI';
 import { useColors } from '@/hooks/useColors';
-import { cancelBooking, createBookingCheckout, getGetBookingQueryKey, useGetBooking, verifyBookingPayment, type Booking, type BookingCheckoutResponse } from '@workspace/api-client-react';
+import { cancelBooking, createBookingCheckout, getGetBookingQueryKey, useGetBooking, verifyBookingPayment, type Booking } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
+import {
+  RAZORPAY_NATIVE_MODULE_UNAVAILABLE,
+  isRazorpayNativeModuleAvailable,
+  openRazorpayCheckout,
+  paymentErrorMessage,
+} from '@/features/payments/razorpayCheckout';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -17,45 +23,10 @@ function formatDate(value: string) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function errorMessage(error: unknown) {
-  return error instanceof Error && error.message ? error.message : 'The booking action could not be completed. Nothing was charged.';
-}
-
-type RazorpayCheckoutSuccess = {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
-};
-
-async function openRazorpayCheckout(order: BookingCheckoutResponse): Promise<RazorpayCheckoutSuccess> {
-  try {
-    const module = require('react-native-razorpay') as {
-      default?: { open(options: Record<string, unknown>): Promise<RazorpayCheckoutSuccess> };
-      open?: (options: Record<string, unknown>) => Promise<RazorpayCheckoutSuccess>;
-    };
-    const checkout = module.default ?? module;
-    if (typeof checkout.open !== 'function') throw new Error('RAZORPAY_NATIVE_MODULE_UNAVAILABLE');
-    return await checkout.open({
-      key: order.keyId,
-      order_id: order.orderId,
-      amount: order.amount,
-      currency: order.currency,
-      name: order.name,
-      description: order.description,
-      prefill: order.prefill,
-      theme: { color: '#2E6B4F' },
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (
-      message.includes('RAZORPAY_NATIVE_MODULE_UNAVAILABLE') ||
-      message.includes('RazorpayCheckout') ||
-      message.includes('native module')
-    ) {
-      throw new Error('Razorpay checkout requires the Travel & Land EAS development or preview build; it is not available in Expo Go.');
-    }
-    throw error;
-  }
+function actionErrorMessage(error: unknown) {
+  return error instanceof Error && error.message
+    ? error.message
+    : 'The booking action could not be completed. Please try again.';
 }
 
 export default function BookingDetailScreen() {
@@ -87,17 +58,23 @@ export default function BookingDetailScreen() {
   const startCheckout = async () => {
     setPaying(true);
     setError(null);
+    let phase: 'starting' | 'checkout' | 'verification' = 'starting';
     try {
+      if (!isRazorpayNativeModuleAvailable()) {
+        throw new Error(RAZORPAY_NATIVE_MODULE_UNAVAILABLE);
+      }
       const response = await createBookingCheckout(reference, {
         headers: { 'Idempotency-Key': `mobile-checkout-${reference}-${Date.now()}` },
       });
       setBooking(response.booking);
+      phase = 'checkout';
       const result = await openRazorpayCheckout(response);
+      phase = 'verification';
       const verified = await verifyBookingPayment(reference, result);
       setBooking(verified.booking);
       await queryClient.invalidateQueries({ queryKey: getGetBookingQueryKey(reference) });
     } catch (checkoutError) {
-      setError(errorMessage(checkoutError));
+      setError(paymentErrorMessage(checkoutError, phase));
     } finally {
       setPaying(false);
     }
@@ -111,7 +88,7 @@ export default function BookingDetailScreen() {
       setBooking(response.booking);
       await queryClient.invalidateQueries({ queryKey: getGetBookingQueryKey(reference) });
     } catch (actionError) {
-      setError(errorMessage(actionError));
+      setError(actionErrorMessage(actionError));
     } finally {
       setCancelling(false);
       setConfirming(false);
@@ -125,7 +102,7 @@ export default function BookingDetailScreen() {
     <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()}><Feather name="arrow-left" size={21} color={colors.foreground} /></Pressable><Text style={[styles.headerTitle, { color: colors.foreground }]}>Booking details</Text><View style={{ width: 21 }} /></View>
     <View style={[styles.hero, { backgroundColor: colors.card, borderColor: colors.border }]}><ImageWithFallback imageKey={current.hotel.imageKey} label={`${current.hotel.name} image`} style={styles.heroImage} /><Text style={[styles.kicker, { color: colors.primary }]}>TRAVEL & LAND</Text><Text style={[styles.title, { color: colors.foreground }]}>{current.hotel.name}</Text><Text style={[styles.location, { color: colors.mutedForeground }]}>{current.hotel.location}</Text><View style={[styles.reference, { backgroundColor: colors.secondary }]}><Text style={[styles.referenceLabel, { color: colors.primary }]}>REFERENCE</Text><Text style={[styles.referenceValue, { color: colors.foreground }]}>{current.reference}</Text></View></View>
      <NoticeBanner>{current.sourceNotice}</NoticeBanner>
-     {checkoutResult === 'cancel' ? <NoticeBanner>Checkout was cancelled. No payment was taken. You can try again whenever you are ready.</NoticeBanner> : null}
+      {checkoutResult === 'cancel' ? <NoticeBanner>Payment was cancelled.</NoticeBanner> : null}
      <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}><InfoRow label="Stay" value={`${formatDate(current.startsOn)} – ${formatDate(current.endsOn)} · ${current.nights} night${current.nights === 1 ? '' : 's'}`} colors={colors} /><InfoRow label="Travellers" value={`${current.adults} adult${current.adults === 1 ? '' : 's'} · ${current.children} child${current.children === 1 ? '' : 'ren'} · ${current.roomCount} room${current.roomCount === 1 ? '' : 's'}`} colors={colors} /><InfoRow label="Guest" value={`${current.guest.name}\n${current.guest.email}`} colors={colors} /><InfoRow label="Total" value={`${current.currency} ${current.total.toLocaleString()}`} colors={colors} strong /><InfoRow label="Status" value={formatBookingStatus(current)} colors={colors} /></View>
     {current.items.map((item) => <View key={item.roomId} style={[styles.roomRow, { borderColor: colors.border, backgroundColor: colors.card }]}><View style={{ flex: 1 }}><Text style={[styles.roomName, { color: colors.foreground }]}>{item.name}</Text><Text style={[styles.roomMeta, { color: colors.mutedForeground }]}>{item.quantity} room{item.quantity === 1 ? '' : 's'} · {current.nights} night{current.nights === 1 ? '' : 's'}</Text></View><Text style={[styles.roomTotal, { color: colors.foreground }]}>{current.currency} {item.roomTotal.toLocaleString()}</Text></View>)}
     {error ? <NoticeBanner error>{error}</NoticeBanner> : null}

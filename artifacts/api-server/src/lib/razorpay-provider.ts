@@ -86,7 +86,7 @@ function normalizePayment(value: RazorpayPaymentResponse): ProviderPayment {
     amount: value.amount,
     currency: value.currency.toUpperCase(),
     status,
-    captured: value.captured === true || status === "captured",
+    captured: value.captured === true,
     notes: value.notes ?? {},
   };
 }
