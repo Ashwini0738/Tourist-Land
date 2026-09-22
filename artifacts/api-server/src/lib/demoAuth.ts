@@ -23,12 +23,15 @@ export class InvalidDemoOtpError extends Error {
 export function demoAuthEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   const buildEnvironment = env.TRAVEL_LAND_BUILD_ENV?.trim().toLowerCase();
   const easProfile = env.EAS_BUILD_PROFILE?.trim().toLowerCase();
+  const deployment = env.REPLIT_DEPLOYMENT?.trim().toLowerCase();
   return (
     env.NODE_ENV === "development" &&
     env.TRAVEL_LAND_DEMO_AUTH_ENABLED === "true" &&
     buildEnvironment !== "production" &&
     buildEnvironment !== "release" &&
-    easProfile !== "production"
+    easProfile !== "production" &&
+    deployment !== "1" &&
+    deployment !== "true"
   );
 }
 
@@ -46,6 +49,7 @@ export function verifyDemoOtp(
   env: NodeJS.ProcessEnv = process.env,
 ): { email: string } {
   const config = demoAuthConfig(env);
+  if (suppliedOtp.length > 128) throw new InvalidDemoOtpError();
   const supplied = Buffer.from(suppliedOtp);
   const expected = Buffer.from(config.otp);
   if (

@@ -33,6 +33,21 @@ export function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
 }
 
+const APPLICATION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function parseVendorApplicationStatusLookup(value: unknown): {
+  id: string;
+  email: string;
+} | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const query = value as Record<string, unknown>;
+  if (typeof query.id !== "string" || typeof query.email !== "string") return null;
+  const id = query.id.trim();
+  const email = normalizeEmail(query.email);
+  if (!APPLICATION_ID_PATTERN.test(id) || email.length > 320 || !isValidEmail(email)) return null;
+  return { id, email };
+}
+
 export function validateVendorApplicationInput(value: unknown): {
   input: VendorApplicationInput | null;
   fieldErrors: VendorApplicationFieldErrors;

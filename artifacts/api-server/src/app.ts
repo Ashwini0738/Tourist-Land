@@ -14,6 +14,7 @@ import {
 import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./middlewares/clerkProxyMiddleware";
 import { WebhookHandlers } from "./webhookHandlers";
 import { apiErrorHandler } from "./middlewares/errorHandler";
+import { isAllowedCorsOrigin } from "./lib/corsPolicy";
 
 const app: Express = express();
 
@@ -51,7 +52,12 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
   }
 });
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
-app.use(cors({ credentials: true, origin: true }));
+app.use(cors({
+  credentials: true,
+  origin(origin, callback) {
+    callback(null, isAllowedCorsOrigin(origin));
+  },
+}));
 app.use(
   clerkMiddleware((req) => ({
     clerkClient,

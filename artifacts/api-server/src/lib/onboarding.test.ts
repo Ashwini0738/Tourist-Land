@@ -6,7 +6,10 @@ import {
   vendorApprovalAction,
   vendorRejectionStatus,
 } from "./onboarding-state.ts";
-import { validateVendorApplicationInput } from "./onboarding-validation.ts";
+import {
+  parseVendorApplicationStatusLookup,
+  validateVendorApplicationInput,
+} from "./onboarding-validation.ts";
 
 test("only pending applications can send the first invitation", () => {
   assert.equal(vendorApprovalAction("pending", false), "send-invitation");
@@ -59,4 +62,19 @@ test("vendor application validation trims values and normalizes email", () => {
   assert.deepEqual(result.fieldErrors, {});
   assert.equal(result.input?.businessName, "Trail Co.");
   assert.equal(result.input?.email, "asha@trail.co");
+});
+
+test("vendor application status lookup is bounded and normalized", () => {
+  assert.deepEqual(
+    parseVendorApplicationStatusLookup({
+      id: " 123e4567-e89b-12d3-a456-426614174000 ",
+      email: " OWNER@EXAMPLE.COM ",
+    }),
+    {
+      id: "123e4567-e89b-12d3-a456-426614174000",
+      email: "owner@example.com",
+    },
+  );
+  assert.equal(parseVendorApplicationStatusLookup({ id: "not-an-id", email: "owner@example.com" }), null);
+  assert.equal(parseVendorApplicationStatusLookup({ id: "123e4567-e89b-12d3-a456-426614174000", email: "not-an-email" }), null);
 });

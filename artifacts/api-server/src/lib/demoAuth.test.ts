@@ -62,10 +62,16 @@ test("accepts the configured OTP only in an explicitly enabled development envir
     { ...safeEnv, TRAVEL_LAND_BUILD_ENV: "production" },
     { ...safeEnv, TRAVEL_LAND_BUILD_ENV: "release" },
     { ...safeEnv, EAS_BUILD_PROFILE: "production" },
+    { ...safeEnv, REPLIT_DEPLOYMENT: "1" },
+    { ...safeEnv, REPLIT_DEPLOYMENT: "true" },
     { ...safeEnv, TRAVEL_LAND_DEMO_AUTH_ENABLED: "false" },
   ]) {
     assert.throws(() => verifyDemoOtp("246810", env), DemoAuthUnavailableError);
   }
+});
+
+test("rejects oversized demo OTP input before timing comparison", () => {
+  assert.throws(() => verifyDemoOtp("x".repeat(129), safeEnv), InvalidDemoOtpError);
 });
 
 test("creates one dedicated Clerk demo user and organization-independent short-lived tickets", async () => {
