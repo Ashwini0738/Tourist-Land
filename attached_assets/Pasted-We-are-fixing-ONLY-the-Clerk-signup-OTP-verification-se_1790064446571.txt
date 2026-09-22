@@ -1,0 +1,102 @@
+We are fixing ONLY the Clerk signup OTP verification/session-finalization issue found in the read-only audit.
+
+IMPORTANT:
+- Make code changes only for the signup verification flow.
+- Do NOT modify sign-in.
+- Do NOT modify splash/startup routing.
+- Do NOT modify biometric logic.
+- Do NOT modify API authentication.
+- Do NOT modify roles.
+- Do NOT modify Organizations.
+- Do NOT modify Razorpay.
+- Do NOT change Clerk configuration or secrets.
+- Do NOT introduce Supabase.
+- Do NOT create any demo/fake authentication.
+- Do NOT change the existing login UI.
+
+Problem confirmed by audit:
+
+`app/verify.tsx` currently verifies the signup OTP and then immediately checks:
+
+`signUp.status !== 'complete'`
+
+This can fail because Clerk's React hook state may still contain the previous status even though `verifyEmailCode()` has successfully completed verification.
+
+The sign-in flow already handles this timing issue more safely.
+
+TASK:
+
+1. Inspect the current `artifacts/travel-land-app/app/verify.tsx`.
+
+2. Identify the exact signup verification handler.
+
+3. Change ONLY the signup verification logic so that it relies on the result/state returned by the Clerk verification/finalization operation rather than assuming the React hook's `signUp.status` has synchronously updated.
+
+4. After successful OTP verification:
+   - correctly finalize the signup
+   - obtain the resulting session
+   - explicitly activate the resulting Clerk session using the existing Clerk session activation mechanism already used by the sign-in flow
+   - do not create a custom authentication/session system
+   - do not store Clerk tokens manually
+
+5. Preserve the existing successful sign-in implementation. Reuse its established Clerk session activation pattern where appropriate instead of inventing a new pattern.
+
+6. If Clerk's current SDK response requires checking `createdSessionId`, `status`, or another returned property, inspect the installed Clerk Expo SDK/types in this repository and use the actual supported API already present in this project.
+
+7. Do not assume a property exists. Verify against the installed SDK/types/source before using it.
+
+8. Preserve the current navigation flow after successful signup:
+   Signup
+   → Email OTP
+   → Clerk verification
+   → Clerk session finalized
+   → Clerk session activated
+   → existing security/role readiness
+   → existing destination/Home flow
+
+9. Keep the existing error handling for now. We will improve signup error mapping separately.
+
+10. Do not modify resend behavior yet. We will fix that separately.
+
+TESTING:
+
+After the code change, run only the relevant checks:
+- TypeScript/typecheck for the mobile app
+- Any existing signup/auth unit tests related to verify.tsx
+- Existing mobile auth tests if available
+
+Also inspect the final diff and confirm that ONLY the signup verification/session-finalization code was changed.
+
+IMPORTANT:
+
+Do not just tell me what you plan to do.
+
+Actually implement the fix, run the relevant tests, and return:
+
+## SIGNUP OTP FIX RESULT
+
+### Files changed
+List exact files.
+
+### What changed
+Explain simply.
+
+### Clerk flow after fix
+Show:
+
+Email
+→ Create Clerk signup
+→ Send OTP
+→ Verify OTP
+→ Finalize signup
+→ Activate Clerk session
+→ Existing security/role flow
+→ Home
+
+### Tests
+List each test/check and PASS/FAIL.
+
+### Diff scope
+Confirm whether anything outside signup OTP/session finalization was changed.
+
+If any test fails, STOP and report the failure. Do not start fixing unrelated issues.
