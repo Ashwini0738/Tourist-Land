@@ -6,7 +6,6 @@
 - [API pure route tests](api-pure-route-tests.md) — keep search and catalog normalization tests independent from database and authentication startup.
 - [Development schema application](development-schema-application.md) — additive Drizzle schema changes are applied by the post-merge flow, not from non-interactive agent shells or app startup.
 - [Orval Zod compatibility](orval-zod3-compatibility.md) — generated format helpers need normalization while this workspace uses Zod 3.
-- [Stripe connector runtime](stripe-connector-runtime.md) — current Stripe connections expose `secret`; managed webhook signing secrets are persisted by Stripe Sync.
 - [Node source-module tests](node-source-module-tests.md) — direct Node TypeScript tests need explicit local module extensions and matching declaration-only compiler settings.
 - [Standalone API typecheck](standalone-api-typecheck.md) — build referenced workspace declarations before the API’s strict no-emit check.
 - [Monorepo package installs](monorepo-package-installs.md) — when the package helper targets the workspace root, use the app-scoped pnpm filter rather than changing root dependencies.

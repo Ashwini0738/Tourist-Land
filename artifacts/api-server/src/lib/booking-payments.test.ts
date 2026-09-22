@@ -219,3 +219,53 @@ test("checkout fails before the payment provider when live inventory is unavaila
   );
   assert.equal(providerCalled, false);
 });
+
+test("a second different payment cannot replace an already paid payment", async () => {
+  await assert.rejects(
+    import("./booking-payments.ts").then(({ verifyBookingPayment }) => verifyBookingPayment(
+      booking.userId,
+      booking.reference,
+      {
+        orderId: "order_current",
+        paymentId: "pay_different",
+        signature: "signature",
+      },
+      {
+        provider: provider(),
+        loadBookingPayment: async () => ({
+          booking,
+          payment: payment({ status: "paid", providerReference: "order_current|pay_original" }),
+        }),
+      },
+    )),
+    (error: unknown) => error instanceof BookingConflictError && /already been paid/i.test(error.message),
+  );
+});
+
+test("payment verification rejects amount and currency mismatches before persistence", async () => {
+  const mismatchProvider = provider({
+    verifyPayment: () => true,
+    getPayment: async () => ({
+      id: "pay_current",
+      orderId: "order_current",
+      amount: 99_900,
+      currency: "USD",
+      status: "captured",
+      captured: true,
+      notes: {},
+    }),
+  });
+
+  await assert.rejects(
+    import("./booking-payments.ts").then(({ verifyBookingPayment }) => verifyBookingPayment(
+      booking.userId,
+      booking.reference,
+      { orderId: "order_current", paymentId: "pay_current", signature: "signature" },
+      {
+        provider: mismatchProvider,
+        loadBookingPayment: async () => ({ booking, payment: payment() }),
+      },
+    )),
+    (error: unknown) => error instanceof BookingConflictError && /do not match/i.test(error.message),
+  );
+});

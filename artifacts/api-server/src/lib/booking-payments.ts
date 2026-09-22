@@ -305,6 +305,11 @@ export async function verifyBookingPayment(
   if (!row?.payment) throw new BookingNotFoundError("Booking payment not found.");
   if (row.booking.status === "cancelled") throw new BookingConflictError("This booking has been cancelled.");
   const stored = parsePaymentReference(row.payment.providerReference);
+  if (row.payment.status === "paid") {
+    if (stored.orderId !== input.orderId || stored.paymentId !== input.paymentId) {
+      throw new BookingConflictError("This booking has already been paid.");
+    }
+  }
   if (
     row.payment.status === "paid" &&
     stored.orderId === input.orderId &&

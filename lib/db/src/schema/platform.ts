@@ -376,6 +376,7 @@ export const payments = pgTable(
   },
   (table) => [
     check("payment_status_valid", sql`${table.status} in ('created', 'unpaid', 'processing', 'paid', 'failed', 'cancelled')`),
+    uniqueIndex("payment_provider_reference_unique").on(table.provider, table.providerReference),
   ],
 );
 

@@ -19,12 +19,13 @@ export function PaymentsPage() {
         </p>
       </div>
       <QueryState query={q} empty={!q.data?.items?.length}>
-        <Table heads={['Payment', 'Booking', 'Provider', 'Amount', 'Status', 'Created']}>
+        <Table heads={['Payment', 'Booking', 'Provider', 'Provider reference', 'Amount', 'Status', 'Created']}>
           {(q.data?.items ?? []).map((payment) => (
             <Row id={payment.id} key={payment.id}>
               <Cell><span className="mono text-xs">{payment.id}</span></Cell>
               <Cell className="mono text-xs">{val(payment.bookingReference)}</Cell>
               <Cell>{payment.provider}</Cell>
+              <Cell className="mono text-xs">{val(payment.providerReference)}</Cell>
               <Cell className="mono">{amount(payment.amount, payment.currency)}</Cell>
               <Cell><Badge value={payment.status} /></Cell>
               <Cell className="text-muted-foreground">{day(payment.createdAt)}</Cell>

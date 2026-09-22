@@ -379,7 +379,7 @@ function ReportTable({
     table === 'bookings'
       ? ['Reference', 'Stay', 'Total', 'Status', 'Created']
       : table === 'payments'
-        ? ['Payment', 'Booking', 'Provider', 'Amount', 'Status', 'Created']
+        ? ['Payment', 'Booking', 'Provider', 'Provider reference', 'Amount', 'Status', 'Created']
         : table === 'properties'
           ? ['Property', 'Type', 'Asking price', 'Status', 'Created']
           : table === 'enquiries'
@@ -423,6 +423,7 @@ function ReportTable({
                       <Cell><span className="mono text-xs">{item.id}</span></Cell>
                       <Cell className="mono text-xs">{val(item.bookingReference)}</Cell>
                       <Cell>{item.provider}</Cell>
+                      <Cell className="mono text-xs">{val(item.providerReference)}</Cell>
                       <Cell className="mono">{item.currency} {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Cell>
                       <Cell><Badge value={item.status} /></Cell>
                       <Cell className="text-muted-foreground">{day(item.createdAt)}</Cell>
