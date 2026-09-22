@@ -10,6 +10,7 @@
 - [Standalone API typecheck](standalone-api-typecheck.md) — build referenced workspace declarations before the API’s strict no-emit check.
 - [Monorepo package installs](monorepo-package-installs.md) — when the package helper targets the workspace root, use the app-scoped pnpm filter rather than changing root dependencies.
 - [API contract drift check](api-contract-validation.md) — generated-output validation compares against HEAD, so expected codegen changes make it fail until the worktree is committed.
+- [Security lockfile overrides](security-lockfile-overrides.md) — parent-specific security overrides must survive pnpm lockfile refreshes; rerun audits after every regeneration.
 - [Demo data fixtures](demo-data-fixtures.md) — keep one payment state per demo booking so booking reads remain deterministic.
 - [Demo end-to-end harness](demo-e2e-test-harness.md) — disposable PostgreSQL runs need Date timestamps, the tsx loader, and Clerk-shaped test claims.
 - [Public hotel review identifiers](public-hotel-review-identifiers.md) — review entity IDs use catalog IDs shared by hotel routes and bookings, not internal UUIDs.

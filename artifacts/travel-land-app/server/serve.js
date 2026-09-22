@@ -56,6 +56,54 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+function decodePathSegment(value) {
+  try {
+    const decoded = decodeURIComponent(value);
+    return decoded.includes('\0') ? null : decoded;
+  } catch {
+    return null;
+  }
+}
+
+function isPathInside(rootPath, candidatePath) {
+  const resolvedRoot = path.resolve(rootPath);
+  const resolvedCandidate = path.resolve(candidatePath);
+  return (
+    resolvedCandidate === resolvedRoot ||
+    resolvedCandidate.startsWith(`${resolvedRoot}${path.sep}`)
+  );
+}
+
+function resolveContainedPath(rootPath, ...segments) {
+  const decodedSegments = segments.map(decodePathSegment);
+  if (decodedSegments.some((segment) => segment === null)) {
+    return null;
+  }
+
+  const normalizedPath = decodedSegments
+    .join('/')
+    .replaceAll('\\', '/');
+
+  // A request path may have one leading slash, but multiple leading slashes
+  // and Windows drive paths are absolute-path injection attempts.
+  if (normalizedPath.startsWith('//')) {
+    return null;
+  }
+
+  const relativePath = normalizedPath.replace(/^\/+/, '');
+  if (path.win32.isAbsolute(relativePath)) {
+    return null;
+  }
+
+  const resolvedPath = path.resolve(rootPath, relativePath);
+  return isPathInside(rootPath, resolvedPath) ? resolvedPath : null;
+}
+
+function sendNotFound(res) {
+  res.writeHead(404);
+  res.end('Not Found');
+}
+
 function toScriptString(value) {
   return JSON.stringify(value)
     .replaceAll('<', '\\u003c')
@@ -63,18 +111,26 @@ function toScriptString(value) {
     .replaceAll('&', '\\u0026');
 }
 
-function serveManifest(platform, res) {
-  const manifestPath = path.join(STATIC_ROOT, platform, 'manifest.json');
+function serveManifest(platform, res, staticRoot = STATIC_ROOT) {
+  const manifestPath = resolveContainedPath(
+    staticRoot,
+    platform,
+    'manifest.json',
+  );
 
-  if (!fs.existsSync(manifestPath)) {
-    res.writeHead(404, { 'content-type': 'application/json' });
-    res.end(
-      JSON.stringify({ error: `Manifest not found for platform: ${platform}` }),
-    );
+  if (!manifestPath) {
+    sendNotFound(res);
     return;
   }
 
-  const manifest = fs.readFileSync(manifestPath, 'utf-8');
+  let manifest;
+  try {
+    manifest = fs.readFileSync(manifestPath, 'utf-8');
+  } catch {
+    sendNotFound(res);
+    return;
+  }
+
   res.writeHead(200, {
     'content-type': 'application/json',
     'expo-protocol-version': '1',
@@ -100,55 +156,76 @@ function serveLandingPage(req, res, landingPageTemplate, appName) {
   res.end(html);
 }
 
-function serveStaticFile(urlPath, res) {
-  const safePath = path.normalize(urlPath).replace(/^(\.\.(\/|\\|$))+/, '');
-  const filePath = path.join(STATIC_ROOT, safePath);
-
-  if (!filePath.startsWith(STATIC_ROOT)) {
-    res.writeHead(403);
-    res.end('Forbidden');
+function serveStaticFile(urlPath, res, staticRoot = STATIC_ROOT) {
+  const filePath = resolveContainedPath(staticRoot, urlPath);
+  if (!filePath) {
+    sendNotFound(res);
     return;
   }
 
-  if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-    res.writeHead(404);
-    res.end('Not Found');
-    return;
-  }
+  try {
+    if (fs.statSync(filePath).isDirectory()) {
+      sendNotFound(res);
+      return;
+    }
 
-  const ext = path.extname(filePath).toLowerCase();
-  const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-  const content = fs.readFileSync(filePath);
-  res.writeHead(200, { 'content-type': contentType });
-  res.end(content);
+    const ext = path.extname(filePath).toLowerCase();
+    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    const content = fs.readFileSync(filePath);
+    res.writeHead(200, { 'content-type': contentType });
+    res.end(content);
+  } catch {
+    sendNotFound(res);
+  }
 }
 
-const landingPageTemplate = fs.readFileSync(TEMPLATE_PATH, 'utf-8');
-const appName = getAppName();
-
-const server = http.createServer((req, res) => {
-  const url = new URL(req.url || '/', `http://${req.headers.host}`);
-  let pathname = url.pathname;
-
-  if (basePath && pathname.startsWith(basePath)) {
-    pathname = pathname.slice(basePath.length) || '/';
-  }
-
-  if (pathname === '/' || pathname === '/manifest') {
-    const platform = req.headers['expo-platform'];
-    if (platform === 'ios' || platform === 'android') {
-      return serveManifest(platform, res);
+function createServer({
+  staticRoot = STATIC_ROOT,
+  landingPageTemplate = fs.readFileSync(TEMPLATE_PATH, 'utf-8'),
+  appName = getAppName(),
+  requestBasePath = basePath,
+} = {}) {
+  return http.createServer((req, res) => {
+    let url;
+    try {
+      url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    } catch {
+      res.writeHead(400);
+      res.end('Bad Request');
+      return;
     }
 
-    if (pathname === '/') {
-      return serveLandingPage(req, res, landingPageTemplate, appName);
+    let pathname = url.pathname;
+
+    if (requestBasePath && pathname.startsWith(requestBasePath)) {
+      pathname = pathname.slice(requestBasePath.length) || '/';
     }
-  }
 
-  serveStaticFile(pathname, res);
-});
+    if (pathname === '/' || pathname === '/manifest') {
+      const platform = req.headers['expo-platform'];
+      if (platform === 'ios' || platform === 'android') {
+        return serveManifest(platform, res, staticRoot);
+      }
 
-const port = parseInt(process.env.PORT || '3000', 10);
-server.listen(port, '0.0.0.0', () => {
-  console.log(`Serving static Expo build on port ${port}`);
-});
+      if (pathname === '/') {
+        return serveLandingPage(req, res, landingPageTemplate, appName);
+      }
+    }
+
+    serveStaticFile(pathname, res, staticRoot);
+  });
+}
+
+if (require.main === module) {
+  const server = createServer();
+  const port = parseInt(process.env.PORT || '3000', 10);
+  server.listen(port, '0.0.0.0', () => {
+    console.log(`Serving static Expo build on port ${port}`);
+  });
+}
+
+module.exports = {
+  createServer,
+  isPathInside,
+  resolveContainedPath,
+};
