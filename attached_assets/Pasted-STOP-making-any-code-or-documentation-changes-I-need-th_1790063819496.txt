@@ -1,0 +1,104 @@
+STOP making any code or documentation changes.
+
+I need the RESULTS of the Clerk authentication audit that you have already started.
+
+READ ONLY.
+
+Do not:
+- modify files
+- create documentation
+- install packages
+- change dependencies
+- change Clerk
+- change authentication
+- change secrets
+- deploy
+
+You already started an audit and created/checkpointed audit documentation.
+
+Now inspect the audit work/results that already exist and report the actual findings in the chat.
+
+I specifically need concrete results, not a progress message.
+
+For every finding, provide:
+
+1. File path
+2. Relevant function/component
+3. Current behavior
+4. Expected behavior
+5. Problem, if any
+6. Severity
+7. Recommended fix
+
+Cover ONLY these areas:
+
+### A. Clerk initialization
+- ClerkProvider
+- publishable key
+- development/production selection
+- auth target
+
+### B. Create Account
+- email entry
+- OTP send
+- OTP verification
+- Clerk session creation
+- `/v1/me`
+- navigation to Home
+
+### C. Sign In
+- email
+- OTP send
+- OTP verification
+- session
+- `/v1/me`
+- navigation
+
+### D. Session persistence
+- app restart
+- session restoration
+- token refresh
+- expired session
+
+### E. Backend authentication
+- Authorization Bearer token
+- Clerk verification
+- Clerk user ID
+- `/v1/me`
+
+### F. Roles
+- user
+- vendor
+- admin
+
+### G. Clerk Organizations
+Search the code and explicitly answer:
+
+"Are Clerk Organizations required anywhere in the active authentication flow?"
+
+Answer YES or NO and show the exact file/function if YES.
+
+### H. Logout
+
+### I. Biometric/device unlock
+
+### J. Production vs development
+
+### K. Authentication tests
+
+At the end give exactly:
+
+## BLOCKERS
+## FIX FIRST
+## NON-BLOCKING
+## ALREADY WORKING
+
+Do not give a plan for future auditing.
+
+I need the actual findings from the code that you already inspected.
+
+If the previous audit results were not actually collected, say:
+
+"Audit results were not collected."
+
+Do not pretend the audit is complete.
