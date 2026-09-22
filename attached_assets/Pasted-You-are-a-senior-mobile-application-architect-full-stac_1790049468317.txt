@@ -1,0 +1,1023 @@
+You are a senior mobile application architect, full-stack engineer, security auditor, QA engineer, and product analyst.
+
+I am developing the "Travel & Land" mobile application. I need a complete, accurate, and easy-to-understand technical and functional analysis of the current application so I can understand what has been built, identify gaps, and plan improvements.
+
+IMPORTANT:
+- Do not modify, delete, refactor, or rewrite any code.
+- Do not install new packages.
+- Do not change the database, authentication, API, or deployment configuration.
+- This is a READ-ONLY analysis and documentation task.
+- Analyze the actual current codebase and configuration, not assumptions or planned features.
+- Clearly distinguish between:
+  1. Fully implemented features
+  2. Partially implemented features
+  3. Mock/demo features
+  4. Backend-connected features
+  5. Planned but not implemented features
+  6. Features that are broken or require improvement
+- Do not claim that a feature works unless you verify it from the code, configuration, tests, or actual execution.
+- Do not expose passwords, API keys, tokens, private credentials, or sensitive user information.
+- Mask all secrets and confidential values in the report.
+
+==================================================
+1. EXECUTIVE SUMMARY
+==================================================
+
+Provide a clear overview of:
+
+- Application name and purpose
+- Target users
+- Main business objectives
+- Current development stage
+- Supported platforms
+- Current application version, if available
+- Current build status
+- What the application can do today
+- What is still missing
+- Major technical risks
+- Major business and user-experience risks
+
+Give a simple explanation suitable for a non-technical product owner.
+
+==================================================
+2. COMPLETE FEATURE INVENTORY
+==================================================
+
+Scan the entire project and create a detailed feature inventory.
+
+For every feature, document:
+
+- Feature name
+- Business purpose
+- User type:
+  - Customer
+  - Vendor
+  - Admin
+  - Guest
+- Frontend screens involved
+- Backend services involved
+- API endpoints involved
+- Database tables or collections involved
+- External services involved
+- Current implementation status:
+  - Fully implemented
+  - Partially implemented
+  - Mock/demo
+  - Backend-connected
+  - Not implemented
+  - Broken
+- Evidence from the code
+- Known limitations
+- Recommended improvements
+
+Cover, where applicable:
+
+A. Authentication and onboarding
+- Registration
+- Login
+- Email OTP
+- Phone OTP
+- Logout
+- Session persistence
+- Biometric authentication
+- Forgot password/recovery
+- Account deletion
+- Profile management
+
+B. Customer features
+- Home
+- Destinations
+- Tourism discovery
+- Temples
+- Events
+- Local food
+- Nearby attractions
+- Hotels and rooms
+- Hotel availability
+- Booking
+- Booking cancellation
+- Payments
+- My bookings
+- Favorites
+- Reviews and ratings
+- Notifications
+- Maps and directions
+- Trip planner
+- Travel pass
+- Wallet
+
+C. Land sourcing and real estate
+- Land/property listings
+- Property details
+- Property image galleries
+- Search and filters
+- Property enquiry
+- Lead management
+- Customer/vendor communication
+- Vendor property management
+- Land verification
+- Property status
+- Admin approval workflow
+
+D. Vendor features
+- Vendor registration
+- Vendor authentication
+- Vendor dashboard
+- Property CRUD
+- Hotel/room management
+- Availability management
+- Booking management
+- Enquiry management
+- Reports
+- Profile and business settings
+
+E. Admin features
+- Admin dashboard
+- User management
+- Vendor management
+- Customer management
+- Destination management
+- Tourism content management
+- Property management
+- Hotel management
+- Booking management
+- Payment management
+- Reports
+- Role management
+- Content moderation
+- Audit logs
+- System settings
+
+==================================================
+3. COMPLETE APPLICATION FLOW
+==================================================
+
+Explain the entire application journey step by step.
+
+Include separate flows for:
+
+1. Guest user
+2. Customer registration
+3. Customer login
+4. Email OTP verification
+5. Phone OTP verification, if implemented
+6. Biometric enrollment
+7. Returning user login
+8. Customer browsing destinations
+9. Customer viewing a destination
+10. Hotel search and room availability
+11. Hotel booking
+12. Payment
+13. Booking confirmation
+14. Booking cancellation
+15. Favorites
+16. Reviews
+17. Property browsing
+18. Property enquiry
+19. Vendor registration and login
+20. Vendor property creation
+21. Vendor booking management
+22. Admin login
+23. Admin approval workflows
+24. Logout and session expiry
+25. Account deletion
+
+For every flow, provide:
+
+- Starting point
+- Screen-by-screen navigation
+- User actions
+- API requests
+- Backend processing
+- Database changes
+- Authentication checks
+- Role and permission checks
+- Success response
+- Error response
+- Loading states
+- Empty states
+- Offline behavior
+- Failure scenarios
+- Current implementation status
+
+Create Mermaid flowcharts where useful.
+
+Use this format:
+
+User Action
+    ↓
+Mobile Screen
+    ↓
+API Request
+    ↓
+Authentication Check
+    ↓
+Backend Processing
+    ↓
+Database Operation
+    ↓
+API Response
+    ↓
+Mobile UI Update
+
+Clearly identify where the actual implementation differs from the intended flow.
+
+==================================================
+4. TECHNOLOGY STACK
+==================================================
+
+Identify every technology actually used in the project.
+
+Create a table with:
+
+| Layer | Technology | Version | Purpose | Evidence |
+|------|------------|---------|---------|----------|
+
+Analyze:
+
+- Mobile framework
+- React Native
+- Expo
+- Expo Router
+- TypeScript/JavaScript
+- Frontend libraries
+- UI component libraries
+- State management
+- Form validation
+- Navigation
+- Backend framework
+- Runtime
+- API architecture
+- Database
+- ORM/query builder
+- Authentication
+- Authorization
+- File storage
+- Image handling
+- Maps
+- Payment gateway
+- Push notifications
+- Analytics
+- Error monitoring
+- Testing tools
+- Build tools
+- CI/CD
+- Hosting
+- Deployment configuration
+
+Also explain:
+
+- Why each technology is used
+- How the components communicate
+- Which technologies are actively used
+- Which are installed but unused
+- Which are configured but incomplete
+- Any outdated or conflicting dependencies
+
+==================================================
+5. SYSTEM ARCHITECTURE
+==================================================
+
+Create a complete architecture explanation.
+
+Describe:
+
+- Mobile app architecture
+- Frontend structure
+- Backend structure
+- API communication
+- Authentication flow
+- Database communication
+- File storage flow
+- Payment flow
+- Third-party integrations
+- Admin/vendor architecture
+- Deployment architecture
+
+Create Mermaid diagrams for:
+
+1. High-level system architecture
+2. Authentication architecture
+3. Booking architecture
+4. Property enquiry architecture
+5. Data flow between mobile app, backend, database, and external services
+
+Explain the responsibility of each major component.
+
+==================================================
+6. API DOCUMENTATION
+==================================================
+
+Scan all backend routes, controllers, services, middleware, and API clients.
+
+Create a complete API inventory.
+
+For every API, document:
+
+- HTTP method
+- Endpoint
+- Purpose
+- Request parameters
+- Request body
+- Required headers
+- Authentication required?
+- Required role
+- Organization/tenant requirement, if any
+- Request validation
+- Response structure
+- HTTP status codes
+- Error responses
+- Database operations
+- External API calls
+- Rate limiting
+- Security concerns
+- Current implementation status
+
+Use this table:
+
+| Method | Endpoint | Purpose | Auth | Role | Request | Response | Status |
+|--------|----------|---------|------|------|---------|----------|--------|
+
+Also identify:
+
+- Duplicate APIs
+- Unused APIs
+- Missing APIs
+- APIs called by the mobile app but unavailable in the backend
+- Backend APIs that are not used by the mobile app
+- Inconsistent request/response formats
+- Hardcoded URLs
+- Missing validation
+- Missing pagination
+- Missing error handling
+- API versioning issues
+- Security weaknesses
+
+Do not invent API endpoints. Document only those found in the actual project.
+
+==================================================
+7. DATABASE ANALYSIS
+==================================================
+
+Identify the actual database technology and configuration.
+
+Document:
+
+- Database provider
+- Database type
+- Connection method
+- ORM/query builder
+- Schema files
+- Migrations
+- Seed data
+- Development database
+- Production database configuration
+- Environment variables required
+- Backup strategy, if present
+
+Create a complete database schema report.
+
+For every table or collection, document:
+
+- Name
+- Purpose
+- Columns/fields
+- Data types
+- Primary key
+- Foreign keys
+- Relationships
+- Required fields
+- Nullable fields
+- Unique constraints
+- Indexes
+- Default values
+- Sensitive data
+- Related APIs
+- Related screens
+
+Create Mermaid ER diagrams.
+
+Analyze relationships between:
+
+- Users
+- Roles
+- Vendors
+- Admins
+- Destinations
+- Temples
+- Events
+- Food listings
+- Hotels
+- Rooms
+- Room availability
+- Bookings
+- Payments
+- Properties
+- Property images
+- Enquiries
+- Favorites
+- Reviews
+- Notifications
+- Wallet
+- Travel pass
+
+Important:
+- Do not assume these tables exist.
+- Clearly identify missing or planned entities.
+- Check for inconsistent IDs and foreign-key relationships.
+- Check whether records can become orphaned.
+- Check whether deletion rules are safe.
+- Check whether duplicate records are possible.
+- Check whether transactions are required but missing.
+
+==================================================
+8. FILE STORAGE AND IMAGE MANAGEMENT
+==================================================
+
+Analyze how files and images are handled.
+
+Document:
+
+- Storage provider
+- Storage buckets
+- Upload APIs
+- Image upload screens
+- File size restrictions
+- Supported formats
+- Image compression
+- Image resizing
+- Image thumbnails
+- Image URLs
+- Public/private access
+- Signed URLs
+- Access control
+- File deletion
+- Orphaned file handling
+- Multiple image galleries
+- Vendor uploads
+- Admin uploads
+- Profile images
+- Property images
+- Destination images
+
+Identify whether the app uses:
+
+- Local storage
+- Cloud storage
+- Database-stored images
+- Base64 images
+- Static assets
+- Remote image URLs
+- Mock image URLs
+
+Identify all limitations and security concerns.
+
+==================================================
+9. AUTHENTICATION AND AUTHORIZATION
+==================================================
+
+Analyze the complete authentication system.
+
+The current intended authentication provider is Clerk, but verify what is actually implemented.
+
+Document:
+
+- Authentication provider
+- Clerk configuration
+- Development and production configuration
+- Email verification
+- Email OTP
+- Phone OTP, if implemented
+- Session creation
+- Session persistence
+- Session expiry
+- Logout
+- Session refresh
+- Biometric authentication
+- Device credentials
+- Backend token verification
+- User synchronization
+- User profile creation
+- Role assignment
+- Customer role
+- Vendor role
+- Admin role
+- Organization/tenant dependencies
+- Organization provisioning, if present
+- Authorization middleware
+- Protected routes
+- Role-based access control
+- Account recovery
+- Account deletion
+
+Important:
+- Do not create or modify authentication.
+- Do not expose Clerk keys or secrets.
+- Do not assume phone OTP is working merely because related code exists.
+- Verify whether OTP is actually sent and verified through the configured provider.
+- Verify whether biometric authentication is real device authentication or only a UI placeholder.
+- Verify whether organizations are required by backend logic.
+
+Create a table:
+
+| Authentication/Authorization Feature | Implementation | Status | Evidence | Issues |
+|--------------------------------------|----------------|--------|----------|--------|
+
+==================================================
+10. SECURITY AUDIT
+==================================================
+
+Perform a read-only security review.
+
+Check for:
+
+A. Authentication security
+- Token validation
+- Session handling
+- Authentication bypass
+- OTP verification weaknesses
+- Demo login bypass
+- Hardcoded credentials
+- Weak authentication fallbacks
+
+B. Authorization
+- Customer/vendor/admin access separation
+- Role escalation
+- Insecure direct object references
+- Cross-user data access
+- Organization/tenant isolation
+- Backend permission enforcement
+
+C. API security
+- Input validation
+- SQL injection risks
+- NoSQL injection risks
+- XSS risks
+- CSRF where relevant
+- Rate limiting
+- Error information leakage
+- CORS configuration
+- Excessive data exposure
+- Missing authorization checks
+
+D. Data security
+- Sensitive data storage
+- Password/token handling
+- Personal information exposure
+- Payment data handling
+- Database access
+- Encryption in transit
+- Encryption at rest, where verifiable
+- Logs containing sensitive information
+
+E. Mobile security
+- Secure token storage
+- AsyncStorage usage
+- SecureStore usage
+- Screenshot protection
+- Deep-link security
+- Biometric implementation
+- Debug settings
+- Production logging
+- Certificate/network security configuration
+
+F. Infrastructure security
+- Environment variables
+- Secret management
+- Build configuration
+- Production keys
+- Public API keys
+- Dependency vulnerabilities
+- Backup and recovery
+
+For every finding, include:
+
+- Finding ID
+- Severity: Critical/High/Medium/Low/Informational
+- Affected file
+- Affected endpoint or feature
+- Description
+- Evidence
+- Potential impact
+- Recommended fix
+- Whether it is verified or requires further testing
+
+Do not expose secret values.
+
+==================================================
+11. USER EXPERIENCE AND UI AUDIT
+==================================================
+
+Analyze the actual mobile UI.
+
+Check:
+
+- Login simplicity
+- Registration flow
+- Navigation
+- Screen consistency
+- Typography
+- Colors
+- Spacing
+- Buttons
+- Forms
+- Error messages
+- Loading indicators
+- Empty states
+- Offline states
+- Accessibility
+- Responsive layouts
+- Android compatibility
+- iOS compatibility
+- Tablet behavior
+- Small-screen behavior
+- Dark mode, if implemented
+- Localization readiness
+- Touch targets
+- Keyboard handling
+- Back-button behavior
+- Deep linking
+- Performance of large lists
+- Image loading
+- Pagination
+- Search and filtering
+
+Identify:
+
+- Broken screens
+- Missing screens
+- Confusing flows
+- Inconsistent components
+- Placeholder content
+- Hardcoded data
+- Poor error handling
+- Navigation dead ends
+
+Provide practical improvement recommendations without changing code.
+
+==================================================
+12. MOCK DATA VS REAL DATA AUDIT
+==================================================
+
+This is extremely important.
+
+Identify every place where the app uses:
+
+- Static data
+- Hardcoded arrays
+- Mock JSON
+- Demo users
+- Fake OTP
+- Fake booking confirmation
+- Fake payment success
+- Placeholder images
+- Simulated hotel availability
+- Simulated maps
+- Local-only storage
+- Real API data
+- Real database data
+
+Create this table:
+
+| Feature | Data Source | Real/Mock | API Used | Database Used | Production Ready? |
+|---------|-------------|-----------|----------|---------------|-------------------|
+
+Trace the complete data flow from the screen to the database.
+
+Clearly identify features that appear functional but are only demonstrations.
+
+==================================================
+13. PAYMENTS, BOOKINGS, AND EXTERNAL INTEGRATIONS
+==================================================
+
+Analyze all payment and booking functionality.
+
+Document:
+
+- Payment provider
+- Sandbox/live configuration
+- Payment initiation
+- Payment verification
+- Webhooks
+- Booking creation
+- Booking confirmation
+- Booking cancellation
+- Refunds
+- Duplicate payment prevention
+- Idempotency
+- Payment-to-booking relationship
+- Failed payment handling
+- Supplier hotel inventory
+- External booking providers
+- API credentials configuration
+- Webhook security
+
+Check whether:
+
+- A successful payment actually creates a booking.
+- A booking is linked to a real supplier reservation.
+- Payment status is verified server-side.
+- Cancellation updates payment and booking records.
+- Duplicate bookings can occur.
+- Failed payments leave incorrect booking records.
+
+Do not perform real payments or modify payment configuration.
+
+==================================================
+14. TESTING AND QUALITY ASSURANCE
+==================================================
+
+Analyze all tests and testing infrastructure.
+
+Document:
+
+- Unit tests
+- Integration tests
+- API tests
+- End-to-end tests
+- Mobile tests
+- Authentication tests
+- Database tests
+- Security tests
+- Performance tests
+- Build validation
+- Expo Doctor results
+- TypeScript checks
+- Linting
+- Test coverage
+- CI/CD checks
+
+Identify:
+
+- Existing tests
+- Missing tests
+- Tests that are outdated
+- Tests that pass only because of mock data
+- Untested critical flows
+- Broken tests
+- Manual testing requirements
+
+Create a recommended test plan for:
+
+- Android
+- iOS
+- Different screen sizes
+- Slow network
+- Offline mode
+- Authentication
+- Payments
+- Booking
+- Vendor access
+- Admin access
+- Security
+- Data consistency
+
+==================================================
+15. PERFORMANCE AND SCALABILITY
+==================================================
+
+Analyze:
+
+- App startup time
+- Bundle size
+- API response handling
+- Database query efficiency
+- Missing indexes
+- Large list rendering
+- Image optimization
+- Caching
+- Pagination
+- Memory usage
+- Network retries
+- Offline caching
+- Concurrent booking handling
+- Database transactions
+- Scalability limitations
+- Backend bottlenecks
+
+Identify current risks and recommended improvements.
+
+==================================================
+16. DEPLOYMENT AND RELEASE READINESS
+==================================================
+
+Document:
+
+- Expo configuration
+- Android package ID
+- iOS bundle ID
+- App version
+- Build number/version code
+- EAS configuration
+- Build profiles
+- Environment variables
+- Development configuration
+- Preview configuration
+- Production configuration
+- Android APK/AAB setup
+- iOS build setup
+- App signing
+- Push notification configuration
+- Backend deployment
+- Database deployment
+- Domain configuration
+- Monitoring
+- Crash reporting
+- Release checklist
+
+Clearly distinguish between:
+
+- Local development
+- Expo Go
+- Development build
+- Preview build
+- Production build
+
+Identify anything preventing production release.
+
+==================================================
+17. ENVIRONMENT VARIABLES AND CONFIGURATION
+==================================================
+
+List all required environment variables and configuration keys.
+
+For each one, provide:
+
+- Variable name
+- Purpose
+- Used by
+- Required in development?
+- Required in production?
+- Configured?
+- Missing?
+- Secret or public?
+- Safe handling recommendation
+
+IMPORTANT:
+- Never show actual secret values.
+- Never print API tokens.
+- Never print passwords.
+- Never print private keys.
+- Never print full connection strings containing credentials.
+
+==================================================
+18. CURRENT PROBLEMS AND TECHNICAL DEBT
+==================================================
+
+Create a complete issue register.
+
+Include:
+
+- Issue ID
+- Category
+- Description
+- Affected feature
+- Affected file
+- Severity
+- Current behavior
+- Expected behavior
+- Root cause, if verified
+- Recommended fix
+- Dependencies
+- Priority
+- Estimated complexity:
+  - Small
+  - Medium
+  - Large
+
+Include issues related to:
+
+- Authentication
+- Biometric login
+- Roles
+- Organizations
+- APIs
+- Database
+- Mock data
+- Hotel inventory
+- Bookings
+- Payments
+- Storage
+- UI
+- Security
+- Performance
+- Deployment
+- Testing
+
+==================================================
+19. IMPROVEMENT ROADMAP
+==================================================
+
+Prepare a practical roadmap in phases.
+
+Phase 1: Critical bugs and security
+Phase 2: Authentication and user experience
+Phase 3: Database and API improvements
+Phase 4: Real tourism and hotel functionality
+Phase 5: Land sourcing and vendor functionality
+Phase 6: Payments and booking reliability
+Phase 7: Admin reporting
+Phase 8: Performance and scalability
+Phase 9: Production deployment
+
+For each improvement, include:
+
+- Problem
+- Proposed solution
+- Files/modules likely affected
+- Dependencies
+- Risk
+- Complexity
+- Acceptance criteria
+
+Do not implement any changes.
+
+==================================================
+20. FINAL DELIVERABLES
+==================================================
+
+Generate the following documentation files inside a new folder:
+
+/docs/mobile-app-audit/
+
+1. README.md
+   - Overview
+   - How to read the documentation
+   - Important findings
+
+2. EXECUTIVE_SUMMARY.md
+
+3. FEATURE_INVENTORY.md
+
+4. APPLICATION_FLOWS.md
+
+5. TECHNOLOGY_STACK.md
+
+6. SYSTEM_ARCHITECTURE.md
+
+7. API_DOCUMENTATION.md
+
+8. DATABASE_SCHEMA.md
+
+9. STORAGE_AND_FILES.md
+
+10. AUTHENTICATION_AND_AUTHORIZATION.md
+
+11. SECURITY_AUDIT.md
+
+12. UI_UX_AUDIT.md
+
+13. MOCK_VS_REAL_DATA.md
+
+14. PAYMENTS_AND_BOOKINGS.md
+
+15. TESTING_AND_QA.md
+
+16. PERFORMANCE_AUDIT.md
+
+17. DEPLOYMENT_READINESS.md
+
+18. ENVIRONMENT_CONFIGURATION.md
+
+19. TECHNICAL_DEBT.md
+
+20. IMPROVEMENT_ROADMAP.md
+
+21. COMPLETE_FILE_INVENTORY.md
+
+22. OPEN_QUESTIONS.md
+
+==================================================
+21. DOCUMENTATION QUALITY REQUIREMENTS
+==================================================
+
+- Use simple language wherever possible.
+- Explain technical terms.
+- Include tables.
+- Include Mermaid diagrams.
+- Include file paths and line numbers as evidence wherever possible.
+- Do not invent information.
+- Do not assume a feature exists because it was planned.
+- Do not assume an API works because a route exists.
+- Do not assume authentication works because a login screen exists.
+- Do not assume a database is production-ready because a schema exists.
+- Do not assume a payment is successful because the UI displays success.
+- Do not assume biometric authentication works because a toggle exists.
+- Do not assume a mobile app is production-ready because an APK builds successfully.
+
+At the end, generate a concise summary containing:
+
+A. What is fully working?
+B. What is partially working?
+C. What is only demo/mock functionality?
+D. What is broken?
+E. What is missing?
+F. What are the top 10 risks?
+G. What should be improved first?
+H. What information is still required from the product owner?
+I. What should be tested manually on a physical Android device?
+J. What should be tested manually on a physical iPhone?
+
+Before completing the task, verify that all documentation files are consistent with one another and that every major finding has supporting evidence.
+
+Again: READ-ONLY ANALYSIS ONLY. DO NOT MODIFY APPLICATION CODE.
